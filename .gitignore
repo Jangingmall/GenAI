@@ -1,0 +1,31 @@
+# 가상환경
+**/.venv/
+**/venv/
+
+# 파이썬 캐시
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.egg-info/
+
+# 환경 변수 (비밀번호 등 — 각자 로컬에만 둠)
+**/.env
+.env
+
+# 모델 캐시 (BGE-M3 등, 수 GB — 깃에 올리지 않음)
+**/models/
+**/*.bin
+**/*.safetensors
+
+# 맥 시스템 파일
+.DS_Store
+**/.DS_Store
+
+# IDE 설정
+.vscode/
+.idea/
+**/.vscode/
+**/.idea/
+
+# 로그
+**/*.log
