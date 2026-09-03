@@ -6,6 +6,7 @@
     from app.config import settings
     settings.DB_NAME, settings.LLM_MODEL ...
 """
+
 import os
 from pathlib import Path
 
