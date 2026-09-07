@@ -248,17 +248,30 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def build_embedding_text(product: dict, artisan_intro: str | None) -> str:
-    """임베딩할 텍스트를 명세 순서대로 이어붙인다.
+# category_code(POTTERY 등 영문 코드)는 임베딩 모델이 한국어 의미로 못 읽을 수 있어
+# 한글로 번역해 넣는다. 적재 담당자 요청으로 반영.
+CATEGORY_KO = {
+    "POTTERY": "도자기",
+    "ONGGI": "옹기",
+    "NACRE": "나전칠기",
+    "DYEING": "염색",
+    "WOOD": "목공예",
+    "METAL": "금속공예",
+}
 
-    name(상품명) + material + making_story + usage_care + 장인 introduction, 빈 값은
-    건너뛰고 " "로 join. 확정 스키마엔 artisan introduction이 없어(§ 위
-    docstring) 호출부(build_rows)가 항상 None을 넘긴다 — 이 공식 자체(어떤 필드를 넣을지)는
-    임베딩·검색을 담당하는 A의 몫이라 여기서 임의로 바꾸지 않는다. 인자는 나중에 소개글이
-    추가될 경우를 대비해 그대로 둔다.
+
+def build_embedding_text(product: dict, artisan_intro: str | None) -> str:
+    """임베딩할 텍스트를 이어붙인다.
+
+    name(상품명) + 종목(한글) + subcategory_code(품목, 이미 한글) + material +
+    making_story + usage_care + 장인 introduction, 빈 값은 건너뛰고 " "로 join.
+    확정 스키마엔 artisan introduction이 없어(§ 위 docstring) 호출부(build_rows)가
+    항상 None을 넘긴다.
     """
     parts = [
         product.get("name"),
+        CATEGORY_KO.get(product.get("category_code"), product.get("category_code")),
+        product.get("subcategory_code"),
         product.get("material"),
         product.get("making_story"),
         product.get("usage_care"),
