@@ -132,6 +132,23 @@ def _drop_unknown_ids(items: list[dict], allowed_ids: set[int]) -> list[dict]:
     return [item for item in items if item["product_id"] in allowed_ids]
 
 
+def _drop_evidence_mismatched(items: list[dict], candidates_by_id: dict[int, dict]) -> list[dict]:
+    """reason이 그 후보 자신과 다른 종목의 재질·품목 신호를 담고 있으면 제거한다.
+
+    모델이 실제 evidence 대신 프롬프트의 few-shot 예시 문구를 그대로 베끼는 경우, reason에
+    후보의 종목과 무관한 재질(예: 도자기 후보인데 "자개"·"옻칠")이 섞여 나온다. 후보 자체는
+    이미 카테고리 대조를 통과했으므로, 이 검사는 reason 텍스트 내용의 오염만 잡는다.
+    """
+    kept = []
+    for item in items:
+        candidate = candidates_by_id.get(item["product_id"])
+        expected = _effective_category(candidate) if candidate else None
+        if expected and _mentioned_categories(item["reason"]) - {expected}:
+            continue
+        kept.append(item)
+    return kept
+
+
 def _format_filters(filters: dict | None) -> str:
     """접점1에서 뽑힌 하드필터 요약. 후속 질문이 이미 아는 조건을 다시 묻지 않게 한다.
 
@@ -210,6 +227,7 @@ def build_reply(
     products = _drop_unknown_ids(
         [p.model_dump() for p in output.products], allowed_ids
     )
+    products = _drop_evidence_mismatched(products, {c["product_id"]: c for c in candidates})
     return {
         "reply": output.reply,
         "products": products,

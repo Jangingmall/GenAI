@@ -58,6 +58,33 @@ def test_drop_unknown_ids_empty_allowed_drops_all():
 
 
 # ---------------------------------------------------------------------------
+# _drop_evidence_mismatched
+# ---------------------------------------------------------------------------
+
+
+def test_drop_evidence_mismatched_removes_wrong_category_reason():
+    # 후보는 도자기(청자)인데 reason에 나전칠기 신호("자개")가 섞여 있으면 few-shot
+    # 문구를 베낀 것으로 보고 제거한다.
+    candidates_by_id = {1: {"product_id": 1, "name": "청자 찻잔", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "자개를 문양대로 오려 붙이고 옻칠 연마를 반복했습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == []
+
+
+def test_drop_evidence_mismatched_keeps_matching_reason():
+    candidates_by_id = {1: {"product_id": 1, "name": "청자 찻잔", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "청자를 물레로 성형해 만들었습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == items
+
+
+def test_drop_evidence_mismatched_keeps_when_category_unknown():
+    # candidate에서 카테고리를 역추정 못 하면(_effective_category가 None) 판단 근거가
+    # 없으니 건드리지 않는다.
+    candidates_by_id = {1: {"product_id": 1, "name": "알 수 없는 상품", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "자개를 오려 붙였습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == items
+
+
+# ---------------------------------------------------------------------------
 # build_reply — chat 주입, LLM 없음
 # ---------------------------------------------------------------------------
 
