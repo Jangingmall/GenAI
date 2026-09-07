@@ -40,6 +40,7 @@ def test_run_assembles_final_contract():
         generate_payload={
             "reply": "이 찻잔을 추천드려요.",
             "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
+            "suggestions": ["다른 색상도 볼까요?", "가격대를 더 낮춰볼까요?", "선물용이신가요?"],
         },
     )
     search_and_rank = _fake_search_and_rank(
@@ -48,9 +49,10 @@ def test_run_assembles_final_contract():
 
     result = rr.run("찻잔 있나요", chat=chat, search_and_rank=search_and_rank)
 
-    assert set(result.keys()) == {"reply", "intent", "products"}
+    assert set(result.keys()) == {"reply", "intent", "products", "suggestions"}
     assert result["intent"] == "product_search"
     assert result["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
+    assert result["suggestions"] == ["다른 색상도 볼까요?", "가격대를 더 낮춰볼까요?", "선물용이신가요?"]
 
 
 def test_run_passes_contact1_to_search_and_rank():
@@ -69,7 +71,7 @@ def test_run_passes_contact1_to_search_and_rank():
             "color": [],
             "query_text": "찻잔",
         },
-        generate_payload={"reply": "ok", "products": []},
+        generate_payload={"reply": "ok", "products": [], "suggestions": []},
     )
     rr.run("찻잔 있나요", chat=chat, search_and_rank=spy_search_and_rank)
 
@@ -90,6 +92,7 @@ def test_run_drops_hallucinated_product_id():
         generate_payload={
             "reply": "ok",
             "products": [{"product_id": 999, "reason": "존재하지 않는 상품"}],
+            "suggestions": [],
         },
     )
     search_and_rank = _fake_search_and_rank(

@@ -1,7 +1,6 @@
 """⑤ 접점 2(랭킹 후보) → reply + 상품별 reason. docs/b-metaprompt.md §2 S3 참고.
 
 프로토타입(generator.py)과의 차이:
-  - suggestions 필드 제거(08.28 확정 응답 계약에 없음 — §3-3)
   - items → products 로 이름 변경(계약 필드명)
   - 접점 2 에는 price 가 없어 _format_candidates 에서 뺀다(프로토타입은 price 포함)
 
@@ -32,12 +31,13 @@ class _ProductReason(BaseModel):
 
 
 class _GenerateOutput(BaseModel):
-    # products에 default([])를 주면 JSON 스키마가 이 필드를 "생략 가능"으로 표시해, 모델이
-    # reply만 쓰고 조기 종료해도 스키마상 유효해진다(Constraint Tax) — 기본값을 빼서 항상
-    # 두 필드를 다 채우도록 강제한다. reply는 output_format상 1~3문장이라 500자면 충분히
-    # 여유 있게 상한을 둬 자유 텍스트 필드의 무한 생성(반복 루프) 위험을 줄인다.
+    # products·suggestions에 default([])를 주면 JSON 스키마가 이 필드를 "생략 가능"으로
+    # 표시해, 모델이 reply만 쓰고 조기 종료해도 스키마상 유효해진다(Constraint Tax) —
+    # 기본값을 빼서 항상 세 필드를 다 채우도록 강제한다. reply는 output_format상 1~3문장이라
+    # 500자면 충분히 여유 있게 상한을 둬 자유 텍스트 필드의 무한 생성(반복 루프) 위험을 줄인다.
     reply: str = Field(max_length=500)
     products: list[_ProductReason]
+    suggestions: list[str]
 
 
 _GENERATE_OUTPUT_SCHEMA = _GenerateOutput.model_json_schema()  # 매 요청마다 재계산할 필요 없다
@@ -132,6 +132,33 @@ def _drop_unknown_ids(items: list[dict], allowed_ids: set[int]) -> list[dict]:
     return [item for item in items if item["product_id"] in allowed_ids]
 
 
+def _format_filters(filters: dict | None) -> str:
+    """접점1에서 뽑힌 하드필터 요약. 후속 질문이 이미 아는 조건을 다시 묻지 않게 한다.
+
+    하나도 없으면 그 사실 자체가 "특징을 거의 못 뽑았다"는 신호라 그대로 노출한다.
+    """
+    if not filters:
+        return "(추출된 조건 없음)"
+    parts = []
+    min_price, max_price = filters.get("min_price"), filters.get("max_price")
+    if min_price is not None and max_price is not None:
+        parts.append(f"가격: {min_price}~{max_price}원")
+    elif max_price is not None:
+        parts.append(f"가격: {max_price}원 이하")
+    elif min_price is not None:
+        parts.append(f"가격: {min_price}원 이상")
+    if filters.get("gift_theme"):
+        parts.append(f"선물테마: {', '.join(filters['gift_theme'])}")
+    if filters.get("color"):
+        parts.append(f"색상: {', '.join(filters['color'])}")
+    return "\n".join(parts) if parts else "(추출된 조건 없음)"
+
+
+def _cap_suggestions(suggestions: list[str]) -> list[str]:
+    """후속 질문은 최대 3개까지만 노출한다."""
+    return suggestions[:3]
+
+
 def _format_history(history: list[dict] | None) -> str:
     if not history:
         return ""
@@ -145,13 +172,16 @@ def build_reply(
     message: str,
     candidates: list[dict],
     intent: str,
+    filters: dict | None = None,
     history: list[dict] | None = None,
     *,
     think: bool = True,
     chat=chat_json,
 ) -> dict:
-    """접점 2 후보 → {"reply": str, "products": [{"product_id", "reason"}]}.
+    """접점 2 후보 → {"reply", "products": [{"product_id", "reason"}], "suggestions": [str]}.
 
+    filters는 접점1(intent.py)이 뽑은 하드필터 — 후속 질문(suggestions)이 이미 아는
+    조건을 다시 묻지 않고, 조건을 하나도 못 뽑았을 땐 조건을 캐묻는 질문을 하도록 넘긴다.
     intent는 최종 응답에서 오케스트레이터(S6)가 부착한다 — 여기서는 안 담는다.
     think 기본값 True: 종목 환각(예: 다른 카테고리 상품을 엉뚱한 종목으로 답함) 위험이 있어
     근거기반 생성은 사실 일치가 표현 다양성보다 중요하다. 모델 비교(S5)에서 thinking
@@ -160,7 +190,8 @@ def build_reply(
     candidates = _filter_by_category(candidates, message)
     user_content = (
         f"{_format_history(history)}소비자의 마지막 문장: {message}\n"
-        f"분류된 intent: {intent}\n\n"
+        f"분류된 intent: {intent}\n"
+        f"[추출된 조건]\n{_format_filters(filters)}\n\n"
         f"[후보 상품]\n{_format_candidates(candidates)}"
         f"{_ambiguity_warning(message)}"
     )
@@ -179,4 +210,8 @@ def build_reply(
     products = _drop_unknown_ids(
         [p.model_dump() for p in output.products], allowed_ids
     )
-    return {"reply": output.reply, "products": products}
+    return {
+        "reply": output.reply,
+        "products": products,
+        "suggestions": _cap_suggestions(output.suggestions),
+    }

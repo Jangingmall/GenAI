@@ -1,9 +1,9 @@
 """오케스트레이터 — ① intent → (A: search·ranking) → ⑤ generate. docs/b-metaprompt.md §2 S6 참고.
 
 전체 흐름:
-    classify_and_extract(message)         → 접점1 {query_text, filters, intent}
-    app.run_recommend.recommend(접점1)     → 접점2 [{product_id, name, score, evidence}, ...] (A 담당)
-    build_reply(message, 접점2, intent)    → {reply, products}
+    classify_and_extract(message)              → 접점1 {query_text, filters, intent}
+    app.run_recommend.recommend(접점1)          → 접점2 [{product_id, name, score, evidence}, ...] (A 담당)
+    build_reply(message, 접점2, intent, filters) → {reply, products, suggestions}
 
 intent는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
 """
@@ -24,18 +24,21 @@ def run(
     chat=chat_json,
     search_and_rank=_recommend,
 ) -> dict:
-    """자연어 한 문장 → 최종 응답 계약 {reply, intent, products}.
+    """자연어 한 문장 → 최종 응답 계약 {reply, intent, products, suggestions}.
 
     chat·search_and_rank는 테스트에서 가짜 함수로 갈아끼울 수 있게 인자로 받는다.
     search_and_rank 기본값(A의 실제 search+ranking)은 PostgreSQL·임베딩 모델이 필요하다.
     """
     contact1 = classify_and_extract(message, history, chat=chat)
     candidates = search_and_rank(contact1)
-    generated = build_reply(message, candidates, contact1["intent"], history, think=think, chat=chat)
+    generated = build_reply(
+        message, candidates, contact1["intent"], contact1["filters"], history, think=think, chat=chat
+    )
     return {
         "reply": generated["reply"],
         "intent": contact1["intent"],
         "products": generated["products"],
+        "suggestions": generated["suggestions"],
     }
 
 
@@ -51,3 +54,6 @@ if __name__ == "__main__":
     print("products:")
     for p in result["products"]:
         print(f"  - {p['product_id']}: {p['reason']}")
+    print("suggestions:")
+    for s in result["suggestions"]:
+        print(f"  - {s}")
