@@ -5,8 +5,9 @@
 
 import re
 
-from app.ingest import load_products as lp
 import pytest
+
+from app.ingest import load_products as lp
 
 # ---------------------------------------------------------------------------
 # to_records — COLUMN_MAP 적용 + 타입 캐스팅 + 장인/상품 분리
@@ -363,13 +364,17 @@ def test_attach_embeddings_fills_embedding_and_model():
 
 def test_product_upsert_sql_has_on_conflict_do_update():
     assert re.search(
-        r"on conflict\s*\(\s*product_id\s*\)\s*do update", lp.PRODUCT_UPSERT_SQL, re.IGNORECASE
+        r"on conflict\s*\(\s*product_id\s*\)\s*do update",
+        lp.PRODUCT_UPSERT_SQL,
+        re.IGNORECASE,
     )
 
 
 def test_artisan_upsert_sql_has_on_conflict_do_update():
     assert re.search(
-        r"on conflict\s*\(\s*artisan_id\s*\)\s*do update", lp.ARTISAN_UPSERT_SQL, re.IGNORECASE
+        r"on conflict\s*\(\s*artisan_id\s*\)\s*do update",
+        lp.ARTISAN_UPSERT_SQL,
+        re.IGNORECASE,
     )
 
 

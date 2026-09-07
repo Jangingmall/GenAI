@@ -10,8 +10,8 @@ A 파트 통합 — 검색(search) → 랭킹(ranking) 을 이어서 실행한�
 B가 붙으면: intent가 접점1을 만들고, generate가 이 출력을 받아 reply/reason을 생성한다.
 """
 
-from app.pipeline.search import search
 from app.pipeline.ranking import rank
+from app.pipeline.search import search
 
 
 def recommend(query: dict, top_k: int = 3) -> list[dict]:

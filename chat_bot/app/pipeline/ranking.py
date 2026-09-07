@@ -16,9 +16,9 @@
 # 값은 가설이며 목데이터 평가 후 조정한다.
 GRADE_WEIGHT = {
     "NATIONAL_INTANGIBLE_HERITAGE": 0.30,  # 국가무형유산
-    "MASTER_CRAFTSMAN": 0.20,              # 명장
-    "SENIOR_CRAFTSMAN": 0.10,              # 숙련장인
-    "YOUNG_CRAFTSMAN": 0.05,              # 청년장인
+    "MASTER_CRAFTSMAN": 0.20,  # 명장
+    "SENIOR_CRAFTSMAN": 0.10,  # 숙련장인
+    "YOUNG_CRAFTSMAN": 0.05,  # 청년장인
 }
 
 # 추천 상한. 큐레이션 성격상 소수만. 하한은 없다(유사도 컷 통과분만).
@@ -44,8 +44,8 @@ def rank(candidates: list[dict], top_k: int = MAX_RESULTS) -> list[dict]:
     """
     ranked = []
     for cand in candidates:
-        base = cand.get("score", 0.0)          # 검색 유사도
-        bonus = _grade_bonus(cand)             # 등급 가중
+        base = cand.get("score", 0.0)  # 검색 유사도
+        bonus = _grade_bonus(cand)  # 등급 가중
         final = base + bonus
         # 원본을 건드리지 않도록 복사해서 score만 최종값으로 교체
         item = dict(cand)
@@ -61,14 +61,30 @@ def rank(candidates: list[dict], top_k: int = MAX_RESULTS) -> list[dict]:
 # python -m app.pipeline.ranking
 if __name__ == "__main__":
     fake = [
-        {"product_id": 1, "name": "청년장인 다완", "score": 0.85,
-         "evidence": {"verified": "YOUNG_CRAFTSMAN"}},
-        {"product_id": 2, "name": "국가무형유산 다완", "score": 0.80,
-         "evidence": {"verified": "NATIONAL_INTANGIBLE_HERITAGE"}},
-        {"product_id": 3, "name": "명장 찻잔", "score": 0.78,
-         "evidence": {"verified": "MASTER_CRAFTSMAN"}},
-        {"product_id": 4, "name": "등급없는 접시", "score": 0.90,
-         "evidence": {"verified": None}},
+        {
+            "product_id": 1,
+            "name": "청년장인 다완",
+            "score": 0.85,
+            "evidence": {"verified": "YOUNG_CRAFTSMAN"},
+        },
+        {
+            "product_id": 2,
+            "name": "국가무형유산 다완",
+            "score": 0.80,
+            "evidence": {"verified": "NATIONAL_INTANGIBLE_HERITAGE"},
+        },
+        {
+            "product_id": 3,
+            "name": "명장 찻잔",
+            "score": 0.78,
+            "evidence": {"verified": "MASTER_CRAFTSMAN"},
+        },
+        {
+            "product_id": 4,
+            "name": "등급없는 접시",
+            "score": 0.90,
+            "evidence": {"verified": None},
+        },
     ]
     print("등급 가중 전 (유사도 순):")
     for c in sorted(fake, key=lambda x: x["score"], reverse=True):

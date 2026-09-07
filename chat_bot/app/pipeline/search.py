@@ -2,9 +2,9 @@
 ③ 하이브리드 검색 — 벡터 + BM25 + RRF + 하드필터 + gift_theme 부스팅.
 
 로드맵 진행:
-  [1단계] 순수 벡터 검색                     
-  [2단계] 하드 필터(price/color) + gift_theme 부스팅  
-  [3단계] BM25 + RRF 하이브리드              
+  [1단계] 순수 벡터 검색
+  [2단계] 하드 필터(price/color) + gift_theme 부스팅
+  [3단계] BM25 + RRF 하이브리드
 
 접점 1(intent → search) 입력 형식:
   {
@@ -98,7 +98,12 @@ def _rrf_fuse(vector_rows, bm25_rows):
             pid, name, _score, evidence, gift_theme = row
             entry = fused.setdefault(
                 pid,
-                {"name": name, "evidence": evidence, "gift_theme": gift_theme, "rrf": 0.0},
+                {
+                    "name": name,
+                    "evidence": evidence,
+                    "gift_theme": gift_theme,
+                    "rrf": 0.0,
+                },
             )
             entry["rrf"] += 1.0 / (RRF_K + rank_idx)
 
