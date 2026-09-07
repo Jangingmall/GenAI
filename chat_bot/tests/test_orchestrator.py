@@ -48,31 +48,9 @@ def test_run_assembles_final_contract():
 
     result = rr.run("찻잔 있나요", chat=chat, search_and_rank=search_and_rank)
 
-    assert set(result.keys()) == {"reply", "intent", "extracted", "products"}
+    assert set(result.keys()) == {"reply", "intent", "products"}
     assert result["intent"] == "product_search"
     assert result["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
-
-
-def test_run_extracted_is_contact1_filters():
-    chat = _sequenced_chat(
-        intent_payload={
-            "intent": "gift_recommendation",
-            "max_price": 300000,
-            "min_price": None,
-            "gift_theme": ["WEDDING"],
-            "color": [],
-            "query_text": "결혼 선물",
-        },
-        generate_payload={"reply": "ok", "products": []},
-    )
-    result = rr.run("결혼 선물로 뭐가 좋을까요", chat=chat, search_and_rank=_fake_search_and_rank([]))
-
-    assert result["extracted"] == {
-        "max_price": 300000,
-        "min_price": None,
-        "gift_theme": ["WEDDING"],
-        "color": None,
-    }
 
 
 def test_run_passes_contact1_to_search_and_rank():

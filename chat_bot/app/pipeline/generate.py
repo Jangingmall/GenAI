@@ -152,7 +152,7 @@ def build_reply(
 ) -> dict:
     """접점 2 후보 → {"reply": str, "products": [{"product_id", "reason"}]}.
 
-    intent·extracted는 최종 응답에서 오케스트레이터(S6)가 부착한다 — 여기서는 안 담는다.
+    intent는 최종 응답에서 오케스트레이터(S6)가 부착한다 — 여기서는 안 담는다.
     think 기본값 True: 종목 환각(예: 다른 카테고리 상품을 엉뚱한 종목으로 답함) 위험이 있어
     근거기반 생성은 사실 일치가 표현 다양성보다 중요하다. 모델 비교(S5)에서 thinking
     효과를 재보려는 게 아니면 기본값 그대로 둔다.

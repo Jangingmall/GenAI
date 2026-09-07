@@ -5,8 +5,7 @@
     app.run_recommend.recommend(접점1)     → 접점2 [{product_id, name, score, evidence}, ...] (A 담당)
     build_reply(message, 접점2, intent)    → {reply, products}
 
-intent·extracted는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
-extracted = 접점1의 filters(가격·gift_theme·color) — 사용자가 하드필터로 명확히 말한 조건만.
+intent는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
 """
 
 from __future__ import annotations
@@ -25,7 +24,7 @@ def run(
     chat=chat_json,
     search_and_rank=_recommend,
 ) -> dict:
-    """자연어 한 문장 → 최종 응답 계약 {reply, intent, extracted, products}.
+    """자연어 한 문장 → 최종 응답 계약 {reply, intent, products}.
 
     chat·search_and_rank는 테스트에서 가짜 함수로 갈아끼울 수 있게 인자로 받는다.
     search_and_rank 기본값(A의 실제 search+ranking)은 PostgreSQL·임베딩 모델이 필요하다.
@@ -36,7 +35,6 @@ def run(
     return {
         "reply": generated["reply"],
         "intent": contact1["intent"],
-        "extracted": contact1["filters"],
         "products": generated["products"],
     }
 
@@ -50,7 +48,6 @@ if __name__ == "__main__":
     print(f'질의: "{message}"\n')
     print("reply:", result["reply"])
     print("intent:", result["intent"])
-    print("extracted:", result["extracted"])
     print("products:")
     for p in result["products"]:
         print(f"  - {p['product_id']}: {p['reason']}")
