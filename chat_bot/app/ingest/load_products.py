@@ -1,6 +1,6 @@
 """미담 추천 카탈로그 데이터 적재 스크립트.
 
-CSV(또는 JSON) 파일로 받은 장인·상품 데이터를 읽어
+CSV 파일로 받은 장인·상품 데이터를 읽어
   1. 임베딩용 텍스트(embedding_text) / BM25용 형태소(search_text) / 근거(evidence) 조립
   2. BGE-M3로 임베딩 생성 (배치 1회)
   3. PostgreSQL products / artisans 테이블에 UPSERT (재실행 안전)
@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 import os
 import sys
 from collections import Counter
@@ -122,17 +121,9 @@ CREATE TABLE IF NOT EXISTS products (
 
 
 def read_source(path: str | Path) -> list[dict]:
-    """파일 확장자를 보고 CSV 또는 JSON으로 읽어 dict 리스트로 돌려준다.
-
-    JSON은 CSV와 같은 형태(상품마다 장인 정보가 붙은 평평한 행 목록)여야 한다.
-    """
+    """CSV 파일을 읽어 dict 리스트로 돌려준다."""
     path = Path(path)
     # utf-8-sig: Excel이 내보낸 CSV는 BOM이 붙어 첫 컬럼 키가 "﻿product_id"가 되는 일이 흔하다.
-    if path.suffix.lower() == ".json":
-        data = json.loads(path.read_text(encoding="utf-8-sig"))
-        if not isinstance(data, list):
-            raise ValueError("JSON 입력은 행(dict) 목록이어야 합니다")
-        return data
     with path.open(encoding="utf-8-sig", newline="") as f:
         return list(csv.DictReader(f))
 
@@ -481,9 +472,9 @@ def upsert_all(conn, artisans: list[dict], product_rows: list[dict]) -> tuple[in
 
 def _parse_args(argv):
     parser = argparse.ArgumentParser(description="미담 추천 카탈로그 데이터 적재")
-    parser.add_argument("--file", required=True, help="적재할 상품 CSV/JSON 경로")
+    parser.add_argument("--file", required=True, help="적재할 상품 CSV 경로")
     parser.add_argument(
-        "--artisan-file", required=True, help="적재할 장인 CSV/JSON 경로 (상품과 별도 파일)"
+        "--artisan-file", required=True, help="적재할 장인 CSV 경로 (상품과 별도 파일)"
     )
     parser.add_argument(
         "--dry-run",

@@ -12,7 +12,6 @@
 import re
 
 from app.ingest import load_products as lp
-import pytest
 
 # ---------------------------------------------------------------------------
 # to_records — PRODUCT_COLUMN_MAP/ARTISAN_COLUMN_MAP 적용 + 타입 캐스팅
@@ -483,7 +482,7 @@ def test_artisan_upsert_set_clause_excludes_pk():
 
 
 # ---------------------------------------------------------------------------
-# read_source — CSV/JSON 분기, BOM, 잘못된 JSON
+# read_source — CSV 읽기, BOM 처리
 # ---------------------------------------------------------------------------
 
 
@@ -497,16 +496,3 @@ def test_read_source_strips_utf8_bom(tmp_path):
     path = tmp_path / "x.csv"
     path.write_bytes("product_id,name\n1,보석함\n".encode("utf-8-sig"))
     assert "product_id" in lp.read_source(path)[0]  # BOM이 키에 안 붙어야 한다
-
-
-def test_read_source_reads_json_list(tmp_path):
-    path = tmp_path / "x.json"
-    path.write_text('[{"a": 1}]', encoding="utf-8")
-    assert lp.read_source(path) == [{"a": 1}]
-
-
-def test_read_source_rejects_non_list_json(tmp_path):
-    path = tmp_path / "x.json"
-    path.write_text('{"a": 1}', encoding="utf-8")
-    with pytest.raises(ValueError):
-        lp.read_source(path)
