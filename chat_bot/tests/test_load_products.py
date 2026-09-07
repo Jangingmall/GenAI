@@ -1,104 +1,127 @@
 """load_products.py 순수 함수 단위 테스트. DB·임베딩 모델은 쓰지 않는다.
 
-실행: python -m pytest test_load_products.py -q
+확정 스키마 기준:
+  artisans: artisan_id, business_name, certification_level, region
+  products: product_id, artisan_id, name, category_code, subcategory_code, material,
+            price, gift_theme[], purpose_tags[], color, making_story, usage_care, status
+상품·장인이 파일로 분리된 정규화 구조라 to_records가 두 원본을 따로 받는다.
+
+실행: python -m pytest tests/test_load_products.py -q
 """
 
 import re
 
-import pytest
-
 from app.ingest import load_products as lp
 
 # ---------------------------------------------------------------------------
-# to_records — COLUMN_MAP 적용 + 타입 캐스팅 + 장인/상품 분리
+# to_records — PRODUCT_COLUMN_MAP/ARTISAN_COLUMN_MAP 적용 + 타입 캐스팅
 # ---------------------------------------------------------------------------
 
 
-def _raw_row(**over):
+def _raw_product_row(**over):
     row = {
         "product_id": "101",
-        "title": "자개 보석함",
-        "category": "목공예",
-        "material": "옻칠 오동나무",
+        "artisan_id": "2001",
+        "name": "자개 보석함",
+        "category_code": "NACRE",
+        "subcategory_code": "보석함",
+        "material": "자개",
         "price": "320000",
         "gift_theme": "BIRTHDAY_60TH",
-        "purpose_tags": "선물;다도",
+        "purpose_tags": "선물|다도",
         "color": "BROWN",
+        "status": "ON_SALE",
         "making_story": "오동나무를 삼 년 말렸습니다.",
         "usage_care": "마른 천으로 닦으세요.",
-        "production_period_days": "90",
+    }
+    row.update(over)
+    return row
+
+
+def _raw_artisan_row(**over):
+    row = {
         "artisan_id": "2001",
-        "artisan_name": "나전칠기장 김서영",
-        "certification_level": "보유자",
-        "artisan_introduction": "나전장입니다.",
+        "business_name": "나전칠기장 김서영",
+        "certification_level": "MASTER_CRAFTSMAN",
+        "region": "통영",
     }
     row.update(over)
     return row
 
 
 def test_to_records_casts_price_to_int():
-    _artisans, products = lp.to_records([_raw_row()])
+    _artisans, products = lp.to_records([_raw_product_row()], [_raw_artisan_row()])
     assert products[0]["price"] == 320000
     assert isinstance(products[0]["price"], int)
 
 
 def test_to_records_splits_array_fields():
     _, products = lp.to_records(
-        [_raw_row(gift_theme="BIRTHDAY_60TH", purpose_tags="선물;다도", color="BROWN")]
+        [_raw_product_row(gift_theme="BIRTHDAY_60TH", purpose_tags="선물|다도")],
+        [_raw_artisan_row()],
     )
     assert products[0]["gift_theme"] == ["BIRTHDAY_60TH"]
     assert products[0]["purpose_tags"] == ["선물", "다도"]
-    assert products[0]["color"] == ["BROWN"]
+
+
+def test_to_records_color_is_scalar_not_array():
+    # 확정 스키마: color는 배열이 아니라 스칼라(실데이터 실측: 상품 1건당 항상 단일값)
+    _, products = lp.to_records([_raw_product_row(color="BROWN")], [_raw_artisan_row()])
+    assert products[0]["color"] == "BROWN"
 
 
 def test_to_records_empty_array_field_is_empty_list():
-    _, products = lp.to_records([_raw_row(purpose_tags="")])
+    _, products = lp.to_records([_raw_product_row(purpose_tags="")], [_raw_artisan_row()])
     assert products[0]["purpose_tags"] == []
 
 
-def test_to_records_applies_column_map():
-    # artisan_name → name, artisan_introduction → introduction 매핑이 적용돼야 한다
-    artisans, _products = lp.to_records([_raw_row()])
-    assert artisans[0]["name"] == "나전칠기장 김서영"
-    assert artisans[0]["introduction"] == "나전장입니다."
+def test_to_records_keeps_field_names_as_is():
+    # 확정 스키마는 컬럼명이 실데이터와 같아 COLUMN_MAP이 비어 있다.
+    artisans, products = lp.to_records([_raw_product_row()], [_raw_artisan_row()])
+    assert products[0]["name"] == "자개 보석함"
+    assert products[0]["category_code"] == "NACRE"
+    assert products[0]["subcategory_code"] == "보석함"
+    assert artisans[0]["business_name"] == "나전칠기장 김서영"
+    assert artisans[0]["region"] == "통영"
 
 
 def test_to_records_dedups_artisans_by_id():
-    rows = [
-        _raw_row(product_id="101"),
-        _raw_row(product_id="102"),
-    ]  # 같은 artisan_id 2001
-    artisans, products = lp.to_records(rows)
+    artisans, products = lp.to_records(
+        [_raw_product_row(product_id="101"), _raw_product_row(product_id="102")],
+        [_raw_artisan_row(), _raw_artisan_row()],  # 같은 artisan_id 2001 두 번
+    )
     assert len(artisans) == 1
     assert len(products) == 2
 
 
 def test_to_records_casts_ids_to_int():
-    artisans, products = lp.to_records([_raw_row()])
+    artisans, products = lp.to_records([_raw_product_row()], [_raw_artisan_row()])
     assert products[0]["product_id"] == 101
     assert products[0]["artisan_id"] == 2001
     assert artisans[0]["artisan_id"] == 2001
 
 
 def test_to_records_blank_optional_number_is_none():
-    _, products = lp.to_records([_raw_row(production_period_days="")])
-    assert products[0]["production_period_days"] is None
+    _, products = lp.to_records([_raw_product_row(price="")], [_raw_artisan_row()])
+    assert products[0]["price"] is None
 
 
 def test_to_records_keeps_unparseable_int_as_string():
     # validate가 잡을 수 있도록 raise하지 않고 원본을 남긴다
-    _, products = lp.to_records([_raw_row(price="32만원")])
+    _, products = lp.to_records([_raw_product_row(price="32만원")], [_raw_artisan_row()])
     assert products[0]["price"] == "32만원"
 
 
 def test_to_records_strips_text_fields():
-    _, products = lp.to_records([_raw_row(title="  자개 보석함  ")])
-    assert products[0]["title"] == "자개 보석함"
+    _, products = lp.to_records([_raw_product_row(name="  자개 보석함  ")], [_raw_artisan_row()])
+    assert products[0]["name"] == "자개 보석함"
 
 
 def test_to_records_strips_certification_level():
-    artisans, _products = lp.to_records([_raw_row(certification_level="보유자 ")])
-    assert artisans[0]["certification_level"] == "보유자"
+    artisans, _products = lp.to_records(
+        [_raw_product_row()], [_raw_artisan_row(certification_level="MASTER_CRAFTSMAN ")]
+    )
+    assert artisans[0]["certification_level"] == "MASTER_CRAFTSMAN"
 
 
 # ---------------------------------------------------------------------------
@@ -109,9 +132,9 @@ def test_to_records_strips_certification_level():
 def _art(**over):
     a = {
         "artisan_id": 2001,
-        "name": "김서영",
-        "certification_level": "보유자",
-        "introduction": "",
+        "business_name": "김서영",
+        "certification_level": "MASTER_CRAFTSMAN",
+        "region": "통영",
     }
     a.update(over)
     return a
@@ -121,11 +144,13 @@ def _prod(**over):
     p = {
         "product_id": 101,
         "artisan_id": 2001,
-        "title": "보석함",
+        "name": "보석함",
+        "category_code": "NACRE",
         "price": 1000,
         "gift_theme": [],
         "purpose_tags": [],
-        "color": [],
+        "color": "BROWN",
+        "status": "ON_SALE",
         "making_story": "",
         "usage_care": "",
     }
@@ -152,9 +177,9 @@ def test_validate_detects_duplicate_artisan_id():
     assert any("2001" in e for e in errs)
 
 
-def test_validate_detects_missing_title():
-    errs = lp.validate([_art()], [_prod(title="")])
-    assert any("title" in e.lower() for e in errs)
+def test_validate_detects_missing_name():
+    errs = lp.validate([_art()], [_prod(name="")])
+    assert any("name" in e.lower() for e in errs)
 
 
 def test_validate_detects_negative_price():
@@ -176,14 +201,9 @@ def test_validate_detects_missing_product_id():
     assert any("product_id" in e.lower() for e in errs)
 
 
-def test_validate_detects_missing_artisan_name():
-    errs = lp.validate([_art(name="")], [_prod()])
-    assert any("name" in e.lower() for e in errs)
-
-
-def test_validate_detects_negative_production_period():
-    errs = lp.validate([_art()], [_prod(production_period_days=-3)])
-    assert any("production_period_days" in e for e in errs)
+def test_validate_detects_missing_artisan_business_name():
+    errs = lp.validate([_art(business_name="")], [_prod()])
+    assert any("business_name" in e.lower() for e in errs)
 
 
 def test_validate_detects_non_integer_price():
@@ -199,40 +219,48 @@ def test_unknown_certification_is_soft_warning():
     assert warnings and all("명장" in w for w in warnings)
 
 
-def test_missing_title_is_hard_error_not_warning():
-    errs = lp.validate([_art()], [_prod(title="")])
-    assert any("title" in e.lower() and not e.endswith("(경고)") for e in errs)
+def test_missing_name_is_hard_error_not_warning():
+    errs = lp.validate([_art()], [_prod(name="")])
+    assert any("name" in e.lower() and not e.endswith("(경고)") for e in errs)
 
 
 # ---------------------------------------------------------------------------
-# build_embedding_text — 명세 순서로 이어붙이기
+# build_embedding_text — name+카테고리(한글)+품목+재질+... 순으로 이어붙이기
 # ---------------------------------------------------------------------------
 
 
-def test_embedding_text_follows_spec_order():
+def test_embedding_text_follows_order():
     product = {
-        "title": "보석함",
+        "name": "보석함",
+        "category_code": "NACRE",
+        "subcategory_code": "보석함",
         "material": "오동나무",
         "making_story": "삼 년 말렸다",
         "usage_care": "마른 천",
     }
     text = lp.build_embedding_text(product, "나전장입니다")
-    assert text == "보석함 오동나무 삼 년 말렸다 마른 천 나전장입니다"
+    assert text == "보석함 나전칠기 보석함 오동나무 삼 년 말렸다 마른 천 나전장입니다"
+
+
+def test_embedding_text_translates_category_code_to_korean():
+    for code, ko in lp.CATEGORY_KO.items():
+        product = {"name": "N", "category_code": code}
+        assert ko in lp.build_embedding_text(product, None)
+
+
+def test_embedding_text_unknown_category_code_kept_as_is():
+    product = {"name": "N", "category_code": "UNKNOWN_CODE"}
+    assert "UNKNOWN_CODE" in lp.build_embedding_text(product, None)
 
 
 def test_embedding_text_skips_blank_and_none():
-    product = {
-        "title": "보석함",
-        "material": "",
-        "making_story": None,
-        "usage_care": "마른 천",
-    }
+    product = {"name": "보석함", "material": "", "making_story": None, "usage_care": "마른 천"}
     text = lp.build_embedding_text(product, None)
     assert text == "보석함 마른 천"
 
 
-def test_embedding_text_title_only():
-    assert lp.build_embedding_text({"title": "보석함"}, None) == "보석함"
+def test_embedding_text_name_only():
+    assert lp.build_embedding_text({"name": "보석함"}, None) == "보석함"
 
 
 # ---------------------------------------------------------------------------
@@ -270,24 +298,22 @@ def test_tokenize_ko_deterministic():
 
 
 def test_evidence_has_exactly_three_keys():
-    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "보유자")
+    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "MASTER_CRAFTSMAN")
     assert set(ev.keys()) == {"artisan_input", "verified", "ai_inference"}
 
 
 def test_evidence_ai_inference_always_none():
-    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "보유자")
+    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "MASTER_CRAFTSMAN")
     assert ev["ai_inference"] is None
 
 
 def test_evidence_verified_is_certification_level():
-    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "이수자")
-    assert ev["verified"] == "이수자"
+    ev = lp.build_evidence({"making_story": "a", "usage_care": "b"}, "YOUNG_CRAFTSMAN")
+    assert ev["verified"] == "YOUNG_CRAFTSMAN"
 
 
 def test_evidence_artisan_input_is_raw_concat():
-    ev = lp.build_evidence(
-        {"making_story": "삼 년 말렸다", "usage_care": "마른 천"}, None
-    )
+    ev = lp.build_evidence({"making_story": "삼 년 말렸다", "usage_care": "마른 천"}, None)
     assert ev["artisan_input"] == "삼 년 말렸다 마른 천"
 
 
@@ -297,25 +323,20 @@ def test_evidence_artisan_input_is_raw_concat():
 
 
 def test_build_rows_attaches_derived_fields():
-    artisans = [_art(artisan_id=2001, introduction="나전장입니다")]
+    artisans = [_art(artisan_id=2001)]
     products = [
         _prod(
             product_id=101,
             artisan_id=2001,
-            title="보석함",
+            name="보석함",
             making_story="삼 년 말렸다",
             usage_care="마른 천",
         )
     ]
     rows = lp.build_rows(artisans, products)
     assert rows[0]["embedding_text"].startswith("보석함")
-    assert "나전장입니다" in rows[0]["embedding_text"]
     assert isinstance(rows[0]["search_text"], str)
-    assert set(rows[0]["evidence"].keys()) == {
-        "artisan_input",
-        "verified",
-        "ai_inference",
-    }
+    assert set(rows[0]["evidence"].keys()) == {"artisan_input", "verified", "ai_inference"}
 
 
 def test_build_rows_does_not_embed():
@@ -347,14 +368,23 @@ def test_attach_embeddings_calls_embed_once():
     assert len(calls[0]) == 2
 
 
-def test_attach_embeddings_fills_embedding_and_model():
+def test_attach_embeddings_fills_embedding():
     def fake_embed(texts, model_name=None):
         return [[0.1] * 1024 for _ in texts]
 
     rows = lp.build_rows([_art()], [_prod()])
     lp.attach_embeddings(rows, embed_fn=fake_embed)
     assert len(rows[0]["embedding"]) == 1024
-    assert rows[0]["embedding_model"] == lp.DEFAULT_EMBEDDING_MODEL
+
+
+def test_attach_embeddings_does_not_persist_model_on_row():
+    # embedding_model은 확정 스키마에 없어 row에도 컬럼에도 남기지 않는다.
+    def fake_embed(texts, model_name=None):
+        return [[0.1] * 1024 for _ in texts]
+
+    rows = lp.build_rows([_art()], [_prod()])
+    lp.attach_embeddings(rows, embed_fn=fake_embed)
+    assert "embedding_model" not in rows[0]
 
 
 # ---------------------------------------------------------------------------
@@ -401,56 +431,56 @@ def test_product_params_wraps_evidence_in_json():
 
 def test_product_columns_and_params_align_by_name():
     # 필드마다 다른 표식 값을 넣고 컬럼명↔값 대응을 확인한다.
-    # 개수만 보는 테스트는 category↔material 순서 뒤바뀜을 못 잡는다.
+    # 개수만 보는 테스트는 category_code↔material 순서 뒤바뀜을 못 잡는다.
     row = {
         "product_id": 1,
         "artisan_id": 2,
-        "title": "T",
-        "category": "C",
+        "name": "N",
+        "category_code": "C",
+        "subcategory_code": "SC",
         "material": "M",
         "price": 3,
         "gift_theme": ["G"],
         "purpose_tags": ["PT"],
-        "color": ["CL"],
+        "color": "CL",
         "making_story": "S",
         "usage_care": "U",
-        "production_period_days": 4,
+        "status": "ON_SALE",
         "embedding_text": "ET",
         "embedding": [0.0],
-        "embedding_model": "MODEL",
         "search_text": "ST",
         "evidence": {"artisan_input": "", "verified": None, "ai_inference": None},
     }
     paired = dict(zip(lp._product_columns(), lp._product_params(row)))
     assert paired["product_id"] == 1
     assert paired["artisan_id"] == 2
-    assert paired["title"] == "T"
-    assert paired["category"] == "C"
+    assert paired["name"] == "N"
+    assert paired["category_code"] == "C"
+    assert paired["subcategory_code"] == "SC"
     assert paired["material"] == "M"
     assert paired["price"] == 3
     assert paired["gift_theme"] == ["G"]
     assert paired["purpose_tags"] == ["PT"]
-    assert paired["color"] == ["CL"]
+    assert paired["color"] == "CL"
+    assert paired["status"] == "ON_SALE"
     assert paired["making_story"] == "S"
     assert paired["usage_care"] == "U"
-    assert paired["production_period_days"] == 4
     assert paired["embedding_text"] == "ET"
-    assert paired["embedding_model"] == "MODEL"
     assert paired["search_text"] == "ST"
 
 
 def test_artisan_columns_and_params_align_by_name():
     a = {
         "artisan_id": 9,
-        "name": "N",
-        "certification_level": "보유자",
-        "introduction": "I",
+        "business_name": "N",
+        "certification_level": "MASTER_CRAFTSMAN",
+        "region": "이천",
     }
     paired = dict(zip(lp._artisan_columns(), lp._artisan_params(a)))
     assert paired["artisan_id"] == 9
-    assert paired["name"] == "N"
-    assert paired["certification_level"] == "보유자"
-    assert paired["introduction"] == "I"
+    assert paired["business_name"] == "N"
+    assert paired["certification_level"] == "MASTER_CRAFTSMAN"
+    assert paired["region"] == "이천"
 
 
 def test_product_upsert_set_clause_updates_non_pk_columns():
@@ -464,12 +494,12 @@ def test_product_upsert_set_clause_updates_non_pk_columns():
 
 def test_artisan_upsert_set_clause_excludes_pk():
     set_part = lp.ARTISAN_UPSERT_SQL.lower().split("do update set", 1)[1]
-    assert "name = excluded.name" in set_part
+    assert "business_name = excluded.business_name" in set_part
     assert "artisan_id = excluded.artisan_id" not in set_part
 
 
 # ---------------------------------------------------------------------------
-# read_source — CSV/JSON 분기, BOM, 잘못된 JSON
+# read_source — CSV 읽기, BOM 처리
 # ---------------------------------------------------------------------------
 
 
@@ -481,18 +511,5 @@ def test_read_source_reads_csv(tmp_path):
 
 def test_read_source_strips_utf8_bom(tmp_path):
     path = tmp_path / "x.csv"
-    path.write_bytes("product_id,title\n1,보석함\n".encode("utf-8-sig"))
+    path.write_bytes("product_id,name\n1,보석함\n".encode("utf-8-sig"))
     assert "product_id" in lp.read_source(path)[0]  # BOM이 키에 안 붙어야 한다
-
-
-def test_read_source_reads_json_list(tmp_path):
-    path = tmp_path / "x.json"
-    path.write_text('[{"a": 1}]', encoding="utf-8")
-    assert lp.read_source(path) == [{"a": 1}]
-
-
-def test_read_source_rejects_non_list_json(tmp_path):
-    path = tmp_path / "x.json"
-    path.write_text('{"a": 1}', encoding="utf-8")
-    with pytest.raises(ValueError):
-        lp.read_source(path)
