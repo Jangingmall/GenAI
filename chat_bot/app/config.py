@@ -39,9 +39,9 @@ class Settings:
     DB_USER = os.environ.get("DB_USER", "User")
     DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
 
-    # --- Ollama (Qwen3) ---
+    # --- Ollama ---
     OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-    LLM_MODEL = os.environ.get("LLM_MODEL", "qwen3:8b")
+    LLM_MODEL = os.environ.get("LLM_MODEL", "gemma2:9b")
 
     # --- 임베딩 ---
     EMBED_MODEL = os.environ.get("EMBED_MODEL", "BAAI/bge-m3")
