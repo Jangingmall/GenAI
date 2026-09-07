@@ -9,9 +9,17 @@ CSV(또는 JSON) 파일로 받은 장인·상품 데이터를 읽어
 파이프라인(검색·생성)은 아직 없으므로 이 파일 하나에 전부 담는다.
 나중에 파이프라인이 임베딩·토크나이저·조립 규칙을 공유하게 되면 그때 분리한다.
 
-실행:
-    python load_products.py --file sample_products.csv            # 스키마 생성 + 적재
-    python load_products.py --file sample_products.csv --dry-run  # DB·모델 없이 조립까지만
+확정 스키마 — 실데이터(장인몰_샘플_*.csv) 필드명에 맞춰 조정:
+  - artisans: artisan_id, business_name, certification_level, region
+    (introduction·career_years는 샘플에 없거나 스키마에서 빠짐)
+  - products: product_id, artisan_id, name, category_code, subcategory_code, material,
+    price, gift_theme[], purpose_tags[], color, making_story, usage_care, status,
+    embedding_text, embedding, search_text, evidence
+    (이전 스키마 대비 status·subcategory_code 추가, production_period_days 제거)
+
+실행 (상품·장인이 별도 파일 — 정규화된 구조):
+    python load_products.py --file 장인몰_샘플_product.csv --artisan-file 장인몰_샘플_artisan.csv
+    python load_products.py --file 장인몰_샘플_product.csv --artisan-file 장인몰_샘플_artisan.csv --dry-run
 """
 
 from __future__ import annotations
@@ -33,26 +41,34 @@ DEFAULT_EMBEDDING_MODEL = "BAAI/bge-m3"
 # N*(명사) V*(용언) MM(관형사) MAG(일반부사) SL(외국어) SN(숫자) — 조사·어미·기호는 버린다.
 CONTENT_TAG_PREFIXES = ("N", "V", "MM", "MAG", "SL", "SN")
 
-# 백엔드 CSV 컬럼명 → 우리 필드명. 백엔드 CSV 형식이 확정되면 이 dict를 통째로 교체한다.
-# 지금 값은 sample_products.csv 용 예시 매핑이다(나머지 컬럼은 이름이 같아 매핑 불필요).
-COLUMN_MAP: dict[str, str] = {
-    "artisan_name": "name",
-    "artisan_introduction": "introduction",
-}
+# 백엔드 product.csv / artisan.csv 컬럼명 → 우리 필드명. 확정 스키마는
+# 필드명을 실데이터 컬럼명과 그대로 맞췄기 때문에(§ 위 docstring) 지금은 비어 있다 —
+# 나중에 백엔드가 컬럼명을 또 바꾸면 여기만 고치면 된다.
+PRODUCT_COLUMN_MAP: dict[str, str] = {}
+ARTISAN_COLUMN_MAP: dict[str, str] = {}
 
-# certification_level 코드값 (AI파트 API 명세서 확정). 이 밖의 값은 경고만 하고 통과시킨다.
-CERTIFICATION_LEVELS = ("보유자", "전승교육사", "이수자", "일반")
+# certification_level 코드값 (실데이터 artisan.csv 실측 4종). 이 밖의 값은 경고만 하고 통과시킨다.
+CERTIFICATION_LEVELS = (
+    "YOUNG_CRAFTSMAN",
+    "SENIOR_CRAFTSMAN",
+    "MASTER_CRAFTSMAN",
+    "NATIONAL_INTANGIBLE_HERITAGE",
+)
 
-# CSV의 배열 컬럼(gift_theme·purpose_tags·color) 원소를 구분하는 문자. 백엔드와 최종 합의 필요.
-LIST_SEPARATOR = ";"
+# purpose_tags 원소를 구분하는 문자. 실데이터 실측: "인테리어|선물"처럼 "|" 사용.
+# gift_theme은 실데이터에서 상품 1건당 항상 단일값이라 이 구분자를 만날 일이 없다.
+# color는 확정 스키마에서 배열이 아니라 스칼라라 ARRAY_FIELDS에 넣지 않는다.
+LIST_SEPARATOR = "|"
 
-# 원본에서 뽑아낼 필드. 나머지 컬럼은 무시한다. (명세서 §4-2 요청 예시 기준)
-ARTISAN_FIELDS = ("artisan_id", "name", "certification_level", "introduction")
+# 원본에서 뽑아낼 필드. 나머지 컬럼은 무시한다. 확정 스키마 기준
+# (introduction·career_years·stock은 스키마에 없어 뺐다 — 필요해지면 팀과 다시 논의).
+ARTISAN_FIELDS = ("artisan_id", "business_name", "certification_level", "region")
 PRODUCT_FIELDS = (
     "product_id",
     "artisan_id",
-    "title",
-    "category",
+    "name",
+    "category_code",
+    "subcategory_code",
     "material",
     "price",
     "gift_theme",
@@ -60,40 +76,40 @@ PRODUCT_FIELDS = (
     "color",
     "making_story",
     "usage_care",
-    "production_period_days",
+    "status",
 )
-INT_FIELDS = ("product_id", "artisan_id", "price", "production_period_days")
-ARRAY_FIELDS = ("gift_theme", "purpose_tags", "color")
+INT_FIELDS = ("product_id", "artisan_id", "price")
+ARRAY_FIELDS = ("gift_theme", "purpose_tags")
 
 # 스키마. 스크립트 실행 시 자동 적용된다(별도 .sql 파일·psql -f 단계 없음).
-# 결정 대기: (1) 재고 컬럼 부재 — 안전성 명세는 "재고 없음 상품 제외"를 요구하나 스키마에 필드 없음.
-#           (2) category enum 미확정 — 적재는 원문 그대로 저장.
+# category enum은 여전히 미확정이라 적재는 원문 그대로 저장한다.
+# stock(재고)은 확정 스키마에 없어 컬럼을 만들지 않는다 — 필요해지면 팀과 다시 논의.
 SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS artisans (
     artisan_id          BIGINT PRIMARY KEY,
-    name                TEXT NOT NULL,
+    business_name       TEXT NOT NULL,
     certification_level TEXT,
-    introduction        TEXT
+    region              TEXT
 );
 
 CREATE TABLE IF NOT EXISTS products (
     product_id             BIGINT PRIMARY KEY,
     artisan_id             BIGINT REFERENCES artisans(artisan_id),
-    title                  TEXT NOT NULL,
-    category               TEXT,
+    name                   TEXT NOT NULL,
+    category_code          TEXT,
+    subcategory_code       TEXT,
     material               TEXT,
     price                  INTEGER,
     gift_theme             TEXT[],
     purpose_tags           TEXT[],
-    color                  TEXT[],
+    color                  TEXT,
     making_story           TEXT,
     usage_care             TEXT,
-    production_period_days  INTEGER,
+    status                 TEXT,
     embedding_text         TEXT,
     embedding              vector(1024),
-    embedding_model        TEXT,
     search_text            TEXT,
     evidence               JSONB
 );
@@ -145,17 +161,31 @@ def _cast_list(value) -> list[str]:
     return [part.strip() for part in str(value).split(LIST_SEPARATOR) if part.strip()]
 
 
-def to_records(raw: list[dict]) -> tuple[list[dict], list[dict]]:
-    """원본 행에 COLUMN_MAP을 적용하고 타입을 맞춘 뒤 (artisan_rows, product_rows)로 나눈다.
+def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[dict], list[dict]]:
+    """product.csv/artisan.csv 원본 행에 각각 컬럼맵을 적용하고 타입을 맞춰
+    (artisan_rows, product_rows)로 돌려준다.
 
-    입력은 상품마다 장인 정보가 붙은 평평한(denormalized) 행 목록이다.
-    같은 artisan_id가 여러 상품에 나오면 장인은 첫 등장만 남긴다.
+    실데이터는 상품·장인이 파일로 분리된 정규화(normalized) 구조라, 예전처럼 한 행에서
+    장인 정보를 뽑아내지 않고 두 원본을 따로 받는다. artisan_id로 연결은 build_rows가 한다.
     """
     artisans_by_id: dict[int, dict] = {}
-    products: list[dict] = []
-    for source_row in raw:
-        row = {COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+    for source_row in artisan_raw:
+        row = {ARTISAN_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+        artisan = {}
+        for field in ARTISAN_FIELDS:
+            value = row.get(field)
+            if field == "artisan_id":
+                value = _cast_int(value)
+            elif isinstance(value, str):
+                value = value.strip() or None
+            artisan[field] = value
+        aid = artisan["artisan_id"]
+        if aid is not None and aid not in artisans_by_id:
+            artisans_by_id[aid] = artisan
 
+    products: list[dict] = []
+    for source_row in product_raw:
+        row = {PRODUCT_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
         product = {}
         for field in PRODUCT_FIELDS:
             value = row.get(field)
@@ -169,18 +199,6 @@ def to_records(raw: list[dict]) -> tuple[list[dict], list[dict]]:
                 )  # 꼬리 공백이 등급 매칭·evidence를 오염시킨다
             product[field] = value
         products.append(product)
-
-        artisan = {}
-        for field in ARTISAN_FIELDS:
-            value = row.get(field)
-            if field == "artisan_id":
-                value = _cast_int(value)
-            elif isinstance(value, str):
-                value = value.strip() or None
-            artisan[field] = value
-        aid = artisan["artisan_id"]
-        if aid is not None and aid not in artisans_by_id:
-            artisans_by_id[aid] = artisan
 
     return list(artisans_by_id.values()), products
 
@@ -205,7 +223,7 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
         if pid is None:
             errors.append("product_id 누락")
         # _cast_int가 파싱 실패 시 원본 문자열을 남겨 두므로 여기서 정수인지 확인한다.
-        for field in ("product_id", "artisan_id", "price", "production_period_days"):
+        for field in ("product_id", "artisan_id", "price"):
             value = product.get(field)
             if value is not None and not isinstance(value, int):
                 errors.append(f"product {pid}: {field} 값이 정수가 아님 ('{value}')")
@@ -213,17 +231,16 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
             errors.append(
                 f"product {pid}: 존재하지 않는 artisan_id {product.get('artisan_id')}"
             )
-        if not (product.get("title") or "").strip():
-            errors.append(f"product {pid}: title 누락")
-        for field in ("price", "production_period_days"):
-            value = product.get(field)
-            if isinstance(value, int) and value < 0:
-                errors.append(f"product {pid}: {field} 음수 ({value})")
+        if not (product.get("name") or "").strip():
+            errors.append(f"product {pid}: name 누락")
+        value = product.get("price")
+        if isinstance(value, int) and value < 0:
+            errors.append(f"product {pid}: price 음수 ({value})")
 
     for artisan in artisans:
         aid = artisan.get("artisan_id")
-        if not (artisan.get("name") or "").strip():
-            errors.append(f"artisan {aid}: name 누락")
+        if not (artisan.get("business_name") or "").strip():
+            errors.append(f"artisan {aid}: business_name 누락")
         if aid is not None and not isinstance(aid, int):
             errors.append(f"artisan: artisan_id 값이 정수가 아님 ('{aid}')")
         cert = artisan.get("certification_level")
@@ -243,10 +260,14 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
 def build_embedding_text(product: dict, artisan_intro: str | None) -> str:
     """임베딩할 텍스트를 명세 순서대로 이어붙인다.
 
-    title + material + making_story + usage_care + 장인 introduction, 빈 값은 건너뛰고 " "로 join.
+    name(상품명) + material + making_story + usage_care + 장인 introduction, 빈 값은
+    건너뛰고 " "로 join. 확정 스키마엔 artisan introduction이 없어(§ 위
+    docstring) 호출부(build_rows)가 항상 None을 넘긴다 — 이 공식 자체(어떤 필드를 넣을지)는
+    임베딩·검색을 담당하는 A의 몫이라 여기서 임의로 바꾸지 않는다. 인자는 나중에 소개글이
+    추가될 경우를 대비해 그대로 둔다.
     """
     parts = [
-        product.get("title"),
+        product.get("name"),
         product.get("material"),
         product.get("making_story"),
         product.get("usage_care"),
@@ -303,13 +324,13 @@ def build_evidence(product: dict, cert: str | None) -> dict:
 
 def build_rows(artisans: list[dict], products: list[dict]) -> list[dict]:
     """각 product_row에 embedding_text / search_text / evidence를 붙인다. 임베딩은 아직 안 한다."""
-    intro_by_id = {a.get("artisan_id"): a.get("introduction") for a in artisans}
     cert_by_id = {a.get("artisan_id"): a.get("certification_level") for a in artisans}
     rows = []
     for product in products:
         aid = product.get("artisan_id")
         row = dict(product)
-        row["embedding_text"] = build_embedding_text(product, intro_by_id.get(aid))
+        # artisan에 introduction이 없어(확정 스키마) 항상 None을 넘긴다.
+        row["embedding_text"] = build_embedding_text(product, None)
         row["search_text"] = build_search_text(row["embedding_text"])
         row["evidence"] = build_evidence(product, cert_by_id.get(aid))
         rows.append(row)
@@ -339,14 +360,17 @@ def embed(texts: list[str], model_name: str | None = None) -> list:
 
 
 def attach_embeddings(rows: list[dict], *, embed_fn=embed) -> None:
-    """rows의 embedding_text를 한 번에 임베딩해서 각 row에 embedding / embedding_model을 채운다.
-    embed_fn은 테스트에서 가짜 함수로 갈아끼울 수 있게 인자로 받는다."""
+    """rows의 embedding_text를 한 번에 임베딩해서 각 row에 embedding을 채운다.
+
+    embedding_model은 확정 스키마에 없어 DB에 저장하지 않는다
+    (어떤 모델로 만들었는지는 이제 코드의 DEFAULT_EMBEDDING_MODEL/EMBEDDING_MODEL
+    환경변수로만 추적한다). embed_fn은 테스트에서 가짜 함수로 갈아끼울 수 있게 인자로 받는다.
+    """
     model_name = os.environ.get("EMBEDDING_MODEL", DEFAULT_EMBEDDING_MODEL)
     vectors = embed_fn([row["embedding_text"] for row in rows], model_name=model_name)
     # strict=True: 모델이 rows와 다른 개수를 돌려주면 조용히 잘려 NULL 벡터로 적재되는 걸 막는다.
     for row, vector in zip(rows, vectors, strict=True):
         row["embedding"] = vector
-        row["embedding_model"] = model_name
 
 
 # ---------------------------------------------------------------------------
@@ -355,15 +379,16 @@ def attach_embeddings(rows: list[dict], *, embed_fn=embed) -> None:
 
 
 def _artisan_columns() -> tuple[str, ...]:
-    return ("artisan_id", "name", "certification_level", "introduction")
+    return ("artisan_id", "business_name", "certification_level", "region")
 
 
 def _product_columns() -> tuple[str, ...]:
     return (
         "product_id",
         "artisan_id",
-        "title",
-        "category",
+        "name",
+        "category_code",
+        "subcategory_code",
         "material",
         "price",
         "gift_theme",
@@ -371,10 +396,9 @@ def _product_columns() -> tuple[str, ...]:
         "color",
         "making_story",
         "usage_care",
-        "production_period_days",
+        "status",
         "embedding_text",
         "embedding",
-        "embedding_model",
         "search_text",
         "evidence",
     )
@@ -400,9 +424,9 @@ PRODUCT_UPSERT_SQL = _upsert_sql("products", _product_columns(), "product_id")
 def _artisan_params(artisan: dict) -> tuple:
     return (
         artisan["artisan_id"],
-        artisan.get("name"),
+        artisan.get("business_name"),
         artisan.get("certification_level"),
-        artisan.get("introduction"),
+        artisan.get("region"),
     )
 
 
@@ -412,8 +436,9 @@ def _product_params(row: dict) -> tuple:
     return (
         row["product_id"],
         row.get("artisan_id"),
-        row["title"],
-        row.get("category"),
+        row["name"],
+        row.get("category_code"),
+        row.get("subcategory_code"),
         row.get("material"),
         row.get("price"),
         row.get("gift_theme"),
@@ -421,10 +446,9 @@ def _product_params(row: dict) -> tuple:
         row.get("color"),
         row.get("making_story"),
         row.get("usage_care"),
-        row.get("production_period_days"),
+        row.get("status"),
         row["embedding_text"],
         row.get("embedding"),
-        row.get("embedding_model"),
         row["search_text"],
         Json(row["evidence"]),
     )
@@ -457,14 +481,17 @@ def upsert_all(conn, artisans: list[dict], product_rows: list[dict]) -> tuple[in
 
 def _parse_args(argv):
     parser = argparse.ArgumentParser(description="미담 추천 카탈로그 데이터 적재")
-    parser.add_argument("--file", required=True, help="적재할 CSV 또는 JSON 경로")
+    parser.add_argument("--file", required=True, help="적재할 상품 CSV/JSON 경로")
+    parser.add_argument(
+        "--artisan-file", required=True, help="적재할 장인 CSV/JSON 경로 (상품과 별도 파일)"
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="DB·임베딩 모델 없이 읽기·검사·조립까지만 하고 결과 일부를 출력",
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="앞 N건만 처리 (디버깅용)"
+        "--limit", type=int, default=None, help="상품 앞 N건만 처리 (디버깅용, 장인은 전체 유지)"
     )
     return parser.parse_args(argv)
 
@@ -472,11 +499,12 @@ def _parse_args(argv):
 def main(argv=None) -> int:
     args = _parse_args(argv)
 
-    raw = read_source(args.file)
+    product_raw = read_source(args.file)
     if args.limit is not None:
-        raw = raw[: args.limit]
+        product_raw = product_raw[: args.limit]
+    artisan_raw = read_source(args.artisan_file)
 
-    artisans, products = to_records(raw)
+    artisans, products = to_records(product_raw, artisan_raw)
     errors = validate(artisans, products)
     hard_errors = [e for e in errors if not e.endswith("(경고)")]
     for error in errors:
@@ -493,7 +521,7 @@ def main(argv=None) -> int:
             f"[dry-run] 장인 {len(artisans)}명 / 상품 {len(rows)}건 조립 완료. 앞 3건:"
         )
         for row in rows[:3]:
-            print(f"  - {row['product_id']} {row['title']}")
+            print(f"  - {row['product_id']} {row['name']}")
             print(f"    embedding_text: {row['embedding_text'][:60]}...")
             print(f"    search_text   : {row['search_text'][:60]}...")
             print(f"    evidence keys : {list(row['evidence'])}")
