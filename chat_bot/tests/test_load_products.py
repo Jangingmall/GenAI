@@ -225,19 +225,32 @@ def test_missing_name_is_hard_error_not_warning():
 
 
 # ---------------------------------------------------------------------------
-# build_embedding_text — 명세 순서로 이어붙이기 (공식 자체는 A/B 합의 없이 안 바꾼다)
+# build_embedding_text — name+카테고리(한글)+품목+재질+... 순으로 이어붙이기
 # ---------------------------------------------------------------------------
 
 
-def test_embedding_text_follows_spec_order():
+def test_embedding_text_follows_order():
     product = {
         "name": "보석함",
+        "category_code": "NACRE",
+        "subcategory_code": "보석함",
         "material": "오동나무",
         "making_story": "삼 년 말렸다",
         "usage_care": "마른 천",
     }
     text = lp.build_embedding_text(product, "나전장입니다")
-    assert text == "보석함 오동나무 삼 년 말렸다 마른 천 나전장입니다"
+    assert text == "보석함 나전칠기 보석함 오동나무 삼 년 말렸다 마른 천 나전장입니다"
+
+
+def test_embedding_text_translates_category_code_to_korean():
+    for code, ko in lp.CATEGORY_KO.items():
+        product = {"name": "N", "category_code": code}
+        assert ko in lp.build_embedding_text(product, None)
+
+
+def test_embedding_text_unknown_category_code_kept_as_is():
+    product = {"name": "N", "category_code": "UNKNOWN_CODE"}
+    assert "UNKNOWN_CODE" in lp.build_embedding_text(product, None)
 
 
 def test_embedding_text_skips_blank_and_none():
