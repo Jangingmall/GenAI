@@ -394,13 +394,17 @@ def test_attach_embeddings_does_not_persist_model_on_row():
 
 def test_product_upsert_sql_has_on_conflict_do_update():
     assert re.search(
-        r"on conflict\s*\(\s*product_id\s*\)\s*do update", lp.PRODUCT_UPSERT_SQL, re.IGNORECASE
+        r"on conflict\s*\(\s*product_id\s*\)\s*do update",
+        lp.PRODUCT_UPSERT_SQL,
+        re.IGNORECASE,
     )
 
 
 def test_artisan_upsert_sql_has_on_conflict_do_update():
     assert re.search(
-        r"on conflict\s*\(\s*artisan_id\s*\)\s*do update", lp.ARTISAN_UPSERT_SQL, re.IGNORECASE
+        r"on conflict\s*\(\s*artisan_id\s*\)\s*do update",
+        lp.ARTISAN_UPSERT_SQL,
+        re.IGNORECASE,
     )
 
 

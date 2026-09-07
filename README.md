@@ -19,10 +19,10 @@
 ```
 midam/
 ├── chat_bot/            # AI 추천 챗봇
+├── docs/                # 규칙 문서
 ├── page_generation/     # AI 상세페이지 생성
-├── README.md            
-├── GIT_GUIDE.md         # 깃허브 협업 규칙
-└── CODE_STYLE.md        # 코드 작성 규칙
+├── .gitignore            
+├── README.md
 ```
 
 ---

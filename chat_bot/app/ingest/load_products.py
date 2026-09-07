@@ -466,7 +466,7 @@ def upsert_all(conn, artisans: list[dict], product_rows: list[dict]) -> tuple[in
     from psycopg2.extras import execute_values
 
     with conn:  # noqa: SIM117 ## 성공 시 커밋, 예외 시 롤백
-        with conn.cursor() as cur: 
+        with conn.cursor() as cur:
             if artisans:
                 execute_values(
                     cur, ARTISAN_UPSERT_SQL, [_artisan_params(a) for a in artisans]
