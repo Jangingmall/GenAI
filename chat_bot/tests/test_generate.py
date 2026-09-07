@@ -73,7 +73,7 @@ def test_build_reply_empty_candidates_yields_empty_products():
     payload = {
         "reply": "그런 조건에 맞는 상품은 확인되지 않습니다.",
         "products": [],
-        "suggestions": ["예산을 조금 올려볼까요?", "다른 재질도 괜찮으신가요?", "용도를 알려주실 수 있나요?"],
+        "suggestions": ["가격대 올려서", "다른 재질로", "다른 종목으로"],
     }
     result = gen.build_reply("존재하지 않는 조합", [], "product_search", chat=_fake_chat(payload))
     assert result["products"] == []
@@ -87,7 +87,7 @@ def test_build_reply_drops_id_not_in_candidates():
             {"product_id": 1, "reason": "좋아요"},
             {"product_id": 999, "reason": "환각"},
         ],
-        "suggestions": ["다른 색상도 볼까요?"],
+        "suggestions": ["다른 색상으로"],
     }
     result = gen.build_reply("아무거나", candidates, "product_search", chat=_fake_chat(payload))
     assert result["products"] == [{"product_id": 1, "reason": "좋아요"}]
@@ -138,7 +138,7 @@ def test_build_reply_returns_suggestions_from_chat():
     payload = {
         "reply": "추천합니다.",
         "products": [],
-        "suggestions": ["가격대를 더 낮춰볼까요?", "다른 색상도 볼까요?", "용도를 알려주실 수 있나요?"],
+        "suggestions": ["가격대 낮춰서", "다른 색상으로", "다른 종목으로"],
     }
     result = gen.build_reply("아무거나", [], "product_search", chat=_fake_chat(payload))
     assert result["suggestions"] == payload["suggestions"]

@@ -40,7 +40,7 @@ def test_run_assembles_final_contract():
         generate_payload={
             "reply": "이 찻잔을 추천드려요.",
             "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
-            "suggestions": ["다른 색상도 볼까요?", "가격대를 더 낮춰볼까요?", "선물용이신가요?"],
+            "suggestions": ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"],
         },
     )
     search_and_rank = _fake_search_and_rank(
@@ -52,7 +52,7 @@ def test_run_assembles_final_contract():
     assert set(result.keys()) == {"reply", "intent", "products", "suggestions"}
     assert result["intent"] == "product_search"
     assert result["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
-    assert result["suggestions"] == ["다른 색상도 볼까요?", "가격대를 더 낮춰볼까요?", "선물용이신가요?"]
+    assert result["suggestions"] == ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"]
 
 
 def test_run_passes_contact1_to_search_and_rank():
