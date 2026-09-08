@@ -87,7 +87,22 @@ def test_to_contact1_assembles_filters():
             "color": None,
         },
         "intent": "gift_recommendation",
+        "chat_reply": "",
     }
+
+
+def test_to_contact1_passes_through_chat_reply():
+    """chat_reply는 general_chat일 때 orchestrator가 generate.py 호출 없이 바로 쓰는
+    필드다 — _to_contact1이 그대로 넘겨야 한다."""
+    raw = {"intent": "general_chat", "query_text": "", "chat_reply": "안녕하세요! 무엇을 도와드릴까요?"}
+    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    assert result["chat_reply"] == "안녕하세요! 무엇을 도와드릴까요?"
+
+
+def test_to_contact1_missing_chat_reply_defaults_empty():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    assert result["chat_reply"] == ""
 
 
 def test_to_contact1_unknown_intent_becomes_general_chat():

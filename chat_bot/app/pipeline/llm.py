@@ -40,7 +40,12 @@ def chat_json(
         "model": model_name,
         "messages": messages,
         "format": schema,
-        "options": {"temperature": 0.3, "seed": 42},
+        # num_ctx는 반드시 모든 호출에서 같은 값을 써야 한다 — 값이 다르면 시스템 프롬프트
+        # 글자가 같아도 Ollama의 프롬프트 캐시가 깨진다(실측 확인). intent.py·generate.py가
+        # 둘 다 이 함수 하나를 거치므로, 여기서 한 번만 고정하면 자동으로 맞는다. 8192는
+        # 시스템 프롬프트+대화 맥락+후보 목록+출력을 합쳐도 여유 있는 크기로 실측 확인했다
+        # (기존 기본값 4096보다 넉넉하게 잡음).
+        "options": {"temperature": 0.3, "seed": 42, "num_ctx": 8192},
         "stream": False,
     }
     if model_name.startswith(_THINK_SUPPORTED_PREFIX):

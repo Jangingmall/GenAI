@@ -261,9 +261,7 @@ def _cap_suggestions(suggestions: list[str]) -> list[str]:
     return [s for s in suggestions if 2 <= len(s.split()) <= 4][:3]
 
 
-# intent.py와 같은 이유로 같은 값을 쓴다(app/pipeline/intent.py:_MAX_HISTORY_TURNS 참고) —
-# GENERATE_SYSTEM(~2920 토큰)이 intent.py보다 길어 여유가 더 적으므로 굳이 다른 값을
-# 쓸 이유가 없다.
+# intent.py와 같은 이유로 같은 값을 쓴다(app/pipeline/intent.py:_MAX_HISTORY_TURNS 참고).
 _MAX_HISTORY_TURNS = 3
 
 
@@ -308,14 +306,16 @@ def build_reply(
     think 기본값 True: qwen3 계열로 되돌아갈 경우를 대비한 스위치다. 지금 쓰는
     gemma2:9b는 think 파라미터 자체를 지원하지 않아(llm.py:_THINK_SUPPORTED_PREFIX가
     "qwen3"만 허용) 이 값은 현재 아무 효과가 없다 — API 요청에 think 키 자체가 실리지
-    않는다. gemma2의 응답 지연(24~28초, docs/b-generation-pipeline-status.md §4)은
-    think와 무관하게 모델 자체의 추론 속도다.
+    않는다.
     """
     category_text = f"{message} {query_text}" if query_text else message
     candidates = _filter_by_category(candidates, category_text)
     candidate_ids = [c["product_id"] for c in candidates]
     prices = fetch_prices(candidate_ids)
     artisans = fetch_artisans(candidate_ids)
+    # intent.py와 같은 이유(app/pipeline/intent.py:classify_and_extract 참고)로 독립된
+    # GENERATE_SYSTEM을 그대로 쓴다 — 프롬프트 병합·부분 공유 둘 다 실측했지만 병합은
+    # intent 정확도 회귀, 부분 공유는 속도 이득이 없어 둘 다 되돌렸다.
     user_content = (
         f"{_format_history(history)}소비자의 마지막 문장: {message}\n"
         f"분류된 intent: {intent}\n"

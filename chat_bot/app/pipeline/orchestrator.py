@@ -7,6 +7,10 @@
 
 intent는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
 
+intent가 general_chat이면 검색·⑤ 호출을 둘 다 건너뛰고 접점1의 chat_reply를 그대로
+반환한다 — 잡담엔 상품 근거 기반 규칙(⑤)이 애초에 불필요하고, 검색도 엉뚱한 결과를
+끼워 넣을 위험만 있다(아래 run() 본문 참고).
+
 narrow_down("그중 더 싼 거" 등)은 두 가지로 갈린다 — ① 직전에 보여준 후보에 대한 순수
 속성 질문("가격대 확인해줘", "포장되나요?")은 새로 검색하지 않고 그 후보 그대로 답해야
 한다(안 그러면 query_text가 "가장 저렴한 제품"처럼 원래 주제를 잃어 엉뚱한 종목이 나옴 —
@@ -61,6 +65,22 @@ def run(
     진짜 하드필터(SQL WHERE)라 이 셋만 본다.
     """
     contact1 = classify_and_extract(message, history, chat=chat)
+
+    if contact1["intent"] == "general_chat":
+        # 잡담은 상품이 전혀 관련 없으므로 generate.py의 두 번째 LLM 호출(가격 환각 방지·
+        # 종목 대조 등 상품 근거 기반 규칙 전체)을 아예 안 거친다 — classify_and_extract가
+        # 이미 만들어둔 chat_reply를 그대로 쓴다. 검색도 안 한다: query_text가 빈 문자열
+        # 이어도 검색 엔진(임베딩 유사도)은 뭔가는 반환해서(실측: "안녕하십니까?" → 옹기
+        # 아닌 나전칠기 상품 3건) 잡담에 엉뚱한 상품이 낄 위험이 있다.
+        return {
+            "reply": contact1["chat_reply"],
+            "intent": "general_chat",
+            "products": [],
+            "suggestions": [],
+            "candidates": previous_candidates or [],
+            "filters": contact1["filters"],
+        }
+
     prev_filters = previous_filters or {}
     new_filters = contact1["filters"]
     # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야

@@ -30,6 +30,10 @@ class _RawIntent(BaseModel):
     gift_theme: list[str]
     color: list[str]
     query_text: str = Field(max_length=200)
+    # intent가 general_chat일 때만 채워지는, 소비자에게 바로 보여줄 답변. 이 필드 덕분에
+    # 잡담 턴은 generate.py의 무거운 두 번째 LLM 호출(가격 환각 방지·종목 대조 등 상품
+    # 관련 규칙 전체)을 아예 안 거친다 — 애초에 상품이 없는 턴에 그 규칙들은 불필요하다.
+    chat_reply: str = Field(max_length=200)
 
 
 _RAW_INTENT_SCHEMA = _RawIntent.model_json_schema()  # 매 요청마다 재계산할 필요 없다
@@ -78,14 +82,14 @@ def _to_contact1(raw: dict, *, gift_themes: set[str], colors: set[str]) -> dict:
             "color": color or None,
         },
         "intent": intent,
+        "chat_reply": raw.get("chat_reply") or "",
     }
 
 
 # 최근 N턴(2N개 메시지)만 남긴다 — LangChain ConversationBufferWindowMemory와 같은
 # 절단 방식. 요약 방식(ConversationSummaryMemory) 대신 이걸 고른 이유: 요약은 LLM 호출을
-# 하나 더 추가하는데, 지금 이미 응답 지연(24~30초)이 문제라 지연을 더 늘리는 방향은 곤란하다.
-# Ollama 실측 context_length=4096이고 GENERATE_SYSTEM만 이미 ~2920 토큰이라 여유가 크지
-# 않아 K=3으로 보수적으로 잡았다.
+# 하나 더 추가해 응답 지연을 늘린다. 시스템 프롬프트+대화 맥락+후보 목록이 num_ctx(8192,
+# llm.py 참고) 안에 여유 있게 들어가도록 K=3으로 보수적으로 잡았다.
 _MAX_HISTORY_TURNS = 3
 
 
@@ -102,7 +106,15 @@ def _format_history(history: list[dict] | None) -> str:
 def classify_and_extract(
     message: str, history: list[dict] | None = None, *, chat=chat_json
 ) -> dict:
-    """자연어 한 문장 → 접점 1. chat은 테스트에서 가짜 함수로 주입한다."""
+    """자연어 한 문장 → 접점 1. chat은 테스트에서 가짜 함수로 주입한다.
+
+    intent·generate 시스템 프롬프트를 하나로 합치거나 일부만 공유하는 방식도 실측해봤지만,
+    완전 병합은 모델이 두 작업 규칙을 섞어 써서 intent 정확도가 떨어지는 회귀가 났고
+    (예: "나전으로 만든 곡물독"이 unsupported가 아니라 product_search로 잘못 분류됨),
+    일부(<role>)만 공유하는 절충안은 회귀는 없었지만 속도 이득이 측정 오차 수준이라 실효가
+    없었다. 그래서 각자 독립된 INTENT_SYSTEM을 그대로 쓴다 — 응답 속도는 대신 Ollama 자체
+    업데이트(캐시 알고리즘 개선)와 llm.py의 num_ctx 고정으로 개선했다.
+    """
     user_content = _format_history(history) + f"소비자의 마지막 문장: {message}"
     raw_json = chat(
         [

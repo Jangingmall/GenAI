@@ -316,3 +316,45 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
     )
 
     assert result["candidates"] == fresh
+
+
+# ---------------------------------------------------------------------------
+# general_chat이면 검색·두 번째 LLM 호출을 모두 스킵 — 잡담에 엉뚱한 상품이 끼어드는 것 방지
+# ---------------------------------------------------------------------------
+
+
+def test_run_general_chat_skips_second_llm_call_and_search():
+    """general_chat이면 검색도, generate.py의 두 번째 LLM 호출도 안 해야 한다 — intent.py가
+    이미 만들어둔 chat_reply를 그대로 쓴다. 실LLM 재현 확인: 빈 query_text로 검색하면
+    검색 엔진이 엉뚱한 상품을 반환하고, 그걸 candidates로 넘기면 생성 단계가 잡담에
+    상품을 끼워 넣는 회귀가 있었다 — 애초에 두 번째 호출 자체를 안 하면 이 문제가 원천
+    차단된다.
+    """
+    calls = {"n": 0}
+
+    def chat_counts_calls(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        return json.dumps(
+            {
+                "intent": "general_chat",
+                "max_price": None,
+                "min_price": None,
+                "gift_theme": [],
+                "color": [],
+                "query_text": "",
+                "chat_reply": "안녕하세요! 어떤 공예품을 찾으시나요?",
+            }
+        )
+
+    def search_and_rank_must_not_be_called(contact1):
+        raise AssertionError("general_chat인데 search_and_rank가 호출됐다")
+
+    result = rr.run(
+        "안녕하십니까?",
+        chat=chat_counts_calls,
+        search_and_rank=search_and_rank_must_not_be_called,
+        **_NO_DB,
+    )
+    assert result["products"] == []
+    assert result["reply"] == "안녕하세요! 어떤 공예품을 찾으시나요?"
+    assert calls["n"] == 1, "general_chat인데 LLM이 2번 호출됐다(generate 호출을 안 건너뛰었다)"
