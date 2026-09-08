@@ -8,6 +8,8 @@
 
 import json
 
+import psycopg2
+
 from app.pipeline import generate as gen
 
 
@@ -199,7 +201,34 @@ def test_format_filters_includes_price_and_theme():
 
 
 def test_cap_suggestions_truncates_to_three():
-    assert gen._cap_suggestions(["a", "b", "c", "d"]) == ["a", "b", "c"]
+    suggestions = ["3만 원 아래로", "다른 색상으로", "다른 재질로", "포장까지 되는 것만"]
+    assert gen._cap_suggestions(suggestions) == suggestions[:3]
+
+
+def test_cap_suggestions_drops_full_sentences_outside_word_range():
+    """LLM이 규칙을 어기고 완전한 문장이나 한 단어를 반환하면 칩 형식(2~4어절)이 아니므로 뺀다."""
+    suggestions = ["네", "혹시 3만 원 아래로 검색해서 보여드릴까요?", "다른 색상으로"]
+    assert gen._cap_suggestions(suggestions) == ["다른 색상으로"]
+
+
+def test_fetch_prices_returns_empty_dict_when_connect_fails(monkeypatch):
+    """DB 연결 실패가 build_reply까지 전파되면 채팅 호출 자체가 실패한다 — 빈 딕셔너리로
+    흡수해 _format_candidates의 "정보 없음" 대체 경로로 이어지게 한다(CodeRabbit 지적)."""
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+    )
+    assert gen._fetch_prices([1, 2]) == {}
+
+
+def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+    )
+    assert gen._fetch_artisans([1, 2]) == {}
 
 
 def test_build_reply_returns_suggestions_from_chat():

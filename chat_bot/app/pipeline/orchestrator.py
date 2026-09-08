@@ -62,10 +62,18 @@ def run(
     """
     contact1 = classify_and_extract(message, history, chat=chat)
     prev_filters = previous_filters or {}
-    has_new_filter = any(
-        contact1["filters"].get(k) and contact1["filters"].get(k) != prev_filters.get(k)
-        for k in ("max_price", "min_price", "color")
+    new_filters = contact1["filters"]
+    # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야
+    # 한다 — 진리값 검사(truthy)를 쓰면 0이 falsy라 "새 조건 없음"으로 잘못 판정돼 재검색을
+    # 건너뛴다. color는 빈 리스트/None이 "조건 없음"의 정상 표현이라 진리값 검사를 유지한다.
+    price_changed = any(
+        new_filters.get(k) is not None and new_filters.get(k) != prev_filters.get(k)
+        for k in ("max_price", "min_price")
     )
+    color_changed = bool(new_filters.get("color")) and new_filters.get("color") != prev_filters.get(
+        "color"
+    )
+    has_new_filter = price_changed or color_changed
     if contact1["intent"] == "narrow_down" and previous_candidates and not has_new_filter:
         candidates = previous_candidates
     else:

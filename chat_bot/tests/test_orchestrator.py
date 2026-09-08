@@ -155,6 +155,36 @@ def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
     assert result["products"] == [{"product_id": 78, "reason": "청자 찻잔입니다."}]
 
 
+def test_run_narrow_down_treats_zero_price_as_new_filter():
+    """max_price=0(예: "0원짜리 무료 나눔")도 유효한 값이라 새 조건으로 봐야 한다 — 0은
+    falsy라서 진리값 검사(and)로 판단하면 "조건 없음"으로 오판돼 재검색을 건너뛰는
+    버그가 있었다(CodeRabbit 리뷰 지적).
+    """
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 0,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+    )
+    fresh = [{"product_id": 5, "name": "무료 나눔 도자기", "score": 0.5, "evidence": {}}]
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    result = rr.run(
+        "0원짜리 나눔도 있나요?",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(fresh),
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == fresh
+
+
 def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
     """intent.py는 이전 턴에 이미 확정된 조건(예: "집들이"→gift_theme=HOUSEWARMING)을
     맥락 유지를 위해 매 턴 계속 다시 채워 넣는다 — 이게 실제로 "새 조건"은 아니므로

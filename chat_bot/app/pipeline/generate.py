@@ -22,12 +22,16 @@ name에서 역추정하는 폴백(_category_from_name)이 카테고리 대조의
 
 from __future__ import annotations
 
+import logging
+
 import psycopg2
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.pipeline import prompts, taxonomy
 from app.pipeline.llm import chat_json
+
+logger = logging.getLogger(__name__)
 
 
 class _ProductReason(BaseModel):
@@ -115,10 +119,18 @@ def _ambiguity_warning(message: str) -> str:
 def _fetch_prices(product_ids: list[int]) -> dict[int, int]:
     """product_id → price. 접점2엔 가격이 없지만, products 테이블 자체엔 있는 공유 컬럼이라
     A의 검색·랭킹을 거치지 않고 B가 직접 조회한다(search.py·ranking.py는 안 건드린다).
+
+    DB 연결·쿼리 실패는 빈 딕셔너리로 흡수한다 — 여기서 예외가 build_reply까지 전파되면
+    채팅 호출 자체가 실패해서, _format_candidates가 원래 대비해 둔 "정보 없음" 대체
+    경로(가격만 못 가져와도 상품 추천 자체는 계속하는 동작)에 도달하지 못한다.
     """
     if not product_ids:
         return {}
-    conn = psycopg2.connect(settings.dsn())
+    try:
+        conn = psycopg2.connect(settings.dsn())
+    except psycopg2.Error:
+        logger.exception("가격 조회용 DB 연결 실패")
+        return {}
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -126,17 +138,24 @@ def _fetch_prices(product_ids: list[int]) -> dict[int, int]:
                 (list(product_ids),),
             )
             return dict(cur.fetchall())
+    except psycopg2.Error:
+        logger.exception("가격 조회 쿼리 실패")
+        return {}
     finally:
         conn.close()
 
 
 def _fetch_artisans(product_ids: list[int]) -> dict[int, dict]:
-    """product_id → {"business_name", "region"}. price와 같은 이유로 B가 직접 조회한다 —
-    artisans 테이블도 products와 마찬가지로 A의 검색·랭킹과 무관한 공유 데이터다.
+    """product_id → {"business_name", "region"}. price와 같은 이유로 B가 직접 조회하고,
+    DB 실패도 같은 이유로 빈 딕셔너리로 흡수한다(_fetch_prices 참고).
     """
     if not product_ids:
         return {}
-    conn = psycopg2.connect(settings.dsn())
+    try:
+        conn = psycopg2.connect(settings.dsn())
+    except psycopg2.Error:
+        logger.exception("장인 조회용 DB 연결 실패")
+        return {}
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -151,6 +170,9 @@ def _fetch_artisans(product_ids: list[int]) -> dict[int, dict]:
                 product_id: {"business_name": name, "region": region}
                 for product_id, name, region in cur.fetchall()
             }
+    except psycopg2.Error:
+        logger.exception("장인 조회 쿼리 실패")
+        return {}
     finally:
         conn.close()
 
@@ -230,8 +252,13 @@ def _format_filters(filters: dict | None) -> str:
 
 
 def _cap_suggestions(suggestions: list[str]) -> list[str]:
-    """후속 질문은 최대 3개까지만 노출한다."""
-    return suggestions[:3]
+    """후속 질문 칩은 2~4어절짜리만 남기고 최대 3개까지 노출한다.
+
+    output_format이 "2~4어절짜리 짧은 문구"라고 지시하지만, LLM이 가끔 완전한 문장을
+    그대로 반환할 수 있다 — 개수만 제한하면 그런 문장이 칩 형식을 어긴 채 그대로
+    나간다. 어절 수 검증을 코드에서 한 번 더 강제한다.
+    """
+    return [s for s in suggestions if 2 <= len(s.split()) <= 4][:3]
 
 
 # intent.py와 같은 이유로 같은 값을 쓴다(app/pipeline/intent.py:_MAX_HISTORY_TURNS 참고) —
