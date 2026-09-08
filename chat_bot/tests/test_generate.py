@@ -36,10 +36,31 @@ def test_format_candidates_includes_category_and_evidence():
     assert "말총으로 엮었습니다" in text
 
 
-def test_format_candidates_omits_price():
-    # 접점 2(§0)엔 price가 없다 — 프로토타입과 달리 가격 줄을 만들지 않는다
+def test_format_candidates_includes_price_when_given():
+    # 접점2엔 price가 없지만, B가 직접 DB에서 조회해 prices로 넘긴다(_fetch_prices)
     candidates = [{"product_id": 1, "name": "T", "category": "C", "evidence": {}}]
-    assert "가격" not in gen._format_candidates(candidates)
+    text = gen._format_candidates(candidates, {1: 37000})
+    assert "37000원" in text
+
+
+def test_format_candidates_shows_no_info_when_price_missing():
+    candidates = [{"product_id": 1, "name": "T", "category": "C", "evidence": {}}]
+    text = gen._format_candidates(candidates, {})
+    assert "정보 없음" in text
+
+
+def test_format_candidates_includes_artisan_when_given():
+    # artisans 테이블도 price와 같은 이유로 B가 직접 조회해 넘긴다(_fetch_artisans)
+    candidates = [{"product_id": 1, "name": "T", "category": "C", "evidence": {}}]
+    text = gen._format_candidates(candidates, artisans={1: {"business_name": "정예준 도예", "region": "부산"}})
+    assert "정예준 도예" in text
+    assert "부산" in text
+
+
+def test_format_candidates_shows_no_info_when_artisan_missing():
+    candidates = [{"product_id": 1, "name": "T", "category": "C", "evidence": {}}]
+    text = gen._format_candidates(candidates, artisans={})
+    assert "장인: 정보 없음" in text
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +79,33 @@ def test_drop_unknown_ids_empty_allowed_drops_all():
 
 
 # ---------------------------------------------------------------------------
+# _drop_evidence_mismatched
+# ---------------------------------------------------------------------------
+
+
+def test_drop_evidence_mismatched_removes_wrong_category_reason():
+    # 후보는 도자기(청자)인데 reason에 나전칠기 신호("자개")가 섞여 있으면 few-shot
+    # 문구를 베낀 것으로 보고 제거한다.
+    candidates_by_id = {1: {"product_id": 1, "name": "청자 찻잔", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "자개를 문양대로 오려 붙이고 옻칠 연마를 반복했습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == []
+
+
+def test_drop_evidence_mismatched_keeps_matching_reason():
+    candidates_by_id = {1: {"product_id": 1, "name": "청자 찻잔", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "청자를 물레로 성형해 만들었습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == items
+
+
+def test_drop_evidence_mismatched_keeps_when_category_unknown():
+    # candidate에서 카테고리를 역추정 못 하면(_effective_category가 None) 판단 근거가
+    # 없으니 건드리지 않는다.
+    candidates_by_id = {1: {"product_id": 1, "name": "알 수 없는 상품", "evidence": {}}}
+    items = [{"product_id": 1, "reason": "자개를 오려 붙였습니다."}]
+    assert gen._drop_evidence_mismatched(items, candidates_by_id) == items
+
+
+# ---------------------------------------------------------------------------
 # build_reply — chat 주입, LLM 없음
 # ---------------------------------------------------------------------------
 
@@ -69,9 +117,29 @@ def _fake_chat(payload: dict):
     return fake
 
 
+def _no_prices(product_ids: list[int]) -> dict[int, int]:
+    """단위 테스트가 실제 DB 없이 돌아가게 하는 가짜 fetch_prices — chat과 같은 이유로 주입."""
+    return {}
+
+
+def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
+    """_no_prices와 같은 이유의 가짜 fetch_artisans."""
+    return {}
+
+
+# build_reply 호출마다 반복되는 DB 회피용 키워드 인자 묶음 — **_NO_DB로 한 번에 넘긴다.
+_NO_DB = {"fetch_prices": _no_prices, "fetch_artisans": _no_artisans}
+
+
 def test_build_reply_empty_candidates_yields_empty_products():
-    payload = {"reply": "그런 조건에 맞는 상품은 확인되지 않습니다.", "products": []}
-    result = gen.build_reply("존재하지 않는 조합", [], "product_search", chat=_fake_chat(payload))
+    payload = {
+        "reply": "그런 조건에 맞는 상품은 확인되지 않습니다.",
+        "products": [],
+        "suggestions": ["가격대 올려서", "다른 재질로", "다른 종목으로"],
+    }
+    result = gen.build_reply(
+        "존재하지 않는 조합", [], "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
     assert result["products"] == []
 
 
@@ -83,8 +151,11 @@ def test_build_reply_drops_id_not_in_candidates():
             {"product_id": 1, "reason": "좋아요"},
             {"product_id": 999, "reason": "환각"},
         ],
+        "suggestions": ["다른 색상으로"],
     }
-    result = gen.build_reply("아무거나", candidates, "product_search", chat=_fake_chat(payload))
+    result = gen.build_reply(
+        "아무거나", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
     assert result["products"] == [{"product_id": 1, "reason": "좋아요"}]
 
 
@@ -93,9 +164,9 @@ def test_build_reply_calls_chat_with_think_true():
 
     def fake(messages, schema, *, think, model=None):
         seen["think"] = think
-        return json.dumps({"reply": "ok", "products": []})
+        return json.dumps({"reply": "ok", "products": [], "suggestions": []})
 
-    gen.build_reply("메시지", [], "general_chat", chat=fake)
+    gen.build_reply("메시지", [], "general_chat", chat=fake, **_NO_DB)
     assert seen["think"] is True
 
 
@@ -104,6 +175,56 @@ def test_build_reply_filters_mismatched_category_by_name():
     # 역추정해, 사용자가 말한 종목(옹기)과 다르면 걸러낸다. LLM이 그래도 추천해도
     # allowed_ids에서 이미 빠져 있어 _drop_unknown_ids가 제거한다.
     candidates = [{"product_id": 1, "name": "청자 다완", "evidence": {}}]
-    payload = {"reply": "추천합니다.", "products": [{"product_id": 1, "reason": "..."}]}
-    result = gen.build_reply("옹기 있나요", candidates, "product_search", chat=_fake_chat(payload))
+    payload = {"reply": "추천합니다.", "products": [{"product_id": 1, "reason": "..."}], "suggestions": []}
+    result = gen.build_reply(
+        "옹기 있나요", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
     assert result["products"] == []
+
+
+# ---------------------------------------------------------------------------
+# _format_filters / suggestions
+# ---------------------------------------------------------------------------
+
+
+def test_format_filters_none_returns_placeholder():
+    assert gen._format_filters(None) == "(추출된 조건 없음)"
+
+
+def test_format_filters_includes_price_and_theme():
+    filters = {"max_price": 50000, "min_price": None, "gift_theme": ["WEDDING"], "color": None}
+    text = gen._format_filters(filters)
+    assert "50000원 이하" in text
+    assert "WEDDING" in text
+
+
+def test_cap_suggestions_truncates_to_three():
+    assert gen._cap_suggestions(["a", "b", "c", "d"]) == ["a", "b", "c"]
+
+
+def test_build_reply_returns_suggestions_from_chat():
+    payload = {
+        "reply": "추천합니다.",
+        "products": [],
+        "suggestions": ["가격대 낮춰서", "다른 색상으로", "다른 종목으로"],
+    }
+    result = gen.build_reply("아무거나", [], "product_search", chat=_fake_chat(payload), **_NO_DB)
+    assert result["suggestions"] == payload["suggestions"]
+
+
+def test_build_reply_truncates_history_to_recent_turns():
+    """최근 3턴(6개 메시지)만 남기고 그 이전은 잘라야 한다(_MAX_HISTORY_TURNS)."""
+    seen = {}
+    payload = {"reply": "ok", "products": [], "suggestions": []}
+
+    def fake(messages, schema, *, think, model=None):
+        seen["user_content"] = messages[-1]["content"]
+        return json.dumps(payload)
+
+    history = [{"role": "user", "content": f"{i}번째 메시지"} for i in range(10)]
+    gen.build_reply(
+        "최근 질문", [], "product_search", history=history, chat=fake, **_NO_DB
+    )
+
+    assert "0번째 메시지" not in seen["user_content"]
+    assert "9번째 메시지" in seen["user_content"]

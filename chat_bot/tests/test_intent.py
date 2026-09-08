@@ -160,6 +160,21 @@ def test_classify_and_extract_includes_history():
     assert "안녕하세요" in seen["user_content"]
 
 
+def test_classify_and_extract_truncates_history_to_recent_turns():
+    """최근 3턴(6개 메시지)만 남기고 그 이전은 잘라야 한다(_MAX_HISTORY_TURNS)."""
+    seen = {}
+
+    def fake(messages, schema, *, think, model=None):
+        seen["user_content"] = messages[-1]["content"]
+        return json.dumps({"intent": "general_chat", "query_text": ""})
+
+    history = [{"role": "user", "content": f"{i}번째 메시지"} for i in range(10)]
+    it.classify_and_extract("최근 질문", history=history, chat=fake)
+
+    assert "0번째 메시지" not in seen["user_content"]
+    assert "9번째 메시지" in seen["user_content"]
+
+
 # ---------------------------------------------------------------------------
 # 스모크 — 실제 Ollama 호출 (S2 완료 조건). 이 브랜치엔 eval/cases.json이 없어 인라인 문구로.
 # ---------------------------------------------------------------------------
