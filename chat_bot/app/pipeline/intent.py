@@ -81,11 +81,20 @@ def _to_contact1(raw: dict, *, gift_themes: set[str], colors: set[str]) -> dict:
     }
 
 
+# 최근 N턴(2N개 메시지)만 남긴다 — LangChain ConversationBufferWindowMemory와 같은
+# 절단 방식. 요약 방식(ConversationSummaryMemory) 대신 이걸 고른 이유: 요약은 LLM 호출을
+# 하나 더 추가하는데, 지금 이미 응답 지연(24~30초)이 문제라 지연을 더 늘리는 방향은 곤란하다.
+# Ollama 실측 context_length=4096이고 GENERATE_SYSTEM만 이미 ~2920 토큰이라 여유가 크지
+# 않아 K=3으로 보수적으로 잡았다.
+_MAX_HISTORY_TURNS = 3
+
+
 def _format_history(history: list[dict] | None) -> str:
     if not history:
         return ""
+    recent = history[-_MAX_HISTORY_TURNS * 2 :]
     lines = [
-        f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in history
+        f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in recent
     ]
     return "이전 대화:\n" + "\n".join(lines) + "\n\n"
 

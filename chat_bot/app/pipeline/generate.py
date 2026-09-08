@@ -2,7 +2,10 @@
 
 프로토타입(generator.py)과의 차이:
   - items → products 로 이름 변경(계약 필드명)
-  - 접점 2 에는 price 가 없어 _format_candidates 에서 뺀다(프로토타입은 price 포함)
+
+가격(price): 접점2(A가 만드는 검색 결과)엔 없지만, price는 products 테이블의 공유 컬럼이라
+A의 검색·랭킹 로직과 무관하게 B가 product_id로 직접 조회할 수 있다(_fetch_prices). A의 코드는
+건드리지 않는다 — 그냥 같은 DB의 다른 컬럼을 읽어오는 것뿐이다.
 
 종목 대조 방어(_mentioned_category)는 이 파일 안에서만 쓴다 — docs/b-metaprompt.md §0이
 category·재료·취향은 하드필터가 아니라 query_text로 처리하도록 이미 정해 놔서, 접점 1(intent.py)
@@ -19,8 +22,10 @@ name에서 역추정하는 폴백(_category_from_name)이 카테고리 대조의
 
 from __future__ import annotations
 
+import psycopg2
 from pydantic import BaseModel, Field
 
+from app.config import settings
 from app.pipeline import prompts, taxonomy
 from app.pipeline.llm import chat_json
 
@@ -107,19 +112,72 @@ def _ambiguity_warning(message: str) -> str:
     )
 
 
-def _format_candidates(candidates: list[dict]) -> str:
-    """프롬프트에 넣을 후보 목록 텍스트 블록. 접점 2(§0)엔 price 가 없어 종목·evidence만 담는다."""
+def _fetch_prices(product_ids: list[int]) -> dict[int, int]:
+    """product_id → price. 접점2엔 가격이 없지만, products 테이블 자체엔 있는 공유 컬럼이라
+    A의 검색·랭킹을 거치지 않고 B가 직접 조회한다(search.py·ranking.py는 안 건드린다).
+    """
+    if not product_ids:
+        return {}
+    conn = psycopg2.connect(settings.dsn())
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT product_id, price FROM products WHERE product_id = ANY(%s)",
+                (list(product_ids),),
+            )
+            return dict(cur.fetchall())
+    finally:
+        conn.close()
+
+
+def _fetch_artisans(product_ids: list[int]) -> dict[int, dict]:
+    """product_id → {"business_name", "region"}. price와 같은 이유로 B가 직접 조회한다 —
+    artisans 테이블도 products와 마찬가지로 A의 검색·랭킹과 무관한 공유 데이터다.
+    """
+    if not product_ids:
+        return {}
+    conn = psycopg2.connect(settings.dsn())
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT p.product_id, a.business_name, a.region
+                FROM products p JOIN artisans a ON p.artisan_id = a.artisan_id
+                WHERE p.product_id = ANY(%s)
+                """,
+                (list(product_ids),),
+            )
+            return {
+                product_id: {"business_name": name, "region": region}
+                for product_id, name, region in cur.fetchall()
+            }
+    finally:
+        conn.close()
+
+
+def _format_candidates(
+    candidates: list[dict],
+    prices: dict[int, int] | None = None,
+    artisans: dict[int, dict] | None = None,
+) -> str:
+    """프롬프트에 넣을 후보 목록 텍스트 블록. prices·artisans가 없으면(예: DB 접속 실패) 정보 없음으로 표시."""
     if not candidates:
         return "(검색 결과 없음)"
+    prices = prices or {}
+    artisans = artisans or {}
     blocks = []
     for c in candidates:
         ev = c.get("evidence") or {}
         category = _effective_category(c)
         label = taxonomy.CATEGORY_LABELS.get(category, category) if category else "정보 없음"
+        price = prices.get(c["product_id"])
+        artisan = artisans.get(c["product_id"])
         lines = [
             f"- product_id: {c['product_id']}",
             f"  이름: {c['name']}",
             f"  종목: {label}",
+            f"  가격: {price}원" if price is not None else "  가격: 정보 없음",
+            f"  장인: {artisan['business_name']} ({artisan['region']})" if artisan else "  장인: 정보 없음",
             f"  장인 등급(verified): {ev.get('verified') or '정보 없음'}",
             f"  장인 서술(artisan_input): {ev.get('artisan_input') or '없음'}",
         ]
@@ -176,11 +234,18 @@ def _cap_suggestions(suggestions: list[str]) -> list[str]:
     return suggestions[:3]
 
 
+# intent.py와 같은 이유로 같은 값을 쓴다(app/pipeline/intent.py:_MAX_HISTORY_TURNS 참고) —
+# GENERATE_SYSTEM(~2920 토큰)이 intent.py보다 길어 여유가 더 적으므로 굳이 다른 값을
+# 쓸 이유가 없다.
+_MAX_HISTORY_TURNS = 3
+
+
 def _format_history(history: list[dict] | None) -> str:
     if not history:
         return ""
+    recent = history[-_MAX_HISTORY_TURNS * 2 :]
     lines = [
-        f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in history
+        f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in recent
     ]
     return "이전 대화:\n" + "\n".join(lines) + "\n\n"
 
@@ -192,25 +257,44 @@ def build_reply(
     filters: dict | None = None,
     history: list[dict] | None = None,
     *,
+    query_text: str | None = None,
     think: bool = True,
     chat=chat_json,
+    fetch_prices=_fetch_prices,
+    fetch_artisans=_fetch_artisans,
 ) -> dict:
     """접점 2 후보 → {"reply", "products": [{"product_id", "reason"}], "suggestions": [str]}.
 
     filters는 접점1(intent.py)이 뽑은 하드필터 — 후속 질문(suggestions)이 이미 아는
     조건을 다시 묻지 않고, 조건을 하나도 못 뽑았을 땐 조건을 캐묻는 질문을 하도록 넘긴다.
     intent는 최종 응답에서 오케스트레이터(S6)가 부착한다 — 여기서는 안 담는다.
-    think 기본값 True: 종목 환각(예: 다른 카테고리 상품을 엉뚱한 종목으로 답함) 위험이 있어
-    근거기반 생성은 사실 일치가 표현 다양성보다 중요하다. 모델 비교(S5)에서 thinking
-    효과를 재보려는 게 아니면 기본값 그대로 둔다.
+
+    query_text는 종목 대조(_filter_by_category)에 message와 함께 쓴다 — narrow_down
+    후속 질문("가격대 확인해줘", "3만원 아래로 보여줘")은 종목 단어가 이번 message엔
+    없고 intent.py가 이전 대화에서 이어 붙인 query_text에만 있을 수 있다(실측 확인:
+    query_text 없이 message만 보면 종목 대조가 아예 안 걸려 다른 종목이 새어나감).
+
+    fetch_prices·fetch_artisans는 테스트에서 가짜로 갈아끼울 수 있게 인자로 받는다(chat과
+    같은 이유 — 유닛 테스트가 실제 DB 연결 없이 돌아가야 한다). 기본값은 PostgreSQL이
+    필요하다.
+
+    think 기본값 True: qwen3 계열로 되돌아갈 경우를 대비한 스위치다. 지금 쓰는
+    gemma2:9b는 think 파라미터 자체를 지원하지 않아(llm.py:_THINK_SUPPORTED_PREFIX가
+    "qwen3"만 허용) 이 값은 현재 아무 효과가 없다 — API 요청에 think 키 자체가 실리지
+    않는다. gemma2의 응답 지연(24~28초, docs/b-generation-pipeline-status.md §4)은
+    think와 무관하게 모델 자체의 추론 속도다.
     """
-    candidates = _filter_by_category(candidates, message)
+    category_text = f"{message} {query_text}" if query_text else message
+    candidates = _filter_by_category(candidates, category_text)
+    candidate_ids = [c["product_id"] for c in candidates]
+    prices = fetch_prices(candidate_ids)
+    artisans = fetch_artisans(candidate_ids)
     user_content = (
         f"{_format_history(history)}소비자의 마지막 문장: {message}\n"
         f"분류된 intent: {intent}\n"
         f"[추출된 조건]\n{_format_filters(filters)}\n\n"
-        f"[후보 상품]\n{_format_candidates(candidates)}"
-        f"{_ambiguity_warning(message)}"
+        f"[후보 상품]\n{_format_candidates(candidates, prices, artisans)}"
+        f"{_ambiguity_warning(category_text)}"
     )
 
     raw = chat(
@@ -232,4 +316,8 @@ def build_reply(
         "reply": output.reply,
         "products": products,
         "suggestions": _cap_suggestions(output.suggestions),
+        # 종목 대조를 통과한 후보 목록 — narrow_down 재사용(orchestrator.previous_candidates)의
+        # 다음 턴 재료가 된다. 여기서 안 걸러진 채로 넘기면(원래 A의 미필터링 출력을 그대로
+        # 재사용하면) 이번 턴에 걸러진 다른 종목 후보가 다음 턴에 그대로 재등장한다(실측 확인).
+        "candidates": candidates,
     }
