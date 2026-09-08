@@ -1,0 +1,285 @@
+{
+  "id": 148828,
+  "accession_number": "1976.71",
+  "share_license_status": "CC0",
+  "tombstone": "Reliquary Box, 200–400 CE. Pakistan, Gandhara, probably Swat, late Kushan period. Bronze; diameter: 8.6 cm (3 3/8 in.); overall: 7 cm (2 3/4 in.). The Cleveland Museum of Art, Edward L. Whittemore Fund, 1976.71",
+  "current_location": "242A Ancient India",
+  "title": "Reliquary Box",
+  "creation_date": "200–400 CE",
+  "creation_date_earliest": 200,
+  "creation_date_latest": 400,
+  "artists_tags": [],
+  "culture": [
+    "Pakistan, Gandhara, probably Swat, late Kushan period"
+  ],
+  "technique": "bronze",
+  "support_materials": [],
+  "department": "Indian and Southeast Asian Art",
+  "collection": "Indian Art - Kushan, Gandhara",
+  "type": "Metalwork",
+  "measurements": "Diameter: 8.6 cm (3 3/8 in.); Overall: 7 cm (2 3/4 in.)",
+  "dimensions": {
+    "diameter": {
+      "width": 0.086,
+      "width_inch": 3,
+      "width_inch_fraction": 0.375
+    },
+    "overall": {
+      "height": 0.07,
+      "height_inch": 2,
+      "height_inch_fraction": 0.75
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 302374,
+        "title": "Year in Review, 1976",
+        "description": "<i>Year in Review, 1976</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (February 1-March 6, 1977).",
+        "opening_date": "1977-02-01T05:00:00"
+      },
+      {
+        "id": 309889,
+        "title": "Kushan Sculpture: Images from Early India",
+        "description": "<i>Kushan Sculpture: Images from Early India</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (November 13, 1985-January 5, 1986).",
+        "opening_date": "1985-11-13T05:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "Ulrich von Schroeder [b, 1943], Zürich, Switzerland, sold to the Cleveland Museum of Art",
+      "citations": [],
+      "footnotes": [],
+      "date": "?-1976",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": [],
+      "date": "1976-",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": null,
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This casket in bronze represents the great variety of reliquary caskets. It is round, has a low foot, and is covered with a lid (with raised handle) that fits over the vessel rather than being inset. It is a traditional shape frequently encountered in Gandharan reliquaries, but its slight flattening and elaborate decoration imply a slightly late date. A central band of a floral creeper decorates the main body of the box and its lid, and is framed on both sides by narrower fluted bands. <br><br>This type of freehand design is characteristic of the late Kusana-early Gupta period. Similar floral patterns are found in another CMA object (1972.164), the lid of a box showing combat between a man and a lion, which also dates to a later period. There the design fills the vacant areas in the busy composition. This pattern, however, has its antecedents in the Begram ivories . which, according to most sources, pre-date the Sasanian invasion of the mid-third century AD. Therefore, it can be assumed that this type of floral decoration was already in use in the third century and that this reliquary box probably dates to the third-fourth century AD. <br><br>The bronze alloy, in its somewhat silverish-metallic appearance, seems to be very close to the material used in the Swat bronzes, which suggests that Swat may also be the provenance for this reliquary.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60746591"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1976.71-reliquary-box"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Lee, Sherman E. \"The Year in Review for 1976.\" <em>The Bulletin of the Cleveland Museum of Art</em> 64, no. 2 (1977): 39-78.",
+      "page_number": "Mentioned: no. 164, p. 79; Reproduced: no. 164, p. 58",
+      "url": "http://www.jstor.org/stable/25152676"
+    },
+    {
+      "citation": "Czuma, Stanislaw J., and Rekha Morris. <em>Kushan Sculpture: Images from Early India</em>. Cleveland, OH: The Cleveland Museum of Art in cooperation with Indiana University Press, 1985.",
+      "page_number": "Mentioned and Reproduced: cat. no. 85, p. 171",
+      "url": ""
+    },
+    {
+      "citation": "Jongeward, David, Elizabeth Errington, Richard Salomon, and Stefan Baums. <em>Gandharan Buddhist Reliquaries</em>. Seattle: Early Buddhist Manuscripts Project, 2012.",
+      "page_number": "Mentioned and Reproduced: p. 105, fig 3.55; pp. 294–295, no. 401",
+      "url": ""
+    }
+  ],
+  "url": "https://clevelandart.org/art/1976.71",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_web.jpg",
+      "width": "900",
+      "height": "773",
+      "filesize": "210918",
+      "filename": "1976.71_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_print.jpg",
+      "width": "3400",
+      "height": "2919",
+      "filesize": "1904705",
+      "filename": "1976.71_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_full.tif",
+      "width": "6004",
+      "height": "5154",
+      "filesize": "92861488",
+      "filename": "1976.71_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt0_web.jpg",
+        "width": "900",
+        "height": "771",
+        "filesize": "207473"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt0_print.jpg",
+        "width": "3400",
+        "height": "2912",
+        "filesize": "1867177"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt0_full.tif",
+        "width": "6004",
+        "height": "5143",
+        "filesize": "92663300"
+      },
+      "date_created": "2022-04-18T17:36:45",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt1_web.jpg",
+        "width": "900",
+        "height": "771",
+        "filesize": "206547"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt1_print.jpg",
+        "width": "3400",
+        "height": "2912",
+        "filesize": "1869030"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt1_full.tif",
+        "width": "6004",
+        "height": "5143",
+        "filesize": "92663244"
+      },
+      "date_created": "2022-04-18T18:01:09",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt2_web.jpg",
+        "width": "900",
+        "height": "771",
+        "filesize": "208693"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt2_print.jpg",
+        "width": "3400",
+        "height": "2911",
+        "filesize": "1859989"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt2_full.tif",
+        "width": "6004",
+        "height": "5140",
+        "filesize": "92609232"
+      },
+      "date_created": "2022-04-18T18:06:55",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt3_web.jpg",
+        "width": "900",
+        "height": "720",
+        "filesize": "109431"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt3_print.jpg",
+        "width": "3400",
+        "height": "2720",
+        "filesize": "884083"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt3_full.tif",
+        "width": "3950",
+        "height": "3160",
+        "filesize": "37469448"
+      },
+      "date_created": "2005-01-12T17:16:55",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt4_web.jpg",
+        "width": "900",
+        "height": "720",
+        "filesize": "139689"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt4_print.jpg",
+        "width": "3400",
+        "height": "2720",
+        "filesize": "1108414"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt4_full.tif",
+        "width": "4295",
+        "height": "3436",
+        "filesize": "44297320"
+      },
+      "date_created": "2005-01-12T17:31:46",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt5_web.jpg",
+        "width": "900",
+        "height": "720",
+        "filesize": "163079"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt5_print.jpg",
+        "width": "3400",
+        "height": "2720",
+        "filesize": "1382631"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_alt5_full.tif",
+        "width": "4728",
+        "height": "3782",
+        "filesize": "53668452"
+      },
+      "date_created": "2005-01-12T17:43:17",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Edward L. Whittemore Fund",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 148828,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1976-07-29T00:00:00",
+  "sortable_date": 200,
+  "date_added_to_oa": null,
+  "date_text": "200–400 CE",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "cover",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-05-29 07:38:45.907000"
+}

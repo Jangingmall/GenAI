@@ -1,0 +1,15 @@
+{
+  "name": "team3-ecommerce-detail-page-renderer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:detail-layout": "node scripts/test_detail_page_layout.mjs",
+    "render:detail-page": "node scripts/render_detail_page.mjs",
+    "test:input-page": "node scripts/test_input_page.mjs",
+    "test:draft-preview": "node scripts/test_draft_preview.mjs",
+    "test:draft-preview-remote": "node scripts/test_draft_preview_remote.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

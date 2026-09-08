@@ -1,0 +1,361 @@
+{
+  "id": 94136,
+  "accession_number": "1914.680",
+  "share_license_status": "CC0",
+  "tombstone": "Paint Box of Vizier Amenemope, c. 1427–1401 BCE. Egypt, New Kingdom (1540–1069 BCE), Dynasty 18, reign of Amenhotep II (1425–1400 BCE). Boxwood with inscription inlaid in Egyptian blue; overall: 2.2 x 21 x 3.6 cm (7/8 x 8 1/4 x 1 7/16 in.). The Cleveland Museum of Art, Gift of the John Huntington Art and Polytechnic Trust, 1914.680",
+  "current_location": "001A ArtLens Exhibition",
+  "title": "Paint Box of Vizier Amenemope",
+  "creation_date": "c. 1427–1401 BCE",
+  "creation_date_earliest": -1427,
+  "creation_date_latest": -1401,
+  "artists_tags": [],
+  "culture": [
+    "Egypt, New Kingdom (1540–1069 BCE), Dynasty 18, reign of Amenhotep II (1425–1400 BCE)"
+  ],
+  "technique": "boxwood with inscription inlaid in Egyptian blue",
+  "support_materials": [],
+  "department": "Egyptian and Ancient Near Eastern Art",
+  "collection": "Egypt - New Kingdom",
+  "type": "Tools and Equipment",
+  "measurements": "Overall: 2.2 x 21 x 3.6 cm (7/8 x 8 1/4 x 1 7/16 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.022,
+      "height_inch": 0,
+      "height_inch_fraction": 0.875,
+      "width": 0.21,
+      "width_inch": 8,
+      "width_inch_fraction": 0.25,
+      "depth": 0.036,
+      "depth_inch": 1,
+      "depth_inch_fraction": 0.4375
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": null,
+      "inscription_translation": "Blue on Front: The overseer of the city and vizier Amenemope.  \nMaster of secrets of the west bank [of Thebes].\nRed on Back: Amen-Ra, Lord of the Thrones of the Two Lands....",
+      "inscription_remark": null,
+      "sortorder": null
+    }
+  ],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 304413,
+        "title": "Science within Art",
+        "description": "<i>Science within Art</i>. The Cleveland Museum of Art (organizer) (February 13-April 20, 1980).",
+        "opening_date": "1980-02-13T05:00:00"
+      },
+      {
+        "id": 281475,
+        "title": "Pharaoh: King of Ancient Egypt",
+        "description": "<i>Pharaoh: King of Ancient Egypt</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (March 13-June 12, 2016).",
+        "opening_date": "2016-03-13T05:00:00"
+      },
+      {
+        "id": 705279,
+        "title": "ArtLens Reimagined: The Intersection of Art, Technology, and Innovation",
+        "description": "<i>ArtLens Reimagined: The Intersection of Art, Technology, and Innovation</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (July 23, 2026-September 1, 2031).",
+        "opening_date": "2026-07-23T04:00:00"
+      }
+    ],
+    "legacy": [
+      {
+        "description": "<em>Inaugural Exhibition, </em>The Cleveland Museum of Art, Cleveland, OH (June 6-September 20, 1916).",
+        "opening_date": "1916-06-06T00:00:00"
+      },
+      {
+        "description": "<em>Egypt’s Golden Age: The Art of Living in the New Kingdom 1558-1085 B.C.</em>, Museum of Fine Arts, Boston (Feb. 3-May 2, 1982); Houston Museum of Natural Science (July 14-Sept. 19, 1982); Walters Art Gallery (Oct. 27, 1982-Jan. 2, 1983).",
+        "opening_date": "1982-02-03T00:00:00"
+      },
+      {
+        "description": "<em>In the Tomb of Nefertari: Conservation of the Wall Paintings,</em> The J. Paul Getty Museum, Malibu, CA (12 November 1992-21 February 1993).",
+        "opening_date": "1992-11-12T00:00:00"
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "description": "Mohammed Mohasseb and Son, Luxor, sold to  Lucy Olcott Perkins through Henry W. Kent",
+      "citations": [],
+      "footnotes": null,
+      "date": "?-1913",
+      "sortorder": 1
+    },
+    {
+      "description": "(Lucy Olcott Perkins, New York, NY, sold to the Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "1913-1914",
+      "sortorder": 2
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "1914-",
+      "sortorder": 3
+    }
+  ],
+  "find_spot": "Thebes, Egypt",
+  "related_works": [],
+  "former_accession_numbers": [
+    "284.14"
+  ],
+  "did_you_know": "Painting was a popular and time-honored pastime among the upper classes in Egypt.",
+  "early_education_description": null,
+  "artlens_description": "INTERACTIVE <br><strong>Reveal the colors of another artwork with Paint the Past</strong> <br>See the vivid colors, similar to the pigments in this paint box, which might have decorated the surface of <em>Saluting Protective Spirit</em> (883–859 BCE). Move your hands to uncover a layer of history that has since disappeared",
+  "description": "This paint box was made in Egypt more than 3,000 years ago. It includes five pots of color, each made of different minerals. Conservators identified the pigments using X-ray diffraction, a process that helps them determine the minerals that make up each color. The paint box belonged to a man named Amenemope (say: ah-men-em-oh-pee) who advised the pharaoh (king). He probably used it for fun, and it may have been buried with him when he died. The coffin panel on view nearby was made for a different man named Amenemope hundreds of years later.<br><br>Imagine you are painting a picture for a king! Which colors would you use? What would you paint?",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q79474134"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1914.680-paint-box-of-vizier"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Cleveland Museum of Art. <em>Cleveland Museum of Art: Catalogue of the Inaugural Exhibition, June 6-September 20, 1916. </em>Cleveland: Cleveland Museum of Art, 1916.",
+      "page_number": "p. 205, no. 10",
+      "url": "https://archive.org/details/CMAInExhib_80860/page/n275/mode/2up"
+    },
+    {
+      "citation": "Williams, Caroline Ransom. \"The Egyptian Collection in the Museum of Art at Cleveland, Ohio (Continued).\" <em>The Journal of Egyptian Archaeology</em> 5, no. 4 (1918).",
+      "page_number": "p. 278",
+      "url": "https://www.jstor.org/stable/3853580"
+    },
+    {
+      "citation": "Rhodes, Lynette I. <em>Science Within Art</em>. Cleveland, Ohio: Cleveland Museum of Art, 1980.",
+      "page_number": "no. 17",
+      "url": null
+    },
+    {
+      "citation": "<em>Egypt's Golden Age, the Art of Living in the New Kingdom, 1558-1085 B.C.: Catalogue of the Exhibition.</em> Boston: Museum of Fine Arts, 1982.",
+      "page_number": "no. 398",
+      "url": null
+    },
+    {
+      "citation": "Freed, Rita E. <em>Ramesses the Great: The Pharaoh and His Time</em>. Charlotte, N.C.: Mint Museum of Art, 1988.",
+      "page_number": "p. 103",
+      "url": null
+    },
+    {
+      "citation": "J. Paul Getty Museum, and Getty Conservation Institute. <em>In the Tomb of Nefertari: Conservation of the Wall Paintings.</em> [Malibu, Calif.]: J. Paul Getty Museum, 1992.",
+      "page_number": "no. 12",
+      "url": null
+    },
+    {
+      "citation": "Schulz, Regine, Matthias Seidel, and Hartwig Altenmüller. <em>Egypt: the world of the pharaohs</em>. Köln: Könemann, 1998.",
+      "page_number": "p. 348, fig. 39",
+      "url": null
+    },
+    {
+      "citation": "Berman, Lawrence M., and Kenneth J. Bohač.<em> Catalogue of Egyptian Art: The Cleveland Museum of Art.</em> Cleveland, OH: Cleveland Museum of Art, 1999",
+      "page_number": "Reproduced: p. 312, Color p. 57; Mentioned: p. 311-312",
+      "url": null
+    },
+    {
+      "citation": "Strosberg, Eliane. <em>Art and Science</em>. Paris: Unesco Publ, 1999.",
+      "page_number": "p. 137",
+      "url": null
+    },
+    {
+      "citation": "Vandenbeusch, Marie, Aude Semat, and Margaret Maitland. <em>Pharaoh: King of Ancient Egypt</em>. Cleveland: The Cleveland Museum of Art ; London : The British Museum, 2016. <br><br><strong><br></strong>",
+      "page_number": "Mentioned: p. 113, 165; Reproduced: p. 112",
+      "url": null
+    },
+    {
+      "citation": "Tedbury, Imogen. \"Our Woman in Cairo: Lucy Olcott Perkin's Work as an Agent for the Cleveland Museum of Art.\" In <em>The Art Market and the Museum: Institutional Collecting, Display and Patronage since the Mid-Nineteenth Century. </em>Edited by Frances Fowle, and MaryKate Cleary, 167-183. London: Bloomsbury Visual Arts, 2025.",
+      "page_number": "Mentioned: p. 173; Reproduced: pl. 14",
+      "url": ""
+    }
+  ],
+  "url": "https://clevelandart.org/art/1914.680",
+  "images": {
+    "annotation": "Top",
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_web.jpg",
+      "width": "707",
+      "height": "900",
+      "filesize": "80650",
+      "filename": "1914.680_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_print.jpg",
+      "width": "2671",
+      "height": "3400",
+      "filesize": "921046",
+      "filename": "1914.680_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_full.tif",
+      "width": "10652",
+      "height": "13561",
+      "filesize": "433381496",
+      "filename": "1914.680_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt0_web.jpg",
+        "width": "900",
+        "height": "308",
+        "filesize": "63640"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt0_print.jpg",
+        "width": "3400",
+        "height": "1165",
+        "filesize": "592462"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt0_full.tif",
+        "width": "14204",
+        "height": "4866",
+        "filesize": "207375840"
+      },
+      "date_created": "2026-03-23T16:31:52",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt1_web.jpg",
+        "width": "900",
+        "height": "304",
+        "filesize": "62873"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt1_print.jpg",
+        "width": "3400",
+        "height": "1147",
+        "filesize": "572145"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt1_full.tif",
+        "width": "14204",
+        "height": "4792",
+        "filesize": "204222564"
+      },
+      "date_created": "2026-03-23T16:36:01",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt2_web.jpg",
+        "width": "900",
+        "height": "681",
+        "filesize": "93707"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt2_print.jpg",
+        "width": "3400",
+        "height": "2571",
+        "filesize": "1193379"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt2_full.tif",
+        "width": "7137",
+        "height": "5396",
+        "filesize": "115560096"
+      },
+      "date_created": "2026-03-23T16:41:03",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt3_web.jpg",
+        "width": "900",
+        "height": "678",
+        "filesize": "91392"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt3_print.jpg",
+        "width": "3400",
+        "height": "2561",
+        "filesize": "1153052"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt3_full.tif",
+        "width": "7137",
+        "height": "5375",
+        "filesize": "115110432"
+      },
+      "date_created": "2026-03-23T16:45:21",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt4_web.jpg",
+        "width": "708",
+        "height": "900",
+        "filesize": "74763"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt4_print.jpg",
+        "width": "2674",
+        "height": "3400",
+        "filesize": "870901"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt4_full.tif",
+        "width": "10652",
+        "height": "13546",
+        "filesize": "432901952"
+      },
+      "date_created": "2026-03-23T16:12:29",
+      "annotation": "Bottom"
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt5_web.jpg",
+        "width": "665",
+        "height": "893",
+        "filesize": "361909"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt5_print.jpg",
+        "width": "2533",
+        "height": "3400",
+        "filesize": "5521205"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_alt5_full.tif",
+        "width": "4470",
+        "height": "6000",
+        "filesize": "80490256"
+      },
+      "date_created": "2007-03-29T13:57:54",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Gift of the John Huntington Art and Polytechnic Trust",
+  "image_credit": null,
+  "sketchfab_id": "e1e90352bbba4c56bac899deb16bf6c4",
+  "sketchfab_url": "https://sketchfab.com/models/e1e90352bbba4c56bac899deb16bf6c4",
+  "gallery_donor_text": "Maltz Family Foundation ArtLens Gallery",
+  "athena_id": 94136,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1914-01-01T00:00:00",
+  "sortable_date": -1427,
+  "date_added_to_oa": null,
+  "date_text": "c. 1427–1401 BCE",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-09-05 18:16:33.735000"
+}

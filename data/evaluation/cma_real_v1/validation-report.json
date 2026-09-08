@@ -1,0 +1,18 @@
+{
+  "assets": 60,
+  "categories": {
+    "textile": 10,
+    "box": 10,
+    "metalware": 10,
+    "ceramic": 10,
+    "jewelry": 10,
+    "furniture": 10
+  },
+  "analysis_cases": 60,
+  "rendering_cases": 60,
+  "unique_objects_across_domains": 60,
+  "legacy_exact_image_overlap": 0,
+  "image_decode_hash_license_dto_checks": "passed",
+  "model_evaluation_run": false,
+  "human_label_review": "pending"
+}
