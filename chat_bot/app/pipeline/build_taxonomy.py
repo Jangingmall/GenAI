@@ -79,8 +79,12 @@ def build() -> dict:
 
 
 def _render(data: dict) -> str:
-    labels_src = "\n".join(f"    {k!r}: {v!r}," for k, v in sorted(data["labels"].items()))
-    signals_src = "\n".join(f"    {k!r}: {v!r}," for k, v in sorted(data["signals"].items()))
+    labels_src = "\n".join(
+        f"    {k!r}: {v!r}," for k, v in sorted(data["labels"].items())
+    )
+    signals_src = "\n".join(
+        f"    {k!r}: {v!r}," for k, v in sorted(data["signals"].items())
+    )
     ambiguous_src = "\n".join(
         f"    {k!r}: {v!r}," for k, v in sorted(data["ambiguous"].items())
     )
@@ -114,7 +118,9 @@ AMBIGUOUS_TERMS: dict[str, list[str]] = {{
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="카테고리 대조 사전 생성")
     parser.add_argument(
-        "--check", action="store_true", help="재생성 결과가 커밋된 taxonomy.py 와 같은지만 확인"
+        "--check",
+        action="store_true",
+        help="재생성 결과가 커밋된 taxonomy.py 와 같은지만 확인",
     )
     args = parser.parse_args(argv)
 

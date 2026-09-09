@@ -10,7 +10,6 @@ import json
 
 from app.pipeline import generate as gen
 
-
 # ---------------------------------------------------------------------------
 # _format_candidates
 # ---------------------------------------------------------------------------
@@ -52,7 +51,9 @@ def test_format_candidates_shows_no_info_when_price_missing():
 def test_format_candidates_includes_artisan_when_given():
     # artisans 테이블도 price와 같은 이유로 B가 직접 조회해 넘긴다(_fetch_artisans)
     candidates = [{"product_id": 1, "name": "T", "category": "C", "evidence": {}}]
-    text = gen._format_candidates(candidates, artisans={1: {"business_name": "정예준 도예", "region": "부산"}})
+    text = gen._format_candidates(
+        candidates, artisans={1: {"business_name": "정예준 도예", "region": "부산"}}
+    )
     assert "정예준 도예" in text
     assert "부산" in text
 
@@ -87,7 +88,12 @@ def test_drop_evidence_mismatched_removes_wrong_category_reason():
     # 후보는 도자기(청자)인데 reason에 나전칠기 신호("자개")가 섞여 있으면 few-shot
     # 문구를 베낀 것으로 보고 제거한다.
     candidates_by_id = {1: {"product_id": 1, "name": "청자 찻잔", "evidence": {}}}
-    items = [{"product_id": 1, "reason": "자개를 문양대로 오려 붙이고 옻칠 연마를 반복했습니다."}]
+    items = [
+        {
+            "product_id": 1,
+            "reason": "자개를 문양대로 오려 붙이고 옻칠 연마를 반복했습니다.",
+        }
+    ]
     assert gen._drop_evidence_mismatched(items, candidates_by_id) == []
 
 
@@ -175,7 +181,11 @@ def test_build_reply_filters_mismatched_category_by_name():
     # 역추정해, 사용자가 말한 종목(옹기)과 다르면 걸러낸다. LLM이 그래도 추천해도
     # allowed_ids에서 이미 빠져 있어 _drop_unknown_ids가 제거한다.
     candidates = [{"product_id": 1, "name": "청자 다완", "evidence": {}}]
-    payload = {"reply": "추천합니다.", "products": [{"product_id": 1, "reason": "..."}], "suggestions": []}
+    payload = {
+        "reply": "추천합니다.",
+        "products": [{"product_id": 1, "reason": "..."}],
+        "suggestions": [],
+    }
     result = gen.build_reply(
         "옹기 있나요", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
     )
@@ -192,7 +202,12 @@ def test_format_filters_none_returns_placeholder():
 
 
 def test_format_filters_includes_price_and_theme():
-    filters = {"max_price": 50000, "min_price": None, "gift_theme": ["WEDDING"], "color": None}
+    filters = {
+        "max_price": 50000,
+        "min_price": None,
+        "gift_theme": ["WEDDING"],
+        "color": None,
+    }
     text = gen._format_filters(filters)
     assert "50000원 이하" in text
     assert "WEDDING" in text
@@ -208,7 +223,9 @@ def test_build_reply_returns_suggestions_from_chat():
         "products": [],
         "suggestions": ["가격대 낮춰서", "다른 색상으로", "다른 종목으로"],
     }
-    result = gen.build_reply("아무거나", [], "product_search", chat=_fake_chat(payload), **_NO_DB)
+    result = gen.build_reply(
+        "아무거나", [], "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
     assert result["suggestions"] == payload["suggestions"]
 
 

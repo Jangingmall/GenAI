@@ -66,7 +66,11 @@ def run(
         contact1["filters"].get(k) and contact1["filters"].get(k) != prev_filters.get(k)
         for k in ("max_price", "min_price", "color")
     )
-    if contact1["intent"] == "narrow_down" and previous_candidates and not has_new_filter:
+    if (
+        contact1["intent"] == "narrow_down"
+        and previous_candidates
+        and not has_new_filter
+    ):
         candidates = previous_candidates
     else:
         candidates = search_and_rank(contact1)

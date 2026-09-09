@@ -152,7 +152,9 @@ def _cast_list(value) -> list[str]:
     return [part.strip() for part in str(value).split(LIST_SEPARATOR) if part.strip()]
 
 
-def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[dict], list[dict]]:
+def to_records(
+    product_raw: list[dict], artisan_raw: list[dict]
+) -> tuple[list[dict], list[dict]]:
     """product.csv/artisan.csv 원본 행에 각각 컬럼맵을 적용하고 타입을 맞춰
     (artisan_rows, product_rows)로 돌려준다.
 
@@ -161,7 +163,9 @@ def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[d
     """
     artisans_by_id: dict[int, dict] = {}
     for source_row in artisan_raw:
-        row = {ARTISAN_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+        row = {
+            ARTISAN_COLUMN_MAP.get(key, key): value for key, value in source_row.items()
+        }
         artisan = {}
         for field in ARTISAN_FIELDS:
             value = row.get(field)
@@ -176,7 +180,9 @@ def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[d
 
     products: list[dict] = []
     for source_row in product_raw:
-        row = {PRODUCT_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+        row = {
+            PRODUCT_COLUMN_MAP.get(key, key): value for key, value in source_row.items()
+        }
         product = {}
         for field in PRODUCT_FIELDS:
             value = row.get(field)
@@ -495,7 +501,10 @@ def _parse_args(argv):
         help="DB·임베딩 모델 없이 읽기·검사·조립까지만 하고 결과 일부를 출력",
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="상품 앞 N건만 처리 (디버깅용, 장인은 전체 유지)"
+        "--limit",
+        type=int,
+        default=None,
+        help="상품 앞 N건만 처리 (디버깅용, 장인은 전체 유지)",
     )
     return parser.parse_args(argv)
 

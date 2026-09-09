@@ -71,7 +71,9 @@ def test_to_records_color_is_scalar_not_array():
 
 
 def test_to_records_empty_array_field_is_empty_list():
-    _, products = lp.to_records([_raw_product_row(purpose_tags="")], [_raw_artisan_row()])
+    _, products = lp.to_records(
+        [_raw_product_row(purpose_tags="")], [_raw_artisan_row()]
+    )
     assert products[0]["purpose_tags"] == []
 
 
@@ -108,18 +110,23 @@ def test_to_records_blank_optional_number_is_none():
 
 def test_to_records_keeps_unparseable_int_as_string():
     # validate가 잡을 수 있도록 raise하지 않고 원본을 남긴다
-    _, products = lp.to_records([_raw_product_row(price="32만원")], [_raw_artisan_row()])
+    _, products = lp.to_records(
+        [_raw_product_row(price="32만원")], [_raw_artisan_row()]
+    )
     assert products[0]["price"] == "32만원"
 
 
 def test_to_records_strips_text_fields():
-    _, products = lp.to_records([_raw_product_row(name="  자개 보석함  ")], [_raw_artisan_row()])
+    _, products = lp.to_records(
+        [_raw_product_row(name="  자개 보석함  ")], [_raw_artisan_row()]
+    )
     assert products[0]["name"] == "자개 보석함"
 
 
 def test_to_records_strips_certification_level():
     artisans, _products = lp.to_records(
-        [_raw_product_row()], [_raw_artisan_row(certification_level="MASTER_CRAFTSMAN ")]
+        [_raw_product_row()],
+        [_raw_artisan_row(certification_level="MASTER_CRAFTSMAN ")],
     )
     assert artisans[0]["certification_level"] == "MASTER_CRAFTSMAN"
 
@@ -254,7 +261,12 @@ def test_embedding_text_unknown_category_code_kept_as_is():
 
 
 def test_embedding_text_skips_blank_and_none():
-    product = {"name": "보석함", "material": "", "making_story": None, "usage_care": "마른 천"}
+    product = {
+        "name": "보석함",
+        "material": "",
+        "making_story": None,
+        "usage_care": "마른 천",
+    }
     text = lp.build_embedding_text(product, None)
     assert text == "보석함 마른 천"
 
@@ -313,7 +325,9 @@ def test_evidence_verified_is_certification_level():
 
 
 def test_evidence_artisan_input_is_raw_concat():
-    ev = lp.build_evidence({"making_story": "삼 년 말렸다", "usage_care": "마른 천"}, None)
+    ev = lp.build_evidence(
+        {"making_story": "삼 년 말렸다", "usage_care": "마른 천"}, None
+    )
     assert ev["artisan_input"] == "삼 년 말렸다 마른 천"
 
 
@@ -336,7 +350,11 @@ def test_build_rows_attaches_derived_fields():
     rows = lp.build_rows(artisans, products)
     assert rows[0]["embedding_text"].startswith("보석함")
     assert isinstance(rows[0]["search_text"], str)
-    assert set(rows[0]["evidence"].keys()) == {"artisan_input", "verified", "ai_inference"}
+    assert set(rows[0]["evidence"].keys()) == {
+        "artisan_input",
+        "verified",
+        "ai_inference",
+    }
 
 
 def test_build_rows_does_not_embed():
