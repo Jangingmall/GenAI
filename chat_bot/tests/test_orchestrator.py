@@ -37,8 +37,22 @@ def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
     return {}
 
 
-# rr.run 호출마다 반복되는 DB 회피용 키워드 인자 묶음 — **_NO_DB로 한 번에 넘긴다.
-_NO_DB = {"fetch_prices": _no_prices, "fetch_artisans": _no_artisans}
+def _no_cache_lookup(message: str):
+    """의미 기반 캐시 기본값은 실제 임베딩 모델을 부르므로, 단위 테스트에선 항상 미스로 만든다."""
+    return None
+
+
+def _no_cache_store(message: str, contact1: dict) -> None:
+    pass
+
+
+# rr.run 호출마다 반복되는 DB·캐시 회피용 키워드 인자 묶음 — **_NO_DB로 한 번에 넘긴다.
+_NO_DB = {
+    "fetch_prices": _no_prices,
+    "fetch_artisans": _no_artisans,
+    "cache_lookup": _no_cache_lookup,
+    "cache_store": _no_cache_store,
+}
 
 
 def test_run_assembles_final_contract():
@@ -251,8 +265,7 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
         search_and_rank=search_and_rank_must_not_be_called,
         previous_candidates=previous,
         previous_filters={"max_price": None, "min_price": None, "gift_theme": None, "color": None},
-        fetch_prices=_no_prices,
-        fetch_artisans=_no_artisans,
+        **_NO_DB,
     )
 
     assert result["candidates"] == previous
@@ -358,3 +371,178 @@ def test_run_general_chat_skips_second_llm_call_and_search():
     assert result["products"] == []
     assert result["reply"] == "안녕하세요! 어떤 공예품을 찾으시나요?"
     assert calls["n"] == 1, "general_chat인데 LLM이 2번 호출됐다(generate 호출을 안 건너뛰었다)"
+
+
+# ---------------------------------------------------------------------------
+# 의미 기반 캐시 연동 — 대화 맥락 없는 첫 턴만 캐시를 타야 한다
+# ---------------------------------------------------------------------------
+
+
+def test_run_uses_cache_hit_and_skips_classify_and_extract():
+    """캐시 히트면 intent 분류(LLM 호출 1번째)는 건너뛰고, 응답생성(2번째)만 실행돼야
+    한다 — chat이 정확히 1번만 불렸는지로 확인한다(intent까지 불렸으면 2번이 됨)."""
+    cached_contact1 = {
+        "intent": "product_search",
+        "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        "query_text": "도자기",
+        "chat_reply": "",
+    }
+    calls = {"n": 0}
+
+    def chat_counts_calls(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        return json.dumps({"reply": "ok", "products": [], "suggestions": []})
+
+    result = rr.run(
+        "선물용 도자기 추천해줘",
+        chat=chat_counts_calls,
+        search_and_rank=_fake_search_and_rank([]),
+        cache_lookup=lambda message: cached_contact1,
+        cache_store=_no_cache_store,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+    )
+
+    assert result["intent"] == "product_search"
+    assert calls["n"] == 1, "캐시 히트인데 chat이 2번 불렸다(intent 호출을 못 건너뛴 것)"
+
+
+def test_run_stores_to_cache_on_miss():
+    stored = {}
+
+    def fake_store(message, contact1):
+        stored["message"] = message
+        stored["contact1"] = contact1
+
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+    )
+    rr.run(
+        "찻잔 있나요",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        cache_lookup=lambda message: None,
+        cache_store=fake_store,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+    )
+
+    assert stored["message"] == "찻잔 있나요"
+    assert stored["contact1"]["query_text"] == "찻잔"
+
+
+def test_run_skips_cache_when_history_present():
+    """narrow_down처럼 맥락 의존적인 턴은 문장만으로 캐시를 맞히면 위험하므로, history가
+    있으면 캐시를 아예 조회하지 않아야 한다."""
+
+    def cache_lookup_must_not_be_called(message):
+        raise AssertionError("history가 있는데 캐시를 조회했다")
+
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "가격대 확인",
+        },
+        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+    )
+    history = [
+        {"role": "user", "content": "선물로 좋은 도자기 찾아줘"},
+        {"role": "assistant", "content": "도자기 작품을 소개합니다."},
+    ]
+    previous = [{"product_id": 1, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    rr.run(
+        "가격대 확인해줘",
+        history=history,
+        chat=chat,
+        previous_candidates=previous,
+        cache_lookup=cache_lookup_must_not_be_called,
+        cache_store=_no_cache_store,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+    )
+
+
+# ---------------------------------------------------------------------------
+# warmup() — 서버 부팅 시 프롬프트 캐시를 미리 만들어두는 더미 호출
+# ---------------------------------------------------------------------------
+
+
+def test_warmup_calls_chat_exactly_twice():
+    """intent 분류 1번 + 응답생성 1번, 총 2번만 호출해야 한다(그 이상은 낭비, 그 이하면
+    둘 중 하나의 프롬프트가 안 데워진다)."""
+    calls = {"n": 0}
+
+    def chat_counts_calls(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return json.dumps(
+                {
+                    "intent": "general_chat",
+                    "max_price": None,
+                    "min_price": None,
+                    "gift_theme": [],
+                    "color": [],
+                    "query_text": "",
+                    "chat_reply": "",
+                }
+            )
+        return json.dumps({"reply": "ok", "products": [], "suggestions": []})
+
+    rr.warmup(
+        chat=chat_counts_calls,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+        search_and_rank=_fake_search_and_rank([]),
+    )
+
+    assert calls["n"] == 2
+
+
+def test_warmup_also_warms_search_and_rank():
+    """LLM 프롬프트만 예열하고 검색(임베딩 모델 최초 로딩)을 빼먹으면, 첫 실사용자가
+    product_search 계열 의도를 말하는 순간 그 로딩 비용을 고스란히 떠안는다(실측
+    확인: LLM은 빨라졌는데 전체 턴은 여전히 28초 — 검색 임베딩 모델 로딩이 그대로
+    남아있었기 때문). search_and_rank도 반드시 호출돼야 한다."""
+    seen = {"called": False}
+
+    def spy_search_and_rank(contact1):
+        seen["called"] = True
+        return []
+
+    def fake_chat(messages, schema, *, think, model=None):
+        return json.dumps(
+            {
+                "intent": "general_chat",
+                "max_price": None,
+                "min_price": None,
+                "gift_theme": [],
+                "color": [],
+                "query_text": "",
+                "chat_reply": "",
+                "reply": "ok",
+                "products": [],
+                "suggestions": [],
+            }
+        )
+
+    rr.warmup(
+        chat=fake_chat,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+        search_and_rank=spy_search_and_rank,
+    )
+
+    assert seen["called"] is True

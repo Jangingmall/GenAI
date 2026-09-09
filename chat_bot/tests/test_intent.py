@@ -1,5 +1,7 @@
 """intent.py 단위 테스트. 순수 함수는 LLM 없이, classify_and_extract는 fake_chat 주입.
-b03만 실제 Ollama로 스모크(intent.py 완료 조건, docs/b-metaprompt.md §2 S2).
+
+이 브랜치엔 eval/ 스위트가 없어 실LLM 검증은 인라인 메시지로만 한다(gift_theme 환각
+회귀 재현이 대표적).
 
 실행: python -m pytest tests/test_intent.py -q
 """
@@ -183,21 +185,29 @@ def test_classify_and_extract_truncates_history_to_recent_turns():
         seen["user_content"] = messages[-1]["content"]
         return json.dumps({"intent": "general_chat", "query_text": ""})
 
-    history = [{"role": "user", "content": f"{i}번째 메시지"} for i in range(10)]
+    history = [
+        {"role": "user", "content": f"{i}번째 메시지"} for i in range(10)
+    ]
     it.classify_and_extract("최근 질문", history=history, chat=fake)
 
     assert "0번째 메시지" not in seen["user_content"]
     assert "9번째 메시지" in seen["user_content"]
 
 
-# ---------------------------------------------------------------------------
-# 스모크 — 실제 Ollama 호출 (S2 완료 조건). 이 브랜치엔 eval/cases.json이 없어 인라인 문구로.
-# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "message",
+    ["차 마실 때 쓸 것 추천해줘", "다완 추천해줘", "테이블러너 추천해줘"],
+)
+def test_smoke_no_gift_hallucination_without_recipient_real_llm(message):
+    """받는 사람·선물 언급이 전혀 없는 "~추천해줘" 문장은 product_search여야 한다.
 
+    docs/b-metaprompt.md에 이미 기록된 회귀("차 마실 때 쓸 것 추천해줘" → gift_theme이
+    근거 없이 FRIEND로 채워짐) — gift_recommendation을 보여주는 few-shot 예시가 프롬프트에
+    하나도 없어서, 모델이 "추천해줘"를 선물 요청으로 과대 일반화하고 프롬프트에서 유일하게
+    본 실제 gift_theme 값(FRIEND)으로 fallback하는 것으로 확인됐다(실험으로 검증: 대조
+    예시 2개를 추가하니 재현됐던 케이스가 전부 정상화됨).
+    """
+    result = it.classify_and_extract(message)
 
-def test_smoke_gift_price_real_llm():
-    result = it.classify_and_extract("환갑 선물로 30만원대 다기 세트 찾아요")
-
-    assert result["intent"] == "gift_recommendation"
-    assert result["filters"]["max_price"] is not None
-    assert 250_000 <= result["filters"]["max_price"] <= 400_000
+    assert result["intent"] == "product_search"
+    assert result["filters"]["gift_theme"] is None

@@ -46,7 +46,7 @@ CONTENT_TAG_PREFIXES = ("N", "V", "MM", "MAG", "SL", "SN")
 PRODUCT_COLUMN_MAP: dict[str, str] = {}
 ARTISAN_COLUMN_MAP: dict[str, str] = {}
 
-# certification_level 코드값 (실데이터 artisan.csv 실측 4종). 이 밖의 값은 경고만 하고 통과시킨다.
+# certification_level 코드값 (artisan.csv 기준 4종). 이 밖의 값은 경고만 하고 통과시킨다.
 CERTIFICATION_LEVELS = (
     "YOUNG_CRAFTSMAN",
     "SENIOR_CRAFTSMAN",
@@ -54,7 +54,7 @@ CERTIFICATION_LEVELS = (
     "NATIONAL_INTANGIBLE_HERITAGE",
 )
 
-# purpose_tags 원소를 구분하는 문자. 실데이터 실측: "인테리어|선물"처럼 "|" 사용.
+# purpose_tags 원소를 구분하는 문자. 실데이터가 "인테리어|선물"처럼 "|"를 쓴다.
 # gift_theme은 실데이터에서 상품 1건당 항상 단일값이라 이 구분자를 만날 일이 없다.
 # color는 확정 스키마에서 배열이 아니라 스칼라라 ARRAY_FIELDS에 넣지 않는다.
 LIST_SEPARATOR = "|"
@@ -152,7 +152,9 @@ def _cast_list(value) -> list[str]:
     return [part.strip() for part in str(value).split(LIST_SEPARATOR) if part.strip()]
 
 
-def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[dict], list[dict]]:
+def to_records(
+    product_raw: list[dict], artisan_raw: list[dict]
+) -> tuple[list[dict], list[dict]]:
     """product.csv/artisan.csv 원본 행에 각각 컬럼맵을 적용하고 타입을 맞춰
     (artisan_rows, product_rows)로 돌려준다.
 
@@ -161,7 +163,9 @@ def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[d
     """
     artisans_by_id: dict[int, dict] = {}
     for source_row in artisan_raw:
-        row = {ARTISAN_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+        row = {
+            ARTISAN_COLUMN_MAP.get(key, key): value for key, value in source_row.items()
+        }
         artisan = {}
         for field in ARTISAN_FIELDS:
             value = row.get(field)
@@ -176,7 +180,9 @@ def to_records(product_raw: list[dict], artisan_raw: list[dict]) -> tuple[list[d
 
     products: list[dict] = []
     for source_row in product_raw:
-        row = {PRODUCT_COLUMN_MAP.get(key, key): value for key, value in source_row.items()}
+        row = {
+            PRODUCT_COLUMN_MAP.get(key, key): value for key, value in source_row.items()
+        }
         product = {}
         for field in PRODUCT_FIELDS:
             value = row.get(field)
@@ -249,7 +255,7 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
 
 
 # category_code(POTTERY 등 영문 코드)는 임베딩 모델이 한국어 의미로 못 읽을 수 있어
-# 한글로 번역해 넣는다. 적재 담당자 요청으로 반영.
+# 한글로 번역해 넣는다.
 CATEGORY_KO = {
     "POTTERY": "도자기",
     "ONGGI": "옹기",
@@ -495,7 +501,10 @@ def _parse_args(argv):
         help="DB·임베딩 모델 없이 읽기·검사·조립까지만 하고 결과 일부를 출력",
     )
     parser.add_argument(
-        "--limit", type=int, default=None, help="상품 앞 N건만 처리 (디버깅용, 장인은 전체 유지)"
+        "--limit",
+        type=int,
+        default=None,
+        help="상품 앞 N건만 처리 (디버깅용, 장인은 전체 유지)",
     )
     return parser.parse_args(argv)
 

@@ -1,0 +1,194 @@
+"""app/main.py(/ai/chat) 계약 테스트. dependency_overrides로 실제 LLM·DB·임베딩 모델을
+전혀 안 거치고 HTTP 요청/응답 구조·세션 배선만 검증한다.
+
+TestClient(app)를 컨텍스트 매니저(with) 없이 쓰면 lifespan(=orchestrator.warmup())이
+실행되지 않는다 — 여기서 실제 Ollama·DB를 태우지 않으려고 의도적으로 그렇게 뒀다.
+
+실행: python -m pytest tests/test_main.py -q
+"""
+
+import json
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app import main, session_store
+
+client = TestClient(main.app)
+
+
+@pytest.fixture(autouse=True)
+def _clean_state():
+    """모듈 전역 세션 저장소·dependency_overrides가 테스트 간에 새지 않게 정리한다."""
+    session_store._store.clear()
+    yield
+    main.app.dependency_overrides.clear()
+    session_store._store.clear()
+
+
+def _sequenced_chat(intent_payload: dict, generate_payload: dict):
+    """1번째 호출(intent)엔 intent_payload, 2번째 호출(generate)엔 generate_payload를 준다."""
+    calls = {"n": 0}
+
+    def fake(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        return json.dumps(intent_payload if calls["n"] == 1 else generate_payload)
+
+    return fake
+
+
+def _no_prices(product_ids):
+    return {}
+
+
+def _no_artisans(product_ids):
+    return {}
+
+
+def _no_cache_lookup(message):
+    return None
+
+
+def _no_cache_store(message, contact1):
+    pass
+
+
+def _override(*, chat, search_and_rank):
+    """실LLM·실DB·실임베딩 없이 /ai/chat을 테스트하기 위한 dependency_overrides 일괄 세팅."""
+    main.app.dependency_overrides[main._default_chat] = lambda: chat
+    main.app.dependency_overrides[main._default_search_and_rank] = lambda: search_and_rank
+    main.app.dependency_overrides[main._default_fetch_prices] = lambda: _no_prices
+    main.app.dependency_overrides[main._default_fetch_artisans] = lambda: _no_artisans
+    main.app.dependency_overrides[main._default_cache_lookup] = lambda: _no_cache_lookup
+    main.app.dependency_overrides[main._default_cache_store] = lambda: _no_cache_store
+
+
+_INTENT_PRODUCT_SEARCH = {
+    "intent": "product_search",
+    "max_price": None,
+    "min_price": None,
+    "gift_theme": [],
+    "color": [],
+    "query_text": "찻잔",
+    "chat_reply": "",
+}
+_GENERATE_OK = {
+    "reply": "이 찻잔을 추천드려요.",
+    "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
+    "suggestions": ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"],
+}
+_CANDIDATES = [
+    {
+        "product_id": 9,
+        "name": "청자 다완",
+        "score": 0.8,
+        "evidence": {"artisan_input": "", "verified": None},
+    }
+]
+
+
+def test_chat_returns_only_external_contract_fields():
+    """candidates·filters는 확정 계약(§0)에 없는 내부 전용 필드라 응답에 유출되면 안 된다."""
+
+    def spy(contact1):
+        return _CANDIDATES
+
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=spy,
+    )
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert set(body.keys()) == {"reply", "intent", "products", "suggestions"}
+    assert body["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
+
+
+def test_narrow_down_reuses_previous_candidates_via_session_id():
+    """같은 session_id로 새 하드필터 없는 narrow_down을 보내면 재검색하지 않는다."""
+    calls = {"n": 0}
+
+    def spy_search_and_rank(contact1):
+        calls["n"] += 1
+        return _CANDIDATES
+
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=spy_search_and_rank,
+    )
+    client.post("/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []})
+    assert calls["n"] == 1
+
+    intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
+    _override(
+        chat=_sequenced_chat(intent_narrow_down, _GENERATE_OK),
+        search_and_rank=spy_search_and_rank,
+    )
+    response = client.post(
+        "/ai/chat",
+        json={"session_id": "s1", "message": "그중 더 싼 거", "history": [{"sender": "USER", "content": "찻잔 있나요"}]},
+    )
+
+    assert response.status_code == 200
+    assert calls["n"] == 1  # 재검색 없이 이전 후보를 그대로 재사용했다
+
+
+def test_history_sender_field_is_mapped_to_role_for_pipeline():
+    """백엔드가 보내는 {sender, content}를 orchestrator가 기대하는 {role, content}로
+    바꿔야 한다 — 안 바뀌면 intent.py의 _format_history가 매 줄을 "챗봇:"으로만
+    표시해(m['role']을 못 찾아 KeyError 나거나) 소비자 발화와 구분이 안 된다."""
+    seen = {}
+    calls = {"n": 0}
+
+    def sequenced(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            seen["user_content"] = messages[-1]["content"]
+            return json.dumps(_INTENT_PRODUCT_SEARCH)
+        return json.dumps(_GENERATE_OK)
+
+    _override(chat=sequenced, search_and_rank=lambda contact1: _CANDIDATES)
+
+    client.post(
+        "/ai/chat",
+        json={
+            "session_id": "s1",
+            "message": "그중 더 싼 거",
+            "history": [
+                {"sender": "USER", "content": "찻잔 있나요"},
+                {"sender": "ADMIN", "content": "청자 찻잔을 추천드려요"},
+            ],
+        },
+    )
+
+    assert "소비자: 찻잔 있나요" in seen["user_content"]
+    assert "챗봇: 청자 찻잔을 추천드려요" in seen["user_content"]
+
+
+def test_different_session_ids_do_not_share_state():
+    """session_id가 다르면 narrow_down이어도 이전 후보를 못 물려받아 새로 검색한다."""
+    calls = {"n": 0}
+
+    def spy_search_and_rank(contact1):
+        calls["n"] += 1
+        return _CANDIDATES
+
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=spy_search_and_rank,
+    )
+    client.post("/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []})
+    assert calls["n"] == 1
+
+    intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
+    _override(
+        chat=_sequenced_chat(intent_narrow_down, _GENERATE_OK),
+        search_and_rank=spy_search_and_rank,
+    )
+    client.post("/ai/chat", json={"session_id": "s2", "message": "그중 더 싼 거", "history": []})
+
+    assert calls["n"] == 2  # s2는 s1의 후보를 모르니 새로 검색했다

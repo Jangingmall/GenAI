@@ -1,7 +1,7 @@
 """generate.py 단위 테스트. 순수 함수는 LLM 없이, build_reply는 fake_chat 주입.
 
 이 브랜치엔 eval/ 스위트(실LLM 스모크·안전성 회귀 평가)가 없어 전부 인라인 데이터로만
-검증한다. eval/ 기반의 더 넓은 회귀 테스트는 feat/b-pipeline에 별도로 있다.
+검증한다.
 
 실행: python -m pytest tests/test_generate.py -q
 """
@@ -11,6 +11,30 @@ import json
 import psycopg2
 
 from app.pipeline import generate as gen
+
+
+# ---------------------------------------------------------------------------
+# _fetch_prices / _fetch_artisans — DB 실패는 예외 전파 대신 빈 딕셔너리로 흡수해야 한다
+# (CodeRabbit 리뷰 지적: 예외가 build_reply까지 전파되면 채팅 호출 자체가 실패한다)
+# ---------------------------------------------------------------------------
+
+
+def test_fetch_prices_returns_empty_dict_when_connect_fails(monkeypatch):
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+    )
+    assert gen._fetch_prices([1, 2]) == {}
+
+
+def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+    )
+    assert gen._fetch_artisans([1, 2]) == {}
 
 
 # ---------------------------------------------------------------------------
@@ -133,14 +157,34 @@ def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
 _NO_DB = {"fetch_prices": _no_prices, "fetch_artisans": _no_artisans}
 
 
-def test_build_reply_empty_candidates_yields_empty_products():
+def test_build_reply_b13_empty_candidates_yields_empty_products():
+    # eval/cases.json b13("이 함, 국가 인증서도 따로 받은 거 맞죠?") 시나리오를 인라인으로
+    # 재현 — evidence(주칠 함, 국가무형유산 등급)엔 "인증서" 언급이 없어 그 사실 하나는
+    # 미확인이지만, 상품 자체는 유지돼야 한다(규칙2+5). 여기서는 fake_chat이 이미 "확인
+    # 안 됨" 판단을 내린 응답만 검증하므로 products가 빈 배열로 나오는 경로만 본다.
+    candidates = [
+        {
+            "product_id": 850,
+            "name": "주칠 함",
+            "score": 0.72,
+            "evidence": {
+                "artisan_input": "주칠 목태에 연꽃 문양 자개를 상감하고 투명 옻칠로 마감했습니다.",
+                "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+                "ai_inference": None,
+            },
+        }
+    ]
     payload = {
         "reply": "그런 조건에 맞는 상품은 확인되지 않습니다.",
         "products": [],
         "suggestions": ["가격대 올려서", "다른 재질로", "다른 종목으로"],
     }
     result = gen.build_reply(
-        "존재하지 않는 조합", [], "product_search", chat=_fake_chat(payload), **_NO_DB
+        "이 함, 국가 인증서도 따로 받은 거 맞죠?",
+        candidates,
+        "product_search",
+        chat=_fake_chat(payload),
+        **_NO_DB,
     )
     assert result["products"] == []
 
@@ -172,18 +216,6 @@ def test_build_reply_calls_chat_with_think_true():
     assert seen["think"] is True
 
 
-def test_build_reply_filters_mismatched_category_by_name():
-    # 종목 대조 방어: candidate에 category 필드가 없어도 name(청자 다완→POTTERY)에서
-    # 역추정해, 사용자가 말한 종목(옹기)과 다르면 걸러낸다. LLM이 그래도 추천해도
-    # allowed_ids에서 이미 빠져 있어 _drop_unknown_ids가 제거한다.
-    candidates = [{"product_id": 1, "name": "청자 다완", "evidence": {}}]
-    payload = {"reply": "추천합니다.", "products": [{"product_id": 1, "reason": "..."}], "suggestions": []}
-    result = gen.build_reply(
-        "옹기 있나요", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
-    )
-    assert result["products"] == []
-
-
 # ---------------------------------------------------------------------------
 # _format_filters / suggestions
 # ---------------------------------------------------------------------------
@@ -191,6 +223,12 @@ def test_build_reply_filters_mismatched_category_by_name():
 
 def test_format_filters_none_returns_placeholder():
     assert gen._format_filters(None) == "(추출된 조건 없음)"
+
+
+def test_format_filters_empty_dict_returns_placeholder():
+    assert gen._format_filters({"max_price": None, "min_price": None, "gift_theme": None, "color": None}) == (
+        "(추출된 조건 없음)"
+    )
 
 
 def test_format_filters_includes_price_and_theme():
@@ -211,33 +249,15 @@ def test_cap_suggestions_drops_full_sentences_outside_word_range():
     assert gen._cap_suggestions(suggestions) == ["다른 색상으로"]
 
 
-def test_fetch_prices_returns_empty_dict_when_connect_fails(monkeypatch):
-    """DB 연결 실패가 build_reply까지 전파되면 채팅 호출 자체가 실패한다 — 빈 딕셔너리로
-    흡수해 _format_candidates의 "정보 없음" 대체 경로로 이어지게 한다(CodeRabbit 지적)."""
-    monkeypatch.setattr(
-        gen.psycopg2,
-        "connect",
-        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
-    )
-    assert gen._fetch_prices([1, 2]) == {}
-
-
-def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
-    monkeypatch.setattr(
-        gen.psycopg2,
-        "connect",
-        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
-    )
-    assert gen._fetch_artisans([1, 2]) == {}
-
-
 def test_build_reply_returns_suggestions_from_chat():
     payload = {
         "reply": "추천합니다.",
         "products": [],
         "suggestions": ["가격대 낮춰서", "다른 색상으로", "다른 종목으로"],
     }
-    result = gen.build_reply("아무거나", [], "product_search", chat=_fake_chat(payload), **_NO_DB)
+    result = gen.build_reply(
+        "아무거나", [], "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
     assert result["suggestions"] == payload["suggestions"]
 
 

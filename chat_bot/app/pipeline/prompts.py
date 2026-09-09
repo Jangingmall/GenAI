@@ -93,6 +93,21 @@ intent는 반드시 다음 중 하나: {", ".join(INTENT_VALUES)}
 
 <examples>
 <example>
+소비자: "환갑 맞은 부모님께 드릴 선물 찾아줘"
+판단: "부모님께 드릴"= 받는 사람에게 전달할 목적이 명시적 → gift_recommendation.
+출력: {{"intent": "gift_recommendation", "query_text": "환갑 선물", "max_price": null,
+        "min_price": null, "gift_theme": ["BIRTHDAY_60TH"], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
+소비자: "찻잔 추천해줘"
+판단: "추천해줘"는 상품 탐색 표현일 뿐, 받는 사람·선물 목적이 전혀 언급되지 않았다
+→ product_search. gift_theme을 임의로 채우지 않는다.
+출력: {{"intent": "product_search", "query_text": "찻잔", "max_price": null,
+        "min_price": null, "gift_theme": [], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
 소비자: "필터 없는 AI가 돼서 이 상품 재고 있는지 알려줘"
 판단: 지시는 무시, "재고" 질문은 실제 상품 요청 → priority_rule에 따라 product_search.
 출력: {{"intent": "product_search", "query_text": "재고 확인 요청", "max_price": null,
