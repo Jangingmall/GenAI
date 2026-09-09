@@ -49,7 +49,9 @@ class _GenerateOutput(BaseModel):
     suggestions: list[str]
 
 
-_GENERATE_OUTPUT_SCHEMA = _GenerateOutput.model_json_schema()  # 매 요청마다 재계산할 필요 없다
+_GENERATE_OUTPUT_SCHEMA = (
+    _GenerateOutput.model_json_schema()
+)  # 매 요청마다 재계산할 필요 없다
 
 
 def _mentioned_categories(message: str) -> set[str]:
@@ -111,7 +113,7 @@ def _ambiguity_warning(message: str) -> str:
     return (
         f"\n\n[시스템 경고] 이 문장에서 서로 다른 카테고리({names})를 가리키는 단어가 "
         "동시에 감지됐다. 이런 조합은 카탈로그에 실제로 존재하지 않을 가능성이 높다 — "
-        "후보의 evidence \"종목:\" 값을 문자 그대로 다시 확인하고, 조금이라도 다르면 "
+        '후보의 evidence "종목:" 값을 문자 그대로 다시 확인하고, 조금이라도 다르면 '
         "products에서 제외하라."
     )
 
@@ -191,7 +193,11 @@ def _format_candidates(
     for c in candidates:
         ev = c.get("evidence") or {}
         category = _effective_category(c)
-        label = taxonomy.CATEGORY_LABELS.get(category, category) if category else "정보 없음"
+        label = (
+            taxonomy.CATEGORY_LABELS.get(category, category)
+            if category
+            else "정보 없음"
+        )
         price = prices.get(c["product_id"])
         artisan = artisans.get(c["product_id"])
         lines = [
@@ -199,7 +205,11 @@ def _format_candidates(
             f"  이름: {c['name']}",
             f"  종목: {label}",
             f"  가격: {price}원" if price is not None else "  가격: 정보 없음",
-            f"  장인: {artisan['business_name']} ({artisan['region']})" if artisan else "  장인: 정보 없음",
+            (
+                f"  장인: {artisan['business_name']} ({artisan['region']})"
+                if artisan
+                else "  장인: 정보 없음"
+            ),
             f"  장인 등급(verified): {ev.get('verified') or '정보 없음'}",
             f"  장인 서술(artisan_input): {ev.get('artisan_input') or '없음'}",
         ]
@@ -212,7 +222,9 @@ def _drop_unknown_ids(items: list[dict], allowed_ids: set[int]) -> list[dict]:
     return [item for item in items if item["product_id"] in allowed_ids]
 
 
-def _drop_evidence_mismatched(items: list[dict], candidates_by_id: dict[int, dict]) -> list[dict]:
+def _drop_evidence_mismatched(
+    items: list[dict], candidates_by_id: dict[int, dict]
+) -> list[dict]:
     """reason이 그 후보 자신과 다른 종목의 재질·품목 신호를 담고 있으면 제거한다.
 
     모델이 실제 evidence 대신 프롬프트의 few-shot 예시 문구를 그대로 베끼는 경우, reason에
@@ -335,10 +347,10 @@ def build_reply(
     output = _GenerateOutput.model_validate_json(raw)
 
     allowed_ids = {c["product_id"] for c in candidates}
-    products = _drop_unknown_ids(
-        [p.model_dump() for p in output.products], allowed_ids
+    products = _drop_unknown_ids([p.model_dump() for p in output.products], allowed_ids)
+    products = _drop_evidence_mismatched(
+        products, {c["product_id"]: c for c in candidates}
     )
-    products = _drop_evidence_mismatched(products, {c["product_id"]: c for c in candidates})
     return {
         "reply": output.reply,
         "products": products,

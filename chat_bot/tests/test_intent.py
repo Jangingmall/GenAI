@@ -79,7 +79,9 @@ def test_to_contact1_assembles_filters():
         "color": [],
         "query_text": "환갑 선물",
     }
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result == {
         "query_text": "환갑 선물",
         "filters": {
@@ -109,19 +111,29 @@ def test_to_contact1_missing_chat_reply_defaults_empty():
 
 def test_to_contact1_unknown_intent_becomes_general_chat():
     raw = {"intent": "made_up_intent", "query_text": "아무말"}
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result["intent"] == "general_chat"
 
 
 def test_to_contact1_drops_hallucinated_gift_theme():
-    raw = {"intent": "gift_recommendation", "gift_theme": ["NOT_A_REAL_THEME"], "query_text": ""}
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    raw = {
+        "intent": "gift_recommendation",
+        "gift_theme": ["NOT_A_REAL_THEME"],
+        "query_text": "",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result["filters"]["gift_theme"] is None
 
 
 def test_to_contact1_missing_query_text_defaults_empty():
     raw = {"intent": "general_chat"}
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result["query_text"] == ""
 
 

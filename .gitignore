@@ -14,7 +14,6 @@
 .env
 
 # 모델 캐시 (BGE-M3 등, 수 GB — 깃에 올리지 않음)
-**/models/
 **/*.bin
 **/*.safetensors
 

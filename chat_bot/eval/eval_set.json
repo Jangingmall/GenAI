@@ -1,0 +1,232 @@
+{
+  "_readme": "미담 챗봇 검색 평가셋. 정답은 상품 ID가 아니라 '속성 규칙'으로 정의한다(환각 방지·검수 최소화). 채점 스크립트가 검색 결과의 실제 속성을 DB에서 읽어 규칙과 대조한다. queries는 같은 정답 규칙을 공유하는 표현 변형들이다(LLM 증강 가능, 의도 검수 필요). judge=human인 항목은 자동 채점 불가로 사람이 상위 결과를 보고 판정한다.",
+  "_attribute_values": {
+    "category": ["POTTERY", "ONGGI", "NACRE", "DYEING", "WOOD", "METAL"],
+    "purpose_tags": ["선물", "인테리어", "실용", "혼수", "다도", "패션"],
+    "subcategory_sample": ["다완", "찻잔", "다기세트", "다기받침", "잔받침", "소반", "보석함", "촛대", "향로", "장독", "손수건", "스카프"]
+  },
+
+  "items": [
+    {
+      "id": "term_gap_001",
+      "category": "용어격차",
+      "queries": ["차 마실 때 쓸 것", "차 우려 마실 그릇", "찻자리에 놓을 것", "다도용으로 쓸 만한 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_subcategory": ["다완", "찻잔", "다기세트", "다기받침", "잔받침"], "should_be_empty": false },
+      "note": "차 관련 단어 없이도 찻잔류를 찾는지"
+    },
+    {
+      "id": "term_gap_002",
+      "category": "용어격차",
+      "queries": ["밥이나 국 담을 그릇", "식사용 그릇", "밥그릇 국그릇"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_subcategory": ["대접", "접시", "머그"], "should_be_empty": false }
+    },
+    {
+      "id": "term_gap_003",
+      "category": "용어격차",
+      "queries": ["김치 담아둘 큰 그릇", "발효식품 보관 항아리", "장 담그는 독"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_subcategory": ["김치독", "장독", "젓갈독", "곡물독", "항아리", "물항아리"], "should_be_empty": false }
+    },
+    {
+      "id": "term_gap_004",
+      "category": "용어격차",
+      "queries": ["귀중품 넣어둘 상자", "장신구 보관함", "작은 물건 담는 함"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_subcategory": ["보석함", "장신구함", "함", "거울함"], "should_be_empty": false }
+    },
+    {
+      "id": "term_gap_005",
+      "category": "용어격차",
+      "queries": ["목에 두르는 것", "목도리 같은 것", "겨울에 목에 걸치는 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_subcategory": ["스카프", "손수건"], "should_be_empty": false }
+    },
+
+    {
+      "id": "use_001",
+      "category": "상황용도",
+      "queries": ["제사상에 올릴 그릇", "차례상 그릇", "제기로 쓸 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_category": ["METAL", "POTTERY"], "should_be_empty": false },
+      "note": "격식 상황 — 놋그릇·도자기류"
+    },
+    {
+      "id": "use_002",
+      "category": "상황용도",
+      "queries": ["혼수로 장만할 것", "결혼 준비 혼수품", "신혼살림 장만"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_purpose_tags": ["혼수"], "should_be_empty": false }
+    },
+    {
+      "id": "use_003",
+      "category": "상황용도",
+      "queries": ["집 꾸밀 인테리어 소품", "장식용으로 놓을 것", "공간 꾸미기 좋은 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_purpose_tags": ["인테리어"], "should_be_empty": false }
+    },
+    {
+      "id": "use_004",
+      "category": "상황용도",
+      "queries": ["다도에 쓸 것", "차 우리는 도구", "찻자리 준비물"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_purpose_tags": ["다도"], "should_be_empty": false }
+    },
+
+    {
+      "id": "material_001",
+      "category": "재료지정",
+      "queries": ["옻칠한 공예품", "옻칠 제품", "옻 바른 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_material_contains": ["옻칠"], "should_be_empty": false }
+    },
+    {
+      "id": "material_002",
+      "category": "재료지정",
+      "queries": ["자개 박힌 것", "자개 공예품", "나전 제품"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_material_contains": ["자개", "나전"], "should_be_empty": false }
+    },
+    {
+      "id": "material_003",
+      "category": "재료지정",
+      "queries": ["놋그릇", "유기 제품", "놋쇠로 만든 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_material_contains": ["놋쇠"], "should_be_empty": false }
+    },
+    {
+      "id": "material_004",
+      "category": "재료지정",
+      "queries": ["청자", "청자로 된 것", "고려청자 느낌"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_material_contains": ["청자"], "should_be_empty": false }
+    },
+    {
+      "id": "material_005",
+      "category": "재료지정",
+      "queries": ["은으로 만든 것", "은세공품", "은제품"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_material_contains": ["은"], "should_be_empty": false }
+    },
+
+    {
+      "id": "category_001",
+      "category": "카테고리",
+      "queries": ["도자기", "도예 작품", "구운 그릇"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_category": ["POTTERY"], "should_be_empty": false }
+    },
+    {
+      "id": "category_002",
+      "category": "카테고리",
+      "queries": ["목공예품", "나무로 만든 가구", "원목 소품"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_category": ["WOOD"], "should_be_empty": false }
+    },
+    {
+      "id": "category_003",
+      "category": "카테고리",
+      "queries": ["염색 직물", "천연염색 천", "물들인 섬유"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_category": ["DYEING"], "should_be_empty": false }
+    },
+    {
+      "id": "category_004",
+      "category": "카테고리",
+      "queries": ["옹기", "장독대 항아리", "질그릇"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "relevant_category": ["ONGGI"], "should_be_empty": false }
+    },
+
+    {
+      "id": "vibe_001",
+      "category": "감각취향",
+      "queries": ["고급스러운 선물", "품격 있는 작품", "우아한 것"],
+      "type": "search",
+      "judge": "human",
+      "expected": { "should_be_empty": false },
+      "note": "사람이 상위 3개를 보고 '고급스러운지' 판정. 등급 높은 작품이 상위인지도 관찰."
+    },
+    {
+      "id": "vibe_002",
+      "category": "감각취향",
+      "queries": ["소박하고 정겨운 것", "투박한 손맛 느껴지는 것", "따뜻한 느낌의 공예품"],
+      "type": "search",
+      "judge": "human",
+      "expected": { "should_be_empty": false }
+    },
+    {
+      "id": "vibe_003",
+      "category": "감각취향",
+      "queries": ["모던하고 세련된 것", "현대적인 느낌", "심플한 디자인"],
+      "type": "search",
+      "judge": "human",
+      "expected": { "should_be_empty": false }
+    },
+
+    {
+      "id": "edge_001",
+      "category": "엣지_빈결과",
+      "queries": ["1000원짜리 선물", "천원짜리 공예품"],
+      "type": "edge",
+      "judge": "auto",
+      "expected": { "should_be_empty": true },
+      "note": "비현실적 저가 — 유사도 컷 도입 후 빈 결과가 정답. 현재는 억지 매칭 관찰용."
+    },
+    {
+      "id": "edge_002",
+      "category": "엣지_빈결과",
+      "queries": ["플라스틱 장난감", "일회용 종이컵", "공장에서 대량생산한 물건"],
+      "type": "edge",
+      "judge": "auto",
+      "expected": { "should_be_empty": true },
+      "note": "장인 공예와 무관 — 관련 없으면 빈 결과가 정답"
+    },
+    {
+      "id": "edge_003",
+      "category": "엣지_빈결과",
+      "queries": ["방짜로 만든 도자기", "옻칠한 유리컵"],
+      "type": "edge",
+      "judge": "auto",
+      "expected": { "should_be_empty": true },
+      "note": "기법·재료 모순 조합 — 억지로 끼워맞추지 않는지"
+    },
+
+    {
+      "id": "price_001",
+      "category": "가격",
+      "queries": ["5만원 이하 선물", "5만원 안 넘는 것"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "max_price": 50000, "should_be_empty": false },
+      "note": "가격 필터 — B의 intent가 붙어야 작동. 현재는 미작동 관찰용."
+    },
+    {
+      "id": "price_002",
+      "category": "가격",
+      "queries": ["3만원 이하 저렴한 것", "3만원대 이하"],
+      "type": "search",
+      "judge": "auto",
+      "expected": { "max_price": 30000, "should_be_empty": false }
+    }
+  ]
+}
