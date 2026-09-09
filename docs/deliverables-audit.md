@@ -1,6 +1,6 @@
 # 산출물 점검 결과
 
-점검일: 2026-09-08. 코드·문서 정적 대조, 평가 데이터 경로/SHA-256 검증, 로컬 모델 smoke test 기준.
+점검일: 2026-09-09. 코드·문서 정적 대조, 평가 데이터 경로/SHA-256 검증, 로컬 모델 smoke test와 6건 파일럿 실행 결과 기준.
 실제 상품 BE 공개 배포, 권리 담당자 승인, 정량 평가와 사람 2인 검수까지 완료했다는 의미는 아니다.
 
 | 산출물 | 최신 판정 | 조치 / 남은 조건 |
@@ -9,9 +9,9 @@
 | React JSON FE 출력 | 구현 충족(연동 대기) | `schemaVersion: 2.0`, 허용 태그·props·트리 검증, `imageId` 자산 참조, camelCase 직렬화, FE/BE 전달·로컬 `react_document.json` 저장을 구현했다. FE 컴포넌트 renderer와 상품 BE 저장 schema 연동 검증이 남아 있다. |
 | 수집 계획·라이선스 점검 | 부분 충족 | CMA Open Access 실물 60점 snapshot과 CC0 표시·hash를 확보했다. 직접 제공 자산의 권리 증빙과 사람 검수는 미완료다. |
 | 정제 전략 | 부분 충족 | 원본 보존·중복·split·provenance·격리 전략과 dataset validation을 반영했다. 라벨 gold 승인은 남아 있다. |
-| 영역별 평가셋 50~200건 | 부분 충족 | `cma_real_v1`은 분석 60·렌더링 준비 60건이다. API·상태·안전 전용 50건 이상과 실제 모델 실행은 아직 없다. |
-| 평가 지표 정의 | 부분 충족 | 분모·N/A·실패·사람 검수·로컬 모델/생성 자산 기준을 정리했다. 실측 결과표는 미작성이다. |
-| AI 아키텍처 다이어그램 | 충족(로컬 기준) | Gemma 12B + Flux2 Klein 9B 기본 구조와 4B 임시 검증 endpoint를 분리해 기록했다. 운영 확장은 별도 검증 대상이다. |
+| 영역별 평가셋 50~200건 | 부분 충족 | `cma_real_v1`은 분석 60·렌더링 준비 60건이다. 이 중 6건 파일럿의 실제 모델 실행은 완료했지만 60건 전체 실행과 API·상태·안전 전용 50건 이상 평가는 아직 없다. |
+| 평가 지표 정의 | 부분 충족 | 분모·N/A·실패·사람 검수·로컬 모델/생성 자산 기준과 6건 파일럿 실측 결과를 정리했다. 컷아웃 보존율·씬 분기 회귀 gate를 추가했으며 60건 전체와 사람 검수는 미완료다. |
+| AI 아키텍처 다이어그램 | 충족(로컬 기준) | Qwen3.8 27B + Flux2 Klein 9B 기본 구조와 4B 임시 검증 endpoint를 분리해 기록했다. 운영 확장은 별도 검증 대상이다. |
 | 안전성 정책 초안 | 부분 충족 | 원본 보존 자산과 `GENERATED` 참고 자산을 구분했다. 생성 컷의 사람 검수와 게시 gate는 남아 있다. |
 
 ## 최신 실행 증거
@@ -19,21 +19,24 @@
 | 항목 | 결과 |
 |---|---|
 | Python 회귀 테스트 | `236 passed`, Pillow deprecation warning 140건 |
-| 실제 평가 데이터 | `cma_real_v1`: 60개 실물, 6개 카테고리 각 10개, 분석/렌더링 JSONL 각 60건. 파일·decode·hash·라이선스 표시 검증 통과, 모델 실행과 사람 라벨 검수는 pending |
+| 실제 평가 데이터 | `cma_real_v1`: 60개 실물, 6개 카테고리 각 10개, 분석/렌더링 JSONL 각 60건. 파일·decode·hash·라이선스 표시 검증은 통과했으며 60건 전체 모델 실행과 사람 라벨 검수는 pending |
+| 기본 로컬 모델 설정 | 텍스트·비전·한국어 카피 `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`, 이미지 `mlx-community/flux2-klein-9b-4bit`, `PROMPT_VERSION=local-mlx-qwen-flux-v1` |
+| 1차 파일럿 평가 | 6건 전건 성공. React schema validity, tree safety, alias serialization 각 6/6 PASS, imageId 해석 48/48 PASS, 원본 SHA-256 일치 6/6 PASS, executable field 누출 0건 |
+| 파일럿 후속 회귀 gate | 기존 파일럿에서 컷아웃 제품 소실 2건(textile 0.2624, ceramic 0.0324)이 확인되어 `scripts/check_cutout_fidelity.py`와 `scripts/check_scene_direction_coverage.py`를 추가했다. 상세 수치와 기록은 [1차 파일럿 평가 보고서](evaluation/pilot-report-2026-09-09.md)에 있다. |
 | 숨의잔 4B smoke | 10섹션, 774×4,341, Flux 생성 참고 컷 5장, 원본 역할 3장은 fallback |
 | 부채 4B smoke | 10섹션, 774×4,202, Flux 생성 참고 컷 5장, 원본 역할 3장은 `VERIFIED` |
 | Flux2 Klein 4B endpoint | 전용 로컬 11235의 `/v1/images/generations`가 `200`과 `b64_json`을 반환 |
 
-상세 실행 기록은 [로컬 생성 테스트 기록](operations/local-generation-test-report.md)에서 확인한다.
+상세 실행 기록은 [로컬 생성 테스트 기록](operations/local-generation-test-report.md)과 [1차 파일럿 평가 보고서](evaluation/pilot-report-2026-09-09.md)에서 확인한다.
 생성 참고 컷은 품질 smoke 증거이며 상품 사실·정량 평가의 gold label이 아니다.
 
 ## 근거와 중요 차이
 
-- `src/detail_page_ai/app.py`: 로컬 Gemma/Flux adapter만 구성하며 외부 provider를 import하지 않는다.
+- `src/detail_page_ai/app.py`: 로컬 Qwen/Flux adapter만 구성하며 외부 provider를 import하지 않는다.
 - `src/detail_page_ai/react_document.py`·`react_document_builder.py`: 승인 draft에서 제한형 React JSON AST를 조립·검증한다. 모델 출력이 임의 HTML/JSX/CSS로 직접 전달되지 않는다.
 - `src/detail_page_ai/backend_client.py`: AI→상품 BE metadata를 camelCase alias로 JSON 직렬화한다.
 - `src/local_detail_page_ai/runner.py`: 로컬 실행 결과에 `react_document.json`을 저장한다.
-- `src/detail_page_ai/source_photos.py`: `GENERATED` 참고 자산을 허용하지만 원본 hash 연결은 제품 형태 동일의 증명이 아니다.
+- `src/detail_page_ai/source_photos.py`: `SolidBackgroundCutoutExtractor`가 테두리에서 4-이웃 flood fill로 연결된 배경만 마스킹하며, 추출 실패 시 원본 사진으로 fallback한다. `GENERATED` 참고 자산을 허용하지만 원본 hash 연결은 제품 형태 동일의 증명이 아니다.
 - `src/local_detail_page_ai/adapters.py`: 이미지와 상품 BE `user_hints`만으로 `ProductProfileDto`를 생성한다.
 - `data/evaluation/cma_real_v1/validation-report.json`: 60개 원본의 파일·hash·decode·license 표시 검증 결과.
 - `data/evaluation/detail_page_eval_60.jsonl`: 3상품 기반 기존 통합 fixture(초안 42/저장 9/승인 9)이며 독립 성능셋이 아니다.

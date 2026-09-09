@@ -62,8 +62,8 @@
 - Modify: `web/ai_draft_preview.js`
 - Modify: `web/ai_draft_preview.css`
 - Test: `tests/test_ai_internal_app.py`
-- Test: `scripts/test_input_page.mjs`
-- Test: `scripts/test_draft_preview.mjs`
+- Test: `scripts/browser/test_input_page.mjs`
+- Test: `scripts/browser/test_draft_preview.mjs`
 
 **Interfaces:**
 - Add internal draft status response containing editable structured draft, `react_document`, and approved-draft metadata.
@@ -177,8 +177,8 @@
 
 **Files:**
 - Test: all `tests/`
-- Test: `scripts/test_input_page.mjs`
-- Test: `scripts/test_draft_preview.mjs`
+- Test: `scripts/browser/test_input_page.mjs`
+- Test: `scripts/browser/test_draft_preview.mjs`
 
 - [ ] Run `./.venv/bin/pytest -q`.
 - [ ] Run `./.venv/bin/python -m compileall -q src scripts tests`.

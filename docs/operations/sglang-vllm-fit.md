@@ -108,7 +108,7 @@ MLX Serve를 기본 모델로 시작한다.
 상세페이지 생성 CLI는 동일한 로컬 endpoint를 사용한다.
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image assets/samples/najeon-box.jpeg \
   --output-dir generated/runs/local_gemma_flux \
   --text-provider mlx \

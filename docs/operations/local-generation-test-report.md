@@ -75,7 +75,7 @@ image endpoint가 실제로 해당 modality를 제공하는지 먼저 확인하�
 4B 서버를 11235에서 먼저 기동한 뒤 다음 명령을 실행한다.
 
 ```bash
-PYTHONPATH=.:src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=.:src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image /path/to/shop1_ea2db062a3c5a91aecc2aedd6e5d9c3d.jpg \
   --output-dir generated/runs/shop1_flux2_klein_4b_test \
   --text-provider mlx \

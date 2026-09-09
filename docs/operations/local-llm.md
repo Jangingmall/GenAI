@@ -35,7 +35,7 @@ FastAPI 서비스와 CLI runner 모두 같은 로컬 모델 경로를 사용합�
 MLX Serve가 `http://127.0.0.1:11234`에서 실행 중이면 다음 명령만으로 두 모델을 사용합니다.
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image assets/samples/images-2.jpeg \
   --output-dir generated/runs/images_2_gemma12b_flux2 \
   --text-provider mlx \
@@ -57,7 +57,7 @@ Ollama를 별도 검증 경로로 사용할 때만 `--text-provider ollama`,
 ## 실행
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image assets/samples/najeon-box.jpeg \
   --output-dir generated/samples/local_najeon_box \
   --text-provider ollama \
@@ -93,7 +93,7 @@ generated/samples/local_najeon_box/
 상품 분석만 확인하고 역할별 원본 보존 컷도 만들지 않으려면 다음 옵션을 사용합니다.
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image assets/samples/najeon-box.jpeg \
   --no-product-photos
 ```
@@ -119,7 +119,7 @@ PYTHONPATH=src .venv/bin/python scripts/run_local_detail_page.py \
 그 다음 텍스트는 11234의 Gemma 12B, 이미지는 11235의 4B를 지정한다.
 
 ```bash
-PYTHONPATH=.:src .venv/bin/python scripts/run_local_detail_page.py \
+PYTHONPATH=.:src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image /path/to/product.jpg \
   --output-dir generated/runs/flux2_klein_4b_test \
   --text-provider mlx \

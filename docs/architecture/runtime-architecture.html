@@ -56,15 +56,15 @@
   </style>
 </head>
 <body>
+<body>
   <div class="frame">
     <p class="eyebrow">Architecture · Team3 EcommerceSystemAI</p>
     <h1>AI 상세페이지 런타임 아키텍처</h1>
-    <p class="subtitle">모델은 <strong>분석(Gemma)</strong>과 <strong>배경·참고컷(Flux2)</strong> 두 지점에서만 실행된다. React JSON AST와 제품 픽셀은 모델을 거치지 않고 결정적으로 조립된다.</p>
+    <p class="subtitle">모델은 <strong>분석(Qwen3.8 27B)</strong>과 <strong>배경·참고컷(Flux2 9B)</strong> 두 지점에서만 실행된다. 제품 픽셀과 React JSON AST는 모델을 거치지 않고 결정적으로 조립되며, 마스크를 신뢰할 수 없으면 원본으로 되돌아간다.</p>
 
     <svg viewBox="0 0 1120 768" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="runtime-architecture-title runtime-architecture-desc">
       <title id="runtime-architecture-title">AI 상세페이지 런타임 아키텍처</title>
-      <desc id="runtime-architecture-desc">상품 이미지가 FE에서 상품 백엔드를 거쳐 로컬 AI 서비스로 들어오고, 생성 파이프라인이 모델 경계 안의 MLX Serve에 Gemma 분석과 Flux2 배경 생성만 요청한 뒤, React 문서 조립과 원본 픽셀 합성은 결정적 로직으로 처리해 초안은 폴링으로, 최종 PNG는 적재 호출로 상품 백엔드에 돌려주는 구조를 보여준다.</desc>
-
+      <desc id="runtime-architecture-desc">FE 업로드가 내부 API와 생성 파이프라인을 거쳐 상품 백엔드로 전달되는 경로를 보여준다. 모델 호출은 MLX Serve의 분석과 배경 생성 두 지점뿐이고, 컷아웃이 실패하면 원본 이미지로 되돌아가며, React 문서 조립과 PNG 렌더링은 모델 없이 결정적으로 수행된다.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
@@ -73,178 +73,171 @@
 
       <rect width="100%" height="100%" fill="#f5f5f5"/>
 
-      <!-- ============ ZONES (drawn first) ============ -->
-      <rect x="32" y="80" width="240" height="272" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <rect x="44" y="84" width="60" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="74" y="93" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CLIENT</text>
+      <!-- ZONES (drawn first) -->
+      <rect x="40" y="96" width="240" height="340" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="72" y="100" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="102" y="109" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CLIENT</text>
 
-      <rect x="312" y="80" width="576" height="600" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <rect x="324" y="84" width="136" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="392" y="93" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">AI SERVICE · FASTAPI</text>
+      <rect x="320" y="96" width="480" height="544" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="352" y="100" width="140" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="422" y="109" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">AI SERVICE · FASTAPI</text>
 
-      <!-- Model boundary: the only place an LLM runs -->
-      <rect x="904" y="232" width="192" height="144" rx="8" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1" stroke-dasharray="4,4"/>
-      <rect x="944" y="236" width="112" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="1000" y="245" fill="rgba(235,108,54,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">MODEL BOUNDARY</text>
+      <rect x="840" y="160" width="240" height="216" rx="8" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="0.8" stroke-dasharray="4,4"/>
+      <rect x="872" y="164" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="928" y="173" fill="rgba(235,108,54,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">MODEL BOUNDARY</text>
 
-      <!-- ============ ARROWS (before boxes) ============ -->
-      <!-- A1  FE -> 상품 BE -->
-      <line x1="152" y1="184" x2="152" y2="264" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="160" y="216" width="52" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="186" y="225" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UPLOAD</text>
+      <!-- ARROWS (before boxes) -->
+      <!-- 1 FE -> API -->
+      <line x1="256" y1="164" x2="352" y2="164" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="286" y="140" width="40" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="306" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UPLOAD</text>
 
-      <!-- A10  상품 BE -> FE (return, dashed) -->
-      <line x1="112" y1="264" x2="112" y2="184" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
-      <rect x="56" y="216" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="80" y="225" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RESULT</text>
+      <!-- 3 API -> PIPELINE -->
+      <line x1="456" y1="200" x2="456" y2="272" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="468" y="228" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="490" y="237" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RUN JOB</text>
 
-      <!-- A2  상품 BE -> 내부 API -->
-      <path d="M 256,300 H 288 Q 296,300 296,292 V 156 Q 296,148 304,148 H 336" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="232" y="240" width="56" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="260" y="249" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">POST JOB</text>
+      <!-- 4 PIPELINE -> MLX (analysis) -->
+      <path d="M 504,272 V 240 Q 504,232 512,232 H 864" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="756" y="208" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="780" y="217" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANALYZE</text>
 
-      <!-- A11  내부 API -> 상품 BE (draft polling, dashed; hops over A2) -->
-      <path d="M 372,184 V 208 Q 372,216 364,216 H 304 a 8,8 0 0,0 -16,0 H 208 Q 200,216 200,224 V 264" fill="none" stroke="#2e5aa8" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-link)"/>
-      <rect x="216" y="196" width="64" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="248" y="205" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DRAFT/POLL</text>
+      <!-- 6 PIPELINE -> CUTOUT -->
+      <line x1="408" y1="344" x2="408" y2="416" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="336" y="372" width="48" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="360" y="381" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">EXTRACT</text>
 
-      <!-- A3  내부 API -> 파이프라인 -->
-      <line x1="448" y1="184" x2="448" y2="264" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="456" y="216" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="480" y="225" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RUN JOB</text>
+      <!-- 7 CUTOUT -> PIPELINE (mask rejected, source fallback) -->
+      <line x1="504" y1="416" x2="504" y2="344" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <rect x="516" y="372" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="546" y="381" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MASK NONE</text>
 
-      <!-- A4  내부 API -> 작업 저장소 -->
-      <line x1="560" y1="148" x2="640" y2="148" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="564" y="128" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="588" y="137" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PERSIST</text>
+      <!-- 8 CUTOUT -> MLX (background plate) -->
+      <path d="M 560,440 H 952 Q 960,440 960,432 V 296" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+      <rect x="820" y="416" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="850" y="425" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BACKGROUND</text>
 
-      <!-- A5  파이프라인 -> MLX Serve : 텍스트 모델 -->
-      <line x1="560" y1="304" x2="920" y2="304" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="712" y="284" width="56" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="740" y="293" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GEMMA 12B</text>
+      <!-- 9 PIPELINE -> REACT DOC -->
+      <line x1="560" y1="320" x2="608" y2="320" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="560" y="296" width="52" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="586" y="305" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ASSEMBLE</text>
 
-      <!-- A6  파이프라인 -> 원본 보존 합성 -->
-      <line x1="448" y1="344" x2="448" y2="424" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="456" y="376" width="56" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="484" y="385" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">COMPOSE</text>
+      <!-- 10 REACT DOC -> API (draft), hops the ANALYZE line -->
+      <path d="M 696,272 V 244 a 8,8 0 0,1 0,-16 V 172 Q 696,164 688,164 H 560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="608" y="140" width="36" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="626" y="149" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DRAFT</text>
 
-      <!-- A12  원본 보존 합성 -> MLX Serve : 이미지 모델 (hops over A8) -->
-      <path d="M 448,496 V 528 Q 448,536 456,536 H 744 a 8,8 0 0,1 16,0 H 992 Q 1000,536 1000,528 V 344" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="536" y="516" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="560" y="525" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FLUX2 9B</text>
+      <!-- 11 API -> STORE -->
+      <path d="M 376,200 V 208 Q 376,216 368,216 H 344 Q 336,216 336,224 V 568 Q 336,576 344,576 H 352" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="248" y="392" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="270" y="401" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PERSIST</text>
 
-      <!-- A7  원본 보존 합성 -> React 문서 -->
-      <line x1="560" y1="460" x2="640" y2="460" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="576" y="440" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="600" y="449" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ASSEMBLE</text>
+      <!-- 12 CUTOUT -> RENDERER -->
+      <path d="M 560,472 H 688 Q 696,472 696,480 V 560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="588" y="448" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="610" y="457" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RENDER</text>
 
-      <!-- A8  React 문서 -> HTML 렌더러 -->
-      <path d="M 752,496 V 604 Q 752,612 744,612 H 560" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-      <rect x="628" y="592" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="652" y="601" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RENDER</text>
+      <!-- 13 RENDERER -> STORE -->
+      <line x1="608" y1="592" x2="560" y2="592" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <rect x="564" y="568" width="28" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="578" y="577" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PNG</text>
 
-      <!-- A9  HTML 렌더러 -> 상품 BE 적재 -->
-      <path d="M 336,612 H 160 Q 152,612 152,604 V 336" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-      <rect x="160" y="464" width="48" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="184" y="473" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DELIVER</text>
+      <!-- 14 STORE -> PRODUCT BE -->
+      <path d="M 352,608 H 200 Q 192,608 192,600 V 392" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <rect x="204" y="480" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="226" y="489" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DELIVER</text>
 
-      <!-- ============ NODES ============ -->
-      <!-- N1  FE 화면 -->
-      <rect x="48" y="112" width="208" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="48" y="112" width="208" height="72" rx="6" fill="rgba(45,49,66,0.10)" stroke="#7a8399" stroke-width="1"/>
-      <rect x="56" y="120" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
-      <text x="70" y="129" fill="rgba(122,131,153,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FE</text>
-      <text x="152" y="156" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">FE 화면</text>
-      <text x="152" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">web/ai_input · draft_preview</text>
+      <!-- NODES -->
+      <!-- N1 FE -->
+      <rect x="64" y="128" width="192" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="64" y="128" width="192" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="72" y="134" width="24" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="84" y="143" fill="rgba(122,131,153,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FE</text>
+      <text x="160" y="168" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">FE 화면</text>
+      <text x="160" y="186" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">ai_input · draft_preview</text>
 
-      <!-- N2  상품 백엔드 -->
-      <rect x="48" y="264" width="208" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="48" y="264" width="208" height="72" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="56" y="272" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-      <text x="70" y="281" fill="rgba(45,49,66,0.7)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BE</text>
-      <text x="152" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">상품 백엔드</text>
-      <text x="152" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">X-AI-Internal-Token</text>
+      <!-- N2 product backend -->
+      <rect x="64" y="320" width="192" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="64" y="320" width="192" height="72" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="72" y="326" width="24" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="84" y="335" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BE</text>
+      <text x="160" y="360" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">상품 백엔드</text>
+      <text x="160" y="378" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">X-AI-Internal-Token</text>
 
-      <!-- N3  내부 API · 작업 서비스 -->
-      <rect x="336" y="112" width="224" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="336" y="112" width="224" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="344" y="120" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="360" y="129" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
-      <text x="448" y="156" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">내부 API · 작업 서비스</text>
-      <text x="448" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app.py · service.py · leases.py</text>
+      <!-- N3 API -->
+      <rect x="352" y="128" width="208" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="352" y="128" width="208" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="360" y="134" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="374" y="143" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">API</text>
+      <text x="456" y="168" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">내부 API · 작업 서비스</text>
+      <text x="456" y="186" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">app.py · service.py · leases.py</text>
 
-      <!-- N4  생성 파이프라인 -->
-      <rect x="336" y="264" width="224" height="80" rx="6" fill="#f5f5f5"/>
-      <rect x="336" y="264" width="224" height="80" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="344" y="272" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="360" y="281" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
-      <text x="448" y="312" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">생성 파이프라인</text>
-      <text x="448" y="330" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pipeline.py · ports.py</text>
+      <!-- N4 pipeline (focal) -->
+      <rect x="352" y="272" width="208" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="352" y="272" width="208" height="72" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="360" y="278" width="36" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="378" y="287" fill="rgba(235,108,54,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CORE</text>
+      <text x="456" y="312" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">생성 파이프라인</text>
+      <text x="456" y="330" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pipeline.py · 9-state job</text>
 
-      <!-- N5  원본 보존 합성 · 검증 -->
-      <rect x="336" y="424" width="224" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="336" y="424" width="224" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="344" y="432" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="358" y="441" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">IMG</text>
-      <text x="448" y="468" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">원본 보존 합성 · 검증</text>
-      <text x="448" y="486" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">source_photos.py · pillow</text>
+      <!-- N5 cutout (focal) -->
+      <rect x="352" y="416" width="208" height="84" rx="6" fill="#f5f5f5"/>
+      <rect x="352" y="416" width="208" height="84" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="360" y="422" width="28" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="374" y="431" fill="rgba(235,108,54,0.90)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">IMG</text>
+      <text x="456" y="456" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">컷아웃 · 원본 보존 합성</text>
+      <text x="456" y="474" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">source_photos.py</text>
+      <text x="456" y="490" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">edge-connected mask</text>
 
-      <!-- N8  HTML 렌더러 -->
-      <rect x="336" y="576" width="224" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="336" y="576" width="224" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <rect x="344" y="584" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="358" y="593" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PNG</text>
-      <text x="448" y="620" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">HTML 렌더러 → PNG</text>
-      <text x="448" y="638" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">html_renderer.py · playwright</text>
+      <!-- N6 react document -->
+      <rect x="608" y="272" width="176" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="608" y="272" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="616" y="278" width="44" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="638" y="287" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NO LLM</text>
+      <text x="696" y="312" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">React 문서 조립</text>
+      <text x="696" y="330" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">react_document_builder</text>
 
-      <!-- N9  작업 저장소 · 자산 -->
-      <rect x="640" y="112" width="224" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="640" y="112" width="224" height="72" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <rect x="648" y="120" width="28" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
-      <text x="662" y="129" fill="rgba(79,93,117,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
-      <text x="752" y="156" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">작업 저장소 · 자산</text>
-      <text x="752" y="174" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">sqlite outbox · asset store</text>
+      <!-- N7 renderer -->
+      <rect x="608" y="560" width="176" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="608" y="560" width="176" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="616" y="566" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="630" y="575" fill="rgba(45,49,66,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PNG</text>
+      <text x="696" y="596" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">HTML 렌더러 → PNG</text>
+      <text x="696" y="614" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">html_renderer · playwright</text>
 
-      <!-- N7  React 문서 조립  (FOCAL — 모델을 거치지 않는 결정적 조립) -->
-      <rect x="640" y="424" width="224" height="72" rx="6" fill="#f5f5f5"/>
-      <rect x="640" y="424" width="224" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <rect x="648" y="432" width="40" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
-      <text x="668" y="441" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">NO LLM</text>
-      <text x="752" y="468" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">React 문서 조립</text>
-      <text x="752" y="486" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">react_document_builder.py</text>
+      <!-- N8 store -->
+      <rect x="352" y="560" width="208" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="352" y="560" width="208" height="64" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="360" y="566" width="24" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.40)" stroke-width="0.8"/>
+      <text x="372" y="575" fill="rgba(79,93,117,0.80)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DB</text>
+      <text x="456" y="596" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">작업 저장소 · 자산</text>
+      <text x="456" y="614" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">sqlite outbox · assets</text>
 
-      <!-- N6  MLX Serve -->
-      <rect x="920" y="264" width="160" height="80" rx="6" fill="#f5f5f5"/>
-      <rect x="920" y="264" width="160" height="80" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <rect x="928" y="272" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-      <text x="942" y="281" fill="rgba(45,49,66,0.7)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LLM</text>
-      <text x="1000" y="312" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">MLX Serve</text>
-      <text x="1000" y="330" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">127.0.0.1:11234</text>
+      <!-- N9 MLX -->
+      <rect x="864" y="200" width="192" height="96" rx="6" fill="#f5f5f5"/>
+      <rect x="864" y="200" width="192" height="96" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="872" y="206" width="28" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="886" y="215" fill="rgba(45,49,66,0.60)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">LLM</text>
+      <text x="960" y="240" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans KR', sans-serif" text-anchor="middle">MLX Serve</text>
+      <text x="960" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Qwen3.8-27B-4bit</text>
+      <text x="960" y="276" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">flux2-klein-9b-4bit</text>
+      <text x="960" y="292" fill="#7a8399" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">127.0.0.1:11234</text>
 
-      <!-- ============ LEGEND ============ -->
-      <line x1="32" y1="704" x2="1088" y2="704" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="32" y="728" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
-
-      <rect x="104" y="716" width="12" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <text x="124" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">결정적 조립</text>
-
-      <rect x="264" y="716" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="284" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">서비스 로직</text>
-
-      <rect x="424" y="716" width="12" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <text x="444" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">저장소</text>
-
-      <rect x="584" y="716" width="12" height="12" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
-      <text x="604" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">외부 시스템</text>
-
-      <rect x="744" y="716" width="12" height="12" rx="2" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1" stroke-dasharray="4,4"/>
-      <text x="764" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">모델 경계</text>
-
-      <line x1="904" y1="722" x2="920" y2="722" stroke="#2e5aa8" stroke-width="1.2"/>
-      <text x="928" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">경계 호출</text>
-
-      <line x1="1064" y1="722" x2="1080" y2="722" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
-      <text x="1088" y="728" fill="#4f5d75" font-size="12" font-family="'Geist', 'Noto Sans KR', sans-serif">반환</text>
+      <!-- LEGEND -->
+      <line x1="40" y1="688" x2="1080" y2="688" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="120" y="696" width="16" height="10" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="144" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">MODEL PATH</text>
+      <rect x="280" y="696" width="16" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="304" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">DETERMINISTIC</text>
+      <rect x="452" y="696" width="16" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="476" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">STORE</text>
+      <rect x="580" y="696" width="16" height="10" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="604" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">EXTERNAL</text>
+      <line x1="728" y1="700" x2="768" y2="700" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="776" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">FALLBACK</text>
+      <line x1="884" y1="700" x2="924" y2="700" stroke="#2e5aa8" stroke-width="1.2"/>
+      <text x="932" y="704" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">BOUNDARY CALL</text>
     </svg>
   </div>
 </body>

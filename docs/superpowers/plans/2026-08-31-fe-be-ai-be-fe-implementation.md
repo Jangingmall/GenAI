@@ -108,8 +108,8 @@
 
 **Files:**
 - Test: all existing `tests/`
-- Test: `scripts/test_input_page.mjs`
-- Test: `scripts/test_draft_preview.mjs`
+- Test: `scripts/browser/test_input_page.mjs`
+- Test: `scripts/browser/test_draft_preview.mjs`
 
 - [x] Run `pytest -q` from the repository root.
 - [x] Run `npm run test:input-page` and `npm run test:draft-preview`.

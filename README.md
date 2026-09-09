@@ -11,10 +11,10 @@
 ```text
 FE 원본 이미지
   → 원본 파일 저장 + SHA-256
-  → 로컬 MLX Serve Gemma 12B 상품 분석
+  → 로컬 MLX Serve Qwen 27B 상품 분석
   → DRAFT_READY: JSON draft + 제한형 react_document 반환·수정 저장
   → 장인 승인
-  → 알파 마스크 추출(RGB 생성 금지)
+  → 테두리 연결 기반 알파 마스크 추출 (파편화·신뢰 불가 시 None 반환 후 원본 fallback, RGB 생성 금지)
   → 로컬 MLX Serve Flux2 제품 없는 배경·참고 컷 생성
   → 원본 RGB + 배경 결정적 합성
   → 원본 SHA-256·crop·composite 픽셀 fidelity 검증
@@ -68,7 +68,7 @@ FE 구조 출력은 [`src/detail_page_ai/react_document.py`](src/detail_page_ai/
 생성을 건너뛰고 업로드된 원본을 역할에 직접 배치합니다. `scale`을 켜면 5번째 원본부터
 크기 참고 역할에 배치하고, 남는 원본은 `alternate`로 보존합니다.
 
-프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `generated_scene`은 `lifestyle` 슬롯에서만 허용하는 참고용 이미지이며, FE/BE DTO에 생성형 자산임을 표시합니다. 최종 상품 근거는 항상 원본 `hero`, `packshot`, `detail` 자산으로 확인합니다.
+컷아웃 마스크 추출(`src/detail_page_ai/source_photos.py`)은 이미지 외곽 테두리에 연결된 영역만 배경 후보로 플러딩하여 마스크를 구성합니다. 마스크가 과도하게 파편화되거나 전경 비율이 비정상적이어서 신뢰할 수 없는 경우 `None`을 반환하고 파이프라인이 원본 이미지로 안전하게 fallback합니다. 프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `generated_scene`은 `lifestyle` 슬롯에서만 허용하는 참고용 이미지이며, FE/BE DTO에 생성형 자산임을 표시합니다. 최종 상품 근거는 항상 원본 `hero`, `packshot`, `detail` 자산으로 확인합니다.
 
 ## 로컬 실행
 
@@ -80,15 +80,15 @@ npx playwright install chromium
 serve-ai
 ```
 
-`serve-ai`와 `scripts/run_local_detail_page.py`는 모두 `127.0.0.1:11234`의 MLX Serve를
-사용합니다. MLX Serve를 먼저 실행하고 Gemma와 Flux 모델을 같은 인스턴스에서 제공해야 합니다.
+`serve-ai`와 `scripts/runtime/run_local_detail_page.py`는 모두 `127.0.0.1:11234`의 MLX Serve를
+사용합니다. MLX Serve를 먼저 실행하고 Qwen과 Flux 모델을 같은 인스턴스에서 제공해야 합니다.
 이 서비스는 클라우드 모델 SDK나 credential을 읽지 않습니다. 기존 `.env`에
 클라우드 provider 설정이 남아 있으면 `ANALYSIS_PROVIDER=local`로 정리하고 로컬 설정으로
 교체합니다.
 
 ```bash
 "/Applications/MLX Core.app/Contents/MacOS/mlx-serve" serve \
-  --model ~/.mlx-serve/models/mlx-community/gemma-4-12b-it-4bit \
+  --model ~/.mlx-serve/models/ddalcu/Qwen3.8-27B-MLX-Serve-4bit \
   --host 127.0.0.1 \
   --port 11234
 ```
@@ -97,9 +97,10 @@ serve-ai
 
 ```dotenv
 ANALYSIS_PROVIDER=local
+PROMPT_VERSION=local-mlx-qwen-flux-v1
 LOCAL_TEXT_PROVIDER=mlx
 LOCAL_TEXT_URL=http://127.0.0.1:11234
-LOCAL_TEXT_MODEL=mlx-community/gemma-4-12b-it-4bit
+LOCAL_TEXT_MODEL=ddalcu/Qwen3.8-27B-MLX-Serve-4bit
 LOCAL_IMAGE_PROVIDER=mlx
 LOCAL_IMAGE_URL=http://127.0.0.1:11234
 LOCAL_IMAGE_MODEL=mlx-community/flux2-klein-9b-4bit
@@ -133,7 +134,7 @@ Flux2가 만든 `lifestyle`·추가 detail은 생성 참고 자산으로만 취�
 상품 BE가 `user_hints`로 묶어 AI에 전달하며, AI는 상품 BE의 내부 호출만 받습니다. 상품 BE
 API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 
-제품 분석은 외부 검색엔진을 호출하지 않습니다. 로컬 Gemma는 입력 이미지와 상품 BE가
+제품 분석은 외부 검색엔진을 호출하지 않습니다. 로컬 Qwen은 입력 이미지와 상품 BE가
 전달한 `user_hints`만 사용하며, 검색 출처·실시간 가격·제작자·원산지·진품성·정확한
 소재·성능을 자동으로 확정하지 않습니다. 최신성이나 출처가 필요한 내용은 상품 BE가
 검수한 뒤 `user_hints`로 전달해야 합니다.
@@ -195,7 +196,7 @@ FE·상품 BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-d
 ## 내부 HTML/CSS → PNG 렌더링
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/build_detail_page_html.py \
+PYTHONPATH=src .venv/bin/python scripts/runtime/build_detail_page_html.py \
   --image assets/samples/najeon-box.jpeg \
   --profile generated/samples/najeon_box_profile.json \
   --output generated/verified/source_safe_detail_page.html
@@ -215,6 +216,18 @@ npm run render:detail-page -- \
 - scale reference → `scale`
 
 역할이 없으면 primary 원본을 사용하며 `alternate`를 암묵적으로 대신 사용하지 않습니다.
+
+## 평가 파이프라인
+
+실제 공개 이미지 기반 정량·정성 평가 체계와 회귀 방지 품질 게이트를 제공합니다.
+
+- **평가 데이터셋**: [`data/evaluation/cma_real_v1`](data/evaluation/cma_real_v1) (클리블랜드 미술관 소장품 6개 카테고리 × 10건, 총 60건)
+- **파일럿 실행**: `scripts/run_eval_pilot.py` (카테고리당 1건씩 6건, `asset_id` 오름차순 결정적 선정 순차 실행)
+- **품질 게이트**:
+  - `scripts/check_cutout_fidelity.py`: 원본 대비 컷아웃 제품 픽셀 보존율(fidelity) 검증 (심각 손실 또는 산출물 누락 발생 시 종료 코드 1)
+  - `scripts/check_scene_direction_coverage.py`: 카테고리별 배경 씬 연출 분기 매핑 및 기본값·오분류 검증 (기본값 또는 오분류 발생 시 종료 코드 1)
+- **사람 검수**: `scripts/build_review_sheet.py`로 4대 축(사실성·명료성·상품성·시각품질) 검수 CSV 시트 생성, 평가 기준은 [`docs/evaluation/human-review-guide.md`](docs/evaluation/human-review-guide.md)
+- **실행 기록**: 1차 파일럿 결과는 [`docs/evaluation/pilot-report-2026-09-09.md`](docs/evaluation/pilot-report-2026-09-09.md)에 기록
 
 ## 테스트
 

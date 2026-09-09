@@ -9,11 +9,10 @@
 - [산출물 점검 결과](deliverables-audit.md): 충족 여부·수정 사항·남은 작업
 - [BE/FE 통합 인터페이스](api/be-fe-ai-integration-spec.md): 구현 대조 정정 및 공개 계약 제안
 - [데이터 수집·라이선스·정제 계획](data/collection-license-cleaning-plan.md)
-- [평가 지표 정의서](evaluation/metrics-definition.md)
-- [실제 공개 이미지 평가셋](../data/evaluation/cma_real_v1/README.md): CC0 표시 기반 실물 60점, 분석/렌더링 각 60건, 실행·검수 안내
 
 - [`api/ai-dto-contract.md`](api/ai-dto-contract.md): 상품 BE↔AI 방향별 DTO 및 이미지·메타데이터 전달 계약
 - [`api/ai-fe-io-spec.md`](api/ai-fe-io-spec.md): 상품 BE가 FE와 AI 사이를 연결하는 입출력 명세
+- [`api/ai-product-content-generation-agreement.md`](api/ai-product-content-generation-agreement.md): 이전의 `/ai/products`·최상위 `imageId`·HTML block 배열 계약 폐기 안내 (2026-09-08 폐기, 최신 DTO/React AST 계약으로 대체)
 - [`api/react-json-output-contract.md`](api/react-json-output-contract.md): FE용 `react_document` schema v2.0·렌더링·보안·버전 계약
 - [`../src/detail_page_ai/react_document.py`](../src/detail_page_ai/react_document.py): FE가 소비하는 제한형 React JSON AST DTO 구현
 - [`../src/detail_page_ai/react_document_builder.py`](../src/detail_page_ai/react_document_builder.py): 승인 draft → React JSON AST 결정적 조립기
@@ -24,8 +23,17 @@
 - [`architecture/ai-architecture-design.md`](architecture/ai-architecture-design.md): 모델·데이터 흐름·서빙 구조 중심의 아키텍처 설계
 - [`architecture/ai-evaluation-and-safety-policy.md`](architecture/ai-evaluation-and-safety-policy.md): 평가 지표·release gate·안전성 정책 초안
 
+## 평가
+
+- [`evaluation/metrics-definition.md`](evaluation/metrics-definition.md): 4대 축(사실성·명료성·상품성·시각품질) 평가 지표 및 사람 검수·통계 지표 정의서
+- [`evaluation/human-review-guide.md`](evaluation/human-review-guide.md): 4대 평가 축 1~5점 척도 및 2인 독립 검수·합의 절차 가이드라인
+- [`evaluation/pilot-report-2026-09-09.md`](evaluation/pilot-report-2026-09-09.md): CMA real v1 카테고리별 6건 대상 1차 파일럿 실행 결과 및 성능·결함 분석 보고서
+- [`evaluation/copy-analysis-2026-09-09.md`](evaluation/copy-analysis-2026-09-09.md): 파일럿 1차 6건 생성 카피의 사실 근거성(CMA 소스 레코드 대조) 심층 분석 및 프롬프트 개선 후보 도출
+- [`../data/evaluation/cma_real_v1/README.md`](../data/evaluation/cma_real_v1/README.md): CC0 표시 기반 실물 60점, 분석/렌더링 각 60건, 실행·검수 안내
+
 ## 운영·모델
 
+- [`operations/orchestration.md`](operations/orchestration.md): cmux 기반 멀티 에이전트(Claude Code 오케스트레이터 + CLI 워커) 동시 운영 규약 및 지휘 도구 안내
 - [`operations/local-llm.md`](operations/local-llm.md): 로컬 LLM 실행 경로
 - [`operations/local-generation-test-report.md`](operations/local-generation-test-report.md): Gemma + Flux2 Klein 4B 실제 생성 테스트 기록
 - [`operations/server-memory-estimate.md`](operations/server-memory-estimate.md): 서버 메모리 예상

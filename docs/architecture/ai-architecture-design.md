@@ -3,11 +3,11 @@
 > 2026-09-08 점검: 현재 FastAPI·SQLite·프로세스 내부 executor와 로컬 MLX Serve 실행을 기준으로 한다.
 > API/worker 분리는 향후 확장안이며 현재 로컬 실행 경로는 SQLite·파일 저장소를 사용한다.
 > 승인 POST는 현재 동기 실행이다. 아래 승인 단계 목록은 논리 처리 순서이며 polling으로 각 단계가 노출된다는 보장이 아니다.
-> 같은 날 Gemma 12B + Flux2 Klein 4B 전용 로컬 endpoint로 2건의 생성 smoke test를 완료했다. 이 테스트는 기본 9B 모델 설정을 변경하지 않는다.
+> 같은 날 Qwen3.8 27B + Flux2 Klein 4B 전용 로컬 endpoint로 2건의 생성 smoke test를 완료했다. 이 테스트는 기본 9B 모델 설정을 변경하지 않는다.
 
 ## 구현과 설계의 차이
 
-- 기본 분석 설정은 로컬 MLX Serve Gemma 12B이며, 이미지 생성은 로컬 MLX Serve Flux2다.
+- 기본 분석 설정은 로컬 MLX Serve Qwen3.8 27B이며, 이미지 생성은 로컬 MLX Serve Flux2다.
 - `app.build_service`와 local CLI가 같은 로컬 어댑터와 모델 기본값을 사용한다.
 - SourcePreservingProductPhotoGenerator는 선택 주입 시 lifestyle/generated_scene와 detail-02~05/generated_view를 허용한다.
   해당 자산은 product_generated=true, fidelity_status=GENERATED이며 원본 픽셀 보존을 보장하지 않는다.
@@ -124,7 +124,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 
 | 단계 | 기본 후보 | 입력 | 출력 | 실패 시 |
 |---|---|---|---|---|
-| 이미지 분석 | 로컬 MLX Serve Gemma 12B | 원본 이미지, `user_hints` | `ProductProfileDto` | 제한 재시도 후 `FAILED` |
+| 이미지 분석 | 로컬 MLX Serve Qwen3.8 27B | 원본 이미지, `user_hints` | `ProductProfileDto` | 제한 재시도 후 `FAILED` |
 | 공예·제품 조사 | 자동 외부 조사 없음 | 상품 BE가 검수한 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown`/보수적 문구 |
 | 배경·참고 컷 생성 | 로컬 MLX Serve Flux2 | 역할·배경 프롬프트, 선택적 원본 참고 | 제품 없는 배경판 또는 `GENERATED` 참고 자산 | 중립 단색 배경 또는 해당 슬롯 원본 fallback |
 | 제품 사진 합성 | 생성 모델 미사용, Pillow | 원본 RGB·mask·배경 | provenance 포함 `ProductPhoto` | 원본 컷 또는 해당 역할 제외 |
@@ -164,13 +164,17 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 - `hero`·`packshot`·대표 `detail` 제품 사진은 원본 RGB와 원본에서 계산한 mask로만 최종 합성한다.
 - 생성 `lifestyle`·추가 `detail`은 `product_generated=true`, `asset_mode=generated_scene/generated_view`, `source_sha256`, `fidelity_status=GENERATED`를 표시하고 참고 슬롯에서만 사용한다.
 - 제품 형태·색·문양·구성품이 바뀐 원본 근거 결과는 `REJECTED`로 분류하고 어떤 출력 경계에도 전달하지 않는다. 생성 참고 컷은 사람 검수 전까지 상품 사실성의 증거가 아니다.
+- `SolidBackgroundCutoutExtractor`는 색상 후보 전체를 배경으로 취급하지 않고, 이미지 테두리에서 시작한 4-이웃 flood fill로 연결된 후보 영역만 외곽 배경으로 정의한다. 따라서 밝은 배경 위의 밝은 제품에서도 제품 내부의 비연결 영역은 보존된다.
+- 마스크가 비어 있거나 foreground 비율·연결 성분 검증을 통과하지 못해 `extract`가 `None`을 반환하면 `SourcePreservingProductPhotoGenerator`는 제품 사진 역할을 원본으로 fallback한다.
+- `_product_scene_direction`는 제품 신호에 따라 장면 방향을 결정하며, 장신구 marker에는 `jewelry` 전용 근접 tabletop 방향을 사용하고 금속 일반 분기와 분리한다.
 
 ### 5.4 로컬 모델
 
 로컬 실행은 다음 두 모델을 고정 기본값으로 사용한다.
 
-- 텍스트·비전·한국어 카피: `mlx-community/gemma-4-12b-it-4bit`
+- 텍스트·비전·한국어 카피: `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`
 - 배경·활용 장면·참고용 디테일: `mlx-community/flux2-klein-9b-4bit`
+- 기본 `PROMPT_VERSION`: `local-mlx-qwen-flux-v1`
 
 두 모델은 `http://127.0.0.1:11234`의 MLX Serve에서 제공한다. 외부 검색·원격 모델·API
 키는 사용하지 않으며, Ollama는 별도 로컬 검증 옵션으로만 허용한다.
@@ -273,7 +277,7 @@ Browser :4173
         ├─ background executor
         ├─ SQLite job/repository/outbox
         ├─ local asset store
-        ├─ MLX Serve Gemma + Flux local adapters
+        ├─ MLX Serve Qwen + Flux local adapters
         ├─ React JSON builder + validator (in-process)
         └─ Playwright renderer
 ```
@@ -293,7 +297,7 @@ FE
               ┌──────────┼──────────┐
               ▼          ▼          ▼
           SQLite      파일 저장소  MLX Serve :11234
-          job/outbox  source/result  Gemma 12B + Flux2 9B
+          job/outbox  source/result  Qwen3.8 27B + Flux2 9B
                                       (4B 비교 시 임시 :11235)
                          │
                          ▼
@@ -308,7 +312,7 @@ FE
 - API: 인증·검증·작업 접수·상태 조회를 수행한다.
 - Worker: 로컬 분석·합성·검증·outbox를 수행한다.
 - Renderer: 브라우저 프로세스와 로컬 모델 메모리를 분리한다.
-- MLX Serve: Gemma/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
+- MLX Serve: Qwen/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
 - SQLite/파일 저장소: job, idempotency, generation metadata, outbox, 원본·결과를 보관한다.
 - 상품 BE 적재: `BACKEND_PRODUCT_URL`이 설정된 경우에만 선택적으로 호출한다.
 
@@ -386,3 +390,4 @@ FE
 - [`docs/api/ai-fe-io-spec.md`](../api/ai-fe-io-spec.md)
 - [`docs/operations/local-llm.md`](../operations/local-llm.md)
 - [`docs/operations/sglang-vllm-fit.md`](../operations/sglang-vllm-fit.md)
+- [`2026-09-09 파일럿 평가 보고서`](../evaluation/pilot-report-2026-09-09.md)
