@@ -636,7 +636,7 @@ def test_html_renderer_excludes_photo_without_explicit_provenance():
 
 
 def test_browser_renderer_captures_full_page_image():
-    script = Path("scripts/render_detail_page.mjs")
+    script = Path("scripts/runtime/render_detail_page.mjs")
 
     assert script.is_file()
     source = script.read_text(encoding="utf-8")

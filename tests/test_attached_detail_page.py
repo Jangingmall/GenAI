@@ -1,4 +1,4 @@
-from scripts.generate_attached_detail_page import build_profile
+from scripts.runtime.generate_attached_detail_page import build_profile
 
 
 def test_attached_profile_is_image_grounded_and_has_complete_editorial_plan():

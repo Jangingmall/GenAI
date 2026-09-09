@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 
 
@@ -11,6 +12,18 @@ def test_project_assets_docs_and_generated_outputs_are_grouped():
         ROOT / "assets/references/detail-page-guide",
         ROOT / "assets/references/detail-page-template.png",
         ROOT / "assets/workflows/flux_kontext_dev_api.json",
+        ROOT / "scripts/browser/test_detail_page_layout.mjs",
+        ROOT / "scripts/browser/test_draft_preview.mjs",
+        ROOT / "scripts/browser/test_draft_preview_remote.mjs",
+        ROOT / "scripts/browser/test_input_page.mjs",
+        ROOT / "scripts/dataset/build_detail_page_eval_dataset.py",
+        ROOT / "scripts/dataset/build_flux2_product_scene_50.py",
+        ROOT / "scripts/dataset/build_training_dataset.py",
+        ROOT / "scripts/dataset/setup_real_eval_dataset.py",
+        ROOT / "scripts/runtime/build_detail_page_html.py",
+        ROOT / "scripts/runtime/generate_attached_detail_page.py",
+        ROOT / "scripts/runtime/render_detail_page.mjs",
+        ROOT / "scripts/runtime/run_local_detail_page.py",
         ROOT / "docs/api/ai-dto-contract.md",
         ROOT / "docs/api/ai-fe-io-spec.md",
         ROOT / "docs/operations/local-llm.md",
@@ -39,12 +52,32 @@ def test_legacy_root_locations_are_removed():
     assert not remaining, f"legacy project locations remain: {remaining}"
 
 
+def test_legacy_flat_script_locations_are_removed():
+    legacy_paths = [
+        ROOT / "scripts/test_detail_page_layout.mjs",
+        ROOT / "scripts/test_draft_preview.mjs",
+        ROOT / "scripts/test_draft_preview_remote.mjs",
+        ROOT / "scripts/test_input_page.mjs",
+        ROOT / "scripts/build_detail_page_eval_dataset.py",
+        ROOT / "scripts/build_flux2_product_scene_50.py",
+        ROOT / "scripts/build_training_dataset.py",
+        ROOT / "scripts/setup_real_eval_dataset.py",
+        ROOT / "scripts/build_detail_page_html.py",
+        ROOT / "scripts/generate_attached_detail_page.py",
+        ROOT / "scripts/render_detail_page.mjs",
+        ROOT / "scripts/run_local_detail_page.py",
+    ]
+
+    remaining = [str(path.relative_to(ROOT)) for path in legacy_paths if path.exists()]
+    assert not remaining, f"legacy flat script locations remain: {remaining}"
+
+
 def test_runtime_references_use_canonical_paths():
     checked_files = [
         ROOT / "README.md",
-        ROOT / "scripts/run_local_detail_page.py",
-        ROOT / "scripts/test_draft_preview.mjs",
-        ROOT / "scripts/test_input_page.mjs",
+        ROOT / "scripts/runtime/run_local_detail_page.py",
+        ROOT / "scripts/browser/test_draft_preview.mjs",
+        ROOT / "scripts/browser/test_input_page.mjs",
         ROOT / "web/ai_draft_preview.js",
         ROOT / "docs/operations/local-llm.md",
     ]
@@ -73,3 +106,29 @@ def test_generated_and_environment_artifacts_are_ignored():
     assert "generated/" in ignored
     assert "*.egg-info/" in ignored
     assert "tmp/" in ignored
+
+
+def test_detail_package_has_no_module_level_local_adapter_imports():
+    violations = []
+    for path in sorted((ROOT / "src/detail_page_ai").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            imported_modules = []
+            if isinstance(node, ast.Import):
+                imported_modules = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported_modules = [node.module]
+            for module in imported_modules:
+                if module == "local_detail_page_ai" or module.startswith(
+                    "local_detail_page_ai."
+                ):
+                    violations.append(
+                        f"{path.relative_to(ROOT)}:{node.lineno}: {module}"
+                    )
+
+    # Function-level imports are intentionally allowed: the package graph is
+    # enforced at module scope, while the executable composition boundary can
+    # resolve an adapter factory only when the service is requested.
+    assert not violations, "module-level local adapter imports found: " + "; ".join(
+        violations
+    )

@@ -7,13 +7,13 @@ const [, , inputArgument, outputArgument, sectionsFlag, sectionsArgument] = proc
 
 if (!inputArgument || !outputArgument) {
   console.error(
-    "Usage: node scripts/render_detail_page.mjs <input.html> <output.png> [--sections <directory>]",
+    "Usage: node scripts/runtime/render_detail_page.mjs <input.html> <output.png> [--sections <directory>]",
   );
   process.exit(1);
 }
 if ((sectionsFlag && sectionsFlag !== "--sections") || (sectionsFlag === "--sections" && !sectionsArgument)) {
   console.error(
-    "Usage: node scripts/render_detail_page.mjs <input.html> <output.png> [--sections <directory>]",
+    "Usage: node scripts/runtime/render_detail_page.mjs <input.html> <output.png> [--sections <directory>]",
   );
   process.exit(1);
 }

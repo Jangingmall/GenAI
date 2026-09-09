@@ -651,7 +651,7 @@ class HtmlDetailPageRenderer:
         command_runner: Callable[..., Any] | None = None,
     ):
         self.capture_script = Path(
-            capture_script or PROJECT_ROOT / "scripts" / "render_detail_page.mjs"
+            capture_script or PROJECT_ROOT / "scripts" / "runtime" / "render_detail_page.mjs"
         )
         self.node_binary = node_binary
         self.command_runner = command_runner or subprocess.run

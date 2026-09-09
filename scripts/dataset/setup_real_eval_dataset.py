@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'data/evaluation/cma_real_v1'
 API = 'https://openaccess-api.clevelandart.org/api/artworks/'
 POLICY = 'https://www.clevelandart.org/open-access'

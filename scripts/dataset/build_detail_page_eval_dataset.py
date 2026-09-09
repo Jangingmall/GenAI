@@ -17,7 +17,7 @@ from typing import Any
 from PIL import Image, ImageOps
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = PROJECT_ROOT / "data/evaluation/detail_page_eval_60.jsonl"
 DATASET_ID = "detail-page-golden-60"
 DATASET_VERSION = "0.1.0"
@@ -463,7 +463,7 @@ visible anchors·forbidden claim categories·layout label을 추가한 뒤 다�
 ## 재생성
 
 ```bash
-PYTHONPATH=src .venv/bin/python scripts/build_detail_page_eval_dataset.py
+PYTHONPATH=src .venv/bin/python scripts/dataset/build_detail_page_eval_dataset.py
 ```
 """
     card_path.write_text(card, encoding="utf-8")

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
 
-const htmlPath = fileURLToPath(new URL("../web/ai_input.html", import.meta.url));
+const htmlPath = fileURLToPath(new URL("../../web/ai_input.html", import.meta.url));
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();

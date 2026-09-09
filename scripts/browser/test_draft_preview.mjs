@@ -4,7 +4,7 @@ import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
-const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const projectRoot = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const mimeTypes = {
   ".html": "text/html",
   ".css": "text/css",
