@@ -1,0 +1,566 @@
+{
+  "schemaVersion": "2.0",
+  "canvasWidth": 774,
+  "root": [
+    {
+      "id": "section-01-hero-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "dark",
+        "layout": {
+          "display": "stack",
+          "gap": 16.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#F7F4EE",
+          "backgroundColor": "#242424",
+          "padding": {
+            "top": 48.0,
+            "right": 32.0,
+            "bottom": 48.0,
+            "left": 32.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-01-hero-eyebrow",
+          "type": "element",
+          "tag": "span",
+          "props": {},
+          "children": [
+            {
+              "id": "section-01-hero-eyebrow-text",
+              "type": "text",
+              "value": "PRODUCT STORY",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-01-hero-title",
+          "type": "element",
+          "tag": "h2",
+          "props": {},
+          "children": [
+            {
+              "id": "section-01-hero-title-text",
+              "type": "text",
+              "value": "빛을 담아내는 나전 보관함",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-01-hero-body",
+          "type": "element",
+          "tag": "p",
+          "props": {},
+          "children": [
+            {
+              "id": "section-01-hero-body-text",
+              "type": "text",
+              "value": "검은 옻칠 바탕 위 자개 문양이 빛의 각도에 따라 다른 표정을 보여 줍니다.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-01-hero-figure-01",
+          "type": "element",
+          "tag": "figure",
+          "props": {},
+          "children": [
+            {
+              "id": "section-01-hero-image-01",
+              "type": "element",
+              "tag": "img",
+              "props": {
+                "style": {
+                  "objectFit": "contain",
+                  "objectPosition": {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                },
+                "imageId": "sample-product",
+                "alt": "나전 보관함 상품 소개"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-02-detail-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "light",
+        "layout": {
+          "display": "flex",
+          "direction": "row",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "center"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F7F7F5",
+          "padding": {
+            "top": 48.0,
+            "right": 32.0,
+            "bottom": 48.0,
+            "left": 32.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-02-detail-eyebrow",
+          "type": "element",
+          "tag": "span",
+          "props": {},
+          "children": [
+            {
+              "id": "section-02-detail-eyebrow-text",
+              "type": "text",
+              "value": "MATERIAL DETAIL",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-02-detail-title",
+          "type": "element",
+          "tag": "h2",
+          "props": {},
+          "children": [
+            {
+              "id": "section-02-detail-title-text",
+              "type": "text",
+              "value": "가까이 볼수록 깊어지는 표면",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-02-detail-body",
+          "type": "element",
+          "tag": "p",
+          "props": {},
+          "children": [
+            {
+              "id": "section-02-detail-body-text",
+              "type": "text",
+              "value": "자개 조각의 반짝임과 어두운 바탕의 대비가 제품의 인상을 만듭니다.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-02-detail-figure-01",
+          "type": "element",
+          "tag": "figure",
+          "props": {},
+          "children": [
+            {
+              "id": "section-02-detail-image-01",
+              "type": "element",
+              "tag": "img",
+              "props": {
+                "style": {
+                  "objectFit": "contain",
+                  "objectPosition": {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                },
+                "imageId": "sample-product",
+                "alt": "나전 보관함 가까이 볼수록 깊어지는 표면"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-03-usage-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "sand",
+        "layout": {
+          "display": "stack",
+          "gap": 16.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#EEE5D8",
+          "padding": {
+            "top": 48.0,
+            "right": 32.0,
+            "bottom": 48.0,
+            "left": 32.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-03-usage-eyebrow",
+          "type": "element",
+          "tag": "span",
+          "props": {},
+          "children": [
+            {
+              "id": "section-03-usage-eyebrow-text",
+              "type": "text",
+              "value": "IN DAILY SPACE",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-03-usage-title",
+          "type": "element",
+          "tag": "h2",
+          "props": {},
+          "children": [
+            {
+              "id": "section-03-usage-title-text",
+              "type": "text",
+              "value": "소중한 물건을 위한 자리",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-03-usage-body",
+          "type": "element",
+          "tag": "p",
+          "props": {},
+          "children": [
+            {
+              "id": "section-03-usage-body-text",
+              "type": "text",
+              "value": "서재나 침실의 선반 위에서 작은 물건을 정돈하는 용도로 사용할 수 있습니다.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-03-usage-figure-01",
+          "type": "element",
+          "tag": "figure",
+          "props": {},
+          "children": [
+            {
+              "id": "section-03-usage-image-01",
+              "type": "element",
+              "tag": "img",
+              "props": {
+                "style": {
+                  "objectFit": "cover",
+                  "objectPosition": {
+                    "x": 0.5,
+                    "y": 0.5
+                  }
+                },
+                "imageId": "sample-product",
+                "alt": "나전 보관함 소중한 물건을 위한 자리"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-04-spec-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 16.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 48.0,
+            "right": 32.0,
+            "bottom": 48.0,
+            "left": 32.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-04-spec-eyebrow",
+          "type": "element",
+          "tag": "span",
+          "props": {},
+          "children": [
+            {
+              "id": "section-04-spec-eyebrow-text",
+              "type": "text",
+              "value": "PRODUCT NOTE",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-04-spec-title",
+          "type": "element",
+          "tag": "h2",
+          "props": {},
+          "children": [
+            {
+              "id": "section-04-spec-title-text",
+              "type": "text",
+              "value": "제품 정보",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-04-spec-body",
+          "type": "element",
+          "tag": "p",
+          "props": {},
+          "children": [
+            {
+              "id": "section-04-spec-body-text",
+              "type": "text",
+              "value": "이미지와 검수된 상품 정보로 확인 가능한 범위입니다.",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-04-spec-table",
+          "type": "element",
+          "tag": "table",
+          "props": {},
+          "children": [
+            {
+              "id": "section-04-spec-table-caption",
+              "type": "element",
+              "tag": "caption",
+              "props": {},
+              "children": [
+                {
+                  "id": "section-04-spec-table-caption-text",
+                  "type": "text",
+                  "value": "제품 정보",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-04-spec-table-body",
+              "type": "element",
+              "tag": "tbody",
+              "props": {},
+              "children": [
+                {
+                  "id": "section-04-spec-row-01",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-04-spec-row-01-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-01-label-text",
+                          "type": "text",
+                          "value": "제품 유형",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-04-spec-row-01-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {},
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-01-value-text",
+                          "type": "text",
+                          "value": "장식 보관함",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "section-04-spec-row-02",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-04-spec-row-02-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-02-label-text",
+                          "type": "text",
+                          "value": "표면",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-04-spec-row-02-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {},
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-02-value-text",
+                          "type": "text",
+                          "value": "어두운 바탕과 자개 문양",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "section-04-spec-row-03",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-04-spec-row-03-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-03-label-text",
+                          "type": "text",
+                          "value": "사용 장면",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-04-spec-row-03-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {},
+                      "children": [
+                        {
+                          "id": "section-04-spec-row-03-value-text",
+                          "type": "text",
+                          "value": "소중한 물건 보관",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-05-closing-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "dark",
+        "layout": {
+          "display": "stack",
+          "gap": 16.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#F7F4EE",
+          "backgroundColor": "#242424",
+          "padding": {
+            "top": 48.0,
+            "right": 32.0,
+            "bottom": 48.0,
+            "left": 32.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-05-closing-eyebrow",
+          "type": "element",
+          "tag": "span",
+          "props": {},
+          "children": [
+            {
+              "id": "section-05-closing-eyebrow-text",
+              "type": "text",
+              "value": "CRAFTSMANSHIP",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-05-closing-title",
+          "type": "element",
+          "tag": "h2",
+          "props": {},
+          "children": [
+            {
+              "id": "section-05-closing-title-text",
+              "type": "text",
+              "value": "오래 남는 인상",
+              "marks": []
+            }
+          ]
+        },
+        {
+          "id": "section-05-closing-body",
+          "type": "element",
+          "tag": "p",
+          "props": {},
+          "children": [
+            {
+              "id": "section-05-closing-body-text",
+              "type": "text",
+              "value": "손이 닿는 공간에 차분한 깊이를 더합니다.",
+              "marks": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
