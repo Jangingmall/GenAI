@@ -118,6 +118,23 @@ Typography:
   body {type_scale['body']}, small body {type_scale['body_small']}, caption {type_scale['caption']}.
 - Use short readable paragraphs, strong alignment, and generous whitespace.
 
+React JSON output contract:
+- The final react_document must carry numeric fontFamily, fontSize, fontWeight, lineHeight,
+  and margin values in element props.style; use fontFamily "sans" so FE can map it to Pretendard
+  or a comparable Korean sans-serif token. Do not return range strings or raw CSS declarations.
+- Use a representative hero title at fontSize 40, fontWeight 700, lineHeight 1.25; section titles
+  at 30 / 700 / 1.35; feature card titles at 19 / 600 / 1.4; body copy at 16 / 400 / 1.7;
+  and supporting labels at 13 / 500 / 1.5. Adjust only when copy length and the actual text area
+  require it, while preserving the hierarchy.
+- Keep section padding at 40px, major section gaps at 24px, and text groups as layout display
+  "stack". Put related eyebrow, title, and body in one text group and put the supporting image
+  in a separate image group so FE does not have to infer the intended grouping.
+- Render feature cards as a three-column grid with gap 16. Each card is an article with a stack
+  layout, internal gap 12, padding 20px, borderRadius 12, and an explicit backgroundColor and color.
+  Keep one feature title and one concise description together in the same card.
+- Set the default margin of titles, body copy, and figure/image wrappers to zero; manage spacing
+  primarily with parent layout gap and explicit padding.
+
 Color system:
 - Use a black and white foundation ({colors['black']} / {colors['white']}), cool grey
   {colors['cool_grey_50']}–{colors['cool_grey_500']}, and jade blue
