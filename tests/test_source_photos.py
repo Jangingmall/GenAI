@@ -1,6 +1,7 @@
 import hashlib
 import io
 from dataclasses import replace
+from pathlib import Path
 
 from PIL import Image
 
@@ -89,6 +90,65 @@ def test_cutout_rgb_channels_are_copied_from_source_pixels():
         for x in range(source_rgb.width):
             if mask.getpixel((x, y)):
                 assert cutout_rgba.getpixel((x, y))[:3] == source_rgb.getpixel((x, y))
+
+
+def test_cutout_preserves_light_product_interior_on_similarly_light_background():
+    image = Image.new("RGB", (96, 96), (238, 238, 238))
+    for y in range(12, 84):
+        for x in range(18, 78):
+            image.putpixel((x, y), (225, 225, 225))
+    for x in range(18, 78):
+        image.putpixel((x, 12), (90, 90, 90))
+        image.putpixel((x, 83), (90, 90, 90))
+    for y in range(12, 84):
+        image.putpixel((18, y), (90, 90, 90))
+        image.putpixel((77, y), (90, 90, 90))
+    for y in range(30, 66):
+        for x in range(35, 61):
+            if (x - 48) ** 2 + (y - 48) ** 2 < 90:
+                image.putpixel((x, y), (45, 55, 60))
+
+    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
+        _png(image), "image/png"
+    )
+
+    assert cutout is not None
+    mask = Image.open(io.BytesIO(cutout.mask_png)).convert("L")
+    assert mask.getpixel((25, 25)) == 255
+    assert mask.getpixel((48, 48)) == 255
+    assert mask.getpixel((0, 0)) == 0
+
+
+def test_cutout_returns_none_for_fragmented_foreground():
+    image = Image.new("RGB", (96, 96), (238, 238, 238))
+    for y in range(10, 90, 8):
+        for x in range(10, 90, 8):
+            for offset_y in range(4):
+                for offset_x in range(4):
+                    image.putpixel((x + offset_x, y + offset_y), (45, 55, 60))
+
+    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
+        _png(image), "image/png"
+    )
+
+    assert cutout is None
+
+
+def test_cutout_suppresses_connected_neutral_background_gradient_around_ceramic():
+    source_path = (
+        Path(__file__).parents[1]
+        / "data/evaluation/cma_real_v1/images/cma-122443.jpg"
+    )
+    source = source_path.read_bytes()
+    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
+        source, "image/jpeg"
+    )
+
+    assert cutout is not None
+    mask = Image.open(io.BytesIO(cutout.mask_png)).convert("L")
+    assert mask.getpixel((505, 484)) == 0
+    assert 0 < mask.getpixel((25, 484)) <= 40
+    assert mask.getpixel((300, 450)) == 255
 
 
 def test_cutout_suppresses_low_contrast_shadow_connected_to_frame_edge():

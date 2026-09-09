@@ -1,6 +1,7 @@
 import hashlib
 import io
 import math
+from collections import deque
 from dataclasses import dataclass, replace
 from typing import Protocol
 
@@ -93,11 +94,16 @@ class SolidBackgroundCutoutExtractor:
         corner_uniformity_tolerance: float = 24.0,
         min_foreground_ratio: float = 0.01,
         max_foreground_ratio: float = 0.90,
+        min_largest_component_ratio: float = 0.50,
     ):
         self.background_tolerance = background_tolerance
         self.corner_uniformity_tolerance = corner_uniformity_tolerance
         self.min_foreground_ratio = min_foreground_ratio
         self.max_foreground_ratio = max_foreground_ratio
+        # A genuine product silhouette should have a connected core.  Requiring
+        # half of the foreground to share one component rejects scattered
+        # pattern/noise fragments while still allowing small detached details.
+        self.min_largest_component_ratio = min_largest_component_ratio
 
     def extract(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
         del source_mime_type
@@ -113,40 +119,37 @@ class SolidBackgroundCutoutExtractor:
         if any(self._distance(pixel, background) > self.corner_uniformity_tolerance for pixel in corners):
             return None
 
-        alpha_values = []
-        selected_bbox = None
+        alpha_values = None
         for multiplier in (1, 2, 4):
             tolerance = self.background_tolerance * multiplier
-            candidate = [
-                255 if self._distance(pixel, background) > tolerance else 0
-                for pixel in source.getdata()
-            ]
-            candidate_mask = Image.new("L", source.size)
-            candidate_mask.putdata(candidate)
-            candidate_bbox = candidate_mask.getbbox()
-            if candidate_bbox is None:
-                continue
-            alpha_values = candidate
-            selected_bbox = candidate_bbox
-            touches_frame = (
-                candidate_bbox[0] == 0
-                or candidate_bbox[1] == 0
-                or candidate_bbox[2] == width
-                or candidate_bbox[3] == height
+            candidate_mask = self._connected_foreground_mask(
+                source, background, tolerance
             )
-            if not touches_frame:
+            alpha_values = list(candidate_mask.getdata())
+            foreground_ratio = sum(value > 0 for value in alpha_values) / (width * height)
+            # A higher tolerance is useful only when the initial foreground is
+            # implausibly large.  Frame contact alone must never trigger it:
+            # connected foreground can be a valid product boundary.
+            if foreground_ratio <= self.max_foreground_ratio:
                 break
-        if selected_bbox is None:
+        if alpha_values is None:
             return None
         mask = Image.new("L", source.size)
         mask.putdata(alpha_values)
         mask = self._refine_mask(mask)
+        mask = self._suppress_unreliable_edge_shadow(mask, source, background)
+        mask = self._suppress_connected_background_gradient(mask, source, background)
         bbox = mask.getbbox()
         if bbox is None:
             return None
         foreground_count = sum(value > 0 for value in mask.getdata())
         foreground_ratio = foreground_count / (width * height)
         if not self.min_foreground_ratio <= foreground_ratio <= self.max_foreground_ratio:
+            return None
+        if (
+            self._largest_foreground_component_ratio(mask, foreground_count)
+            < self.min_largest_component_ratio
+        ):
             return None
 
         red, green, blue = source.split()
@@ -171,6 +174,202 @@ class SolidBackgroundCutoutExtractor:
         softened = eroded.filter(ImageFilter.GaussianBlur(0.6))
         # Do not let the blur create alpha outside the original foreground mask.
         return ImageChops.multiply(softened, mask)
+
+    @classmethod
+    def _connected_foreground_mask(
+        cls,
+        source: Image.Image,
+        background: tuple[int, int, int],
+        tolerance: float,
+    ) -> Image.Image:
+        """Return foreground after flooding only edge-connected background candidates."""
+        width, height = source.size
+        source_pixels = source.load()
+        background_candidates = bytearray(width * height)
+        for y in range(height):
+            row_start = y * width
+            for x in range(width):
+                background_candidates[row_start + x] = int(
+                    cls._distance(source_pixels[x, y], background) <= tolerance
+                )
+
+        reachable_background = bytearray(width * height)
+        pending: deque[tuple[int, int]] = deque()
+
+        def enqueue_if_background(x: int, y: int) -> None:
+            index = y * width + x
+            if background_candidates[index] and not reachable_background[index]:
+                reachable_background[index] = 1
+                pending.append((x, y))
+
+        for x in range(width):
+            enqueue_if_background(x, 0)
+            enqueue_if_background(x, height - 1)
+        for y in range(height):
+            enqueue_if_background(0, y)
+            enqueue_if_background(width - 1, y)
+
+        while pending:
+            x, y = pending.popleft()
+            for neighbor_x, neighbor_y in (
+                (x - 1, y),
+                (x + 1, y),
+                (x, y - 1),
+                (x, y + 1),
+            ):
+                if 0 <= neighbor_x < width and 0 <= neighbor_y < height:
+                    enqueue_if_background(neighbor_x, neighbor_y)
+
+        mask = Image.new("L", source.size)
+        mask.putdata(
+            [
+                0 if reachable_background[index] else 255
+                for index in range(width * height)
+            ]
+        )
+        return mask
+
+    def _suppress_unreliable_edge_shadow(
+        self,
+        mask: Image.Image,
+        source: Image.Image,
+        background: tuple[int, int, int],
+    ) -> Image.Image:
+        """Suppress a tolerant edge shadow only when its own mask is trustworthy."""
+        # Keep the legacy low-contrast edge-shadow behavior without using bbox
+        # contact as an escalation signal.  The wider border flood is accepted
+        # only when it still has a substantial, connected foreground core.
+        tolerant_mask = self._connected_foreground_mask(
+            source, background, self.background_tolerance * 4
+        )
+        tolerant_mask = self._refine_mask(tolerant_mask)
+        tolerant_foreground_count = sum(value > 0 for value in tolerant_mask.getdata())
+        if tolerant_foreground_count == 0:
+            return mask
+        tolerant_ratio = tolerant_foreground_count / (source.width * source.height)
+        if not self.min_foreground_ratio <= tolerant_ratio <= self.max_foreground_ratio:
+            return mask
+        if (
+            self._largest_foreground_component_ratio(
+                tolerant_mask, tolerant_foreground_count
+            )
+            < self.min_largest_component_ratio
+        ):
+            return mask
+        return ImageChops.multiply(mask, tolerant_mask)
+
+    def _suppress_connected_background_gradient(
+        self,
+        mask: Image.Image,
+        source: Image.Image,
+        background: tuple[int, int, int],
+    ) -> Image.Image:
+        """Remove only a neutral, brighter gradient that reaches the frame."""
+        width, height = source.size
+        source_pixels = source.load()
+        background_brightness = sum(background) / 3
+        candidates = bytearray(width * height)
+        clearable = bytearray(width * height)
+        fadeable = bytearray(width * height)
+        for y in range(height):
+            row_start = y * width
+            for x in range(width):
+                pixel = source_pixels[x, y]
+                brightness = sum(pixel) / 3
+                chroma = max(pixel) - min(pixel)
+                neutral = chroma <= self.corner_uniformity_tolerance
+                # Let the flood cross the gradual gradient, but only clear
+                # pixels that are unambiguously brighter than the background.
+                candidates[row_start + x] = int(
+                    neutral and brightness >= background_brightness - 10
+                )
+                clearable[row_start + x] = int(
+                    neutral and brightness >= background_brightness + 60
+                )
+                fadeable[row_start + x] = int(
+                    neutral and brightness >= background_brightness + 30
+                )
+
+        reachable_background = bytearray(width * height)
+        pending: deque[tuple[int, int]] = deque()
+
+        def enqueue_if_candidate(x: int, y: int) -> None:
+            index = y * width + x
+            if candidates[index] and not reachable_background[index]:
+                reachable_background[index] = 1
+                pending.append((x, y))
+
+        for x in range(width):
+            enqueue_if_candidate(x, 0)
+            enqueue_if_candidate(x, height - 1)
+        for y in range(height):
+            enqueue_if_candidate(0, y)
+            enqueue_if_candidate(width - 1, y)
+
+        while pending:
+            x, y = pending.popleft()
+            for neighbor_x, neighbor_y in (
+                (x - 1, y),
+                (x + 1, y),
+                (x, y - 1),
+                (x, y + 1),
+            ):
+                if 0 <= neighbor_x < width and 0 <= neighbor_y < height:
+                    enqueue_if_candidate(neighbor_x, neighbor_y)
+
+        values = list(mask.getdata())
+        shadow_fade_alpha = 40
+        for index in range(width * height):
+            if not reachable_background[index] or not values[index]:
+                continue
+            if clearable[index]:
+                values[index] = 0
+            elif fadeable[index]:
+                # Keep ambiguous product-colored pixels intact, but make the
+                # connected neutral shadow nearly disappear on a new backdrop.
+                values[index] = min(values[index], shadow_fade_alpha)
+        mask.putdata(values)
+        return mask
+
+    @staticmethod
+    def _largest_foreground_component_ratio(
+        mask: Image.Image, foreground_count: int
+    ) -> float:
+        if foreground_count == 0:
+            return 0.0
+        width, height = mask.size
+        pixels = mask.load()
+        visited = bytearray(width * height)
+        largest_component = 0
+        for y in range(height):
+            for x in range(width):
+                index = y * width + x
+                if visited[index] or pixels[x, y] == 0:
+                    continue
+                visited[index] = 1
+                pending: deque[int] = deque((index,))
+                component_size = 0
+                while pending:
+                    current = pending.popleft()
+                    component_size += 1
+                    current_x = current % width
+                    current_y = current // width
+                    for neighbor_x, neighbor_y in (
+                        (current_x - 1, current_y),
+                        (current_x + 1, current_y),
+                        (current_x, current_y - 1),
+                        (current_x, current_y + 1),
+                    ):
+                        if 0 <= neighbor_x < width and 0 <= neighbor_y < height:
+                            neighbor = neighbor_y * width + neighbor_x
+                            if (
+                                not visited[neighbor]
+                                and pixels[neighbor_x, neighbor_y] > 0
+                            ):
+                                visited[neighbor] = 1
+                                pending.append(neighbor)
+                largest_component = max(largest_component, component_size)
+        return largest_component / foreground_count
 
     @staticmethod
     def _distance(left: tuple[int, int, int], right: tuple[int, int, int]) -> float:
