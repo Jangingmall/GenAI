@@ -73,7 +73,10 @@ def _fetch_product_cards(product_ids: list[int]) -> dict[int, dict]:
             # 실제 CDN URL 패턴(data/장인몰_샘플_products_popular_top50.json에서 확인) — 이
             # product_id가 실제로 그 경로에 이미지가 있다는 보장은 없다, 구조 검증용 mock이다.
             "thumbnail": [
-                {"url": f"https://cdn.jangingmall.com/products/{product_id}/images/0_{w}w.webp", "width": w}
+                {
+                    "url": f"https://cdn.jangingmall.com/products/{product_id}/images/0_{w}w.webp",
+                    "width": w,
+                }
                 for w in (320, 640, 1280)
             ],
         }
@@ -96,7 +99,11 @@ def send_message(session_id: str, body: MessageRequest):
     # 백엔드 명세: "가공 없이 그대로 /ai/chat 으로 전달(최근 5~6턴 history 동봉)".
     resp = httpx.post(
         AI_CHAT_URL,
-        json={"session_id": session_id, "message": body.message, "history": history[-6:]},
+        json={
+            "session_id": session_id,
+            "message": body.message,
+            "history": history[-6:],
+        },
         timeout=180,
     )
     resp.raise_for_status()
@@ -124,7 +131,9 @@ def send_message(session_id: str, body: MessageRequest):
             "reply": ai_result["reply"],
             "intent": ai_result["intent"],
             "products": products,
-            "suggestions": ai_result["suggestions"],  # 명세엔 없지만 실제 화면엔 필요(확인 필요 항목)
+            "suggestions": ai_result[
+                "suggestions"
+            ],  # 명세엔 없지만 실제 화면엔 필요(확인 필요 항목)
         },
     }
 
@@ -133,7 +142,11 @@ def send_message(session_id: str, body: MessageRequest):
 def get_history(session_id: str):
     if session_id not in _sessions:
         raise HTTPException(status_code=404, detail="NOT_FOUND")
-    return {"success": True, "status": 200, "data": {"items": _sessions[session_id]["history"]}}
+    return {
+        "success": True,
+        "status": 200,
+        "data": {"items": _sessions[session_id]["history"]},
+    }
 
 
 @app.delete("/api/chatbot/sessions/{session_id}", status_code=200)

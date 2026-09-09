@@ -39,7 +39,7 @@ def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
 
 def _no_cache_lookup(message: str):
     """의미 기반 캐시 기본값은 실제 임베딩 모델을 부르므로, 단위 테스트에선 항상 미스로 만든다."""
-    return None
+    return
 
 
 def _no_cache_store(message: str, contact1: dict) -> None:
@@ -205,7 +205,9 @@ def test_run_narrow_down_treats_zero_price_as_new_filter():
         },
         generate_payload={"reply": "ok", "products": [], "suggestions": []},
     )
-    fresh = [{"product_id": 5, "name": "무료 나눔 도자기", "score": 0.5, "evidence": {}}]
+    fresh = [
+        {"product_id": 5, "name": "무료 나눔 도자기", "score": 0.5, "evidence": {}}
+    ]
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
 
     result = rr.run(
@@ -295,7 +297,12 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
         chat=chat,
         search_and_rank=search_and_rank_must_not_be_called,
         previous_candidates=previous,
-        previous_filters={"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        previous_filters={
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": None,
+            "color": None,
+        },
         **_NO_DB,
     )
 
@@ -401,7 +408,9 @@ def test_run_general_chat_skips_second_llm_call_and_search():
     )
     assert result["products"] == []
     assert result["reply"] == "안녕하세요! 어떤 공예품을 찾으시나요?"
-    assert calls["n"] == 1, "general_chat인데 LLM이 2번 호출됐다(generate 호출을 안 건너뛰었다)"
+    assert (
+        calls["n"] == 1
+    ), "general_chat인데 LLM이 2번 호출됐다(generate 호출을 안 건너뛰었다)"
 
 
 # ---------------------------------------------------------------------------
@@ -414,7 +423,12 @@ def test_run_uses_cache_hit_and_skips_classify_and_extract():
     한다 — chat이 정확히 1번만 불렸는지로 확인한다(intent까지 불렸으면 2번이 됨)."""
     cached_contact1 = {
         "intent": "product_search",
-        "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        "filters": {
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": None,
+            "color": None,
+        },
         "query_text": "도자기",
         "chat_reply": "",
     }
@@ -435,7 +449,9 @@ def test_run_uses_cache_hit_and_skips_classify_and_extract():
     )
 
     assert result["intent"] == "product_search"
-    assert calls["n"] == 1, "캐시 히트인데 chat이 2번 불렸다(intent 호출을 못 건너뛴 것)"
+    assert (
+        calls["n"] == 1
+    ), "캐시 히트인데 chat이 2번 불렸다(intent 호출을 못 건너뛴 것)"
 
 
 def test_run_stores_to_cache_on_miss():

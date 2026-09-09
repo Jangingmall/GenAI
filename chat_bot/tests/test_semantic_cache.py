@@ -23,7 +23,9 @@ def setup_function():
 
 
 def test_lookup_returns_none_when_cache_empty(monkeypatch):
-    monkeypatch.setattr(sc, "embed_query", _fake_embed({"선물로 도자기 찾아줘": [1.0, 0.0]}))
+    monkeypatch.setattr(
+        sc, "embed_query", _fake_embed({"선물로 도자기 찾아줘": [1.0, 0.0]})
+    )
     assert sc.lookup("선물로 도자기 찾아줘") is None
 
 
@@ -34,13 +36,21 @@ def test_store_then_lookup_similar_message_hits(monkeypatch):
         _fake_embed(
             {
                 "선물로 좋은 도자기 찾아줘": [1.0, 0.0],
-                "선물용 도자기 추천해줘": [0.99, 0.14],  # 코사인 유사도 ~0.99, 거의 같은 뜻
+                "선물용 도자기 추천해줘": [
+                    0.99,
+                    0.14,
+                ],  # 코사인 유사도 ~0.99, 거의 같은 뜻
             }
         ),
     )
     contact1 = {
         "intent": "gift_recommendation",
-        "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        "filters": {
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": None,
+            "color": None,
+        },
         "query_text": "선물용 도자기",
         "chat_reply": "",
     }
@@ -58,7 +68,10 @@ def test_lookup_misses_when_message_is_unrelated(monkeypatch):
         _fake_embed(
             {
                 "선물로 좋은 도자기 찾아줘": [1.0, 0.0],
-                "나전으로 만든 곡물독 있어요?": [0.0, 1.0],  # 코사인 유사도 0, 완전히 다른 질문
+                "나전으로 만든 곡물독 있어요?": [
+                    0.0,
+                    1.0,
+                ],  # 코사인 유사도 0, 완전히 다른 질문
             }
         ),
     )
@@ -66,7 +79,12 @@ def test_lookup_misses_when_message_is_unrelated(monkeypatch):
         "선물로 좋은 도자기 찾아줘",
         {
             "intent": "gift_recommendation",
-            "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+            "filters": {
+                "max_price": None,
+                "min_price": None,
+                "gift_theme": None,
+                "color": None,
+            },
             "query_text": "선물용 도자기",
             "chat_reply": "",
         },
@@ -85,7 +103,12 @@ def test_lookup_ignores_expired_entries(monkeypatch):
         "선물로 도자기 찾아줘",
         {
             "intent": "gift_recommendation",
-            "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+            "filters": {
+                "max_price": None,
+                "min_price": None,
+                "gift_theme": None,
+                "color": None,
+            },
             "query_text": "도자기",
             "chat_reply": "",
         },
@@ -104,7 +127,12 @@ def test_cache_evicts_oldest_when_over_capacity(monkeypatch):
     )
     base = {
         "intent": "product_search",
-        "filters": {"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        "filters": {
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": None,
+            "color": None,
+        },
         "query_text": "",
         "chat_reply": "",
     }

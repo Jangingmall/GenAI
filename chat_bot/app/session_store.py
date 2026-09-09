@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import time
 
-_TTL_SECONDS = 1800  # 대화 하나가 30분 안에는 끝난다고 가정 — 백엔드 세션 expiresInSeconds와
+_TTL_SECONDS = (
+    1800  # 대화 하나가 30분 안에는 끝난다고 가정 — 백엔드 세션 expiresInSeconds와
+)
 # 별개로, 우리 쪽 메모리 방어용 상한이다.
 _MAX_ENTRIES = 500
 
@@ -35,7 +37,11 @@ def get(session_id: str) -> dict | None:
 
 def set(session_id: str, candidates: list[dict], filters: dict) -> None:
     """이번 턴에 쓴 candidates·filters를 저장해 다음 턴 narrow_down이 재사용할 수 있게 한다."""
-    _store[session_id] = {"candidates": candidates, "filters": filters, "ts": time.time()}
+    _store[session_id] = {
+        "candidates": candidates,
+        "filters": filters,
+        "ts": time.time(),
+    }
     if len(_store) > _MAX_ENTRIES:
         oldest_id = min(_store, key=lambda k: _store[k]["ts"])
         del _store[oldest_id]
