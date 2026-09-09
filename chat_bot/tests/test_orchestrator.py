@@ -58,15 +58,33 @@ def test_run_assembles_final_contract():
         },
     )
     search_and_rank = _fake_search_and_rank(
-        [{"product_id": 9, "name": "청자 다완", "score": 0.8, "evidence": {"artisan_input": "", "verified": None}}]
+        [
+            {
+                "product_id": 9,
+                "name": "청자 다완",
+                "score": 0.8,
+                "evidence": {"artisan_input": "", "verified": None},
+            }
+        ]
     )
 
     result = rr.run("찻잔 있나요", chat=chat, search_and_rank=search_and_rank, **_NO_DB)
 
-    assert set(result.keys()) == {"reply", "intent", "products", "suggestions", "candidates", "filters"}
+    assert set(result.keys()) == {
+        "reply",
+        "intent",
+        "products",
+        "suggestions",
+        "candidates",
+        "filters",
+    }
     assert result["intent"] == "product_search"
     assert result["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
-    assert result["suggestions"] == ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"]
+    assert result["suggestions"] == [
+        "다른 색상으로",
+        "가격대 낮춰서",
+        "포장까지 되는 것만",
+    ]
 
 
 def test_run_passes_contact1_to_search_and_rank():
@@ -141,7 +159,9 @@ def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
 
     def search_and_rank_must_not_be_called(contact1):
-        raise AssertionError("narrow_down + previous_candidates가 있으면 재검색하면 안 된다")
+        raise AssertionError(
+            "narrow_down + previous_candidates가 있으면 재검색하면 안 된다"
+        )
 
     result = rr.run(
         "그중 제일 싼거는 뭐야?",
@@ -176,17 +196,26 @@ def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
             "suggestions": [],
         },
     )
-    previous = [{"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}]
+    previous = [
+        {"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}
+    ]
 
     def search_and_rank_must_not_be_called(contact1):
-        raise AssertionError("이전 턴과 같은 필터면 새 조건이 아니므로 재검색하면 안 된다")
+        raise AssertionError(
+            "이전 턴과 같은 필터면 새 조건이 아니므로 재검색하면 안 된다"
+        )
 
     result = rr.run(
         "가격대 확인해줘",
         chat=chat,
         search_and_rank=search_and_rank_must_not_be_called,
         previous_candidates=previous,
-        previous_filters={"max_price": None, "min_price": None, "gift_theme": ["HOUSEWARMING"], "color": None},
+        previous_filters={
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": ["HOUSEWARMING"],
+            "color": None,
+        },
         **_NO_DB,
     )
 
@@ -210,7 +239,9 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
         },
         generate_payload={"reply": "ok", "products": [], "suggestions": []},
     )
-    previous = [{"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}]
+    previous = [
+        {"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}
+    ]
 
     def search_and_rank_must_not_be_called(contact1):
         raise AssertionError("gift_theme만 바뀐 건 재검색 트리거가 아니다")
@@ -220,7 +251,12 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
         chat=chat,
         search_and_rank=search_and_rank_must_not_be_called,
         previous_candidates=previous,
-        previous_filters={"max_price": None, "min_price": None, "gift_theme": None, "color": None},
+        previous_filters={
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": None,
+            "color": None,
+        },
         fetch_prices=_no_prices,
         fetch_artisans=_no_artisans,
     )
