@@ -16,17 +16,6 @@ class JsonTransport(Protocol):
         ...
 
 
-class MultipartTransport(Protocol):
-    def post_multipart(
-        self,
-        url: str,
-        fields: dict[str, str],
-        files: dict[str, dict[str, Any]],
-        timeout: float,
-    ) -> dict[str, Any]:
-        ...
-
-
 class StructuredJsonChatClient(Protocol):
     def generate_json(
         self,
@@ -61,47 +50,6 @@ class UrllibJsonTransport:
             raise LocalModelError("Local model returned invalid JSON") from exc
         if not isinstance(payload, dict):
             raise LocalModelError("Local model response must be a JSON object")
-        return payload
-
-
-class HttpxMultipartTransport:
-    """Multipart transport for MLX Serve's OpenAI-compatible image edit API."""
-
-    def post_multipart(
-        self,
-        url: str,
-        fields: dict[str, str],
-        files: dict[str, dict[str, Any]],
-        timeout: float,
-    ) -> dict[str, Any]:
-        import httpx
-
-        encoded_files = {
-            field_name: (
-                file_info["filename"],
-                file_info["data"],
-                file_info["content_type"],
-            )
-            for field_name, file_info in files.items()
-        }
-        try:
-            response = httpx.post(
-                url,
-                data=fields,
-                files=encoded_files,
-                timeout=timeout,
-            )
-        except (httpx.HTTPError, TimeoutError) as exc:
-            raise LocalModelError(f"Local model multipart request failed: {exc}") from exc
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise LocalModelError("Local model returned invalid multipart JSON") from exc
-        if not isinstance(payload, dict):
-            raise LocalModelError("Local model multipart response must be a JSON object")
-        if response.is_error:
-            message = payload.get("error", payload.get("message", "request failed"))
-            raise LocalModelError(f"Local model image edit failed: {message}")
         return payload
 
 
@@ -227,16 +175,17 @@ class MlxServeImageClient:
         base_url: str = "http://127.0.0.1:11234",
         model: str = "mlx-community/flux2-klein-9b-4bit",
         timeout: float = 300.0,
-        steps: int = 12,
+        # FLUX.2 Klein is a 4-step distilled model, and all measurements so
+        # far used 4 steps. Increase this only after a valid quality A/B test
+        # provides evidence that a higher value helps.
+        steps: int = 4,
         transport: JsonTransport | None = None,
-        multipart_transport: MultipartTransport | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
         self.steps = steps
         self.transport = transport or UrllibJsonTransport()
-        self.multipart_transport = multipart_transport or HttpxMultipartTransport()
 
     def generate(
         self,
@@ -278,29 +227,20 @@ class MlxServeImageClient:
             raise ValueError("source_image must not be empty")
         if not source_mime_type.startswith("image/"):
             raise ValueError("source_mime_type must be an image MIME type")
-        extension = {
-            "image/jpeg": "jpg",
-            "image/png": "png",
-            "image/webp": "webp",
-        }.get(source_mime_type, "img")
-        response = self.multipart_transport.post_multipart(
-            f"{self.base_url}/v1/images/edits",
+        # MLX Serve's multipart adapter translates edits into its JSON image
+        # generation schema and does not carry steps/strength through. Use that
+        # schema directly so both values arrive as JSON numbers. The current
+        # FLUX.2 in-context edit mode accepts strength but intentionally ignores it.
+        response = self.transport.post(
+            f"{self.base_url}/v1/images/generations",
             {
                 "model": self.model,
                 "prompt": prompt,
-                "n": "1",
                 "size": "1024x1024",
-                "response_format": "b64_json",
-                "output_format": "png",
-                "steps": str(self.steps),
-                "strength": f"{strength:.2f}",
-            },
-            {
-                "image": {
-                    "filename": f"source.{extension}",
-                    "content_type": source_mime_type,
-                    "data": source_image,
-                }
+                "mode": "edit",
+                "steps": self.steps,
+                "strength": strength,
+                "image": base64.b64encode(source_image).decode("ascii"),
             },
             self.timeout,
         )

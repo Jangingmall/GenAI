@@ -41,16 +41,6 @@ class FakeJsonTransport:
         return self.response
 
 
-class FakeMultipartTransport:
-    def __init__(self, response):
-        self.response = response
-        self.calls = []
-
-    def post_multipart(self, url, fields, files, timeout):
-        self.calls.append((url, fields, files, timeout))
-        return self.response
-
-
 def test_ollama_chat_client_sends_image_and_returns_structured_json():
     transport = FakeJsonTransport(
         {"message": {"content": '{"product_type":"desk lamp"}'}}
@@ -157,18 +147,17 @@ def test_mlx_image_client_decodes_generated_background():
     assert payload["size"] == "1024x1024"
     assert payload["response_format"] == "b64_json"
     assert payload["negative_prompt"] == "product, object, text"
-    assert payload["steps"] == 12
+    assert payload["steps"] == 4
 
 
 def test_mlx_image_client_edits_using_the_original_image_reference():
-    transport = FakeMultipartTransport(
+    transport = FakeJsonTransport(
         {"created": 0, "data": [{"b64_json": base64.b64encode(b"edited-png").decode()}]}
     )
     client = MlxServeImageClient(
         base_url="http://mlx.local",
         model="mlx-community/flux2-klein-9b-4bit",
-        transport=FakeJsonTransport({}),
-        multipart_transport=transport,
+        transport=transport,
     )
 
     result = client.edit(
@@ -178,24 +167,52 @@ def test_mlx_image_client_edits_using_the_original_image_reference():
     )
 
     assert result == b"edited-png"
-    url, fields, files, _ = transport.calls[0]
-    assert url == "http://mlx.local/v1/images/edits"
-    assert fields["model"] == "mlx-community/flux2-klein-9b-4bit"
-    assert fields["output_format"] == "png"
-    assert fields["response_format"] == "b64_json"
-    assert fields["n"] == "1"
-    assert files["image"]["data"] == b"source-jpeg"
-    assert files["image"]["content_type"] == "image/jpeg"
+    url, payload, _ = transport.calls[0]
+    assert url == "http://mlx.local/v1/images/generations"
+    assert payload["model"] == "mlx-community/flux2-klein-9b-4bit"
+    assert payload["mode"] == "edit"
+    assert payload["image"] == base64.b64encode(b"source-jpeg").decode("ascii")
+
+
+def test_mlx_image_client_edit_payload_uses_numeric_controls_on_json_route():
+    response = {
+        "created": 0,
+        "data": [{"b64_json": base64.b64encode(b"edited-png").decode()}],
+    }
+    json_transport = FakeJsonTransport(response)
+    client = MlxServeImageClient(
+        base_url="http://mlx.local",
+        model="mlx-community/flux2-klein-9b-4bit",
+        steps=8,
+        transport=json_transport,
+    )
+
+    result = client.edit(
+        "e-commerce product background, modern layout, soft lighting, minimal design",
+        source_image=b"source-jpeg",
+        source_mime_type="image/jpeg",
+        strength=0.25,
+    )
+
+    assert result == b"edited-png"
+    assert len(json_transport.calls) == 1
+    url, payload, _ = json_transport.calls[0]
+    assert url == "http://mlx.local/v1/images/generations"
+    assert payload["model"] == "mlx-community/flux2-klein-9b-4bit"
+    assert payload["mode"] == "edit"
+    assert payload["steps"] == 8
+    assert payload["strength"] == 0.25
+    assert payload["image"] == base64.b64encode(b"source-jpeg").decode("ascii")
 
 
 def test_mlx_usage_scene_generator_uses_balanced_strength_for_real_usage_context():
-    transport = FakeMultipartTransport(
+    transport = FakeJsonTransport(
         {"created": 0, "data": [{"b64_json": base64.b64encode(b"edited-png").decode()}]}
     )
     client = MlxServeImageClient(
         base_url="http://mlx.local",
         model="mlx-community/flux2-klein-9b-4bit",
-        multipart_transport=transport,
+        transport=transport,
     )
     generator = MlxServeUsageSceneGenerator(client)
     profile = ProductProfileDto.minimal("금속 공예 세트")
@@ -210,18 +227,18 @@ def test_mlx_usage_scene_generator_uses_balanced_strength_for_real_usage_context
     )
 
     assert result == b"edited-png"
-    assert transport.calls[0][0] == "http://mlx.local/v1/images/edits"
-    assert transport.calls[0][1]["strength"] == "0.22"
+    assert transport.calls[0][0] == "http://mlx.local/v1/images/generations"
+    assert transport.calls[0][1]["strength"] == 0.22
 
 
 def test_mlx_detail_view_generator_edits_each_generated_detail_job():
-    transport = FakeMultipartTransport(
+    transport = FakeJsonTransport(
         {"created": 0, "data": [{"b64_json": base64.b64encode(b"angle-png").decode()}]}
     )
     client = MlxServeImageClient(
         base_url="http://mlx.local",
         model="mlx-community/flux2-klein-9b-4bit",
-        multipart_transport=transport,
+        transport=transport,
     )
     generator = MlxServeDetailViewGenerator(client)
 
@@ -238,7 +255,7 @@ def test_mlx_detail_view_generator_edits_each_generated_detail_job():
         assert result == b"angle-png"
 
     assert [call[0] for call in transport.calls] == [
-        "http://mlx.local/v1/images/edits"
+        "http://mlx.local/v1/images/generations"
     ] * 4
     prompts = [call[1]["prompt"].lower() for call in transport.calls]
     assert "front-left" in prompts[0]
