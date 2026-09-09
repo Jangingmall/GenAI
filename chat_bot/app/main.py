@@ -26,6 +26,8 @@ cache_store를 전부 주입 가능한 인자로 받게 설계돼 있다 — 그
   (로컬 호스팅 후 터널링으로 엔드포인트 노출)
 """
 
+# ruff: noqa: B008
+
 from __future__ import annotations
 
 from contextlib import asynccontextmanager

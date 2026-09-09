@@ -56,7 +56,9 @@ def _no_cache_store(message, contact1):
 def _override(*, chat, search_and_rank):
     """실LLM·실DB·실임베딩 없이 /ai/chat을 테스트하기 위한 dependency_overrides 일괄 세팅."""
     main.app.dependency_overrides[main._default_chat] = lambda: chat
-    main.app.dependency_overrides[main._default_search_and_rank] = lambda: search_and_rank
+    main.app.dependency_overrides[main._default_search_and_rank] = (
+        lambda: search_and_rank
+    )
     main.app.dependency_overrides[main._default_fetch_prices] = lambda: _no_prices
     main.app.dependency_overrides[main._default_fetch_artisans] = lambda: _no_artisans
     main.app.dependency_overrides[main._default_cache_lookup] = lambda: _no_cache_lookup
@@ -120,7 +122,9 @@ def test_narrow_down_reuses_previous_candidates_via_session_id():
         chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
         search_and_rank=spy_search_and_rank,
     )
-    client.post("/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []})
+    client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
     assert calls["n"] == 1
 
     intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
@@ -130,7 +134,11 @@ def test_narrow_down_reuses_previous_candidates_via_session_id():
     )
     response = client.post(
         "/ai/chat",
-        json={"session_id": "s1", "message": "그중 더 싼 거", "history": [{"sender": "USER", "content": "찻잔 있나요"}]},
+        json={
+            "session_id": "s1",
+            "message": "그중 더 싼 거",
+            "history": [{"sender": "USER", "content": "찻잔 있나요"}],
+        },
     )
 
     assert response.status_code == 200
@@ -181,7 +189,9 @@ def test_different_session_ids_do_not_share_state():
         chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
         search_and_rank=spy_search_and_rank,
     )
-    client.post("/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []})
+    client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
     assert calls["n"] == 1
 
     intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
@@ -189,6 +199,8 @@ def test_different_session_ids_do_not_share_state():
         chat=_sequenced_chat(intent_narrow_down, _GENERATE_OK),
         search_and_rank=spy_search_and_rank,
     )
-    client.post("/ai/chat", json={"session_id": "s2", "message": "그중 더 싼 거", "history": []})
+    client.post(
+        "/ai/chat", json={"session_id": "s2", "message": "그중 더 싼 거", "history": []}
+    )
 
     assert calls["n"] == 2  # s2는 s1의 후보를 모르니 새로 검색했다

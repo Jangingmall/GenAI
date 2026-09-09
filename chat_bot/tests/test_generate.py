@@ -22,7 +22,9 @@ def test_fetch_prices_returns_empty_dict_when_connect_fails(monkeypatch):
     monkeypatch.setattr(
         gen.psycopg2,
         "connect",
-        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+        lambda *_a, **_kw: (_ for _ in ()).throw(
+            psycopg2.OperationalError("연결 실패")
+        ),
     )
     assert gen._fetch_prices([1, 2]) == {}
 
@@ -31,7 +33,9 @@ def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
     monkeypatch.setattr(
         gen.psycopg2,
         "connect",
-        lambda *_a, **_kw: (_ for _ in ()).throw(psycopg2.OperationalError("연결 실패")),
+        lambda *_a, **_kw: (_ for _ in ()).throw(
+            psycopg2.OperationalError("연결 실패")
+        ),
     )
     assert gen._fetch_artisans([1, 2]) == {}
 
@@ -248,9 +252,9 @@ def test_format_filters_none_returns_placeholder():
 
 
 def test_format_filters_empty_dict_returns_placeholder():
-    assert gen._format_filters({"max_price": None, "min_price": None, "gift_theme": None, "color": None}) == (
-        "(추출된 조건 없음)"
-    )
+    assert gen._format_filters(
+        {"max_price": None, "min_price": None, "gift_theme": None, "color": None}
+    ) == ("(추출된 조건 없음)")
 
 
 def test_format_filters_includes_price_and_theme():
@@ -266,7 +270,12 @@ def test_format_filters_includes_price_and_theme():
 
 
 def test_cap_suggestions_truncates_to_three():
-    suggestions = ["3만 원 아래로", "다른 색상으로", "다른 재질로", "포장까지 되는 것만"]
+    suggestions = [
+        "3만 원 아래로",
+        "다른 색상으로",
+        "다른 재질로",
+        "포장까지 되는 것만",
+    ]
     assert gen._cap_suggestions(suggestions) == suggestions[:3]
 
 
