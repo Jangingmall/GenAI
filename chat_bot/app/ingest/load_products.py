@@ -46,7 +46,7 @@ CONTENT_TAG_PREFIXES = ("N", "V", "MM", "MAG", "SL", "SN")
 PRODUCT_COLUMN_MAP: dict[str, str] = {}
 ARTISAN_COLUMN_MAP: dict[str, str] = {}
 
-# certification_level 코드값 (실데이터 artisan.csv 실측 4종). 이 밖의 값은 경고만 하고 통과시킨다.
+# certification_level 코드값 (artisan.csv 기준 4종). 이 밖의 값은 경고만 하고 통과시킨다.
 CERTIFICATION_LEVELS = (
     "YOUNG_CRAFTSMAN",
     "SENIOR_CRAFTSMAN",
@@ -54,7 +54,7 @@ CERTIFICATION_LEVELS = (
     "NATIONAL_INTANGIBLE_HERITAGE",
 )
 
-# purpose_tags 원소를 구분하는 문자. 실데이터 실측: "인테리어|선물"처럼 "|" 사용.
+# purpose_tags 원소를 구분하는 문자. 실데이터가 "인테리어|선물"처럼 "|"를 쓴다.
 # gift_theme은 실데이터에서 상품 1건당 항상 단일값이라 이 구분자를 만날 일이 없다.
 # color는 확정 스키마에서 배열이 아니라 스칼라라 ARRAY_FIELDS에 넣지 않는다.
 LIST_SEPARATOR = "|"
@@ -255,7 +255,7 @@ def validate(artisans: list[dict], products: list[dict]) -> list[str]:
 
 
 # category_code(POTTERY 등 영문 코드)는 임베딩 모델이 한국어 의미로 못 읽을 수 있어
-# 한글로 번역해 넣는다. 적재 담당자 요청으로 반영.
+# 한글로 번역해 넣는다.
 CATEGORY_KO = {
     "POTTERY": "도자기",
     "ONGGI": "옹기",

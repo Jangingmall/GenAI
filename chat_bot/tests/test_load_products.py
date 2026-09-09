@@ -65,7 +65,7 @@ def test_to_records_splits_array_fields():
 
 
 def test_to_records_color_is_scalar_not_array():
-    # 확정 스키마: color는 배열이 아니라 스칼라(실데이터 실측: 상품 1건당 항상 단일값)
+    # 확정 스키마: color는 배열이 아니라 스칼라(상품 1건당 항상 단일값)
     _, products = lp.to_records([_raw_product_row(color="BROWN")], [_raw_artisan_row()])
     assert products[0]["color"] == "BROWN"
 

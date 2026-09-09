@@ -7,6 +7,15 @@
 
 intent는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
 
+대화 맥락이 없는 첫 턴은 의도분류 결과를 의미 기반 캐시(semantic_cache.py)에서 먼저
+찾아본다 — 비슷한 질문("선물로 좋은 도자기 찾아줘" vs "선물용 도자기 추천해줘")이면
+intent LLM 호출을 건너뛴다. 상품·가격은 캐싱하지 않고 항상 새로 계산한다(카탈로그
+최신 상태 보장).
+
+intent가 general_chat이면 검색·⑤ 호출을 둘 다 건너뛰고 접점1의 chat_reply를 그대로
+반환한다 — 잡담엔 상품 근거 기반 규칙(⑤)이 애초에 불필요하고, 검색도 엉뚱한 결과를
+끼워 넣을 위험만 있다(아래 run() 본문 참고).
+
 narrow_down("그중 더 싼 거" 등)은 두 가지로 갈린다 — ① 직전에 보여준 후보에 대한 순수
 속성 질문("가격대 확인해줘", "포장되나요?")은 새로 검색하지 않고 그 후보 그대로 답해야
 한다(안 그러면 query_text가 "가장 저렴한 제품"처럼 원래 주제를 잃어 엉뚱한 종목이 나옴 —
@@ -17,6 +26,7 @@ narrow_down("그중 더 싼 거" 등)은 두 가지로 갈린다 — ① 직전�
 
 from __future__ import annotations
 
+from app.pipeline import semantic_cache
 from app.pipeline.generate import _fetch_artisans, _fetch_prices, build_reply
 from app.pipeline.intent import classify_and_extract
 from app.pipeline.llm import chat_json
@@ -34,6 +44,8 @@ def run(
     previous_filters: dict | None = None,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
+    cache_lookup=semantic_cache.lookup,
+    cache_store=semantic_cache.store,
 ) -> dict:
     """자연어 한 문장 → 최종 응답 계약 {reply, intent, products, suggestions} + candidates.
 
@@ -41,10 +53,9 @@ def run(
     search_and_rank 기본값(A의 실제 search+ranking)은 PostgreSQL·임베딩 모델이 필요하다.
 
     candidates는 이번 턴에 실제로 쓴 후보 목록이다 — 확정된 외부 응답 계약(§0의 4개
-    필드)엔 없는 내부용 필드다. FastAPI 서버가 아직 없어 세션을 어디에 보관할지
-    확정 전이라, 지금은 호출부(예: chat_repl.py)가 이 값을 다음 턴 previous_candidates로
-    직접 넘겨 대화 연속성을 유지하는 임시 방편이다. 실제 서버가 생기면 세션 저장소가
-    이 역할을 대신할 수 있다.
+    필드)엔 없는 내부용 필드다. app/main.py의 /ai/chat이 session_store.py를 통해
+    session_id를 키로 이 값을 보관했다가 다음 턴 previous_candidates로 넘겨 대화
+    연속성을 유지한다.
 
     previous_filters도 같은 이유로 내부 전용이다 — intent.py는 이전 턴에 이미 확정된
     조건(예: "집들이"→gift_theme=HOUSEWARMING)을 매 턴 계속 다시 채워 넣는다(맥락을
@@ -60,17 +71,46 @@ def run(
     판단에 넣으면 노이즈로 불필요한 재검색이 계속 발생한다. max_price·min_price·color만
     진짜 하드필터(SQL WHERE)라 이 셋만 본다.
     """
-    contact1 = classify_and_extract(message, history, chat=chat)
+    # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
+    # 직전 대화에 따라 의미가 완전히 달라지는데, 문장만 보고 캐시를 맞히면 엉뚱한 이전
+    # 대화의 결과가 섞여 나갈 위험이 크다(semantic_cache.py 모듈 docstring 참고).
+    if not history:
+        contact1 = cache_lookup(message)
+        if contact1 is None:
+            contact1 = classify_and_extract(message, history, chat=chat)
+            cache_store(message, contact1)
+    else:
+        contact1 = classify_and_extract(message, history, chat=chat)
+
+    if contact1["intent"] == "general_chat":
+        # 잡담은 상품이 전혀 관련 없으므로 generate.py의 두 번째 LLM 호출(가격 환각 방지·
+        # 종목 대조 등 상품 근거 기반 규칙 전체)을 아예 안 거친다 — classify_and_extract가
+        # 이미 만들어둔 chat_reply를 그대로 쓴다. 검색도 안 한다: query_text가 빈 문자열
+        # 이어도 검색 엔진(임베딩 유사도)은 뭔가는 반환해서(실측: "안녕하십니까?" → 옹기
+        # 아닌 나전칠기 상품 3건) 잡담에 엉뚱한 상품이 낄 위험이 있다.
+        return {
+            "reply": contact1["chat_reply"],
+            "intent": "general_chat",
+            "products": [],
+            "suggestions": [],
+            "candidates": previous_candidates or [],
+            "filters": contact1["filters"],
+        }
+
     prev_filters = previous_filters or {}
-    has_new_filter = any(
-        contact1["filters"].get(k) and contact1["filters"].get(k) != prev_filters.get(k)
-        for k in ("max_price", "min_price", "color")
+    new_filters = contact1["filters"]
+    # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야
+    # 한다 — 진리값 검사(truthy)를 쓰면 0이 falsy라 "새 조건 없음"으로 잘못 판정돼 재검색을
+    # 건너뛴다. color는 빈 리스트/None이 "조건 없음"의 정상 표현이라 진리값 검사를 유지한다.
+    price_changed = any(
+        new_filters.get(k) is not None and new_filters.get(k) != prev_filters.get(k)
+        for k in ("max_price", "min_price")
     )
-    if (
-        contact1["intent"] == "narrow_down"
-        and previous_candidates
-        and not has_new_filter
-    ):
+    color_changed = bool(new_filters.get("color")) and new_filters.get("color") != prev_filters.get(
+        "color"
+    )
+    has_new_filter = price_changed or color_changed
+    if contact1["intent"] == "narrow_down" and previous_candidates and not has_new_filter:
         candidates = previous_candidates
     else:
         candidates = search_and_rank(contact1)
@@ -97,6 +137,45 @@ def run(
         "candidates": generated["candidates"],
         "filters": contact1["filters"],
     }
+
+
+def warmup(
+    *,
+    chat=chat_json,
+    fetch_prices=_fetch_prices,
+    fetch_artisans=_fetch_artisans,
+    search_and_rank=_recommend,
+) -> None:
+    """서버 시작 시 한 번 호출해 콜드 스타트 비용 두 가지를 미리 다 내둔다.
+
+    ① INTENT_SYSTEM·GENERATE_SYSTEM 프롬프트 캐시 — 실제 사용자가 오기 전까지 한 번도
+    처리된 적이 없어서, 첫 턴은 두 프롬프트를 처음부터 다 읽는 콜드 비용을 그대로 낸다
+    (실측: 10~25초 → 캐시 재사용 시 2~4초).
+    ② 검색용 임베딩 모델(sentence-transformers) 최초 로딩 — 이것도 프로세스에서 한 번만
+    일어나는데, 처음 겪으면 그 자체로 ~10초가 걸린다(실측 확인). ①만 예열하고 ②를
+    빼먹으면, generate 계열 intent(예: product_search)에서 검색을 처음 호출하는 순간
+    이 비용이 고스란히 남아 예열 효과가 반쪽만 난다(실측: LLM은 빨라졌는데 전체는 여전히
+    28초 — 검색 임베딩 모델 로딩이 그대로 남아있었기 때문).
+
+    search_and_rank가 기본으로 실제 DB·임베딩 모델을 쓰므로, 이 함수를 처음 부르면 그
+    비용이 여기서 한 번에 다 발생한다 — 그 뒤로는 intent·generate·검색 셋 다 웜 상태다.
+    candidates를 빈 배열로 둬서 build_reply가 fetch_prices/fetch_artisans로 인한 추가
+    DB 연결 없이 끝난다(product_ids가 비어 있으면 바로 빈 딕셔너리를 반환한다).
+
+    chat·fetch_prices·fetch_artisans·search_and_rank는 다른 함수들과 같은 이유로
+    테스트에서 가짜로 갈아끼울 수 있게 인자로 받는다. app/main.py의 lifespan이 서버
+    시작 시 한 번 호출한다.
+    """
+    classify_and_extract("워밍업", chat=chat)
+    search_and_rank({"query_text": "워밍업", "filters": {}, "intent": "product_search"})
+    build_reply(
+        "워밍업",
+        [],
+        "general_chat",
+        chat=chat,
+        fetch_prices=fetch_prices,
+        fetch_artisans=fetch_artisans,
+    )
 
 
 # 단독 실행용: python -m app.pipeline.orchestrator "차 마실 때 쓸 것"

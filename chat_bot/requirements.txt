@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+httpx
 psycopg2-binary
 pgvector
 sentence-transformers
@@ -7,3 +8,4 @@ requests
 rank-bm25
 kiwipiepy
 pytest
+streamlit

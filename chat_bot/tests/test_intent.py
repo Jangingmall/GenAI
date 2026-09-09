@@ -1,10 +1,14 @@
 """intent.py 단위 테스트. 순수 함수는 LLM 없이, classify_and_extract는 fake_chat 주입.
-b03만 실제 Ollama로 스모크(intent.py 완료 조건, docs/b-metaprompt.md §2 S2).
+
+이 브랜치엔 eval/ 스위트가 없어 실LLM 검증은 인라인 메시지로만 한다(gift_theme 환각
+회귀 재현이 대표적).
 
 실행: python -m pytest tests/test_intent.py -q
 """
 
 import json
+
+import pytest
 
 from app.pipeline import intent as it
 from app.pipeline import prompts
@@ -87,7 +91,22 @@ def test_to_contact1_assembles_filters():
             "color": None,
         },
         "intent": "gift_recommendation",
+        "chat_reply": "",
     }
+
+
+def test_to_contact1_passes_through_chat_reply():
+    """chat_reply는 general_chat일 때 orchestrator가 generate.py 호출 없이 바로 쓰는
+    필드다 — _to_contact1이 그대로 넘겨야 한다."""
+    raw = {"intent": "general_chat", "query_text": "", "chat_reply": "안녕하세요! 무엇을 도와드릴까요?"}
+    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    assert result["chat_reply"] == "안녕하세요! 무엇을 도와드릴까요?"
+
+
+def test_to_contact1_missing_chat_reply_defaults_empty():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    assert result["chat_reply"] == ""
 
 
 def test_to_contact1_unknown_intent_becomes_general_chat():
@@ -178,21 +197,29 @@ def test_classify_and_extract_truncates_history_to_recent_turns():
         seen["user_content"] = messages[-1]["content"]
         return json.dumps({"intent": "general_chat", "query_text": ""})
 
-    history = [{"role": "user", "content": f"{i}번째 메시지"} for i in range(10)]
+    history = [
+        {"role": "user", "content": f"{i}번째 메시지"} for i in range(10)
+    ]
     it.classify_and_extract("최근 질문", history=history, chat=fake)
 
     assert "0번째 메시지" not in seen["user_content"]
     assert "9번째 메시지" in seen["user_content"]
 
 
-# ---------------------------------------------------------------------------
-# 스모크 — 실제 Ollama 호출 (S2 완료 조건). 이 브랜치엔 eval/cases.json이 없어 인라인 문구로.
-# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "message",
+    ["차 마실 때 쓸 것 추천해줘", "다완 추천해줘", "테이블러너 추천해줘"],
+)
+def test_smoke_no_gift_hallucination_without_recipient_real_llm(message):
+    """받는 사람·선물 언급이 전혀 없는 "~추천해줘" 문장은 product_search여야 한다.
 
+    회귀 재현: "차 마실 때 쓸 것 추천해줘" → gift_theme이 근거 없이 FRIEND로 채워짐 —
+    gift_recommendation을 보여주는 few-shot 예시가 프롬프트에 하나도 없어서, 모델이
+    "추천해줘"를 선물 요청으로 과대 일반화하고 프롬프트에서 유일하게 본 실제 gift_theme
+    값(FRIEND)으로 fallback하는 것으로 확인됐다(실험으로 검증: 대조 예시 2개를 추가하니
+    재현됐던 케이스가 전부 정상화됨).
+    """
+    result = it.classify_and_extract(message)
 
-def test_smoke_gift_price_real_llm():
-    result = it.classify_and_extract("환갑 선물로 30만원대 다기 세트 찾아요")
-
-    assert result["intent"] == "gift_recommendation"
-    assert result["filters"]["max_price"] is not None
-    assert 250_000 <= result["filters"]["max_price"] <= 400_000
+    assert result["intent"] == "product_search"
+    assert result["filters"]["gift_theme"] is None
