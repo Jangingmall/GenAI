@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 import detail_page_ai.app as app_module
+import local_detail_page_ai.factory as factory_module
 from fastapi import UploadFile
 from fastapi import HTTPException
 from starlette.datastructures import Headers
@@ -59,9 +60,9 @@ def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
         craft_confidence_threshold=0.65,
     )
     monkeypatch.setattr(app_module, "get_settings", lambda: settings)
-    monkeypatch.setattr(app_module, "MlxServeChatClient", FakeChatClient)
-    monkeypatch.setattr(app_module, "MlxServeImageClient", FakeImageClient)
-    monkeypatch.setattr(app_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
+    monkeypatch.setattr(factory_module, "MlxServeChatClient", FakeChatClient)
+    monkeypatch.setattr(factory_module, "MlxServeImageClient", FakeImageClient)
+    monkeypatch.setattr(factory_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
 
     service = app_module.build_service()
 
@@ -147,9 +148,9 @@ def test_build_service_uses_source_safe_generator_and_durable_local_adapters(
         craft_confidence_threshold=0.65,
     )
     monkeypatch.setattr(app_module, "get_settings", lambda: settings)
-    monkeypatch.setattr(app_module, "MlxServeChatClient", FakeChatClient)
-    monkeypatch.setattr(app_module, "MlxServeImageClient", FakeImageClient)
-    monkeypatch.setattr(app_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
+    monkeypatch.setattr(factory_module, "MlxServeChatClient", FakeChatClient)
+    monkeypatch.setattr(factory_module, "MlxServeImageClient", FakeImageClient)
+    monkeypatch.setattr(factory_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
 
     service = app_module.build_service()
 
@@ -202,9 +203,9 @@ def test_build_service_does_not_construct_local_background_in_none_mode(
         craft_confidence_threshold=0.65,
     )
     monkeypatch.setattr(app_module, "get_settings", lambda: settings)
-    monkeypatch.setattr(app_module, "MlxServeChatClient", FakeChatClient)
-    monkeypatch.setattr(app_module, "MlxServeImageClient", UnexpectedBackground)
-    monkeypatch.setattr(app_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
+    monkeypatch.setattr(factory_module, "MlxServeChatClient", FakeChatClient)
+    monkeypatch.setattr(factory_module, "MlxServeImageClient", UnexpectedBackground)
+    monkeypatch.setattr(factory_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
 
     service = app_module.build_service()
 
