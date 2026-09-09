@@ -1,0 +1,8 @@
+# 오케스트레이션 워커 레지스트리
+# alias<TAB>tty<TAB>kind<TAB>busy_regex
+# - tty: cmux tree 의 tty=... 값. 제목은 CLI 가 갈아치우지만 tty 는 pane 수명 동안 고정이다.
+# - busy_regex: 화면 하단에 이 패턴이 보이면 "작업 중". 안 보이면 입력 대기로 본다.
+#   (입력 프롬프트 문구는 작업 중에도 남아 있어서 idle 신호로 쓸 수 없다.)
+codex	ttys004	codex	esc to interrupt|Working \(
+agy	ttys003	antigravity	esc to cancel|esc to interrupt
+agy2	ttys000	antigravity	esc to cancel|esc to interrupt
