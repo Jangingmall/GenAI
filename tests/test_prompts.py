@@ -6,6 +6,7 @@ from detail_page_ai.prompts import (
     build_generated_detail_cut_prompt,
     build_generated_usage_scene_prompt,
     build_usage_context_background_prompt,
+    _product_scene_direction,
 )
 from detail_page_ai.reference_guide import (
     REFERENCE_GUIDE_VERSION,
@@ -90,6 +91,21 @@ def test_analysis_prompt_applies_detail_page_guide_visual_direction():
     assert "image and text" in prompt.lower()
     assert "do not copy sample text" in prompt.lower()
     assert "no gradients" in prompt.lower()
+
+
+def test_analysis_prompt_includes_react_json_typography_and_card_contract():
+    prompt = build_analysis_prompt("ko-KR").lower()
+
+    assert "react json output contract" in prompt
+    assert "fontfamily" in prompt
+    assert "fontsize" in prompt
+    assert "fontweight" in prompt
+    assert "lineheight" in prompt
+    assert "hero title" in prompt
+    assert "feature cards" in prompt
+    assert "three-column grid" in prompt
+    assert "text group" in prompt
+    assert "image group" in prompt
 
 
 def test_analysis_prompt_builds_an_evidence_led_premium_editorial_arc():
@@ -485,3 +501,42 @@ def test_scene_direction_does_not_misclassify_a_calm_non_tea_product_as_tea():
 
     assert "writing desk" in prompt
     assert "quiet tea table" not in prompt
+
+
+def test_scene_direction_routes_jewelry_terms_to_a_close_flat_still_life():
+    for product_name in ("금·보석 목걸이", "은제 반지", "옥 비녀"):
+        direction = _product_scene_direction(ProductProfileDto.minimal(product_name))
+
+        assert "close tabletop jewelry still life" in direction["setting"]
+        assert "shallow jewelry tray" in direction["supporting"]
+        assert "relaxed drape" in direction["placement"]
+        assert "sideboard" not in direction["setting"]
+
+
+def test_scene_direction_keeps_jewelry_box_in_the_storage_branch():
+    direction = _product_scene_direction(ProductProfileDto.minimal("보석함"))
+
+    assert "writing desk" in direction["setting"]
+    assert "jewelry still life" not in direction["setting"]
+
+
+def test_scene_direction_prefers_explicit_metal_material_over_generic_vessel_shape():
+    direction = _product_scene_direction(ProductProfileDto.minimal("유기 그릇"))
+
+    assert "contemporary console" in direction["setting"]
+    assert "breakfast or dining corner" not in direction["setting"]
+
+
+def test_scene_direction_covers_the_six_pilot_display_names():
+    pilot_expectations = {
+        "황색 바탕 문양 칠기 상자": "writing desk",
+        "흑백 기하학적 무늬 직물": "linen-lined dressing",
+        "금·보석 목걸이": "close tabletop jewelry still life",
+        "곡선 목제 도구": "reading nook",
+        "양각 장식 금속 용기": "contemporary console",
+        "청자 연화문 병": "breakfast or dining corner",
+    }
+
+    for display_name, expected_setting in pilot_expectations.items():
+        direction = _product_scene_direction(ProductProfileDto.minimal(display_name))
+        assert expected_setting in direction["setting"]

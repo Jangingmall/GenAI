@@ -7,7 +7,7 @@ from .reference_guide import build_image_mood_prompt, build_reference_guide_prom
 
 ANALYSIS_PROMPT_VERSION = "analysis-v11-product-intro-copy-brief-care-gate"
 CRAFT_RESEARCH_PROMPT_VERSION = "craft-research-v2-product-data-first"
-BACKGROUND_PROMPT_VERSION = "background-v3-premium-editorial"
+BACKGROUND_PROMPT_VERSION = "background-v4-jewelry-coverage"
 USAGE_SCENE_PROMPT_VERSION = "usage-scene-v3"
 GENERATED_USAGE_SCENE_PROMPT_VERSION = "generated-usage-scene-v5-source-count-glass"
 GENERATED_DETAIL_CUT_PROMPT_VERSION = "generated-detail-cut-v3-source-count-glass"
@@ -313,7 +313,21 @@ def _product_scene_direction(profile: ProductProfileDto) -> dict[str, str]:
             "placement": "rest only the reference objects on their original bases with full support; do not add matching cups or serving pieces",
         }
     if _contains_any_scene_marker(
-        searchable, ("보관", "수납", "보석함", "함", "상자", "cabinet", "chest", "box")
+        searchable,
+        (
+            "보관",
+            "수납",
+            "보석함",
+            "함",
+            "상자",
+            "케이스",
+            "궤",
+            "cabinet",
+            "chest",
+            "box",
+            "storage",
+            "container",
+        ),
     ):
         return {
             "setting": (
@@ -327,7 +341,58 @@ def _product_scene_direction(profile: ProductProfileDto) -> dict[str, str]:
             "placement": "place the closed storage object flat and fully supported on the desk, with its functional front facing the viewer",
         }
     if _contains_any_scene_marker(
-        searchable, ("가방", "천", "직물", "섬유", "한지", "보자기", "패브릭", "textile", "bag")
+        searchable,
+        (
+            "장신구",
+            "목걸이",
+            "반지",
+            "귀걸이",
+            "팔찌",
+            "브로치",
+            "비녀",
+            "노리개",
+            "주얼리",
+            "보석",
+            "necklace",
+            "ring",
+            "earring",
+            "bracelet",
+            "brooch",
+            "hairpin",
+            "jewelry",
+        ),
+    ):
+        return {
+            "setting": (
+                "a close tabletop jewelry still life on a quiet dressing table in a refined real home, "
+                "with a soft ivory plaster wall and a softly blurred linen backdrop"
+            ),
+            "surface": "soft ivory linen, suede, or pale stone",
+            "light": "large diffused side lighting from the upper left, with controlled specular highlights that reveal metal and stones without hard glare",
+            "supporting": "one shallow jewelry tray or folded velvet pad at the rear edge, with no extra jewelry, display bust, or unrelated props",
+            "composition": "a close, detail-rich product portrait with the entire jewelry silhouette visible, generous negative space, and no wide room context",
+            "placement": "lay the supplied jewelry naturally on the surface or in a relaxed drape, preserving original links, stones, spacing, and contact; never stand it upright or attach it to a display bust",
+        }
+    if _contains_any_scene_marker(
+        searchable,
+        (
+            "가방",
+            "천",
+            "직물",
+            "섬유",
+            "한지",
+            "보자기",
+            "패브릭",
+            "스카프",
+            "손수건",
+            "실크",
+            "린넨",
+            "textile",
+            "fabric",
+            "scarf",
+            "bag",
+            "linen",
+        ),
     ):
         return {
             "setting": (
@@ -341,21 +406,30 @@ def _product_scene_direction(profile: ProductProfileDto) -> dict[str, str]:
             "placement": "show the supplied textile draped or folded naturally on the surface with believable gravity; it must not stand upright, float, or become a cushion",
         }
     if _contains_any_scene_marker(
-        searchable, ("도자", "옹기", "그릇", "잔", "화병", "항아리", "ceramic", "pottery", "vase")
-    ):
-        return {
-            "setting": (
-                "a quiet breakfast or dining corner in a real home, with a warm mineral wall, "
-                "a pale oak tabletop, and a softly blurred open shelf in the far background"
-            ),
-            "surface": "pale oak, limestone, or warm ivory stone",
-            "light": "soft side lighting from the upper left with natural daylight and gentle ceramic falloff",
-            "supporting": "a single neutral linen fold at the rear edge and no extra vessels or tableware in front",
-            "composition": "a grounded three-quarter tabletop arrangement with a clean horizon and generous negative space",
-            "placement": "rest the object upright on its real base or foot with a complete contact shadow and no unstable tilt",
-        }
-    if _contains_any_scene_marker(
-        searchable, ("금속", "은제", "은빛", "황동", "놋", "철", "metal", "silver", "brass")
+        searchable,
+        (
+            "금속",
+            "금속제",
+            "은제",
+            "은빛",
+            "황동",
+            "유기",
+            "동",
+            "동제",
+            "청동",
+            "구리",
+            "구리제",
+            "주석",
+            "알루미늄",
+            "스테인리스",
+            "놋",
+            "철",
+            "메탈",
+            "metal",
+            "metallic",
+            "silver",
+            "brass",
+        ),
     ):
         return {
             "setting": (
@@ -369,7 +443,55 @@ def _product_scene_direction(profile: ProductProfileDto) -> dict[str, str]:
             "placement": "keep every metal component on its real base with the original spacing and physically plausible weight",
         }
     if _contains_any_scene_marker(
-        searchable, ("나무", "목공", "목재", "원목", "wood", "wooden")
+        searchable,
+        (
+            "도자",
+            "도자기",
+            "자기",
+            "도기",
+            "토기",
+            "백자",
+            "청자",
+            "분청",
+            "세라믹",
+            "옹기",
+            "그릇",
+            "잔",
+            "화병",
+            "항아리",
+            "ceramic",
+            "pottery",
+            "stoneware",
+            "porcelain",
+            "vase",
+        ),
+    ):
+        return {
+            "setting": (
+                "a quiet breakfast or dining corner in a real home, with a warm mineral wall, "
+                "a pale oak tabletop, and a softly blurred open shelf in the far background"
+            ),
+            "surface": "pale oak, limestone, or warm ivory stone",
+            "light": "soft side lighting from the upper left with natural daylight and gentle ceramic falloff",
+            "supporting": "a single neutral linen fold at the rear edge and no extra vessels or tableware in front",
+            "composition": "a grounded three-quarter tabletop arrangement with a clean horizon and generous negative space",
+            "placement": "rest the object upright on its real base or foot with a complete contact shadow and no unstable tilt",
+        }
+    if _contains_any_scene_marker(
+        searchable,
+        (
+            "나무",
+            "목공",
+            "목재",
+            "목제",
+            "원목",
+            "고재",
+            "우드",
+            "wood",
+            "wooden",
+            "timber",
+            "lumber",
+        ),
     ):
         return {
             "setting": (
