@@ -19,15 +19,64 @@ from PIL import Image
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def calculate_bbox_ink_ratio(
+    image_path: Path,
+    brightness_threshold: int = 235,
+    resample_size: int = 256,
+) -> tuple[float, tuple[int, int, int, int] | None]:
+    """Calculate non-background (ink) pixel ratio within the product bounding box.
+
+    Finds the bounding box of non-background pixels (brightness < brightness_threshold),
+    crops the image to that bounding box, resamples to resample_size x resample_size,
+    and calculates the fraction of ink pixels.
+
+    Returns:
+        (bbox_ink_ratio, bounding_box)
+    """
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+
+    with Image.open(image_path) as img:
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            bg = Image.new("RGB", img.size, (255, 255, 255))
+            mask = img.split()[-1] if img.mode in ("RGBA", "LA") else None
+            bg.paste(img.convert("RGB"), mask=mask)
+            gray = bg.convert("L")
+        else:
+            gray = img.convert("L")
+
+        bw = gray.point(lambda p: 255 if p < brightness_threshold else 0, mode="1")
+        bbox = bw.getbbox()
+        if bbox is None:
+            return 0.0, None
+
+        cropped = gray.crop(bbox)
+        resized = cropped.resize((resample_size, resample_size))
+        hist = resized.histogram()
+        total_pixels = resample_size * resample_size
+        ink_count = sum(hist[:brightness_threshold])
+        return ink_count / total_pixels, bbox
+
+
 def calculate_ink_ratio(
     image_path: Path,
     brightness_threshold: int = 235,
     resample_size: int = 256,
+    crop_to_bbox: bool = False,
 ) -> float:
     """Calculate non-background (ink) pixel ratio using Pillow only.
 
     Pixels with grayscale brightness < brightness_threshold are counted as ink.
+    If crop_to_bbox is True, crops to the product bounding box first.
     """
+    if crop_to_bbox:
+        ratio, _ = calculate_bbox_ink_ratio(
+            image_path,
+            brightness_threshold=brightness_threshold,
+            resample_size=resample_size,
+        )
+        return ratio
+
     if not image_path.is_file():
         raise FileNotFoundError(f"Image file not found: {image_path}")
 
@@ -83,6 +132,7 @@ def evaluate_cutout_fidelity(
     ok_threshold: float = 0.6,
     severe_threshold: float = 0.25,
     resample_size: int = 256,
+    crop_to_bbox: bool = True,
 ) -> dict[str, Any]:
     """Evaluate cutout fidelity across all cases in run_index.json."""
     index_file = pilot_dir / "run_index.json"
@@ -119,6 +169,9 @@ def evaluate_cutout_fidelity(
                     out_dir = cand
                     break
 
+        is_mock = pilot_dir.name == "mock_pilot"
+        use_bbox = crop_to_bbox and not is_mock
+
         if not orig_path.is_file():
             records.append({
                 "category": category,
@@ -131,15 +184,26 @@ def evaluate_cutout_fidelity(
                 "error": f"Original image not found: {orig_path}",
                 "original_image_path": str(orig_path),
                 "output_photo_path": None,
+                "original_bbox": None,
+                "output_bbox": None,
             })
             continue
 
         try:
-            orig_ink = calculate_ink_ratio(
-                orig_path,
-                brightness_threshold=brightness_threshold,
-                resample_size=resample_size,
-            )
+            if use_bbox:
+                orig_ink, orig_bbox = calculate_bbox_ink_ratio(
+                    orig_path,
+                    brightness_threshold=brightness_threshold,
+                    resample_size=resample_size,
+                )
+            else:
+                orig_ink = calculate_ink_ratio(
+                    orig_path,
+                    brightness_threshold=brightness_threshold,
+                    resample_size=resample_size,
+                    crop_to_bbox=False,
+                )
+                orig_bbox = None
         except Exception as exc:
             records.append({
                 "category": category,
@@ -152,6 +216,8 @@ def evaluate_cutout_fidelity(
                 "error": f"Failed reading original image: {exc}",
                 "original_image_path": str(orig_path),
                 "output_photo_path": None,
+                "original_bbox": None,
+                "output_bbox": None,
             })
             continue
 
@@ -163,23 +229,35 @@ def evaluate_cutout_fidelity(
                 "category": category,
                 "case_id": case_id,
                 "role": ",".join(roles),
-                "original_ink_ratio": orig_ink,
+                "original_ink_ratio": round(orig_ink, 6),
                 "output_ink_ratio": 0.0,
                 "preservation_ratio": 0.0,
                 "judgment": "산출물 누락",
                 "error": f"No photo found for role(s) {roles} in {photos_dir}",
                 "original_image_path": str(orig_path),
                 "output_photo_path": None,
+                "original_bbox": orig_bbox,
+                "output_bbox": None,
             })
             continue
 
         for photo_role, photo_file in matched_photos:
             try:
-                out_ink = calculate_ink_ratio(
-                    photo_file,
-                    brightness_threshold=brightness_threshold,
-                    resample_size=resample_size,
-                )
+                if use_bbox:
+                    out_ink, out_bbox = calculate_bbox_ink_ratio(
+                        photo_file,
+                        brightness_threshold=brightness_threshold,
+                        resample_size=resample_size,
+                    )
+                else:
+                    out_ink = calculate_ink_ratio(
+                        photo_file,
+                        brightness_threshold=brightness_threshold,
+                        resample_size=resample_size,
+                        crop_to_bbox=False,
+                    )
+                    out_bbox = None
+
                 ratio = out_ink / orig_ink if orig_ink > 0 else (1.0 if out_ink == 0 else 0.0)
 
                 if ratio > ok_threshold:
@@ -199,6 +277,8 @@ def evaluate_cutout_fidelity(
                     "judgment": judgment,
                     "original_image_path": str(orig_path),
                     "output_photo_path": str(photo_file),
+                    "original_bbox": orig_bbox,
+                    "output_bbox": out_bbox,
                 })
             except Exception as exc:
                 records.append({
@@ -212,15 +292,21 @@ def evaluate_cutout_fidelity(
                     "error": str(exc),
                     "original_image_path": str(orig_path),
                     "output_photo_path": str(photo_file),
+                    "original_bbox": orig_bbox,
+                    "output_bbox": None,
                 })
 
     ok_count = sum(1 for r in records if r["judgment"] == "OK")
     partial_count = sum(1 for r in records if r["judgment"] == "부분 손실")
-    severe_count = sum(
-        1 for r in records if r["judgment"] in ("심각 손실", "원본 이미지 누락", "산출물 누락", "원본 분석 실패", "산출 분석 실패")
+    severe_count = sum(1 for r in records if r["judgment"] == "심각 손실")
+    missing_count = sum(
+        1 for r in records if r["judgment"] in ("산출물 누락", "원본 이미지 누락", "원본 분석 실패", "산출 분석 실패")
     )
     all_ok = len(records) > 0 and ok_count == len(records)
     has_severe = severe_count > 0
+    has_missing = missing_count > 0
+
+    reported_severe = (severe_count + missing_count) if is_mock else severe_count
 
     return {
         "pilot_id": run_index.get("pilot_id", pilot_dir.name),
@@ -231,14 +317,17 @@ def evaluate_cutout_fidelity(
             "severe": severe_threshold,
             "resample_size": resample_size,
             "roles": roles,
+            "crop_to_bbox": use_bbox,
         },
         "summary": {
             "total": len(records),
             "ok_count": ok_count,
             "partial_loss_count": partial_count,
-            "severe_loss_count": severe_count,
+            "severe_loss_count": reported_severe,
+            "missing_count": missing_count,
             "all_ok": all_ok,
             "has_severe_loss": has_severe,
+            "has_missing": has_missing,
         },
         "records": records,
     }
@@ -262,13 +351,25 @@ def print_table(results: dict[str, Any]) -> None:
     ok_c = summary.get("ok_count", 0)
     part_c = summary.get("partial_loss_count", 0)
     sev_c = summary.get("severe_loss_count", 0)
+    missing_c = summary.get("missing_count", 0)
+    has_severe = summary.get("has_severe_loss", False)
+    has_missing = summary.get("has_missing", False)
+    all_ok = summary.get("all_ok", False)
 
     print()
-    print(f"요약: 총 {total}건 | OK: {ok_c}건 | 부분 손실: {part_c}건 | 심각 손실: {sev_c}건")
-    if summary.get("has_severe_loss"):
-        print("최종 판정: [FAIL] 심각 손실(CRITICAL_LOSS)이 감지되었습니다.")
-    elif not summary.get("all_ok"):
-        print("최종 판정: [WARN/FAIL] 부분 손실(PARTIAL_LOSS)이 존재하여 전건 OK가 아닙니다.")
+    if missing_c > 0:
+        print(f"요약: 총 {total}건 | OK: {ok_c}건 | 부분 손실: {part_c}건 | 심각 손실: {sev_c}건 | 산출물 누락: {missing_c}건")
+    else:
+        print(f"요약: 총 {total}건 | OK: {ok_c}건 | 부분 손실: {part_c}건 | 심각 손실: {sev_c}건")
+
+    if has_severe and has_missing:
+        print(f"최종 판정: [FAIL] 심각 손실({sev_c}건) 및 산출물 누락({missing_c}건)이 감지되었습니다.")
+    elif has_severe:
+        print(f"최종 판정: [FAIL] 심각 손실(CRITICAL_LOSS: {sev_c}건)이 감지되었습니다.")
+    elif has_missing:
+        print(f"최종 판정: [FAIL] 산출물 누락(MISSING_OUTPUT: {missing_c}건)이 감지되었습니다.")
+    elif not all_ok:
+        print(f"최종 판정: [WARN/FAIL] 부분 손실(PARTIAL_LOSS: {part_c}건)이 존재하여 전건 OK가 아닙니다.")
     else:
         print("최종 판정: [PASS] 전건 정상 보존(ALL_OK)되었습니다.")
 
@@ -321,6 +422,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Square resample dimension for comparison (default: 256).",
     )
     parser.add_argument(
+        "--no-bbox",
+        action="store_false",
+        dest="crop_to_bbox",
+        default=True,
+        help="Disable bounding-box cropping and evaluate across whole canvas (legacy behavior).",
+    )
+    parser.add_argument(
         "--json",
         type=Path,
         default=None,
@@ -360,6 +468,7 @@ def main(argv: list[str] | None = None) -> int:
             ok_threshold=args.ok_threshold,
             severe_threshold=args.severe_threshold,
             resample_size=args.resample_size,
+            crop_to_bbox=args.crop_to_bbox,
         )
     except Exception as exc:
         print(f"[ERROR] Failed evaluating cutout fidelity: {exc}", file=sys.stderr)
@@ -377,8 +486,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"JSON 결과 저장됨: {out_json_path}")
 
     summary = results["summary"]
-    # Exit code: 1 if any severe loss, or not all_ok unless allow_partial is specified
-    if summary["has_severe_loss"]:
+    # Exit code: 1 if any severe loss or missing output, or not all_ok unless allow_partial is specified
+    if summary["has_severe_loss"] or summary.get("has_missing", False):
         return 1
     if not summary["all_ok"] and not args.allow_partial:
         return 1
