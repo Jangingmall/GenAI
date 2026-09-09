@@ -53,10 +53,9 @@ def run(
     search_and_rank 기본값(A의 실제 search+ranking)은 PostgreSQL·임베딩 모델이 필요하다.
 
     candidates는 이번 턴에 실제로 쓴 후보 목록이다 — 확정된 외부 응답 계약(§0의 4개
-    필드)엔 없는 내부용 필드다. FastAPI 서버가 아직 없어 세션을 어디에 보관할지
-    확정 전이라, 지금은 호출부(예: chat_repl.py)가 이 값을 다음 턴 previous_candidates로
-    직접 넘겨 대화 연속성을 유지하는 임시 방편이다. 실제 서버가 생기면 세션 저장소가
-    이 역할을 대신할 수 있다.
+    필드)엔 없는 내부용 필드다. app/main.py의 /ai/chat이 session_store.py를 통해
+    session_id를 키로 이 값을 보관했다가 다음 턴 previous_candidates로 넘겨 대화
+    연속성을 유지한다.
 
     previous_filters도 같은 이유로 내부 전용이다 — intent.py는 이전 턴에 이미 확정된
     조건(예: "집들이"→gift_theme=HOUSEWARMING)을 매 턴 계속 다시 채워 넣는다(맥락을

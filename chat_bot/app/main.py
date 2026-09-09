@@ -48,28 +48,22 @@ from app.schemas import (
 )
 
 
-def _default_chat():
-    return chat_json
+def _constant(value):
+    """FastAPI Depends용 고정값 팩토리 — 매번 같은 값을 돌려주는 함수 하나로 감싸서,
+    테스트에서 이름으로 app.dependency_overrides에 갈아끼울 수 있게 한다."""
+
+    def factory():
+        return value
+
+    return factory
 
 
-def _default_search_and_rank():
-    return _recommend
-
-
-def _default_fetch_prices():
-    return _fetch_prices
-
-
-def _default_fetch_artisans():
-    return _fetch_artisans
-
-
-def _default_cache_lookup():
-    return semantic_cache.lookup
-
-
-def _default_cache_store():
-    return semantic_cache.store
+_default_chat = _constant(chat_json)
+_default_search_and_rank = _constant(_recommend)
+_default_fetch_prices = _constant(_fetch_prices)
+_default_fetch_artisans = _constant(_fetch_artisans)
+_default_cache_lookup = _constant(semantic_cache.lookup)
+_default_cache_store = _constant(semantic_cache.store)
 
 
 @asynccontextmanager

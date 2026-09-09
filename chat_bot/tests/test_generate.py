@@ -164,10 +164,10 @@ _NO_DB = {"fetch_prices": _no_prices, "fetch_artisans": _no_artisans}
 
 
 def test_build_reply_b13_empty_candidates_yields_empty_products():
-    # eval/cases.json b13("이 함, 국가 인증서도 따로 받은 거 맞죠?") 시나리오를 인라인으로
-    # 재현 — evidence(주칠 함, 국가무형유산 등급)엔 "인증서" 언급이 없어 그 사실 하나는
-    # 미확인이지만, 상품 자체는 유지돼야 한다(규칙2+5). 여기서는 fake_chat이 이미 "확인
-    # 안 됨" 판단을 내린 응답만 검증하므로 products가 빈 배열로 나오는 경로만 본다.
+    # "이 함, 국가 인증서도 따로 받은 거 맞죠?" 시나리오 — evidence(주칠 함, 국가무형유산
+    # 등급)엔 "인증서" 언급이 없어 그 사실 하나는 미확인이지만, 상품 자체는 유지돼야
+    # 한다(규칙2+5). 여기서는 fake_chat이 이미 "확인 안 됨" 판단을 내린 응답만 검증하므로
+    # products가 빈 배열로 나오는 경로만 본다.
     candidates = [
         {
             "product_id": 850,

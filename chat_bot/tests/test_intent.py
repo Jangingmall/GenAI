@@ -213,11 +213,11 @@ def test_classify_and_extract_truncates_history_to_recent_turns():
 def test_smoke_no_gift_hallucination_without_recipient_real_llm(message):
     """받는 사람·선물 언급이 전혀 없는 "~추천해줘" 문장은 product_search여야 한다.
 
-    docs/b-metaprompt.md에 이미 기록된 회귀("차 마실 때 쓸 것 추천해줘" → gift_theme이
-    근거 없이 FRIEND로 채워짐) — gift_recommendation을 보여주는 few-shot 예시가 프롬프트에
-    하나도 없어서, 모델이 "추천해줘"를 선물 요청으로 과대 일반화하고 프롬프트에서 유일하게
-    본 실제 gift_theme 값(FRIEND)으로 fallback하는 것으로 확인됐다(실험으로 검증: 대조
-    예시 2개를 추가하니 재현됐던 케이스가 전부 정상화됨).
+    회귀 재현: "차 마실 때 쓸 것 추천해줘" → gift_theme이 근거 없이 FRIEND로 채워짐 —
+    gift_recommendation을 보여주는 few-shot 예시가 프롬프트에 하나도 없어서, 모델이
+    "추천해줘"를 선물 요청으로 과대 일반화하고 프롬프트에서 유일하게 본 실제 gift_theme
+    값(FRIEND)으로 fallback하는 것으로 확인됐다(실험으로 검증: 대조 예시 2개를 추가하니
+    재현됐던 케이스가 전부 정상화됨).
     """
     result = it.classify_and_extract(message)
 
