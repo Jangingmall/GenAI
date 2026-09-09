@@ -120,7 +120,7 @@ class MlxServeDetailViewGenerator:
 def build_local_pipeline(
     *,
     text_url: str = "http://127.0.0.1:11234",
-    text_model: str = "mlx-community/gemma-4-12b-it-4bit",
+    text_model: str = "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
     text_timeout: float = 300.0,
     generate_product_photos: bool = True,
     text_provider: str = "mlx",

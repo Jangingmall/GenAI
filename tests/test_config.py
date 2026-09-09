@@ -28,7 +28,7 @@ def test_local_analysis_and_source_safe_photos_are_the_defaults():
 
     assert settings.analysis_provider == "local"
     assert settings.product_photo_generation == "source"
-    assert settings.local_text_model == "mlx-community/gemma-4-12b-it-4bit"
+    assert settings.local_text_model == "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     assert settings.local_image_model == "mlx-community/flux2-klein-9b-4bit"
 
 
@@ -38,7 +38,7 @@ def test_local_models_are_the_only_service_defaults():
     assert settings.analysis_provider == "local"
     assert settings.local_text_provider == "mlx"
     assert settings.local_text_url == "http://127.0.0.1:11234"
-    assert settings.local_text_model == "mlx-community/gemma-4-12b-it-4bit"
+    assert settings.local_text_model == "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     assert settings.local_image_provider == "mlx"
     assert settings.local_image_url == "http://127.0.0.1:11234"
     assert settings.local_image_model == "mlx-community/flux2-klein-9b-4bit"
@@ -59,5 +59,5 @@ def test_source_safe_local_storage_is_the_default():
     assert settings.response_asset_mode == "base64"
     assert settings.craft_confidence_threshold == 0.65
     assert settings.product_photo_shots == "hero,packshot,detail,lifestyle"
-    assert settings.prompt_version == "local-mlx-gemma-flux-v1"
+    assert settings.prompt_version == "local-mlx-qwen-flux-v1"
     assert settings.source_photo_variation_threshold == 4

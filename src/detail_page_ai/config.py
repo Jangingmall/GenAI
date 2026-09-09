@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         default="http://127.0.0.1:11234", alias="LOCAL_TEXT_URL"
     )
     local_text_model: str = Field(
-        default="mlx-community/gemma-4-12b-it-4bit", alias="LOCAL_TEXT_MODEL"
+        default="ddalcu/Qwen3.8-27B-MLX-Serve-4bit", alias="LOCAL_TEXT_MODEL"
     )
     local_text_timeout_seconds: float = Field(
         default=300.0, alias="LOCAL_TEXT_TIMEOUT", gt=0
@@ -100,7 +100,7 @@ class Settings(BaseSettings):
         alias="AI_CORS_ORIGINS",
     )
     prompt_version: str = Field(
-        default="local-mlx-gemma-flux-v1", alias="PROMPT_VERSION"
+        default="local-mlx-qwen-flux-v1", alias="PROMPT_VERSION"
     )
     asset_store_dir: str = Field(
         default=".local/detail-page-ai/assets", alias="ASSET_STORE_DIR"

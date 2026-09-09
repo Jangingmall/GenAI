@@ -96,7 +96,7 @@ def test_mlx_chat_client_sends_openai_multimodal_json_request():
     )
     client = MlxServeChatClient(
         base_url="http://mlx.local",
-        model="mlx-community/gemma-4-12b-it-4bit",
+        model="ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
         transport=transport,
     )
 
@@ -110,7 +110,7 @@ def test_mlx_chat_client_sends_openai_multimodal_json_request():
     assert result == {"product_type": "tea service"}
     url, payload, _ = transport.calls[0]
     assert url == "http://mlx.local/v1/chat/completions"
-    assert payload["model"] == "mlx-community/gemma-4-12b-it-4bit"
+    assert payload["model"] == "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     content = payload["messages"][0]["content"]
     assert content[0] == {"type": "text", "text": "analyze"}
     assert content[1]["type"] == "image_url"
@@ -119,8 +119,8 @@ def test_mlx_chat_client_sends_openai_multimodal_json_request():
     assert payload["temperature"] == 0
 
 
-def test_local_text_inference_defaults_to_gemma_12b():
-    expected_model = "mlx-community/gemma-4-12b-it-4bit"
+def test_local_text_inference_defaults_to_qwen38_27b():
+    expected_model = "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
 
     client = MlxServeChatClient()
     pipeline = build_local_pipeline(
@@ -398,11 +398,11 @@ def test_local_pipeline_uses_source_preserving_photo_generator():
     )
 
 
-def test_local_pipeline_can_use_mlx_gemma_and_flux_clients():
+def test_local_pipeline_can_use_mlx_qwen_and_flux_clients():
     pipeline = build_local_pipeline(
         text_provider="mlx",
         text_url="http://mlx.local",
-        text_model="mlx-community/gemma-4-12b-it-4bit",
+        text_model="ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
         image_provider="mlx",
         image_url="http://mlx.local",
         image_model="mlx-community/flux2-klein-9b-4bit",

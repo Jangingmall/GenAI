@@ -490,7 +490,7 @@ class GeneratedAssetMetadataDto(BaseModel):
 
 class GenerationMetadataDto(BaseModel):
     provider: str = "local"
-    analysis_model: str = "mlx-community/gemma-4-12b-it-4bit"
+    analysis_model: str = "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     image_model: str = "mlx-community/flux2-klein-9b-4bit"
     aspect_ratio: str = "1:4"
     image_size: str = "2K"

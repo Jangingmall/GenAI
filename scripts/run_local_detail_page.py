@@ -23,7 +23,7 @@ def main() -> None:
     parser.add_argument("--output-dir", default="generated/runs/local_detail_page", type=Path)
     parser.add_argument("--text-url", default="http://127.0.0.1:11234")
     parser.add_argument(
-        "--text-model", default="mlx-community/gemma-4-12b-it-4bit"
+        "--text-model", default="ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     )
     parser.add_argument("--text-timeout", type=float, default=300.0)
     parser.add_argument("--text-provider", choices=("ollama", "mlx"), default="mlx")

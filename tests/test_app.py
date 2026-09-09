@@ -20,7 +20,7 @@ from detail_page_ai.dto import (
 from detail_page_ai.source_photos import SourcePreservingProductPhotoGenerator
 
 
-def test_build_service_wires_only_local_gemma_and_flux(monkeypatch, tmp_path):
+def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
     class FakeChatClient:
         def __init__(self, **kwargs):
             self.kwargs = kwargs
@@ -38,7 +38,7 @@ def test_build_service_wires_only_local_gemma_and_flux(monkeypatch, tmp_path):
         analysis_provider="local",
         local_text_provider="mlx",
         local_text_url="http://127.0.0.1:11234",
-        local_text_model="mlx-community/gemma-4-12b-it-4bit",
+        local_text_model="ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
         local_text_timeout_seconds=300.0,
         local_image_provider="mlx",
         local_image_url="http://127.0.0.1:11234",
@@ -67,13 +67,13 @@ def test_build_service_wires_only_local_gemma_and_flux(monkeypatch, tmp_path):
 
     assert service.pipeline.generation_metadata.provider == "local"
     assert service.pipeline.generation_metadata.analysis_model == (
-        "mlx-community/gemma-4-12b-it-4bit"
+        "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     )
     assert service.pipeline.generation_metadata.image_model == (
         "mlx-community/flux2-klein-9b-4bit"
     )
     assert service.pipeline.analyzer.chat_client.kwargs["model"] == (
-        "mlx-community/gemma-4-12b-it-4bit"
+        "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     )
     assert service.pipeline.photo_generator.background_generator.image_client.kwargs[
         "model"

@@ -155,13 +155,13 @@ class OllamaChatClient:
 
 
 class MlxServeChatClient:
-    """MLX Serve OpenAI-compatible multimodal client for Gemma vision models."""
+    """MLX Serve OpenAI-compatible multimodal client for local vision models."""
 
     def __init__(
         self,
         *,
         base_url: str = "http://127.0.0.1:11234",
-        model: str = "mlx-community/gemma-4-12b-it-4bit",
+        model: str = "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
         timeout: float = 300.0,
         max_tokens: int = 4096,
         transport: JsonTransport | None = None,

@@ -16,7 +16,7 @@ def test_env_example_contains_placeholders_not_credentials():
     values = _parse_env(Path(".env.example"))
 
     assert values["ANALYSIS_PROVIDER"] == "local"
-    assert values["LOCAL_TEXT_MODEL"] == "mlx-community/gemma-4-12b-it-4bit"
+    assert values["LOCAL_TEXT_MODEL"] == "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     assert values["LOCAL_IMAGE_MODEL"] == "mlx-community/flux2-klein-9b-4bit"
     assert "AWS_ACCESS_KEY_ID" not in values
     assert "GEMINI_API_KEY" not in values
