@@ -92,21 +92,32 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
         if block.block_type not in {"hero", "closing"}
     ]
 
-    hero = (hero or PageBlockDto(
-        section_id="hero",
-        block_type="hero",
-        eyebrow="OBJECT DETAIL",
-        title=product_name,
-        body=profile.summary,
-        photo_id="hero",
-    )).model_copy(update={"variant": "paper", "photo_id": "hero"})
-    closing = (closing or PageBlockDto(
-        section_id="closing",
-        block_type="closing",
-        eyebrow="CRAFTSMANSHIP",
-        title="공간에 오래 남는 인상",
-        body=profile.summary,
-    )).model_copy(update={"variant": "paper"})
+    if hero is None:
+        hero = PageBlockDto(
+            section_id="hero",
+            block_type="hero",
+            eyebrow="OBJECT DETAIL",
+            title=product_name,
+            body=profile.summary,
+            variant="paper",
+            photo_id="hero",
+        )
+    else:
+        hero = hero.model_copy(
+            update={"variant": hero.variant or "paper", "photo_id": "hero"}
+        )
+
+    if closing is None:
+        closing = PageBlockDto(
+            section_id="closing",
+            block_type="closing",
+            eyebrow="CRAFTSMANSHIP",
+            title="공간에 오래 남는 인상",
+            body=profile.summary,
+            variant="paper",
+        )
+    elif not closing.variant:
+        closing = closing.model_copy(update={"variant": "paper"})
 
     # The pilot models produced 8–10 blocks total, or 6–8 middle blocks after
     # hero/closing. At that density the model has supplied enough structure;
@@ -116,14 +127,21 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
         for block in middle:
             if block.block_type == "detail_split":
                 block = block.model_copy(
-                    update={"variant": "dark", "photo_id": block.photo_id or "detail"}
+                    update={
+                        "variant": block.variant or "dark",
+                        "photo_id": block.photo_id or "detail",
+                    }
                 )
             elif block.block_type == "usage_scene":
                 block = block.model_copy(
-                    update={"variant": "full-bleed", "photo_id": "lifestyle"}
+                    update={
+                        "variant": block.variant or "full-bleed",
+                        "photo_id": "lifestyle",
+                    }
                 )
             elif block.block_type == "notice":
-                block = block.model_copy(update={"variant": "dark"})
+                if not block.variant:
+                    block = block.model_copy(update={"variant": "dark"})
             normalized_middle.append(block)
         plan = [hero, *normalized_middle, closing]
         if len(plan) > 14:
@@ -169,7 +187,7 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
     else:
         middle[detail_index] = middle[detail_index].model_copy(
             update={
-                "variant": "dark",
+                "variant": middle[detail_index].variant or "dark",
                 "photo_id": middle[detail_index].photo_id or "detail",
             }
         )
@@ -191,7 +209,10 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
         )
     else:
         middle[usage_index] = middle[usage_index].model_copy(
-            update={"variant": "full-bleed", "photo_id": "lifestyle"}
+            update={
+                "variant": middle[usage_index].variant or "full-bleed",
+                "photo_id": "lifestyle",
+            }
         )
 
     # A palette explains color/surface; it is not a substitute for the product
@@ -291,7 +312,8 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
             )
         )
     else:
-        middle[notice_index] = middle[notice_index].model_copy(update={"variant": "dark"})
+        if not middle[notice_index].variant:
+            middle[notice_index] = middle[notice_index].model_copy(update={"variant": "dark"})
 
     if len(middle) < 7 and not any(block.block_type == "statement" for block in middle):
         middle.insert(

@@ -20,6 +20,16 @@ ALLOWED_BLOCK_TYPES = {
     "notice",
     "closing",
 }
+ALLOWED_VARIANTS = {
+    "paper",
+    "light",
+    "sand",
+    "dark",
+    "image-left",
+    "image-right",
+    "full-bleed",
+    "compact",
+}
 REQUIRED_KEYS = {
     "id",
     "name",
@@ -29,6 +39,7 @@ REQUIRED_KEYS = {
     "middle_count",
     "rationale",
     "source",
+    "variants",
 }
 
 
@@ -43,6 +54,23 @@ def test_catalog_uses_only_supported_block_types():
     for layout in load_catalog():
         assert isinstance(layout["sequence"], list)
         assert set(layout["sequence"]) <= ALLOWED_BLOCK_TYPES
+
+
+def test_catalog_uses_only_supported_variants():
+    for layout in load_catalog():
+        assert isinstance(layout["variants"], list)
+        assert set(layout["variants"]) <= ALLOWED_VARIANTS
+
+
+def test_catalog_variant_count_matches_sequence():
+    for layout in load_catalog():
+        assert len(layout["variants"]) == len(layout["sequence"])
+
+
+def test_catalog_contains_at_least_ten_distinct_variant_combinations():
+    layouts = load_catalog()
+    variant_combinations = {tuple(layout["variants"]) for layout in layouts}
+    assert len(variant_combinations) >= 10
 
 
 def test_catalog_layouts_have_required_edges_and_maximum_size():
@@ -83,3 +111,4 @@ def test_no_single_block_length_dominates_catalog():
 def test_catalog_entries_have_all_documented_fields():
     for layout in load_catalog():
         assert REQUIRED_KEYS <= layout.keys()
+

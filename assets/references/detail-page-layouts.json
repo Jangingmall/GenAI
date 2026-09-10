@@ -16,7 +16,17 @@
     ],
     "middle_count": 6,
     "rationale": "첫 컷에서 전체 윤곽을 세운 뒤 넓은 형태, 모서리와 비례, 크기, 사용 장면 순으로 형태를 검증한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "full-bleed",
+      "image-left",
+      "compact",
+      "image-right",
+      "light",
+      "sand",
+      "paper"
+    ]
   },
   {
     "id": "texture-macro-led",
@@ -35,7 +45,17 @@
     ],
     "middle_count": 6,
     "rationale": "형태보다 표면이 구매 근거이므로 접사를 앞세우고 여러 세부 컷으로 차이를 증명한 뒤 전체 사용 맥락을 준다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "dark",
+      "dark",
+      "sand",
+      "full-bleed",
+      "compact",
+      "dark",
+      "sand"
+    ]
   },
   {
     "id": "set-lineup-first",
@@ -54,7 +74,17 @@
     ],
     "middle_count": 6,
     "rationale": "완성된 라인업을 먼저 보여주고 구성품의 역할과 확인 가능한 정보를 정리한 다음 공통 사용 장면과 연출 선택지를 연결한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "light",
+      "compact",
+      "light",
+      "image-left",
+      "sand",
+      "paper",
+      "paper"
+    ]
   },
   {
     "id": "maker-process-led",
@@ -74,7 +104,18 @@
     ],
     "middle_count": 7,
     "rationale": "완성품을 먼저 세운 뒤 실제 과정의 서사와 작업 장면, 결과 표면, 원본 근거, 사용 장면, 기본 정보와 주의를 이어 진정성을 확인한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "full-bleed",
+      "image-right",
+      "paper",
+      "light",
+      "compact",
+      "sand",
+      "paper"
+    ]
   },
   {
     "id": "color-system-led",
@@ -94,7 +135,18 @@
     ],
     "middle_count": 7,
     "rationale": "색의 체계를 초반에 명확히 하고 색별 원본, 표면 차이, 선택 가능한 특징, 실제 공간에서의 톤, 기본 정보를 차례로 비교한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "sand",
+      "light",
+      "image-left",
+      "light",
+      "full-bleed",
+      "light",
+      "paper",
+      "sand"
+    ]
   },
   {
     "id": "scale-decision",
@@ -113,7 +165,17 @@
     ],
     "middle_count": 6,
     "rationale": "첫 증거를 실제 크기 비교에 두고 배치 면적, 가장자리 디테일, 사용 장면, 확인 가능한 사양 순으로 구매 불안을 줄인다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "light",
+      "paper"
+    ]
   },
   {
     "id": "single-source-crop",
@@ -132,7 +194,17 @@
     ],
     "middle_count": 6,
     "rationale": "새 사실을 추가하지 않고 한 원본을 전체·세부·여백 있는 배치 크롭으로 역할만 나누며, 제안과 확인 필요 정보를 분리한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "dark",
+      "paper",
+      "compact",
+      "light",
+      "dark",
+      "paper"
+    ]
   },
   {
     "id": "multi-angle-form",
@@ -151,7 +223,17 @@
     ],
     "middle_count": 6,
     "rationale": "여러 각도를 먼저 대조해 입체 구조를 보여주고, 연결부 디테일·전체 배치·크기·구조 특징·사양으로 형태 판단을 닫는다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "full-bleed",
+      "paper",
+      "image-left",
+      "light",
+      "compact",
+      "paper",
+      "light",
+      "paper"
+    ]
   },
   {
     "id": "surface-to-context",
@@ -170,7 +252,17 @@
     ],
     "middle_count": 6,
     "rationale": "접근 가능한 표면 증거를 먼저 제시한 뒤 관찰 가능한 특징을 문장으로 묶고, 사용 장면과 공간 배치로 촉감의 맥락을 확장한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "dark",
+      "sand",
+      "image-right",
+      "full-bleed",
+      "light",
+      "sand",
+      "sand"
+    ]
   },
   {
     "id": "use-scene-led",
@@ -190,7 +282,18 @@
     ],
     "middle_count": 7,
     "rationale": "사용 중인 위치와 동작을 먼저 보여주고, 넓은 공간 관계·형태의 세부 증거·사용상 특징·어울리는 배치·기본 정보로 맥락을 구매 근거로 바꾼다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "full-bleed",
+      "full-bleed",
+      "light",
+      "image-left",
+      "sand",
+      "compact",
+      "light",
+      "paper",
+      "sand"
+    ]
   },
   {
     "id": "specification-led",
@@ -209,7 +312,17 @@
     ],
     "middle_count": 6,
     "rationale": "초반에 확인 가능한 사양의 범위를 고정하고 크기·특징·세부·사용 장면을 그 표에 연결해 감성보다 검증을 앞세운다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "compact",
+      "compact",
+      "light",
+      "image-right",
+      "light",
+      "paper"
+    ]
   },
   {
     "id": "palette-and-choice",
@@ -228,7 +341,17 @@
     ],
     "middle_count": 6,
     "rationale": "선택 가능한 색 체계를 먼저 제시하고 색별 특징과 원본을 비교한 뒤 공간별 추천과 공통 사양을 붙여 선택을 돕는다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "paper",
+      "sand",
+      "sand",
+      "compact",
+      "paper",
+      "paper"
+    ]
   },
   {
     "id": "craft-story-first",
@@ -247,7 +370,17 @@
     ],
     "middle_count": 6,
     "rationale": "실제 제작 서사를 짧은 선언으로 열고 과정 관련 원본, 결과 표면, 사용 장면, 정보와 관리 순으로 완성품의 배경을 이해시킨다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "paper",
+      "sand",
+      "sand",
+      "image-left",
+      "light",
+      "dark",
+      "sand"
+    ]
   },
   {
     "id": "material-color-proof",
@@ -266,7 +399,17 @@
     ],
     "middle_count": 6,
     "rationale": "색 체계를 먼저 고정한 뒤 표면의 근접 증거와 각도별 원본을 나누어 보여주고, 사용·사양·주의로 감각적 인상을 검증 가능한 정보로 마무리한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "dark",
+      "light",
+      "image-right",
+      "light",
+      "sand",
+      "paper"
+    ]
   },
   {
     "id": "compact-catalog",
@@ -285,7 +428,17 @@
     ],
     "middle_count": 6,
     "rationale": "핵심 특징과 기본 정보를 앞에서 압축해 전달한 뒤 세부와 원본 묶음으로 확인하고, 간단한 연출 추천과 주의로 구매를 닫는다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "paper"
+    ]
   },
   {
     "id": "wide-context",
@@ -305,7 +458,18 @@
     ],
     "middle_count": 7,
     "rationale": "넓은 화면에서 제품과 여백의 관계를 먼저 잡고 실제 사용 장면, 세부 증거, 각도 묶음, 배치 제안, 정보와 주의 순으로 공간적 가치를 설명한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "full-bleed",
+      "full-bleed",
+      "full-bleed",
+      "image-right",
+      "paper",
+      "sand",
+      "light",
+      "paper",
+      "sand"
+    ]
   },
   {
     "id": "component-assembly",
@@ -325,7 +489,18 @@
     ],
     "middle_count": 7,
     "rationale": "구성품별 역할을 먼저 이름 붙이고 결합부와 개별 원본으로 확인한 다음 표·공통 사용 장면·배치 추천·주의를 통해 세트 사용법을 정리한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "image-left",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "dark",
+      "paper"
+    ]
   },
   {
     "id": "scale-and-care",
@@ -344,7 +519,17 @@
     ],
     "middle_count": 6,
     "rationale": "크기와 사용 장면으로 기대치를 맞춘 뒤 기본 정보, 관리와 주의, 보관·배치 제안을 연결해 구매 후 행동까지 안내한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "image-left",
+      "light",
+      "light",
+      "sand",
+      "sand",
+      "paper"
+    ]
   },
   {
     "id": "single-angle-color",
@@ -363,7 +548,17 @@
     ],
     "middle_count": 6,
     "rationale": "한 장에서 확인 가능한 색 체계와 여백 있는 전체 컷을 먼저 확장하고, 관찰 가능한 특징·사용·정보만 남겨 없는 각도를 꾸미지 않는다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "sand",
+      "paper",
+      "full-bleed",
+      "compact",
+      "sand",
+      "sand"
+    ]
   },
   {
     "id": "tactile-editorial",
@@ -383,7 +578,18 @@
     ],
     "middle_count": 7,
     "rationale": "짧은 편집적 후킹 뒤에 표면과 색의 증거를 놓고, 사용 장면과 여러 원본 컷으로 촉감의 맥락을 확장한 뒤 연출·주의로 정리한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "dark",
+      "sand",
+      "dark",
+      "sand",
+      "paper",
+      "dark",
+      "sand"
+    ]
   },
   {
     "id": "many-angle-archive",
@@ -404,7 +610,19 @@
     ],
     "middle_count": 8,
     "rationale": "각도 묶음으로 전체 구조를 먼저 대조한 뒤 넓은 배치, 접합부, 크기, 구조 특징, 사용, 사양, 주의까지 서로 다른 질문을 분리해 답한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "paper",
+      "light",
+      "image-left",
+      "compact",
+      "paper",
+      "image-right",
+      "compact",
+      "paper",
+      "paper"
+    ]
   },
   {
     "id": "component-inventory-detail",
@@ -425,7 +643,19 @@
     ],
     "middle_count": 8,
     "rationale": "라인업과 역할을 먼저 펼친 다음 결합부·상대 크기·사용 순서를 각각 검증하고, 배치 추천·기본 정보·주의로 구성품이 많은 상품의 선택 부담을 줄인다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "full-bleed",
+      "sand",
+      "light",
+      "dark",
+      "sand"
+    ]
   },
   {
     "id": "material-color-scale",
@@ -447,7 +677,20 @@
     ],
     "middle_count": 9,
     "rationale": "색과 크기를 먼저 선택 기준으로 고정하고 표면·각도·특징·배치·사용 장면을 분리해 보여준 뒤 사양과 주의로 세 축의 근거를 닫는다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "sand",
+      "compact",
+      "dark",
+      "light",
+      "paper",
+      "full-bleed",
+      "image-left",
+      "compact",
+      "sand",
+      "sand"
+    ]
   },
   {
     "id": "process-evidence-deep",
@@ -469,7 +712,20 @@
     ],
     "middle_count": 9,
     "rationale": "실제 공정 서사를 열고 단계별 원본과 작업 장면, 완성 표면, 특징, 사용, 크기를 분리한 뒤 확인 가능한 정보와 주의로 마무리한다.",
-    "source": "프로젝트 가이드"
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "paper",
+      "full-bleed",
+      "dark",
+      "compact",
+      "image-right",
+      "compact",
+      "light",
+      "dark",
+      "paper"
+    ]
   },
   {
     "id": "complete-comparison",
@@ -492,6 +748,20 @@
     ],
     "middle_count": 10,
     "rationale": "많은 원본을 먼저 비교 가능한 묶음으로 열고 색·크기·공간·표면·특징·사용·추천·사양·주의를 각각 한 번씩 답해 정보량이 많은 선택 과정을 정리한다.",
-    "source": "관행"
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "sand",
+      "compact",
+      "light",
+      "image-left",
+      "paper",
+      "full-bleed",
+      "compact",
+      "compact",
+      "paper",
+      "sand"
+    ]
   }
 ]
