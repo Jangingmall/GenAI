@@ -67,7 +67,7 @@ def test_run_assembles_final_contract():
         },
         generate_payload={
             "reply": "이 찻잔을 추천드려요.",
-            "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
+            "allowed_ids": [9],
             "suggestions": ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"],
         },
     )
@@ -93,7 +93,7 @@ def test_run_assembles_final_contract():
         "filters",
     }
     assert result["intent"] == "product_search"
-    assert result["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
+    assert result["products"] == [{"product_id": 9, "reason": "이 찻잔을 추천드려요."}]
     assert result["suggestions"] == [
         "다른 색상으로",
         "가격대 낮춰서",
@@ -117,7 +117,7 @@ def test_run_passes_contact1_to_search_and_rank():
             "color": [],
             "query_text": "찻잔",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     rr.run("찻잔 있나요", chat=chat, search_and_rank=spy_search_and_rank, **_NO_DB)
 
@@ -137,7 +137,7 @@ def test_run_drops_hallucinated_product_id():
         },
         generate_payload={
             "reply": "ok",
-            "products": [{"product_id": 999, "reason": "존재하지 않는 상품"}],
+            "allowed_ids": [999],
             "suggestions": [],
         },
     )
@@ -166,7 +166,7 @@ def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
         },
         generate_payload={
             "reply": "가격 정보는 확인되지 않습니다.",
-            "products": [{"product_id": 78, "reason": "청자 찻잔입니다."}],
+            "allowed_ids": [78],
             "suggestions": ["다른 색상으로"],
         },
     )
@@ -186,7 +186,9 @@ def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
     )
 
     assert result["candidates"] == previous
-    assert result["products"] == [{"product_id": 78, "reason": "청자 찻잔입니다."}]
+    assert result["products"] == [
+        {"product_id": 78, "reason": "가격 정보는 확인되지 않습니다."}
+    ]
 
 
 def test_run_narrow_down_treats_zero_price_as_new_filter():
@@ -203,7 +205,7 @@ def test_run_narrow_down_treats_zero_price_as_new_filter():
             "color": [],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     fresh = [
         {"product_id": 5, "name": "무료 나눔 도자기", "score": 0.5, "evidence": {}}
@@ -238,7 +240,7 @@ def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
         },
         generate_payload={
             "reply": "가격 정보는 확인되지 않습니다.",
-            "products": [{"product_id": 834, "reason": "..."}],
+            "allowed_ids": [834],
             "suggestions": [],
         },
     )
@@ -283,7 +285,7 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
             "color": [],
             "query_text": "옹기 가격대",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     previous = [
         {"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}
@@ -324,7 +326,7 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
             "color": [],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     fresh = [{"product_id": 38, "name": "백자 대접", "score": 0.7, "evidence": {}}]
@@ -357,7 +359,7 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
             "color": [],
             "query_text": "그중 저렴한 것",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     fresh = [{"product_id": 1, "name": "옹기 항아리", "score": 0.5, "evidence": {}}]
     search_and_rank = _fake_search_and_rank(fresh)
@@ -436,7 +438,7 @@ def test_run_uses_cache_hit_and_skips_classify_and_extract():
 
     def chat_counts_calls(messages, schema, *, think, model=None):
         calls["n"] += 1
-        return json.dumps({"reply": "ok", "products": [], "suggestions": []})
+        return json.dumps({"reply": "ok", "allowed_ids": [], "suggestions": []})
 
     result = rr.run(
         "선물용 도자기 추천해줘",
@@ -470,7 +472,7 @@ def test_run_stores_to_cache_on_miss():
             "color": [],
             "query_text": "찻잔",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     rr.run(
         "찻잔 있나요",
@@ -502,7 +504,7 @@ def test_run_skips_cache_when_history_present():
             "color": [],
             "query_text": "가격대 확인",
         },
-        generate_payload={"reply": "ok", "products": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
     )
     history = [
         {"role": "user", "content": "선물로 좋은 도자기 찾아줘"},
@@ -546,7 +548,7 @@ def test_warmup_calls_chat_exactly_twice():
                     "chat_reply": "",
                 }
             )
-        return json.dumps({"reply": "ok", "products": [], "suggestions": []})
+        return json.dumps({"reply": "ok", "allowed_ids": [], "suggestions": []})
 
     rr.warmup(
         chat=chat_counts_calls,
@@ -580,7 +582,7 @@ def test_warmup_also_warms_search_and_rank():
                 "query_text": "",
                 "chat_reply": "",
                 "reply": "ok",
-                "products": [],
+                "allowed_ids": [],
                 "suggestions": [],
             }
         )

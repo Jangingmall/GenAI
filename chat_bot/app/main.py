@@ -30,6 +30,7 @@ cache_store를 전부 주입 가능한 인자로 받게 설계돼 있다 — 그
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -67,13 +68,20 @@ _default_fetch_artisans = _constant(_fetch_artisans)
 _default_cache_lookup = _constant(semantic_cache.lookup)
 _default_cache_store = _constant(semantic_cache.store)
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 실제 사용자의 첫 요청이 콜드 스타트 비용(프롬프트 캐시 미형성 + 임베딩 모델 미로딩,
     # 실측 10~30초)을 그대로 떠안지 않도록 서버가 요청을 받기 전에 미리 다 태운다
-    # (app/pipeline/orchestrator.py:warmup 참고).
-    orchestrator.warmup()
+    # (app/pipeline/orchestrator.py:warmup 참고). 예열은 최적화일 뿐이라 실패해도(Ollama·
+    # DB 일시 접속 불가 등) 서버 자체는 콜드 스타트 상태로라도 떠야 한다 — 여기서 예외를
+    # 그대로 던지면 FastAPI 기동 자체가 멈춘다.
+    try:
+        orchestrator.warmup()
+    except Exception:
+        logger.exception("워밍업 실패 — 콜드 스타트 상태로 서비스를 시작한다")
     yield
 
 
@@ -167,6 +175,8 @@ class ChatResponse(BaseModel):
 @app.post("/ai/chat", response_model=ChatResponse)
 def chat(
     request: ChatRequest,
+    # Depends를 기본값에 쓰는 건 ruff(B008)가 일반 함수 호출과 구분 못 해 걸리는
+    # FastAPI 공식 의존성 주입 패턴이다 — 실제로는 매 요청마다 FastAPI가 호출해준다.
     chat_fn=Depends(_default_chat),
     search_and_rank=Depends(_default_search_and_rank),
     fetch_prices=Depends(_default_fetch_prices),

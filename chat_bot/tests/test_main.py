@@ -76,7 +76,7 @@ _INTENT_PRODUCT_SEARCH = {
 }
 _GENERATE_OK = {
     "reply": "이 찻잔을 추천드려요.",
-    "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
+    "allowed_ids": [9],
     "suggestions": ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"],
 }
 _CANDIDATES = [
@@ -107,7 +107,7 @@ def test_chat_returns_only_external_contract_fields():
     assert response.status_code == 200
     body = response.json()
     assert set(body.keys()) == {"reply", "intent", "products", "suggestions"}
-    assert body["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
+    assert body["products"] == [{"product_id": 9, "reason": "이 찻잔을 추천드려요."}]
 
 
 def test_narrow_down_reuses_previous_candidates_via_session_id():
@@ -175,6 +175,22 @@ def test_history_sender_field_is_mapped_to_role_for_pipeline():
 
     assert "소비자: 찻잔 있나요" in seen["user_content"]
     assert "챗봇: 청자 찻잔을 추천드려요" in seen["user_content"]
+
+
+def test_lifespan_survives_warmup_failure(monkeypatch):
+    """워밍업(orchestrator.warmup)이 실패해도(Ollama·DB 접속 불가 등) 서버 기동 자체는
+    끝까지 진행돼야 한다 — CodeRabbit 지적: 이전엔 예외가 그대로 전파돼 서버가 안 떴다."""
+
+    def boom(**kwargs):
+        raise RuntimeError("Ollama 접속 실패")
+
+    monkeypatch.setattr(main.orchestrator, "warmup", boom)
+
+    with TestClient(main.app) as c:
+        # with 블록에 진입한 시점에 lifespan이 이미 실행됐다 — boom()이 예외를 던졌는데도
+        # 여기까지 도달했다는 것 자체가 서버가 죽지 않았다는 증거다.
+        response = c.get("/ai/health")
+        assert response.status_code == 200
 
 
 def test_different_session_ids_do_not_share_state():

@@ -93,7 +93,7 @@ def _is_relevant(attr: dict, expected: dict) -> bool:
     price = attr.get("price")
     return max_price is not None and price is not None and price <= max_price
 
-
+  
 def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     """질의 하나를 의도분류 + 추천(장인 가중치 포함)하여 정답 여부·순위·score를 계산."""
 
@@ -168,7 +168,7 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
         ],
     }
 
-
+  
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="검색 및 장인 가중치 추천 통합 평가")
     parser.add_argument(
@@ -228,6 +228,7 @@ def main(argv=None) -> int:
         mark = "✅" if r["passed"] else "❌"
         top_score = f"최고 score {max(r['scores']):.4f}" if r["scores"] else "빈 결과"
         print(f"  {mark} \"{r['query']}\" → {r['returned']}개 반환 ({top_score})")
+
     print("  → 유사도 컷이 적용되어 빈 결과(0개)가 되어야 정답.")
 
     # ── 사람 판정 대상 ──
@@ -258,3 +259,4 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+    
