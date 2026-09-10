@@ -113,254 +113,64 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 
 파라미터가 연결된 뒤의 유효한 품질 A/B, 즉 사람 검수나 사전 정의된 품질 지표로 `steps=4`와 `steps=8`을 비교한 실험은 아직 수행하지 않았다. 따라서 8스텝이 더 낫다고 결론 내릴 근거가 없다. `strength`는 현재 모델 edit 모드에서 지원되지 않으므로 숫자형으로 전송하는 것만으로 활성화되지 않는다.
 
-## 실험 D — 섹션 구성 다양화 여섯 차수
+## 실험 D — 섹션 구성 다양화 1~9차 전체 색인
 
-### 범위와 판정 기준
+앞의 실험 A·B·C 본문은 유지했다. 섹션 구성 다양화 실험은 차수마다 다섯 종류의 로그로 분리했으며, 아래 표는 전체 색인이다. 각 차수의 구현 체크포인트·에러 분석·실험 리포트·추론 API 영향·BE/FE 인터페이스 영향은 링크된 다섯 문서에 각각 기록했다.
 
-실험 D는 기존 2차 산출물 `generated/evaluation/pilot-20260909-224737`을 개정 전 기준으로 삼고,
-그 뒤의 여섯 차수 `pilot-20260910-102346`, `111715`, `115722`, `123917`, `135605`,
-`145007`을 순서대로 비교한다. 각 디렉터리의 저장된 `result_summary.json`을
-`scripts/check_plan_diversity.py`로 읽어 측정했으며, 파일럿이나 모델을 다시 실행하지 않았다.
+### 정본 수치와 판정 기준
 
-판정 기준은 평균 집합 일치도 60% 이하, 전 케이스 공통 블록 4종 이하, 블록 집합이 완전히 같은
-쌍 0개다. 이 세 수치는 블록의 순서가 아니라 각 페이지가 선택한 블록 집합이 얼마나 겹치는지를
-측정하므로, 고유 시퀀스 수만으로는 발견하지 못하는 수렴을 함께 드러낸다.
+- 1~7차 당시 절대 기준: 평균 Jaccard `<=60%`, 전체 공통 블록 `<=4종`, 완전 일치 `0쌍`.
+- 8~9차 기준: 카탈로그 비복원 추출 평균 `+10%p`, 유효 공통 블록 `<=4종`, 완전 일치 `<=1쌍`.
+- 개정 전 카탈로그 기준선은 63.9%, 개정 후 지정 시뮬레이션은 54.4%였다. 현재 스크립트 기준선은 54.52%, 6건 임계값은 64.52%다.
+- 6차와 9차는 케이스별 `image_model=mlx-community/flux2-klein-9b-4bit`로 실제 이미지를 생성했다. 7차와 8차는 6차 자산을 복사한 실행이 아니라 `--image-provider none`으로 AI 이미지 생성을 끈 실행이었다.
+- 7차는 케이스별 `image_model=none`이고 `photos/`가 전 케이스 0장이었다. 8차도 케이스별 `image_model=none`이며 남은 사진은 모두 `product_generated=false`인 원본 파생 컷이었다. `run_index.json` 최상위 `image_model`은 설정값이므로 실제 실행 여부의 근거로 쓰지 않았다.
 
-### 차수 1 — validation 블록 패딩 제거 (`pilot-20260910-102346`)
+### 1~9차 요약 표
 
-#### 문제
+| 차수 | 바꾼 것 | 파일럿 디렉터리 | 평균 Jaccard | 유효 공통 블록 | 완전 일치 쌍 | 판정 |
+|---:|---|---|---:|---:|---:|---|
+| 1 | validation 블록 패딩 제거 | `generated/evaluation/pilot-20260910-102346` | 96.3% | 6종 | 10쌍 | 구 기준 FAIL (6/6, 이미지 실제 생성) |
+| 2 | 프롬프트 순서 각인 3곳 제거 | `generated/evaluation/pilot-20260910-111715` | 93.3% | 6종 | 10쌍 | 구 기준 FAIL (6/6, 이미지 실제 생성) |
+| 3 | 블록별 선택·생략 조건 추가 | `generated/evaluation/pilot-20260910-115722` | 78.3% | 4종 | 2쌍 | 구 기준 FAIL (6/6, 이미지 실제 생성) |
+| 4 | 원형 4종을 예시로 제시 | `generated/evaluation/pilot-20260910-123917` | 79.8% | 4종 | 3쌍 | 구 기준 FAIL (6/6, 이미지 실제 생성) |
+| 5 | 구성을 코드가 결정, 모델은 카피 작성 | `generated/evaluation/pilot-20260910-135605` | 72.4% | 4종 | 1쌍 | 구 기준 FAIL (6/6, 이미지 실제 생성) |
+| 6 | variant 고정 배정 해제·CSS 4종 구현 | `generated/evaluation/pilot-20260910-145007` | 72.4% | 4종 | 1쌍 | 구 기준 FAIL (6/6, Flux 실제 생성) |
+| 7 | variant 전달 경로 개방 | `generated/evaluation/pilot-20260910-153208` | 72.4% | 4종 | 1쌍 | 구 기준 FAIL (5/6, `--image-provider none`, 사진 0장) |
+| 8 | 카탈로그와 판정 기준 재설계 | `generated/evaluation/pilot-20260910-161310` | 66.0% | 1종 | 2쌍 | 새 기준 FAIL (6/6, `--image-provider none`, 원본 파생 컷) |
+| **9** | **근거 기반 후보 원형 선택** | `generated/evaluation/pilot-20260910-164008` | **52.3%** | **0종** | **0쌍** | **새 기준 PASS (6/6, Flux 실제 생성)** |
 
-개정 전 실행은 6건 중 5건이 같은 최빈 시퀀스를 냈다. 모델이 중간 블록을 충분히 반환했는데도
-`validation.py`가 보강 블록을 삽입하거나 순서를 덮어쓰면, 모델의 선택 차이가 산출물에서 사라질 수
-있었다.
+표의 `유효 공통 블록`은 `hero`·`closing`을 제외한 종수다.
 
-#### 가설
+### 차수별 5종 문서 링크
 
-구성 수렴의 주된 원인이 validation의 블록 패딩과 fallback이라면, 중간 블록이 6개 이상일 때
-모델 계획을 그대로 보존하는 것만으로도 최빈 시퀀스가 분산될 것이다.
+| 차수 | 구현 체크포인트 | 에러 분석 | 실험 리포트 | 추론 API | BE/FE 인터페이스 |
+|---:|---|---|---|---|---|
+| 1 | [문서](experiments/round-01/01-implementation-checkpoint.md) | [문서](experiments/round-01/02-error-analysis.md) | [문서](experiments/round-01/03-experiment-report.md) | [문서](experiments/round-01/04-inference-api.md) | [문서](experiments/round-01/05-be-fe-interface.md) |
+| 2 | [문서](experiments/round-02/01-implementation-checkpoint.md) | [문서](experiments/round-02/02-error-analysis.md) | [문서](experiments/round-02/03-experiment-report.md) | [문서](experiments/round-02/04-inference-api.md) | [문서](experiments/round-02/05-be-fe-interface.md) |
+| 3 | [문서](experiments/round-03/01-implementation-checkpoint.md) | [문서](experiments/round-03/02-error-analysis.md) | [문서](experiments/round-03/03-experiment-report.md) | [문서](experiments/round-03/04-inference-api.md) | [문서](experiments/round-03/05-be-fe-interface.md) |
+| 4 | [문서](experiments/round-04/01-implementation-checkpoint.md) | [문서](experiments/round-04/02-error-analysis.md) | [문서](experiments/round-04/03-experiment-report.md) | [문서](experiments/round-04/04-inference-api.md) | [문서](experiments/round-04/05-be-fe-interface.md) |
+| 5 | [문서](experiments/round-05/01-implementation-checkpoint.md) | [문서](experiments/round-05/02-error-analysis.md) | [문서](experiments/round-05/03-experiment-report.md) | [문서](experiments/round-05/04-inference-api.md) | [문서](experiments/round-05/05-be-fe-interface.md) |
+| 6 | [문서](experiments/round-06/01-implementation-checkpoint.md) | [문서](experiments/round-06/02-error-analysis.md) | [문서](experiments/round-06/03-experiment-report.md) | [문서](experiments/round-06/04-inference-api.md) | [문서](experiments/round-06/05-be-fe-interface.md) |
+| 7 | [문서](experiments/round-07/01-implementation-checkpoint.md) | [문서](experiments/round-07/02-error-analysis.md) | [문서](experiments/round-07/03-experiment-report.md) | [문서](experiments/round-07/04-inference-api.md) | [문서](experiments/round-07/05-be-fe-interface.md) |
+| 8 | [문서](experiments/round-08/01-implementation-checkpoint.md) | [문서](experiments/round-08/02-error-analysis.md) | [문서](experiments/round-08/03-experiment-report.md) | [문서](experiments/round-08/04-inference-api.md) | [문서](experiments/round-08/05-be-fe-interface.md) |
+| 9 | [문서](experiments/round-09/01-implementation-checkpoint.md) | [문서](experiments/round-09/02-error-analysis.md) | [문서](experiments/round-09/03-experiment-report.md) | [문서](experiments/round-09/04-inference-api.md) | [문서](experiments/round-09/05-be-fe-interface.md) |
 
-#### 조치
+### 전체 결론
 
-`validation.py`에서 중간 블록이 6개 이상인 계획에 대한 패딩 삽입을 제거하고, 해당 범위에서는
-모델이 만든 page plan을 보존하도록 했다.
+**원인이 셋으로 나뉘어 있었다.** 첫째, 카탈로그에 붙박이 블록이 많아 가능한 다양성의 상한을 만들었다. 둘째, 합격 기준이 카탈로그 도달 가능성을 확인하지 않은 채 정해졌고 `hero`·`closing`을 공통 블록으로 세어 측정도 왜곡했다. 셋째, 이미지 해시 하나로 원형을 추첨해 상품의 `when`·`avoid_when` 조건과 연결하지 않았다. 9차에서 후보와 상품 관찰값을 연결한 뒤 유효 공통 0종·완전 일치 0쌍이 됐다.
 
-#### 결과 수치
+**합격 기준을 근거 없이 정한 것이 가장 오래 끈 오류였다.** 개정 전 카탈로그에서 이상적 추출 평균이 63.9%인데 절대 목표를 60%로 정했고, 고정 경계 블록까지 공통 수에 포함했다. 그 결과 1~7차의 개별 파이프라인 수정이 문제를 충분히 설명하지 못했다. 기준선을 카탈로그에서 계산하고 유효 공통 수를 분리한 것은 8차의 메타 수준 수정이었다.
 
-`pilot-20260910-102346`은 평균 집합 일치도 96.3%, 공통 블록 8종, 완전 일치 쌍 10쌍,
-고유 시퀀스 2종(최빈 5/6)이었다. 길이는 8블록 1건·9블록 5건이었다. 기준 실행의
-96.7%·공통 9종·완전 일치 10쌍에서 일부 수치만 줄었고 최빈 5/6은 유지되어 변화가 거의 없었다.
+최종 9차는 평균 Jaccard 52.3%, 유효 공통 0종, 완전 일치 0쌍으로 새 구조 기준을 통과했고, 컷아웃 게이트도 총 6건 `OK`, 부분 손실 0건, 심각 손실 0건이었다. 이 결과는 구조와 자동 컷아웃 지표에 대한 판정이며 사람 검수나 전반적인 상품성·시각 품질 승인을 뜻하지 않는다.
 
-#### 남은 한계
+### 전체 미해결 이슈
 
-validation이 모델 계획을 보존해도 모델이 처음부터 같은 계획을 선택하면 다양성은 생기지 않는다.
-이 차수만으로 validation이 유일한 원인이라는 가설은 지지되지 않았다.
+- 사람 검수 점수는 존재하지 않는다.
+- 60건 전체 평가는 수행하지 않았고, 표의 파일럿은 7차 성공 5건을 제외하면 차수별 6건이다.
+- 최종 `result_summary.json`에는 생성 자산의 `참고용` 라벨이 있지만 `react_document.json`과 최종 캔버스에는 노출되지 않는다. 이 누락은 결정에 의해 미수정으로 남긴 배포 차단 조건이다.
 
-### 차수 2 — 프롬프트 순서 각인 제거 (`pilot-20260910-111715`)
+### 근거
 
-#### 문제
-
-차수 1에서 모델 계획을 보존해도 5건이 같은 계획이었다. 프롬프트의 Copy Map 나열 순서,
-9블록 하한, `Open`·`Follow`·`Include`·`Finish` 순차 레시피가 선택 순서를 반복해서 제시하고
-있었다.
-
-#### 가설
-
-모델이 프롬프트에 반복된 순서를 page-plan 정답으로 읽는다면, 이 세 가지 순서 각인을 제거할 때
-최빈 시퀀스 빈도가 줄어들 것이다.
-
-#### 조치
-
-Copy Map을 순서 목록이 아닌 block type 참조표로 바꾸고, 고정 하한과 순차 레시피를 제거했다.
-블록의 선택과 생략은 근거 조건에 따라 판단하도록 프롬프트를 개정했다.
-
-#### 결과 수치
-
-`pilot-20260910-111715`는 평균 집합 일치도 93.3%, 공통 블록 8종, 완전 일치 쌍 10쌍,
-고유 시퀀스 3종(최빈 3/6)이었다. 6건 모두 9블록이었다. 최빈 빈도는 5/6에서 3/6으로
-줄었지만 세 정량 게이트는 모두 미달이었다.
-
-#### 남은 한계
-
-순서 각인을 줄이는 것만으로는 공통 블록 집합 자체가 줄지 않았다. 선택 조건이 없는 블록은
-모델에게 여전히 모두 넣을 수 있는 후보로 남았다.
-
-### 차수 3 — 블록별 선택·생략 조건 추가 (`pilot-20260910-115722`)
-
-#### 문제
-
-차수 2에서 고유 시퀀스는 늘었지만, 공통 블록이 8종이고 완전 일치 쌍이 10쌍이었다. 특히
-제작 과정 데이터가 없는 상품에도 `statement`가 외형 묘사처럼 사용될 여지가 있었다.
-
-#### 가설
-
-각 블록에 사용 조건과 생략 조건을 명시하면 모델이 모든 블록을 채우는 대신 입력 자산이
-뒷받침하는 블록만 선택해 집합 중복을 줄일 수 있다. `statement`는 실제 제작 과정 데이터가
-있을 때만 허용해야 한다.
-
-#### 조치
-
-블록별 선택·생략 조건을 추가하고, `statement`에 creator-provided 제작 과정 데이터 조건을
-걸었다. 근거가 없는 블록은 내용을 지어내지 않고 생략하도록 했다.
-
-#### 결과 수치
-
-`pilot-20260910-115722`는 평균 집합 일치도 78.3%, 공통 블록 6종, 완전 일치 쌍 2쌍,
-고유 시퀀스 4종(최빈 2/6)이었다. 길이는 8블록 5건·9블록 1건이었다. 이전 차수보다
-수렴이 줄었지만 세 게이트 모두 기준을 넘었다.
-
-#### 남은 한계
-
-선택·생략 조건은 후보의 수를 줄였지만 상품별로 어떤 큰 서사 구조를 선택할지 결정하지는
-않았다. 남은 후보들이 비슷한 입력에서 다시 같은 집합으로 수렴할 가능성이 남았다.
-
-### 차수 4 — 레이아웃 원형 4종을 예시로 제시 (`pilot-20260910-123917`)
-
-#### 문제
-
-차수 3의 평균 일치도 78.3%와 완전 일치 2쌍을 더 낮추기 위해, 상품 성격별 레이아웃 원형을
-예시로 보여주면 모델이 그중 하나를 다양하게 선택할 것인지 확인할 필요가 있었다.
-
-#### 가설
-
-실루엣·질감·세트·제작 과정처럼 서로 다른 원형을 예시로 제공하면 모델이 입력 상품에 맞는
-원형을 골라 블록 집합까지 분산할 것이다.
-
-#### 조치
-
-상품별 레이아웃 원형 4종을 프롬프트의 선택 참고 예시로 제시했다. 이는 고정 순서 명령이
-아니라 원형을 참고하는 방식으로 구성했다.
-
-#### 결과 수치
-
-`pilot-20260910-123917`는 평균 집합 일치도가 78.3%에서 79.8%로 악화됐다. 공통 블록은
-6종으로 그대로였고, 완전 일치 쌍은 2쌍에서 3쌍으로 늘었다. 고유 시퀀스는 6종/6건으로
-늘어 최빈 시퀀스는 1/6이었지만, 집합 유사도 게이트에는 도움이 되지 않았다.
-
-#### 남은 한계
-
-예시를 보여주는 방식은 표면적인 순서 차이를 만들 수 있어도, 모델이 공통 블록을 공유하는
-원형을 선택하는 문제를 해결하지 못했다. 원형을 메뉴처럼 제시하는 것 자체가 새로운 고정
-패턴이 될 위험도 확인됐다.
-
-### 차수 5 — 구성을 코드가 결정하고 모델은 카피만 작성 (`pilot-20260910-135605`)
-
-#### 문제
-
-차수 4에서 시퀀스 수는 늘었지만 집합 일치도와 완전 일치 쌍은 오히려 악화됐다. 모델에게
-원형을 고르게 하는 방식으로는 구조 선택을 안정적으로 분산시키기 어려웠다.
-
-#### 가설
-
-레이아웃 원형을 코드가 결정적으로 선택하고 프롬프트에 구성 순서를 전달하면, 모델의 기본
-구성 습관과 무관하게 상품별 구조를 보존할 수 있다. 모델은 각 블록의 근거 있는 카피만
-작성하고 근거가 없는 블록은 생략해야 한다.
-
-#### 조치
-
-원본 이미지 해시를 바탕으로 카탈로그 원형을 코드가 선택하도록 하고, 선택된 구성은 모델에게
-구성 지시로 전달했다. 모델의 역할은 지정된 블록의 카피를 작성하는 것으로 좁혔고, 근거가
-없는 블록은 생략할 수 있게 했다.
-
-#### 결과 수치
-
-`pilot-20260910-135605`는 평균 집합 일치도 72.4%, 공통 블록 6종, 완전 일치 쌍 1쌍,
-고유 시퀀스 5종(최빈 2/6)이었다. 길이는 8블록 3건·10블록 3건이었다. 코드가 지정한
-순서 보존은 6/6건이었고, 근거 부족으로 생략된 건은 1건이었다. 개선 폭은 가장 컸지만
-세 게이트 모두 아직 미달이었다.
-
-#### 남은 한계
-
-이미지 해시 기반의 결정성은 같은 입력에 같은 원형을 주지만, 서로 다른 상품이 우연히 같은
-원형에 배정되는 충돌은 막지 못한다. 또한 구조 지표만 개선됐을 뿐, 사람 검수 품질 점수는
-수집되지 않았다.
-
-### 차수 6 — variant 고정 배정 해제와 CSS 4종 구현 (`pilot-20260910-145007`)
-
-#### 문제
-
-차수 5까지 구성은 여전히 같은 블록 집합을 많이 공유했다. 게다가 코드가
-`detail_split`을 `dark`, `usage_scene`을 `full-bleed`로 고정 배정해, 구조가 달라도 시각적
-처리는 비슷하게 보일 수 있었다. DTO에만 선언되고 CSS가 없던 `sand`, `image-left`,
-`image-right`, `compact`도 모델이 선택해도 화면에 차이를 만들지 못했다.
-
-#### 가설
-
-카탈로그 원형의 variant를 보존하고 누락된 CSS 규칙을 구현하면 구성 지표는 그대로여도
-페이지의 시각적 처리 분포가 처음으로 갈릴 것이다.
-
-#### 조치
-
-`validation.py`에서 hero·closing·detail_split·usage_scene·notice의 variant를 일괄 고정하지
-않고 입력된 값을 보존했다. `web/detail_page.css`에는 `sand`, `image-left`, `image-right`,
-`compact`의 adaptive 규칙을 추가했다. `photo_id` 보정은 자산 연결을 위한 동작이므로
-유지했다.
-
-#### 결과 수치
-
-`pilot-20260910-145007`의 구성 지표는 차수 5와 같았다: 평균 집합 일치도 72.4%, 공통 블록
-6종, 완전 일치 쌍 1쌍, 고유 시퀀스 5종(최빈 2/6), 길이 8블록 3건·10블록 3건이다.
-
-반면 variant 분포는 처음으로 갈렸다. 6건의 54개 블록에서 `paper 22 · light 19 ·
-image-left 4 · dark 3 · full-bleed 3 · image-right 2 · compact 1 · sand 0`이었다.
-카탈로그 25종의 배정은 `paper 57 · sand 39 · compact 35 · light 35 · full-bleed 16 ·
-dark 16 · image-left 11 · image-right 11`이므로, 카탈로그에 39회 배정된 `sand`가 실제
-출력에서는 한 번도 선택되지 않았다.
-
-#### 남은 한계
-
-6차 시점의 프롬프트는 카탈로그의 `sequence`만 전달하고 블록별 `variants`는 전달하지
-않았다. 따라서 variant를 여전히 모델이 고르고 있었고, `sand` 39회와 출력 0회의 차이가
-남았다. 이 전달 경로는 다른 워커가 후속으로 고치는 중이며, 이 보고서의 6차 실측에는 그
-후속 수정 결과를 섞지 않는다.
-
-## 섹션 구성 다양화의 현재 판정과 원인
-
-최신 구성 판정(`pilot-20260910-145007`)은 평균 집합 일치도 72.4%, 전 케이스 공통 블록
-6종, 완전 일치 1쌍이다. 기준인 60% 이하·4종 이하·0쌍을 세 조건 모두 충족하지 못했다.
-
-현재 미달의 원인은 두 가지로 기록한다.
-
-1. 원형 선택이 이미지 해시에 의해 결정되므로, 서로 다른 두 상품이 같은 해시 선택 결과 또는
-   같은 원형에 걸리면 구성 집합이 다시 겹친다.
-2. `check_plan_diversity.py`의 공통 블록 계산은 DTO가 모든 계획에 요구하는 `hero`와 `closing`을
-   제외하지 않는다. 필수 경계 블록을 다양성의 공통 블록으로 세는 것은 기준 설계의 착오다.
-
-이 수치는 구조 다양성 게이트의 판정이며, 사람 검수 점수나 상품성·시각 품질 점수를 뜻하지
-않는다. 이번 여섯 차수에도 사람 검수 점수는 존재하지 않는다.
-
-## 섹션 구성 다양화에서 빗나간 가설 네 개
-
-1. **코드 패딩이 원인이라는 가설**: validation의 패딩을 제거했지만 차수 1에서 최빈 시퀀스가
-   5/6으로 유지됐다. 주원인은 validation이 아니라 모델에 주어진 프롬프트 구조였다.
-2. **렌더러가 고정 슬롯에 끼워 넣는다는 가설**: 근거로 삼은 `{{THREE_GALLERY}}`와
-   `{{TWO_GALLERY}}`는 실제 템플릿에 자리가 없는 치환 키였다. 검색 결과 두 토큰은
-   `html_renderer.py`의 값 매핑에만 남아 있고, 실제 동적 렌더링은 `page_plan` 블록을
-   `_dynamic_sections`로 순서대로 돈다.
-3. **원형 예시를 보여주면 모델이 다양하게 고른다는 가설**: 차수 4에서 고유 시퀀스는
-   6종으로 보였지만 평균 일치도는 78.3%에서 79.8%, 완전 일치 쌍은 2쌍에서 3쌍으로
-   악화됐다.
-4. **참조 템플릿 이미지가 모델에 전달되어 형태를 강제한다는 가설**: 실제 렌더러의
-   `HtmlDetailPageRenderer.render()`는 `template_image`를 `del template_image`로 버린다.
-   템플릿 이미지는 모델 입력의 원인이 아니다.
-
-## 합격 기준 자체가 틀렸던 사건
-
-초기 기준은 “고유 시퀀스 3종 이상, 중간 블록 집합 3종 이상”이었다. 한 실행이 그 기준을
-통과했지만, 실제로는 페이지 블록의 73%가 동일했고 두 쌍은 블록 집합이 100% 같았다.
-“다른 것이 하나라도 있는가”만 세고 “얼마나 다른가”를 재지 않은 것이 문제였다.
-
-이 사건을 계기로 `scripts/check_plan_diversity.py`를 만들고 평균 집합 일치도, 전 케이스 공통
-블록 수, 완전 일치 쌍 수를 함께 측정하는 기준으로 바꿨다. 여섯 차수의 결과는 이 새 기준으로
-판정했으며, 현재 최신 실행도 세 게이트 모두 미달이다.
-
-## 가설이 빗나간 지점
-
-실험 C는 처음에 “steps를 올리면 품질이 오르는가?”라는 질문으로 시작했지만, 1차 결과가 보여준 직접적인 문제는 품질 차이가 아니라 **실험 손잡이가 연결되지 않았다는 것**이었다. 먼저 endpoint가 파라미터를 실제로 반영하는지 확인해야 했고, 그 결과 `steps`만 JSON edit 경로에서 살아났다. `strength`는 전송 타입을 고치는 문제로 남지 않고, 현재 FLUX.2 in-context edit 모드가 지원하지 않는 기능이라는 결론에 도달했다.
-
-## 근거 파일
-
-- 1차 파일럿: `generated/evaluation/pilot-20260909-191344/run_index.json` 및 해당 `analysis-*/result_summary.json`
-- 최종 파일럿: `generated/evaluation/pilot-20260909-224737/run_index.json`
-- 최종 게이트 실행 기록: `.orchestration/tasks/20260909-224712-agy.md`
-- 이미지 파라미터 실험: `generated/experiments/image-steps-ab-20260909-223049/results.json`
-- 클라이언트 edit 경로: `src/local_detail_page_ai/clients.py`
+- `.orchestration/briefs/round-facts-verified.md`
+- `generated/evaluation/pilot-20260910-102346`부터 `pilot-20260910-164008`까지의 저장된 파일럿 산출물
+- `scripts/check_plan_diversity.py`, `scripts/check_cutout_fidelity.py`
