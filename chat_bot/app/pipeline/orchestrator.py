@@ -27,7 +27,14 @@ narrow_down("그중 더 싼 거" 등)은 두 가지로 갈린다 — ① 직전�
 from __future__ import annotations
 
 from app.pipeline import semantic_cache
-from app.pipeline.generate import _fetch_artisans, _fetch_prices, build_reply
+from app.pipeline.generate import (
+    _fetch_artisans,
+    _fetch_prices,
+    build_reply,
+    explain_product,
+    extract_ordinal,
+    is_explain_request,
+)
 from app.pipeline.intent import classify_and_extract
 from app.pipeline.llm import chat_json
 from app.run_recommend import recommend as _recommend
@@ -71,6 +78,42 @@ def run(
     판단에 넣으면 노이즈로 불필요한 재검색이 계속 발생한다. max_price·min_price·color만
     진짜 하드필터(SQL WHERE)라 이 셋만 본다.
     """
+    # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
+    # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
+    # 확인: 후보 전체를 설명하거나 엉뚱한 걸 고름). 순서 지정은 코드로 확정 판단하고,
+    # 없으면 되묻는다(추가 LLM 호출 없이 즉시 응답).
+    if is_explain_request(message):
+        if not previous_candidates:
+            return {
+                "reply": "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                "intent": "narrow_down",
+                "products": [],
+                "suggestions": [],
+                "candidates": [],
+                "filters": previous_filters or {},
+            }
+        ordinal = extract_ordinal(message, len(previous_candidates))
+        if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
+            chips = [f"{i + 1}번" for i in range(len(previous_candidates))]
+            return {
+                "reply": f"몇 번째 상품을 말씀하시는 건가요? ({'/'.join(chips)} 중에서 골라주세요)",
+                "intent": "narrow_down",
+                "products": [],
+                "suggestions": chips,
+                "candidates": previous_candidates,
+                "filters": previous_filters or {},
+            }
+        target = previous_candidates[ordinal - 1]
+        explained = explain_product(message, target, chat=chat)
+        return {
+            "reply": explained["reply"],
+            "intent": "narrow_down",
+            "products": explained["products"],
+            "suggestions": explained["suggestions"],
+            "candidates": previous_candidates,
+            "filters": previous_filters or {},
+        }
+
     # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
     # 직전 대화에 따라 의미가 완전히 달라지는데, 문장만 보고 캐시를 맞히면 엉뚱한 이전
     # 대화의 결과가 섞여 나갈 위험이 크다(semantic_cache.py 모듈 docstring 참고).
