@@ -46,6 +46,7 @@ RRF_K = 60
 # 억지 추천 방지를 위한 코사인 유사도 임계치 (BGE-M3 코사인 유사도 기준)
 SIMILARITY_THRESHOLD = 0.46
 
+
 def _vector_search(cur, qvec_literal, where_sql, where_params, limit):
     """벡터 검색: 코사인 거리 순. (product_id, name, similarity, evidence) 반환."""
     sql = f"""
@@ -126,7 +127,7 @@ def _get_missing_similarities(cur, qvec_literal, missing_pids):
     """BM25로만 선택된 후보들의 벡터 코사인 유사도를 별도로 단일 조회하여 보완한다."""
     if not missing_pids:
         return {}
-    
+
     sql = """
         SELECT p.product_id,
                1 - (p.embedding <=> %s::vector) AS similarity
@@ -193,7 +194,7 @@ def search(
         with conn.cursor() as cur:
             # RRF 융합을 위해 후보를 top_k * 2개 정도 수집
             fetch_limit = max(top_k * 2, 20)
-            
+
             vector_rows = _vector_search(
                 cur, qvec_literal, where_sql, where_params, fetch_limit
             )
@@ -236,7 +237,7 @@ def search(
             evidence = json.loads(evidence)
 
         score = entry["rrf"]
-        
+
         # gift_theme 부스팅 (하드 필터 아님)
         product_themes = set(entry.get("gift_theme") or [])
         if want_themes and (want_themes & product_themes):
@@ -270,7 +271,7 @@ if __name__ == "__main__":
     q = sys.argv[1] if len(sys.argv) > 1 else "차 마실 때 쓸 것"
     print(f'질의: "{q}"\n')
     search_results = search({"query_text": q, "filters": {}})
-    
+
     if not search_results:
         print("유사도 임계치를 만족하는 추천 상품이 없습니다 (억지 추천 차단).")
     else:

@@ -20,11 +20,16 @@ from pathlib import Path
 import psycopg2
 
 from app.config import settings
+
 # intent.py 및 recommend() 연동
 try:
     from app.pipeline.intent import classify_and_extract
 except ImportError:
     classify_and_extract = None
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.run_recommend import recommend
 
@@ -86,15 +91,12 @@ def _is_relevant(attr: dict, expected: dict) -> bool:
 
     max_price = expected.get("max_price")
     price = attr.get("price")
-    if max_price is not None and price is not None and price <= max_price:
-        return True
-
-    return False
+    return max_price is not None and price is not None and price <= max_price
 
 
 def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     """질의 하나를 의도분류 + 추천(장인 가중치 포함)하여 정답 여부·순위·score를 계산."""
-    
+
     # 1. intent.py를 통해 filters(max_price 등) 및 intent 동적 추출
     intent_type = "product_search"
     filters = {}
@@ -104,7 +106,7 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
             intent_type = intent_res.get("intent", "product_search")
             filters = intent_res.get("filters", {})
         except Exception:
-            pass
+            logger.exception("intent 분류 실패: %s", query_text)
 
     contact1 = {
         "query_text": query_text,
@@ -113,13 +115,15 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     }
 
     # 2. 장인 등급 가중치(+0.3 ~ +0.05)가 합산된 최종 recommend() 호출
-    results = recommend(contact1, top_k=TOP_K)  # [{product_id, name, score, similarity, evidence}]
+    results = recommend(
+        contact1, top_k=TOP_K
+    )  # [{product_id, name, score, similarity, evidence}]
 
     pids = [r["product_id"] for r in results]
     attrs = _fetch_product_attrs(pids)
 
     expected = item["expected"]
-    
+
     # 엣지 케이스: 빈 결과가 정답
     if expected.get("should_be_empty"):
         passed = len(results) == 0
@@ -136,19 +140,19 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     # 일반 검색/추천: 상위 K개 중 정답이 있나 + 첫 정답 순위
     relevant_ranks = []
     relevant_scores, irrelevant_scores = [], []
-    
+
     for rank, r in enumerate(results, start=1):
         attr = attrs.get(r["product_id"], {})
         # 유사도 컷 판단 지표로 활용할 코사인 유사도 점수 추출
         score_val = r.get("similarity", r["score"])
-        
+
         if _is_relevant(attr, expected):
             relevant_ranks.append(rank)
             relevant_scores.append(score_val)
         else:
             irrelevant_scores.append(score_val)
 
-    recall_at_k = 1 if relevant_ranks else 0          # 상위 K에 정답 하나라도 존재하는지
+    recall_at_k = 1 if relevant_ranks else 0  # 상위 K에 정답 하나라도 존재하는지
     rr = 1.0 / relevant_ranks[0] if relevant_ranks else 0.0  # 첫 정답 순위 역수
 
     return {
@@ -158,13 +162,18 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
         "rr": rr,
         "relevant_scores": relevant_scores,
         "irrelevant_scores": irrelevant_scores,
-        "results": [(r["name"], round(r.get("similarity", r["score"]), 4), round(r["score"], 4)) for r in results],
+        "results": [
+            (r["name"], round(r.get("similarity", r["score"]), 4), round(r["score"], 4))
+            for r in results
+        ],
     }
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="검색 및 장인 가중치 추천 통합 평가")
-    parser.add_argument("--show-scores", action="store_true", help="질의별 결과·score 상세 출력")
+    parser.add_argument(
+        "--show-scores", action="store_true", help="질의별 결과·score 상세 출력"
+    )
     args = parser.parse_args(argv)
 
     items = _load_eval()
@@ -202,9 +211,13 @@ def main(argv=None) -> int:
     print("score 분포 (BGE-M3 코사인 유사도 컷 τ 결정 근거)")
     print("-" * 50)
     if all_rel:
-        print(f"  정답 상품 score : 최소 {min(all_rel):.4f} / 중앙 {statistics.median(all_rel):.4f} / 최대 {max(all_rel):.4f}")
+        print(
+            f"  정답 상품 score : 최소 {min(all_rel):.4f} / 중앙 {statistics.median(all_rel):.4f} / 최대 {max(all_rel):.4f}"
+        )
     if all_irr:
-        print(f"  오답 상품 score : 최소 {min(all_irr):.4f} / 중앙 {statistics.median(all_irr):.4f} / 최대 {max(all_irr):.4f}")
+        print(
+            f"  오답 상품 score : 최소 {min(all_irr):.4f} / 중앙 {statistics.median(all_irr):.4f} / 최대 {max(all_irr):.4f}"
+        )
     print("  → 정답 최소와 오답 최대 사이 어딘가가 τ 후보. 엣지 결과도 함께 보라.")
 
     # ── 엣지 케이스 ──
