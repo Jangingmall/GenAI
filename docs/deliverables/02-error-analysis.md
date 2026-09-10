@@ -246,6 +246,51 @@
 
 ---
 
+### 사건 7: 생성 참고 컷의 `참고용` 표시 누락 (배포 차단 조건 5, 미수정)
+
+#### 1) 증상 (Symptom)
+- `generated/evaluation/pilot-20260909-224737/*/react_document.json` 6건에서
+  `grep -c '참고용'` 결과가 모두 `0`이다.
+- 반면 각 `result_summary.json`의 `generated_scene` 1개와 `generated_view` 4개 자산에는
+  `product_generated: true`가 기록되어 있다.
+- 따라서 데이터 계약은 생성 참고 자산을 식별하지만, 고객이 보는 최종 렌더 화면에는
+  `참고용` 표시가 노출되지 않는다.
+
+#### 2) 증거 (Evidence)
+- [`src/detail_page_ai/html_renderer.py`](../../src/detail_page_ai/html_renderer.py)의
+  513~518행은 `photo.product_generated`, `asset_mode == "generated_scene"`,
+  `asset_mode == "generated_view"`를 URI 선택 조건으로만 사용한다.
+
+  ```python
+          if not photo.product_generated
+          or (photo.photo_id == "lifestyle" and photo.asset_mode == "generated_scene")
+          or (
+              photo.photo_id in {"detail-02", "detail-03", "detail-04", "detail-05"}
+              and photo.asset_mode == "generated_view"
+          )
+  ```
+- [`README.md`](../../README.md)는 `generated_scene`/`generated_view`를 참고용 이미지로
+  표시한다고 선언하지만, 위 렌더러 분기에는 라벨을 만드는 코드가 없다.
+
+#### 3) 원인 (Root Cause)
+- `result_summary.json`과 사진 DTO에는 생성 여부와 자산 모드가 기록되지만,
+  `html_renderer`는 이를 자산 허용/선택 조건으로만 소비하고 고객 화면용 캡션으로
+  변환하지 않는다.
+
+#### 4) 조치 (Action Taken)
+- **이번 사이클에서는 미수정**으로 결정했다. 배포 차단 조건 5는 미해결로 유지한다.
+- 후속 수정 방향은 `react_document_builder`가 생성 자산 라벨을 내보내고,
+  `html_renderer`가 `AI 생성 활용 장면(참고용)`/`AI 생성 디테일(참고용)`을 렌더하는
+  것이다. JSON 라벨 검증과 최종 PNG 표시 검증도 배포 gate에 추가해야 한다.
+
+#### 5) 재발 방지 (Prevention)
+- 생성 자산의 provenance 메타데이터 존재만 확인하지 말고, 고객 화면에 라벨이 실제로
+  표시되는지 JSON·렌더 결과를 각각 검증한다.
+- 원본 `hero`·`packshot`·대표 `detail`과 생성 참고 컷을 구분하는 표시를 사람 검수 및
+  게시 gate의 필수 조건으로 둔다.
+
+---
+
 ## 3. 관통하는 패턴: 체계적 실패의 세 가지 축 (Systemic Patterns)
 
 상기 6개 사건을 심층 분석하면, 단순한 개별 코딩 실수나 라이브러리 버그를 넘어 **세 가지 본질적인 시스템 설계 및 검증의 허점**이 반복적으로 작용했음을 발견할 수 있습니다.
