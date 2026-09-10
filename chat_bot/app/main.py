@@ -26,6 +26,8 @@ cache_store를 전부 주입 가능한 인자로 받게 설계돼 있다 — 그
   (로컬 호스팅 후 터널링으로 엔드포인트 노출)
 """
 
+# ruff: noqa: B008
+
 from __future__ import annotations
 
 import logging
@@ -175,12 +177,12 @@ def chat(
     request: ChatRequest,
     # Depends를 기본값에 쓰는 건 ruff(B008)가 일반 함수 호출과 구분 못 해 걸리는
     # FastAPI 공식 의존성 주입 패턴이다 — 실제로는 매 요청마다 FastAPI가 호출해준다.
-    chat_fn=Depends(_default_chat),  # noqa: B008
-    search_and_rank=Depends(_default_search_and_rank),  # noqa: B008
-    fetch_prices=Depends(_default_fetch_prices),  # noqa: B008
-    fetch_artisans=Depends(_default_fetch_artisans),  # noqa: B008
-    cache_lookup=Depends(_default_cache_lookup),  # noqa: B008
-    cache_store=Depends(_default_cache_store),  # noqa: B008
+    chat_fn=Depends(_default_chat),
+    search_and_rank=Depends(_default_search_and_rank),
+    fetch_prices=Depends(_default_fetch_prices),
+    fetch_artisans=Depends(_default_fetch_artisans),
+    cache_lookup=Depends(_default_cache_lookup),
+    cache_store=Depends(_default_cache_store),
 ) -> ChatResponse:
     state = session_store.get(request.session_id)
     previous_candidates = state["candidates"] if state else None
