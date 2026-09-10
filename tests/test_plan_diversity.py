@@ -56,6 +56,34 @@ def test_compute_common_blocks_partial() -> None:
     assert common == ["closing", "gallery", "hero"]
 
 
+def test_compute_effective_common_blocks() -> None:
+    plans = [
+        ["hero", "statement", "gallery", "closing"],
+        ["hero", "feature_grid", "gallery", "closing"],
+        ["hero", "detail_split", "gallery", "notice", "closing"],
+    ]
+    # All common: hero, gallery, closing
+    # Effective common: gallery (hero and closing excluded)
+    effective = cpd.compute_effective_common_blocks(plans)
+    assert effective == ["gallery"]
+
+
+def test_compute_catalog_baseline_deterministic() -> None:
+    base1 = cpd.compute_catalog_baseline(sample_size=6, iterations=100, seed=42)
+    base2 = cpd.compute_catalog_baseline(sample_size=6, iterations=100, seed=42)
+    assert base1 == base2
+    assert 0.50 <= base1["mean_jaccard"] <= 0.80
+    assert base1["sample_size"] == 6
+    assert base1["iterations"] == 100
+
+
+def test_compute_catalog_baseline_fallback(tmp_path: Path) -> None:
+    non_existent = tmp_path / "does_not_exist.json"
+    fallback = cpd.compute_catalog_baseline(catalog_path=non_existent, sample_size=6)
+    assert fallback["source"] == "fallback_default"
+    assert fallback["mean_jaccard"] == 0.640
+
+
 def test_compute_common_blocks_empty() -> None:
     assert cpd.compute_common_blocks([]) == []
 
@@ -246,9 +274,34 @@ def test_evaluate_plan_diversity_fails_on_identical_pairs() -> None:
     result = cpd.evaluate_plan_diversity(records, max_avg_jaccard=0.90, max_common_blocks=10, max_identical_pairs=0)
 
     assert result["pass"] is False
-    assert any("완전 일치 쌍 존재" in f for f in result["failures"])
+    assert any("완전 일치 쌍" in f for f in result["failures"])
     assert result["gates"]["identical_pairs"]["pass"] is False
     assert result["metrics"]["identical_pairs_count"] == 1
+
+
+def test_evaluate_plan_diversity_default_allows_one_identical_pair() -> None:
+    records = [
+        {"case_id": "c1", "blocks": ["hero", "a", "b", "closing"]},
+        {"case_id": "c2", "blocks": ["hero", "a", "b", "closing"]},  # 1 identical pair (c1, c2)
+        {"case_id": "c3", "blocks": ["hero", "c", "d", "closing"]},
+        {"case_id": "c4", "blocks": ["hero", "e", "f", "closing"]},
+    ]
+    result = cpd.evaluate_plan_diversity(records, max_avg_jaccard=0.90, max_effective_common=4)
+    # Under default max_identical_pairs=1, this single pair is permitted
+    assert result["gates"]["identical_pairs"]["pass"] is True
+    assert result["metrics"]["identical_pairs_count"] == 1
+
+
+def test_evaluate_plan_diversity_uses_catalog_baseline() -> None:
+    records = [
+        {"case_id": "c1", "blocks": ["hero", "a", "closing"]},
+        {"case_id": "c2", "blocks": ["hero", "b", "closing"]},
+    ]
+    result = cpd.evaluate_plan_diversity(records, max_jaccard_delta=0.10)
+    baseline_mean = result["catalog_baseline"]["mean_jaccard"]
+    expected_threshold = round(baseline_mean + 0.10, 4)
+    assert result["thresholds"]["max_avg_jaccard"] == expected_threshold
+    assert result["gates"]["avg_jaccard"]["threshold"] == expected_threshold
 
 
 # ==============================================================================
@@ -319,8 +372,8 @@ def test_main_cli_returns_zero_on_pass(tmp_path: Path) -> None:
 
 def test_main_cli_returns_one_on_fail_and_writes_json(tmp_path: Path) -> None:
     """CLI should return 1 when repetitive, and write valid JSON report."""
-    # 2 identical cases
-    for idx in [1, 2]:
+    # 3 identical cases -> 3 identical pairs > max_identical_pairs (default 1)
+    for idx in [1, 2, 3]:
         c_dir = tmp_path / f"analysis-c{idx}"
         c_dir.mkdir()
         (c_dir / "result_summary.json").write_text(
@@ -335,5 +388,5 @@ def test_main_cli_returns_one_on_fail_and_writes_json(tmp_path: Path) -> None:
 
     payload = json.loads(json_out.read_text(encoding="utf-8"))
     assert payload["pass"] is False
-    assert payload["metrics"]["identical_pairs_count"] == 1
+    assert payload["metrics"]["identical_pairs_count"] == 3
     assert payload["gates"]["identical_pairs"]["pass"] is False

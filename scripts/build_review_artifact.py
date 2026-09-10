@@ -125,7 +125,12 @@ def collect(pilot_dir: Path) -> list[dict]:
     cases = []
     for entry in index["cases"]:
         out = Path(entry["output_dir"])
-        summary = json.loads((out / "result_summary.json").read_text(encoding="utf-8"))
+        summary_path = out / "result_summary.json"
+        if not summary_path.exists():
+            # 실패한 case 는 산출물이 없다. 건너뛰되 조용히 지우지는 않는다.
+            print(f"[skip] {entry['case_id']}: result_summary.json 없음 (실행 실패)")
+            continue
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
         product = summary.get("product", {})
         photos = []
         for photo in sorted(p for p in out.glob("photos/*") if p.suffix.lower() in {".png", ".jpg", ".jpeg"}):
