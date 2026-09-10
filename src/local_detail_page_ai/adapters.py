@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
 from pydantic import ValidationError
 
 from detail_page_ai.dto import ProductProfileDto, UserHintsDto
+from detail_page_ai.layout_archetypes import select_layout_archetypes
 from detail_page_ai.ports import ProductAnalyzer
 from detail_page_ai.prompts import build_analysis_prompt
 
@@ -64,10 +66,15 @@ class LocalProductAnalyzer(ProductAnalyzer):
         self.chat_client = chat_client
         self.locale = locale
 
-    def _base_prompt(self, user_hints: UserHintsDto | None) -> tuple[str, dict[str, Any]]:
+    def _base_prompt(
+        self,
+        user_hints: UserHintsDto | None,
+        image_sha256: str,
+    ) -> tuple[str, dict[str, Any]]:
         schema = ProductProfileDto.model_json_schema()
+        archetypes = select_layout_archetypes(image_sha256, user_hints)
         prompt = (
-            f"{build_analysis_prompt(self.locale, user_hints=user_hints)}\n"
+            f"{build_analysis_prompt(self.locale, user_hints=user_hints, archetypes=archetypes)}\n"
             "입력된 제품명·제작과정·관리법은 장인이 제공한 상품 데이터이므로 상품별 "
             "제품명·제작 이야기·관리 안내 카피에 반드시 반영하라. 입력 데이터가 이미지보다 "
             "우선하며, 이미지와 다르게 보여도 입력 데이터를 기준으로 작성하라. 이미지에 "
@@ -111,7 +118,8 @@ class LocalProductAnalyzer(ProductAnalyzer):
         mime_type: str,
         user_hints: UserHintsDto | None = None,
     ) -> ProductProfileDto:
-        prompt, schema = self._base_prompt(user_hints)
+        image_sha256 = hashlib.sha256(image).hexdigest()
+        prompt, schema = self._base_prompt(user_hints, image_sha256)
         return self._generate_profile(
             prompt=prompt,
             schema=schema,

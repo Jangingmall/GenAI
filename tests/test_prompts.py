@@ -64,21 +64,115 @@ def test_analysis_prompt_uses_agreed_be_content_contract():
     assert "imageid" in prompt and "imageurl" in prompt
 
 
-def test_analysis_prompt_requests_reference_inspired_adaptive_editorial_story():
-    prompt = build_analysis_prompt("ko-KR").lower()
+def test_analysis_prompt_uses_adaptive_constraints_instead_of_a_page_plan_recipe():
+    prompt = " ".join(build_analysis_prompt("ko-KR").lower().split())
 
     assert "premium craft editorial" in prompt
-    assert "9 to 12" in prompt
-    assert "hero must be first" in prompt
-    assert "closing must be last" in prompt
-    assert "dark detail_split" in prompt
-    assert "full-bleed usage_scene" in prompt
-    assert "always include exactly one gallery" in prompt
-    assert "palette is optional and must never replace the gallery" in prompt
+    assert "8 to 12" in prompt
+    assert "9 to 12" not in prompt
+    assert "build an eight-block plan first" in prompt
+    assert "add a ninth or later block only when" in prompt
+    assert "section copy reference" in prompt
+    assert "only after a block type is selected" in prompt
+    assert "not an inclusion list" in prompt
+    assert "not a page-plan sequence" in prompt
+    assert "page-plan selection precedence" in prompt
+    assert "implied block set" in prompt
+    assert "required skeleton: hero is first, closing is last" in prompt
+    assert "as a menu, not a checklist" in prompt
+    assert "select exactly four evidence-qualified menu block types" in prompt
+    assert "statement: include only when creator-provided making_method (howmade) is supplied" in prompt
+    assert "if making data is absent, omit statement entirely" in prompt
+    assert "lifestyle availability alone is not evidence" in prompt
+    assert "not a fixed block bundle or page order" in prompt
+    assert "when feature_grid is selected, use three concise feature cards" in prompt
+    assert "- open with an editorial hero" not in prompt
+    assert "- follow with a light statement" not in prompt
+    assert 'photo_ids ["detail", "detail-02", "detail-03", "detail-04", "detail-05"]' in prompt
     assert "recommendation" in prompt
     assert "info_table" in prompt
     assert "notice" in prompt
     assert "not a fixed template" in prompt
+
+
+def test_layout_archetype_selection_is_deterministic_for_the_same_image_hash():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+
+    assert select_layout_archetypes("a" * 64, hints) == select_layout_archetypes(
+        "a" * 64,
+        hints,
+    )
+
+
+def test_layout_archetype_selection_varies_across_image_hashes():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+    selections = {
+        tuple(archetype["id"] for archetype in select_layout_archetypes(image_hash, hints))
+        for image_hash in ("a" * 64, "b" * 64, "c" * 64, "d" * 64)
+    }
+
+    assert len(selections) >= 2
+
+
+def test_layout_archetype_selection_excludes_statement_without_making_method():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    archetypes = select_layout_archetypes("f" * 64, UserHintsDto(), count=100)
+
+    assert all("statement" not in archetype["sequence"] for archetype in archetypes)
+
+
+def test_missing_layout_catalog_does_not_prevent_prompt_building(tmp_path):
+    from detail_page_ai.layout_archetypes import load_layout_catalog
+
+    assert load_layout_catalog(tmp_path / "missing-layouts.json") == []
+    assert "Layout archetype examples" not in build_analysis_prompt("ko-KR", archetypes=[])
+
+
+def test_malformed_layout_catalog_is_treated_as_optional(tmp_path):
+    from detail_page_ai.layout_archetypes import load_layout_catalog
+
+    catalog_path = tmp_path / "malformed-layouts.json"
+    catalog_path.write_text('[{"id": "bad", "sequence": "statement"}]', encoding="utf-8")
+
+    assert load_layout_catalog(catalog_path) == []
+
+
+def test_analysis_prompt_renders_layout_archetypes_as_unnumbered_examples():
+    prompt = build_analysis_prompt(
+        "ko-KR",
+        archetypes=[
+            {
+                "name": "형태 확인 사례",
+                "when": "윤곽과 비례가 근거일 때",
+                "sequence": ["hero", "wide_image", "info_table", "closing"],
+                "rationale": "프롬프트에 포함되면 안 되는 긴 설명",
+            },
+            {
+                "name": "질감 확인 사례",
+                "when": "표면 질감이 근거일 때",
+                "sequence": ["hero", "detail_split", "gallery", "closing"],
+            },
+        ],
+    )
+    archetype_block = prompt.split("Layout archetype examples:", 1)[1].split(
+        "Example block shape",
+        1,
+    )[0]
+
+    assert "형태 확인 사례" in archetype_block
+    assert "질감 확인 사례" in archetype_block
+    assert "윤곽과 비례가 근거일 때" in archetype_block
+    assert "hero → wide_image → info_table → closing" in archetype_block
+    assert "프롬프트에 포함되면 안 되는 긴 설명" not in archetype_block
+    assert "If none of these examples fit, create a different evidence-grounded composition." in archetype_block
+    assert "1." not in archetype_block
+    assert "2." not in archetype_block
+    assert "3." not in archetype_block
 
 
 def test_analysis_prompt_applies_detail_page_guide_visual_direction():
