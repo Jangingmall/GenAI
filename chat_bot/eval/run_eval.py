@@ -89,7 +89,9 @@ def _is_relevant(attr: dict, expected: dict) -> bool:
 def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     """질의 하나를 검색해 정답 여부·순위·score를 계산."""
     contact1 = {"query_text": query_text, "filters": {}, "intent": "product_search"}
-    results = recommend(contact1, top_k=TOP_K)  # 접점2 [{product_id, name, score, evidence}]
+    results = recommend(
+        contact1, top_k=TOP_K
+    )  # 접점2 [{product_id, name, score, evidence}]
 
     pids = [r["product_id"] for r in results]
     attrs = _fetch_product_attrs(pids)
@@ -99,7 +101,9 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     if expected.get("should_be_empty"):
         passed = len(results) == 0
         return {
-            "query": query_text, "type": "edge", "passed": passed,
+            "query": query_text,
+            "type": "edge",
+            "passed": passed,
             "returned": len(results),
             "scores": [r["score"] for r in results],
         }
@@ -115,12 +119,14 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
         else:
             irrelevant_scores.append(r["score"])
 
-    recall_at_k = 1 if relevant_ranks else 0          # 상위 K에 정답 하나라도
+    recall_at_k = 1 if relevant_ranks else 0  # 상위 K에 정답 하나라도
     rr = 1.0 / relevant_ranks[0] if relevant_ranks else 0.0  # 첫 정답 순위 역수
 
     return {
-        "query": query_text, "type": "search",
-        "recall": recall_at_k, "rr": rr,
+        "query": query_text,
+        "type": "search",
+        "recall": recall_at_k,
+        "rr": rr,
         "relevant_scores": relevant_scores,
         "irrelevant_scores": irrelevant_scores,
         "results": [(r["name"], round(r["score"], 4)) for r in results],
@@ -129,7 +135,9 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="검색 평가 채점")
-    parser.add_argument("--show-scores", action="store_true", help="질의별 결과·score 상세 출력")
+    parser.add_argument(
+        "--show-scores", action="store_true", help="질의별 결과·score 상세 출력"
+    )
     args = parser.parse_args(argv)
 
     items = _load_eval()
@@ -167,9 +175,13 @@ def main(argv=None) -> int:
     print("score 분포 (유사도 컷 τ 결정 근거)")
     print("-" * 50)
     if all_rel:
-        print(f"  정답 상품 score : 최소 {min(all_rel):.4f} / 중앙 {statistics.median(all_rel):.4f} / 최대 {max(all_rel):.4f}")
+        print(
+            f"  정답 상품 score : 최소 {min(all_rel):.4f} / 중앙 {statistics.median(all_rel):.4f} / 최대 {max(all_rel):.4f}"
+        )
     if all_irr:
-        print(f"  오답 상품 score : 최소 {min(all_irr):.4f} / 중앙 {statistics.median(all_irr):.4f} / 최대 {max(all_irr):.4f}")
+        print(
+            f"  오답 상품 score : 최소 {min(all_irr):.4f} / 중앙 {statistics.median(all_irr):.4f} / 최대 {max(all_irr):.4f}"
+        )
     print("  → 정답 최소와 오답 최대 사이 어딘가가 τ 후보. 엣지 결과도 함께 보라.")
 
     # ── 엣지 케이스 ──
@@ -180,7 +192,9 @@ def main(argv=None) -> int:
         mark = "✅" if r["passed"] else "❌"
         top_score = f"최고 score {max(r['scores']):.4f}" if r["scores"] else "빈 결과"
         print(f"  {mark} \"{r['query']}\" → {r['returned']}개 반환 ({top_score})")
-    print("  → 유사도 컷이 없어 지금은 대부분 억지 반환될 것. τ 적용 후 빈 결과가 되어야 정답.")
+    print(
+        "  → 유사도 컷이 없어 지금은 대부분 억지 반환될 것. τ 적용 후 빈 결과가 되어야 정답."
+    )
 
     # ── 사람 판정 대상 ──
     print("\n" + "-" * 50)

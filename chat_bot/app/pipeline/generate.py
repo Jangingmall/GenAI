@@ -1,4 +1,10 @@
-"""⑤ 접점 2(랭킹 후보) → reply + 상품별 reason. docs/b-metaprompt.md §2 S3 참고.
+"""⑤ 접점 2(랭킹 후보) → allowed_ids(필터링 판단) + 공유 reply. docs/b-metaprompt.md §2 S3 참고.
+
+LLM은 상품별 reason을 따로 안 쓰고, "이 후보 중 뭘 보여줄지"(allowed_ids)와 전체를
+아우르는 문장 하나(reply)만 만든다 — HTTP 계약(products: [{product_id, reason}])은
+그대로 두되, reason 자리엔 build_reply가 reply 텍스트를 복제해 채운다(reason은 카드에
+안 보이는 로그용이라 상품마다 달라야 할 이유가 없고, 상품별로 새로 짓게 하면 출력
+토큰이 늘어 응답이 느려진다 — _GenerateOutput 참고).
 
 프로토타입(generator.py)과의 차이:
   - items → products 로 이름 변경(계약 필드명)
@@ -23,6 +29,7 @@ name에서 역추정하는 폴백(_category_from_name)이 카테고리 대조의
 from __future__ import annotations
 
 import logging
+import re
 
 import psycopg2
 from pydantic import BaseModel, Field
@@ -34,18 +41,19 @@ from app.pipeline.llm import chat_json
 logger = logging.getLogger(__name__)
 
 
-class _ProductReason(BaseModel):
-    product_id: int
-    reason: str
-
-
 class _GenerateOutput(BaseModel):
-    # products·suggestions에 default([])를 주면 JSON 스키마가 이 필드를 "생략 가능"으로
+    # allowed_ids·suggestions에 default([])를 주면 JSON 스키마가 이 필드를 "생략 가능"으로
     # 표시해, 모델이 reply만 쓰고 조기 종료해도 스키마상 유효해진다(Constraint Tax) —
     # 기본값을 빼서 항상 세 필드를 다 채우도록 강제한다. reply는 output_format상 1~3문장이라
     # 500자면 충분히 여유 있게 상한을 둬 자유 텍스트 필드의 무한 생성(반복 루프) 위험을 줄인다.
+    #
+    # 상품별 reason을 따로 안 쓰고 allowed_ids(필터링 판단)+reply(공유 요약 문장) 둘로만
+    # 답하게 한 이유: reason은 카드에 안 보이는 로그용인데도(§output_format 참고) 상품마다
+    # 문장을 새로 짓게 하면 출력 토큰이 늘어 응답이 느려진다(실측: 상품 3개 기준 응답
+    # 시간이 절반 가까이 줄어듦). products 필드(HTTP 계약)는 build_reply에서 이 reply
+    # 텍스트를 그대로 복제해 채운다.
     reply: str = Field(max_length=500)
-    products: list[_ProductReason]
+    allowed_ids: list[int]
     suggestions: list[str]
 
 
@@ -54,9 +62,25 @@ _GENERATE_OUTPUT_SCHEMA = (
 )  # 매 요청마다 재계산할 필요 없다
 
 
+_OVERBROAD_TERMS = {
+    # 실데이터상 "항아리"는 POTTERY 세부품목명으로만 쓰인다(옹기 물항아리는
+    # "물항아리"로 별도 표기돼 taxonomy.py 생성 로직이 정확히 POTTERY로만
+    # 매핑함 — 데이터 자체는 정상). 하지만 실제 손님은 "항아리"를 종목 구분
+    # 없이 아무 큰 단지나 가리키는 일상어로 쓴다(실측 확인: "김치 담글 때 쓸
+    # 항아리"가 옹기 김치독을 잘못 걸러낸 사례) — 이런 카탈로그-일상어 괴리는
+    # build_taxonomy.py의 데이터 분포 기반 중의성 판정으로는 못 잡으므로
+    # 여기서 수동으로 제외한다.
+    "항아리",
+}
+
+
 def _mentioned_categories(message: str) -> set[str]:
     """소비자 발화에서 taxonomy.CATEGORY_SIGNALS로 매칭되는 카테고리 코드 전체 집합."""
-    return {code for term, code in taxonomy.CATEGORY_SIGNALS.items() if term in message}
+    return {
+        code
+        for term, code in taxonomy.CATEGORY_SIGNALS.items()
+        if term in message and term not in _OVERBROAD_TERMS
+    }
 
 
 def _mentioned_category(message: str) -> str | None:
@@ -87,12 +111,32 @@ def _effective_category(candidate: dict) -> str | None:
     return candidate.get("category") or _category_from_name(candidate.get("name") or "")
 
 
+_MATERIAL_PATTERN = re.compile(r"(?:으로|로)\s*(?:만든|만들어진|된|제작된)")
+
+
+def _is_material_subcategory_contradiction(message: str) -> bool:
+    """ "X로 만든 Y" 문형에서 X·Y가 서로 다른 카테고리에 속하면 실존하지 않는
+    조합으로 본다(예: "감물염으로 만든 거울함", "도기토로 만든 다기받침").
+
+    이 판단을 LLM(priority_rule의 _ambiguity_warning)에만 맡기면 실측상 60%
+    정도만 걸러진다(28개 평가 케이스 중 유사 패턴 4건 중 2건 통과 실패) —
+    "X로 만든/된 Y" 문형은 재질과 품목을 명시적으로 묶어 말하는 것이라 코드로
+    확정 판단할 수 있어서 여기서 하드 필터한다. "A랑 B 둘 다" 같은 복합 요청은
+    이 문형에 안 걸리므로 오탐하지 않는다(실측 확인).
+    """
+    if not _MATERIAL_PATTERN.search(message):
+        return False
+    return len(_mentioned_categories(message)) >= 2
+
+
 def _filter_by_category(candidates: list[dict], message: str) -> list[dict]:
     """사용자가 카테고리를 명시했으면, 유효 카테고리가 다른 후보를 뺀다.
 
     유효 카테고리를 candidate['category']에서도 name 역추정에서도 못 정하면
     (_effective_category가 None) 그 후보는 건드리지 않는다.
     """
+    if _is_material_subcategory_contradiction(message):
+        return []
     mentioned = _mentioned_category(message)
     if mentioned is None:
         return candidates
@@ -217,28 +261,9 @@ def _format_candidates(
     return "\n".join(blocks)
 
 
-def _drop_unknown_ids(items: list[dict], allowed_ids: set[int]) -> list[dict]:
+def _drop_unknown_ids(ids: list[int], candidate_ids: set[int]) -> list[int]:
     """후보에 없는 product_id를 모델이 만들어냈으면 제거한다(환각 최종 방어선)."""
-    return [item for item in items if item["product_id"] in allowed_ids]
-
-
-def _drop_evidence_mismatched(
-    items: list[dict], candidates_by_id: dict[int, dict]
-) -> list[dict]:
-    """reason이 그 후보 자신과 다른 종목의 재질·품목 신호를 담고 있으면 제거한다.
-
-    모델이 실제 evidence 대신 프롬프트의 few-shot 예시 문구를 그대로 베끼는 경우, reason에
-    후보의 종목과 무관한 재질(예: 도자기 후보인데 "자개"·"옻칠")이 섞여 나온다. 후보 자체는
-    이미 카테고리 대조를 통과했으므로, 이 검사는 reason 텍스트 내용의 오염만 잡는다.
-    """
-    kept = []
-    for item in items:
-        candidate = candidates_by_id.get(item["product_id"])
-        expected = _effective_category(candidate) if candidate else None
-        if expected and _mentioned_categories(item["reason"]) - {expected}:
-            continue
-        kept.append(item)
-    return kept
+    return [pid for pid in ids if pid in candidate_ids]
 
 
 def _format_filters(filters: dict | None) -> str:
@@ -346,11 +371,12 @@ def build_reply(
     )
     output = _GenerateOutput.model_validate_json(raw)
 
-    allowed_ids = {c["product_id"] for c in candidates}
-    products = _drop_unknown_ids([p.model_dump() for p in output.products], allowed_ids)
-    products = _drop_evidence_mismatched(
-        products, {c["product_id"]: c for c in candidates}
+    # products(HTTP 계약 필드)는 상품별 reason이 따로 없으므로 reply를 그대로 복제해
+    # 채운다 — 카드에 안 보이는 로그용이라 공유 문장이어도 정보 손실이 없다(§_GenerateOutput).
+    allowed = _drop_unknown_ids(
+        output.allowed_ids, {c["product_id"] for c in candidates}
     )
+    products = [{"product_id": pid, "reason": output.reply} for pid in allowed]
     return {
         "reply": output.reply,
         "products": products,
