@@ -5,26 +5,31 @@ rules here gives the analyzer and renderer one versioned contract to follow with
 shipping reference artwork or copying its sample content into generated pages.
 """
 
-REFERENCE_GUIDE_VERSION = "detail-page-guide-v2-premium-editorial"
+REFERENCE_GUIDE_VERSION = "detail-page-guide-v3-product-color-tokens"
 
 REFERENCE_GUIDE_COLORS = {
-    "black": "#101010",
-    "white": "#FFFFFF",
-    "cool_grey_50": "#F0F0F0",
-    "cool_grey_100": "#C4C7CA",
-    "cool_grey_200": "#A8ABB0",
-    "cool_grey_300": "#80858C",
-    "cool_grey_400": "#676D76",
-    "cool_grey_500": "#414954",
-    "cool_grey_900": "#121B29",
-    "jade_blue_50": "#FAFBFC",
-    "jade_blue_100": "#EEF3F4",
-    "jade_blue_200": "#E6EEEF",
-    "jade_blue_300": "#DAE6E8",
-    "jade_blue_400": "#D3E1E3",
-    "jade_blue_500": "#C8D9DC",
-    "yellow_500": "#FFC14C",
-    "red_500": "#E84610",
+    "bg_default": "#FFFFFF",
+    "bg_subtle": "#FAFBFC",
+    "bg_skeleton": "#D3E1E3",
+    "bg_dim": "#000000 / 75%",
+    "fill_jade": "#C6D9DC",
+    "fill_jade_impact": "#8E9A9C",
+    "fill_jade_weak": "#FAFBFC",
+    "fill_neutral": "#414954",
+    "fill_neutral_impact": "#121B29",
+    "fill_neutral_weak": "#ECEDEE",
+    "border_neutral_solid": "#121B29",
+    "border_neutral_weak": "#121B29 / 30%",
+    "border_neutral_subtle": "#121B29 / 10%",
+    "border_jade_fill": "#8E9A9C",
+    "border_jade_weak": "#C6D9DC / 50%",
+    "border_white": "#FFFFFF",
+    "font_dark": "#121B29",
+    "font_dark_secondary": "#2E343C",
+    "font_dark_subtle": "#414954",
+    "font_dark_weak": "#80858C",
+    "font_white": "#FFFFFF",
+    "font_label": "#414954",
 }
 
 REFERENCE_GUIDE_TYPE_SCALE = {
@@ -136,12 +141,19 @@ React JSON output contract:
   primarily with parent layout gap and explicit padding.
 
 Color system:
-- Use a black and white foundation ({colors['black']} / {colors['white']}), cool grey
-  {colors['cool_grey_50']}–{colors['cool_grey_500']}, and jade blue
-  {colors['jade_blue_50']}–{colors['jade_blue_500']} as the main system. Use the light jade
-  surface {colors['jade_blue_300']} for calm section washes.
-- Use yellow {colors['yellow_500']} or red {colors['red_500']} only for small emphasis rules,
-  labels, or status accents. Do not let accents compete with the product.
+- Use Product backgrounds: default {colors['bg_default']}, subtle {colors['bg_subtle']},
+  skeleton {colors['bg_skeleton']}, and dim {colors['bg_dim']}.
+- Use Product fills: jade {colors['fill_jade']}, jade impact {colors['fill_jade_impact']},
+  jade weak {colors['fill_jade_weak']}, neutral {colors['fill_neutral']}, neutral impact
+  {colors['fill_neutral_impact']}, and neutral weak {colors['fill_neutral_weak']}.
+- Use Product borders: neutral solid {colors['border_neutral_solid']}, neutral weak
+  {colors['border_neutral_weak']}, neutral subtle {colors['border_neutral_subtle']}, jade fill
+  {colors['border_jade_fill']}, jade weak {colors['border_jade_weak']}, and white
+  {colors['border_white']}.
+- Use Product fonts: dark {colors['font_dark']}, dark secondary
+  {colors['font_dark_secondary']}, dark subtle {colors['font_dark_subtle']}, dark weak
+  {colors['font_dark_weak']}, white {colors['font_white']}, and label
+  {colors['font_label']}. Do not add an unlisted brand accent to the product page.
 
 Layout and image rhythm:
 - Start with a product-first introduction: a clear primary image with concise product copy.

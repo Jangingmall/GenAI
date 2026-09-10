@@ -127,7 +127,7 @@ def test_html_renderer_uses_reference_layout_sections_and_design_tokens():
     assert 'class="split-section' in html
     assert 'class="detail-grid detail-grid--one"' in html
     assert 'class="detail-grid detail-grid--two"' not in html
-    assert "#101010" in html
+    assert "#121B29" in html
     assert "#FAFBFC" in html
 
 
@@ -256,10 +256,12 @@ def test_reference_editorial_css_supports_dark_detail_and_full_bleed_usage():
 def test_reference_guide_tokens_are_preserved_in_adaptive_rendering():
     css = Path("web/detail_page.css").read_text(encoding="utf-8")
 
-    assert "--cool-grey-50: #F0F0F0" in css
-    assert "--jade-blue-300: #DAE6E8" in css
-    assert "--yellow-500: #FFC14C" in css
-    assert "--red-500: #E84610" in css
+    assert "--bg-default: #FFFFFF" in css
+    assert "--bg-skeleton: #D3E1E3" in css
+    assert "--fill-jade: #C6D9DC" in css
+    assert "--fill-neutral-impact: #121B29" in css
+    assert "--border-neutral-weak: rgb(18 27 41 / 30%)" in css
+    assert "--font-dark-weak: #80858C" in css
     assert ".detail-page--adaptive h1" in css
     assert "Pretendard" in css
 
@@ -267,12 +269,46 @@ def test_reference_guide_tokens_are_preserved_in_adaptive_rendering():
 def test_detail_page_uses_reference_guide_palette_for_adaptive_pages():
     css = Path("web/detail_page.css").read_text(encoding="utf-8")
 
-    assert "--paper: #FAFBFC" in css
-    assert "--paper-deep: #E6EEEF" in css
-    assert "--espresso: #121B29" in css
+    assert "--bg-subtle: #FAFBFC" in css
+    assert "--fill-jade-weak: #FAFBFC" in css
+    assert "--font-dark: #121B29" in css
     assert "--reference-display: 28px" in css
     assert "--reference-title: 17px" in css
     assert "--reference-body: 16px" in css
+
+
+def test_detail_page_css_uses_every_product_color_token_and_no_undefined_token():
+    css = Path("web/detail_page.css").read_text(encoding="utf-8")
+    product_tokens = {
+        "bg-default",
+        "bg-subtle",
+        "bg-skeleton",
+        "bg-dim",
+        "fill-jade",
+        "fill-jade-impact",
+        "fill-jade-weak",
+        "fill-neutral",
+        "fill-neutral-impact",
+        "fill-neutral-weak",
+        "border-neutral-solid",
+        "border-neutral-weak",
+        "border-neutral-subtle",
+        "border-jade-fill",
+        "border-jade-weak",
+        "border-white",
+        "font-dark",
+        "font-dark-secondary",
+        "font-dark-subtle",
+        "font-dark-weak",
+        "font-white",
+        "font-label",
+    }
+    definitions = set(re.findall(r"(?m)^\s*(--[a-z0-9-]+)\s*:", css))
+    usages = set(re.findall(r"var\((--[a-z0-9-]+)\)", css))
+
+    assert {f"--{token}" for token in product_tokens} <= definitions
+    assert {f"--{token}" for token in product_tokens} <= usages
+    assert usages <= definitions
 
 
 def test_default_editorial_plan_uses_reference_story_variants():
