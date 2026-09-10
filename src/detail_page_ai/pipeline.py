@@ -196,7 +196,6 @@ class DetailPagePipeline:
             profile = ensure_editorial_page_plan(profile)
         profile = sanitize_profile_for_render(profile)
         approved_draft = ApprovedDraftDto.from_profile(profile)
-        react_document = build_react_document_from_draft(approved_draft)
         emit("EXTRACTING", 30)
         emit("GENERATING_BACKGROUNDS", 45)
         if self.photo_generator:
@@ -296,6 +295,10 @@ class DetailPagePipeline:
             )
             for photo, asset in zip(sorted_photos, photo_assets, strict=True)
         ]
+        react_document = build_react_document_from_draft(
+            approved_draft,
+            generated_photos=photo_metadata,
+        )
         persist_request_model = (
             AiToProductBePersistRequestDto
             if product_id is not None
@@ -639,7 +642,8 @@ class DetailPagePipeline:
         react_document = record.request.detail_page.react_document
         if react_document is None:
             react_document = build_react_document_from_draft(
-                ApprovedDraftDto.from_profile(record.request.product)
+                ApprovedDraftDto.from_profile(record.request.product),
+                generated_photos=record.request.detail_page.photos,
             )
         return AiFeResultDto(
             generation_id=generation_id,

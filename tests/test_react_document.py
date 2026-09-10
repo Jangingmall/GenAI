@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from detail_page_ai.dto import ApprovedDraftDto, PageBlockDto, PageBlockItemDto
+from detail_page_ai.dto import (
+    ApprovedDraftDto,
+    GeneratedPhotoMetadataDto,
+    PageBlockDto,
+    PageBlockItemDto,
+)
 from detail_page_ai.react_document import ReactDetailPageDocumentDto
 from detail_page_ai.react_document_builder import build_react_document_from_draft
 
@@ -72,6 +77,57 @@ def test_builder_emits_react_json_ast_with_image_ids_and_aliases():
     assert all(
         key not in payload
         for key in ("html", "css", "script", "dangerouslySetInnerHTML")
+    )
+
+
+def test_builder_emits_reference_label_for_generated_photos_only():
+    draft = ApprovedDraftDto(
+        product_name="숨의잔",
+        summary="자유 취입으로 완성한 유리 잔입니다.",
+        hero_headline="호흡이 만든 하나의 잔",
+        hero_description="빛과 액체에 따라 다른 표정을 보여 줍니다.",
+        page_plan=[
+            PageBlockDto(section_id="hero", block_type="hero", photo_id="hero"),
+            PageBlockDto(
+                section_id="usage",
+                block_type="usage_scene",
+                photo_id="lifestyle",
+            ),
+        ],
+    )
+    photos = [
+        GeneratedPhotoMetadataDto(
+            photo_id="hero",
+            order=1,
+            label="원본 대표 이미지 메타데이터",
+            mime_type="image/jpeg",
+            sha256="hero-sha",
+            product_generated=False,
+        ),
+        GeneratedPhotoMetadataDto(
+            photo_id="lifestyle",
+            order=2,
+            label="AI 생성 활용 장면(참고용)",
+            mime_type="image/jpeg",
+            sha256="lifestyle-sha",
+            product_generated=True,
+        ),
+    ]
+
+    payload = build_react_document_from_draft(
+        draft, generated_photos=photos
+    ).model_dump(by_alias=True, exclude_none=True)
+    figures = {
+        figure["children"][0]["props"]["imageId"]: figure
+        for root in payload["root"]
+        for figure in _walk(root)
+        if figure.get("type") == "element" and figure.get("tag") == "figure"
+    }
+
+    assert figures["hero"]["children"] == [figures["hero"]["children"][0]]
+    assert figures["lifestyle"]["children"][1]["tag"] == "figcaption"
+    assert figures["lifestyle"]["children"][1]["children"][0]["value"] == (
+        "AI 생성 활용 장면(참고용)"
     )
 
 

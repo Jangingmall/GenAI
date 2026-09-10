@@ -39,8 +39,15 @@ DEFAULT_CATEGORIES = [
 def select_pilot_cases(
     manifest_path: Path,
     analysis_path: Path,
+    all_cases: bool = False,
+    limit: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Select 1 item per category deterministically (asset_id ascending)."""
+    """Select evaluation cases deterministically.
+
+    If all_cases is False (default): selects 1 item per category (asset_id ascending).
+    If all_cases is True: selects all items in the manifest (grouped by category, asset_id ascending).
+    If limit is provided: caps the result to the first `limit` items.
+    """
     if not manifest_path.exists():
         raise FileNotFoundError(f"Manifest file not found: {manifest_path}")
     if not analysis_path.exists():
@@ -76,52 +83,76 @@ def select_pilot_cases(
 
     for cat in ordered_cats:
         cat_assets = sorted(by_category[cat], key=lambda a: a["asset_id"])
-        chosen_asset = cat_assets[0]
-        asset_id = chosen_asset["asset_id"]
-        case = cases_by_asset.get(asset_id, {})
+        chosen_assets = cat_assets if all_cases else cat_assets[:1]
+        for chosen_asset in chosen_assets:
+            asset_id = chosen_asset["asset_id"]
+            case = cases_by_asset.get(asset_id, {})
 
-        # Resolve image path
-        raw_img_path = chosen_asset.get("image_path") or case.get("image_path")
-        resolved_img_path = None
-        for candidate in [
-            manifest_dir / raw_img_path,
-            PROJECT_ROOT / raw_img_path,
-            Path(raw_img_path),
-        ]:
-            if candidate.exists():
-                resolved_img_path = candidate
-                break
+            # Resolve image path
+            raw_img_path = chosen_asset.get("image_path") or case.get("image_path")
+            resolved_img_path = None
+            if raw_img_path:
+                for candidate in [
+                    manifest_dir / raw_img_path,
+                    PROJECT_ROOT / raw_img_path,
+                    Path(raw_img_path),
+                ]:
+                    if candidate.exists():
+                        resolved_img_path = candidate
+                        break
 
-        if resolved_img_path is None:
-            resolved_img_path = manifest_dir / raw_img_path
+            if resolved_img_path is None and raw_img_path:
+                resolved_img_path = manifest_dir / raw_img_path
 
-        selected.append(
-            {
-                "category": cat,
-                "asset_id": asset_id,
-                "case_id": case.get("case_id", f"analysis-{asset_id}"),
-                "image_path": str(resolved_img_path),
-                "relative_image_path": raw_img_path,
-                "sha256": chosen_asset.get("sha256", ""),
-                "metadata": case.get("metadata", {}),
-                "checks": case.get("checks", []),
-                "reference_facts": chosen_asset.get("reference_facts", {}),
-                "title": chosen_asset.get("title", ""),
-            }
-        )
+            selected.append(
+                {
+                    "category": cat,
+                    "asset_id": asset_id,
+                    "case_id": case.get("case_id", f"analysis-{asset_id}"),
+                    "image_path": str(resolved_img_path) if resolved_img_path else "",
+                    "relative_image_path": raw_img_path,
+                    "sha256": chosen_asset.get("sha256", ""),
+                    "metadata": case.get("metadata", {}),
+                    "checks": case.get("checks", []),
+                    "reference_facts": chosen_asset.get("reference_facts", {}),
+                    "title": chosen_asset.get("title", ""),
+                }
+            )
+
+    if limit is not None:
+        if limit < 0:
+            raise ValueError(f"limit must be non-negative, got {limit}")
+        selected = selected[:limit]
 
     return selected
 
 
-def print_dry_run(selected_cases: list[dict[str, Any]]) -> None:
+def print_dry_run(
+    selected_cases: list[dict[str, Any]],
+    all_cases: bool = False,
+    resume: bool = False,
+    output_dir: Path | None = None,
+) -> None:
     print("=" * 72)
-    print(
-        f"[DRY-RUN] Selected {len(selected_cases)} pilot cases (1 per category, asset_id asc):"
-    )
+    if all_cases:
+        print(
+            f"[DRY-RUN] Selected {len(selected_cases)} cases (all cases in manifest, asset_id asc):"
+        )
+    else:
+        print(
+            f"[DRY-RUN] Selected {len(selected_cases)} pilot cases (1 per category, asset_id asc):"
+        )
     print("=" * 72)
     for idx, case in enumerate(selected_cases, start=1):
         meta = case.get("metadata", {})
-        print(f"[{idx}] Category:   {case['category']}")
+        status_note = ""
+        if resume and output_dir is not None:
+            case_out = output_dir / case["case_id"]
+            if (case_out / "result_summary.json").is_file():
+                status_note = " [RESUME: SKIP - already completed]"
+            else:
+                status_note = " [RESUME: TO RUN]"
+        print(f"[{idx}] Category:   {case['category']}{status_note}")
         print(f"    Case ID:    {case['case_id']}")
         print(f"    Asset ID:   {case['asset_id']}")
         print(f"    Title:      {case['title']}")
@@ -135,11 +166,67 @@ def print_dry_run(selected_cases: list[dict[str, Any]]) -> None:
     print("Dry-run complete. No models were invoked.")
 
 
+def _write_run_index(
+    output_dir: Path,
+    pilot_id: str,
+    started_at: str,
+    total_cases: int,
+    case_records: list[dict[str, Any]],
+    args: argparse.Namespace,
+) -> None:
+    """Atomically write run_index.json summary."""
+    now_iso = datetime.now(timezone.utc).astimezone().isoformat()
+    image_generated_cases = sum(
+        1
+        for r in case_records
+        if r.get("image_model") not in (None, "none") and r.get("success")
+    )
+    actual_image_model = (
+        args.image_model if getattr(args, "image_provider", "mlx") == "mlx" else "none"
+    )
+    run_index = {
+        "pilot_id": pilot_id,
+        "started_at": started_at,
+        "ended_at": now_iso,
+        "total_cases": total_cases,
+        "completed_cases": len(case_records),
+        "successful_cases": sum(1 for r in case_records if r.get("success")),
+        "failed_cases": sum(1 for r in case_records if not r.get("success")),
+        "image_generated_cases": image_generated_cases,
+        "text_model": getattr(args, "text_model", None),
+        "configured_image_model": getattr(args, "image_model", None),
+        "image_model": actual_image_model,
+        "image_provider": getattr(args, "image_provider", "mlx"),
+        "text_url": getattr(args, "text_url", None),
+        "image_url": getattr(args, "image_url", None),
+        "cases": case_records,
+    }
+    tmp_file = output_dir / "run_index.json.tmp"
+    target_file = output_dir / "run_index.json"
+    tmp_file.write_text(
+        json.dumps(run_index, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp_file.replace(target_file)
+
+
 def run_pilot(args: argparse.Namespace) -> int:
-    selected_cases = select_pilot_cases(args.manifest, args.analysis)
+    all_cases = bool(getattr(args, "all", False) or getattr(args, "all_cases", False))
+    selected_cases = select_pilot_cases(
+        manifest_path=args.manifest,
+        analysis_path=args.analysis,
+        all_cases=all_cases,
+        limit=getattr(args, "limit", None),
+    )
 
     if args.dry_run:
-        print_dry_run(selected_cases)
+        output_dir = Path(args.output_dir) if args.output_dir is not None else None
+        print_dry_run(
+            selected_cases=selected_cases,
+            all_cases=all_cases,
+            resume=getattr(args, "resume", False),
+            output_dir=output_dir,
+        )
         return 0
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -148,6 +235,37 @@ def run_pilot(args: argparse.Namespace) -> int:
     else:
         output_dir = args.output_base / f"pilot-{timestamp}"
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check for existing run_index when resuming
+    run_index_file = output_dir / "run_index.json"
+    existing_cases: dict[str, dict[str, Any]] = {}
+    pilot_start_iso = datetime.now(timezone.utc).astimezone().isoformat()
+
+    if getattr(args, "resume", False) and run_index_file.is_file():
+        try:
+            existing_run_index = json.loads(run_index_file.read_text(encoding="utf-8"))
+            if "started_at" in existing_run_index:
+                pilot_start_iso = existing_run_index["started_at"]
+            for c in existing_run_index.get("cases", []):
+                if c.get("case_id"):
+                    existing_cases[c["case_id"]] = c
+        except Exception as exc:
+            print(
+                f"[WARN] Could not parse existing run_index.json ({exc}); starting fresh index.",
+                file=sys.stderr,
+            )
+
+    case_records: list[dict[str, Any]] = []
+
+    # Persist initial run_index so output_dir is never empty even if process is aborted early
+    _write_run_index(
+        output_dir=output_dir,
+        pilot_id=output_dir.name,
+        started_at=pilot_start_iso,
+        total_cases=len(selected_cases),
+        case_records=case_records,
+        args=args,
+    )
 
     pipeline = build_local_pipeline(
         text_url=args.text_url,
@@ -161,13 +279,12 @@ def run_pilot(args: argparse.Namespace) -> int:
         image_timeout=args.image_timeout,
     )
 
-    pilot_start_dt = datetime.now(timezone.utc).astimezone()
-    case_records: list[dict[str, Any]] = []
-
-    print(f"Starting pilot evaluation run: {len(selected_cases)} cases")
+    print(f"Starting {'full' if all_cases else 'pilot'} evaluation run: {len(selected_cases)} cases")
     print(f"Output directory: {output_dir}")
     print(f"Text model:  {args.text_model} ({args.text_url})")
     print(f"Image model: {args.image_model} ({args.image_url})")
+    if getattr(args, "resume", False):
+        print("Resume mode: ENABLED (skipping cases with existing result_summary.json)")
     print("-" * 72)
 
     for idx, case in enumerate(selected_cases, start=1):
@@ -175,6 +292,43 @@ def run_pilot(args: argparse.Namespace) -> int:
         asset_id = case["asset_id"]
         category = case["category"]
         case_output_dir = output_dir / case_id
+        summary_file = case_output_dir / "result_summary.json"
+
+        # Check resume condition: skip if result_summary.json exists
+        if getattr(args, "resume", False) and summary_file.is_file():
+            print(
+                f"[{idx}/{len(selected_cases)}] Skipping {case_id} (already completed: {summary_file})..."
+            )
+            if case_id in existing_cases:
+                record = dict(existing_cases[case_id])
+            else:
+                record = {
+                    "case_id": case_id,
+                    "asset_id": asset_id,
+                    "category": category,
+                    "image_path": str(case["image_path"]),
+                    "sha256": case["sha256"],
+                    "text_model": args.text_model,
+                    "image_model": args.image_model if args.image_provider == "mlx" else "none",
+                    "started_at": None,
+                    "ended_at": None,
+                    "duration_seconds": None,
+                    "success": True,
+                    "error": None,
+                    "error_trace": None,
+                    "output_dir": str(case_output_dir),
+                    "idempotency_key": case.get("metadata", {}).get("idempotency_key"),
+                }
+            case_records.append(record)
+            _write_run_index(
+                output_dir=output_dir,
+                pilot_id=output_dir.name,
+                started_at=pilot_start_iso,
+                total_cases=len(selected_cases),
+                case_records=case_records,
+                args=args,
+            )
+            continue
 
         print(
             f"[{idx}/{len(selected_cases)}] Running {case_id} (cat: {category}, asset: {asset_id})..."
@@ -242,6 +396,11 @@ def run_pilot(args: argparse.Namespace) -> int:
             record["success"] = True
             record["output_dir"] = str(saved_path)
             print(f"  -> SUCCESS ({round(time.perf_counter() - case_start_perf, 2)}s)")
+        except KeyboardInterrupt:
+            record["success"] = False
+            record["error"] = "KeyboardInterrupt: Interrupted by user"
+            print("  -> INTERRUPTED BY USER")
+            raise
         except Exception as exc:
             record["success"] = False
             record["error"] = f"{type(exc).__name__}: {exc}"
@@ -255,42 +414,47 @@ def run_pilot(args: argparse.Namespace) -> int:
             )
             case_records.append(record)
 
-            # Persist run_index incrementally after every case
-            run_index = {
-                "pilot_id": output_dir.name,
-                "started_at": pilot_start_dt.isoformat(),
-                "ended_at": datetime.now(timezone.utc).astimezone().isoformat(),
-                "total_cases": len(selected_cases),
-                "completed_cases": len(case_records),
-                "successful_cases": sum(1 for r in case_records if r["success"]),
-                "failed_cases": sum(1 for r in case_records if not r["success"]),
-                "text_model": args.text_model,
-                "image_model": args.image_model,
-                "text_url": args.text_url,
-                "image_url": args.image_url,
-                "cases": case_records,
-            }
-            (output_dir / "run_index.json").write_text(
-                json.dumps(run_index, ensure_ascii=False, indent=2),
-                encoding="utf-8",
+            _write_run_index(
+                output_dir=output_dir,
+                pilot_id=output_dir.name,
+                started_at=pilot_start_iso,
+                total_cases=len(selected_cases),
+                case_records=case_records,
+                args=args,
             )
 
     print("-" * 72)
-    successful = sum(1 for r in case_records if r["success"])
-    failed = sum(1 for r in case_records if not r["success"])
-    print(f"Pilot evaluation finished: {successful} succeeded, {failed} failed.")
+    successful = sum(1 for r in case_records if r.get("success"))
+    failed = sum(1 for r in case_records if not r.get("success"))
+    print(f"Evaluation finished: {successful} succeeded, {failed} failed.")
     print(f"Summary written to: {output_dir / 'run_index.json'}")
     return 0 if failed == 0 else 1
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Run pilot evaluation: select 1 case per category (6 total) and run local pipeline."
+        description="Run evaluation: 6-case pilot (default) or all 60 cases from CMA real v1 dataset."
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Select and display the 6 pilot cases without invoking models or writing outputs.",
+        help="Select and display cases without invoking models or writing outputs.",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Evaluate all cases from manifest instead of 1 per category (default: 6 pilot cases).",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit the number of cases to evaluate.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume execution by skipping cases that already have result_summary.json in output directory.",
     )
     parser.add_argument(
         "--manifest",
@@ -366,6 +530,9 @@ def main() -> None:
         help="Use the primary source image without generating source-preserving role cuts.",
     )
     args = parser.parse_args()
+    if args.limit is not None and args.limit < 1:
+        parser.error("--limit must be greater than or equal to 1")
+    args.all_cases = getattr(args, "all", False)
     sys.exit(run_pilot(args))
 
 

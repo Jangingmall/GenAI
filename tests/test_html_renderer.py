@@ -562,6 +562,46 @@ def test_html_renderer_includes_explicit_generated_lifestyle_scene():
     assert "Z2VuZXJhdGVkLWxpZmVzdHlsZQ==" in html
 
 
+def test_html_renderer_renders_generated_photo_label_but_not_source_photo_label():
+    renderer = importlib.import_module("detail_page_ai.html_renderer")
+    photo_set = ProductPhotoSet(
+        photos=(
+            ProductPhoto(
+                photo_id="hero",
+                order=1,
+                label="원본 대표 이미지 메타데이터",
+                data=b"source-hero",
+                mime_type="image/png",
+                source_sha256="source-hash",
+                product_generated=False,
+                fidelity_status="VERIFIED",
+            ),
+            ProductPhoto(
+                photo_id="lifestyle",
+                order=2,
+                label="AI 생성 활용 장면(참고용)",
+                data=b"generated-lifestyle",
+                mime_type="image/png",
+                source_sha256="source-hash",
+                asset_mode="generated_scene",
+                background_generated=True,
+                product_generated=True,
+                fidelity_status="GENERATED",
+            ),
+        )
+    )
+
+    html = renderer.build_detail_page_html(
+        sample_profile(),
+        b"\xff\xd8\xffjpeg",
+        mime_type="image/jpeg",
+        photo_set=photo_set,
+    )
+
+    assert '<figcaption class="generated-photo-label">AI 생성 활용 장면(참고용)</figcaption>' in html
+    assert "원본 대표 이미지 메타데이터" not in html
+
+
 def test_html_renderer_includes_explicit_generated_angle_detail():
     renderer = importlib.import_module("detail_page_ai.html_renderer")
     photo_set = ProductPhotoSet(
