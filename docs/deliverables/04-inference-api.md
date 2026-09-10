@@ -1,6 +1,6 @@
 # 04. 추론 API 구성
 
-작성 기준: 2026-09-09 코드 대조
+작성 기준: 2026-09-10 코드 대조
 
 이 서비스에서 API는 성격이 다른 두 층이다. 서비스 API는 Product BE/FE와 작업을 주고받고, 모델 추론 API는 서비스가 텍스트·비전·이미지 모델을 호출하는 내부 경계다.
 
@@ -128,7 +128,7 @@ image가 없으면 content는 배열이 아니라 prompt 문자열이다. client
 
 심볼: src/local_detail_page_ai/clients.py — MlxServeImageClient.generate
 
-생성은 {base_url}/v1/images/generations로 JSON POST한다. width/height 인자는 현재 MLX Serve가 지원하는 정사각형 크기를 사용하므로 payload에서는 1024x1024로 고정된다. 동시 작업 브리프가 지정한 최종 steps 기본값은 4다.
+생성은 {base_url}/v1/images/generations로 JSON POST한다. width/height 인자는 현재 MLX Serve가 지원하는 정사각형 크기를 사용하므로 payload에서는 1024x1024로 고정된다. `steps` 기본값은 4이며, Flux2 Klein이 4스텝 증류 모델이고 지금까지의 실측도 4스텝 기준이다.
 
     {
       "model": "mlx-community/flux2-klein-9b-4bit",
@@ -148,7 +148,7 @@ client는 응답의 data[0].b64_json을 strict base64 decode해 bytes로 반환�
 
 편집도 최종적으로는 /v1/images/generations의 JSON mode: "edit" 경로를 사용한다.
 
-이 선택에는 호환성 경위가 있다. MLX Core 26.9.1에서 multipart /v1/images/edits 요청은 내부적으로 mode: "edit" JSON으로 변환되지만 steps와 strength를 전달하지 않는다. 그래서 현재 client는 multipart 경로를 사용하지 않고, 참조 이미지를 base64 JSON 필드로 싣는 직접 JSON 경로를 사용한다. 이렇게 해야 steps와 strength가 JSON 숫자로 payload에 남는다. 코드 주석에 따르면 현재 FLUX.2 in-context edit 모드는 strength를 받지만 의도적으로 무시할 수 있다. 전송되는 값과 모델이 실제로 반영하는지는 구분해야 한다.
+이 선택에는 호환성 경위가 있다. MLX Core 26.9.1에서 multipart `/v1/images/edits` 요청은 내부 변환 과정에서 `steps`와 `strength`를 전달하지 않는다. 그래서 현재 client는 multipart 경로를 사용하지 않고, 참조 이미지를 base64 JSON 필드로 싣는 직접 JSON 경로를 사용한다. 이 경로에서 `steps`는 정수로 전송된다. `strength`는 현재 client의 호환용 시그니처·payload에는 남아 있지만 FLUX.2 in-context edit 모드가 사용하지 않는 비지원 값이므로 조절 가능한 품질 파라미터로 취급하지 않는다. 다음 구현에서도 multipart 경로로 되돌리지 않도록 이 경위를 유지한다.
 
     POST http://127.0.0.1:11234/v1/images/generations
     Content-Type: application/json
@@ -163,7 +163,7 @@ client는 응답의 data[0].b64_json을 strict base64 decode해 bytes로 반환�
       "image": "<base64 source image>"
     }
 
-edit 함수 기본 strength는 0.30이다. 실제 파이프라인의 src/local_detail_page_ai/runner.py 심볼 MlxServeUsageSceneGenerator.generate와 MlxServeDetailViewGenerator.generate는 0.22를 전달한다.
+위 예시의 `strength`는 현재 코드가 보내는 호환용 필드일 뿐 FLUX.2 in-context edit 모드에서 사용되지 않는다. `edit` 함수의 현재 기본값은 0.30이고, 실제 파이프라인의 src/local_detail_page_ai/runner.py 심볼 MlxServeUsageSceneGenerator.generate와 MlxServeDetailViewGenerator.generate는 0.22를 전달하지만 이 값은 지원되는 조절 항목이 아니다.
 
 ### 2.5 대체 provider: OllamaChatClient
 
@@ -213,12 +213,13 @@ src/detail_page_ai/config.py의 Settings와 .env.example을 대조한 결과다.
 
 ### 4.1 분석 경계
 
-src/detail_page_ai/ports.py의 ProductAnalyzer protocol은 analyze(image, mime_type, user_hints)만 요구한다. src/local_detail_page_ai/adapters.py의 LocalProductAnalyzer는 StructuredJsonChatClient를 주입받고 다음 순서로 연결한다.
+src/detail_page_ai/ports.py의 ProductAnalyzer protocol 시그니처는 그대로 `analyze(image, mime_type, user_hints)`만 요구한다. src/local_detail_page_ai/adapters.py의 LocalProductAnalyzer는 StructuredJsonChatClient를 주입받고 다음 순서로 연결한다.
 
-1. ProductProfileDto.model_json_schema()를 만든다.
-2. build_analysis_prompt와 creator hints, JSON Schema를 하나의 prompt로 구성한다.
-3. 주입된 chat client의 generate_json을 호출한다.
-4. payload를 normalize한 뒤 ProductProfileDto로 검증한다.
+1. 원본 이미지의 SHA-256을 계산한다.
+2. SHA-256과 user hints를 seed로 `select_layout_archetypes(..., count=1)`을 호출해 재현 가능한 layout 원형 하나를 선택한다.
+3. 선택한 원형을 인자로 `build_analysis_prompt(locale, user_hints, archetypes)`를 호출하고, creator hints와 JSON Schema를 하나의 prompt로 구성한다.
+4. 주입된 chat client의 generate_json을 호출한다.
+5. payload를 normalize한 뒤 ProductProfileDto로 검증한다.
 
 상위 pipeline은 MLX인지 Ollama인지 알지 않고 ProductAnalyzer만 본다.
 
@@ -244,7 +245,7 @@ src/detail_page_ai/ports.py의 ProductPhotoGenerator는 source image와 profile,
 |---|---|---|
 | MLX POST /v1/chat/completions | OpenAI chat JSON; text 또는 text+data URL image, response_format=json_object, max_tokens=4096 | choices[0].message.content; 문자열 또는 text block list를 JSON object로 파싱 |
 | MLX POST /v1/images/generations 생성 | model, prompt, negative prompt, n=1, size=1024x1024, response_format=b64_json, steps=4 | data[0].b64_json → bytes |
-| MLX POST /v1/images/generations 편집 | model, prompt, mode=edit, steps=4, strength, base64 image | data[0].b64_json → bytes |
+| MLX POST /v1/images/generations 편집 | model, prompt, mode=edit, steps=4(정수), base64 image; 현재 client payload에는 비지원 `strength` 호환 필드도 포함 | data[0].b64_json → bytes |
 | Ollama POST /api/chat | model, messages, base64 images, stream=false, format=json | message.content → JSON object |
 | Service POST /internal/v1/ai/detail-page-jobs | multipart image + metadata JSON, internal token | product_id, job_id, request_id, status=QUEUED, status_url, created_at |
 | Service GET /internal/v1/ai/detail-page-jobs/{job_id} | internal token | status, progress, optional draft/result/error, updated_at |
@@ -261,4 +262,3 @@ src/detail_page_ai/ports.py의 ProductPhotoGenerator는 source image와 profile,
 - provider 조립: src/local_detail_page_ai/factory.py — build_service; local CLI 조립: src/local_detail_page_ai/runner.py — build_local_pipeline.
 - 상위 교체 경계: src/detail_page_ai/ports.py — ProductAnalyzer, ProductPhotoGenerator, DetailPageRenderer.
 - 설정 source of truth: src/detail_page_ai/config.py — Settings; 예시 override: .env.example.
-

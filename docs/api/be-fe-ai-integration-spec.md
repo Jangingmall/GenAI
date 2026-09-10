@@ -1,6 +1,6 @@
 # BE/FE 연동 입출력·API·화면 반영 명세
 
-## 2026-09-09 구현 대조 갱신 및 계약 통합 (최신)
+## 2026-09-10 구현 대조 갱신 및 계약 통합 (최신)
 
 이 절은 본문과 충돌할 때 우선한다. 공개 상품 BE API는 이 저장소에 구현되지 않았으며, 다음 경로는 팀 합의용 제안이다.
 실제 AI 서버의 구현은 상품 BE 연동용 내부 API(`/internal/v1/ai/...`)와 로컬 개발·검증용 직접 API(`/api/v1/ai/...`)로 구성된다.
@@ -106,6 +106,8 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 - **실행 보안**: HTML/CSS 문자열, 임의 JSX, JavaScript 함수, 이벤트 핸들러, `dangerouslySetInnerHTML` 등 실행 가능 필드는 전면 차단된다.
 
 `draft.page_plan`은 LLM의 카피·블록 기획 추론 유도, 크리에이터의 블록 단위 텍스트 편집, 기존 레거시 소비자 하위 호환을 위해 보조적으로 함께 전달될 뿐이며, **FE 화면 렌더링의 정본은 항상 `react_document`**다.
+
+`page_plan`의 각 블록 `variant`는 `block_type`별 코드 고정 배정값이 아니다. 이미지 SHA-256으로 선택된 layout 원형이 페이지 구성 순서를 정하고, 모델이 제품의 시각적 특성과 근거에 맞춰 블록별 variant를 채운다. `PageBlockVariant`의 허용값은 `paper`, `light`, `sand`, `dark`, `image-left`, `image-right`, `full-bleed`, `compact`다. 코드의 페이지 계획 보정은 비어 있는 일부 variant에만 기본값을 채우고 이미 입력된 모델 variant는 보존한다.
 
 세부 schema·허용 태그·트리 검증·FE 순회 규칙은 [React JSON 상세페이지 출력 계약](react-json-output-contract.md)을 따른다.
 
@@ -357,7 +359,7 @@ Multipart 파트:
 | `features` | array | 최대 3개 |
 | `keywords` | string[] | 최대 8개 |
 | `layout_id` | enum | `editorial-split`, `image-first`, `catalog-grid` |
-| `page_plan` | array | 최대 14개 |
+| `page_plan` | array | 생성 프롬프트 기준 8~12개; DTO 안전 상한 최대 14개 |
 
 `features` 항목:
 
@@ -393,6 +395,8 @@ info_table, notice, closing
   "items": []
 }
 ```
+
+예시의 `variant`는 허용값 중 하나를 보여주는 예이며, 블록 타입에 따라 고정되는 값이 아니다. 실제 값은 선택된 layout 원형과 모델의 제품별 구성에 따른다.
 
 FE와 상품 BE는 허용된 블록 타입만 렌더링하고 모든 텍스트를 HTML escape한다. `html`, `css`, `script` 필드는 허용하지 않는다.
 
@@ -590,4 +594,3 @@ AI 시스템 구동 및 상품 BE 연동 시 사용되는 환경 변수 계약�
 | `PROMPT_VERSION` | string | `local-mlx-qwen-flux-v1` | 모델 추론에 적용되는 시스템 프롬프트 템플릿 버전 |
 | `LOCAL_TEXT_TIMEOUT` | float | `300.0` (5분) | 텍스트/비전 LLM 추론 타임아웃 초 |
 | `LOCAL_IMAGE_TIMEOUT` | float | `300.0` (5분) | Flux 이미지 생성 타임아웃 초 |
-

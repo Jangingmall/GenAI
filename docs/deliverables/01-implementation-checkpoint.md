@@ -29,27 +29,38 @@
 
 1. **분석 프롬프트 엔지니어링 ([`src/detail_page_ai/prompts.py`](../../src/detail_page_ai/prompts.py))**
    - **프롬프트 버전 상수**: `ANALYSIS_PROMPT_VERSION = "analysis-v11-product-intro-copy-brief-care-gate"`
-   - **핵심 함수**: `build_analysis_prompt(locale: str = "ko-KR", user_hints: UserHintsDto | None = None)`
+   - **핵심 함수**: `build_analysis_prompt(locale: str = "ko-KR", user_hints: UserHintsDto | None = None, archetypes: Sequence[Mapping[str, Any]] | None = None)`
+   - **프롬프트 편향 제거 및 블록 선택·생략 조건(Selection Gates) 개정**:
+     - 기존에 모델 출력을 천편일률적 순서로 각인시키던 세 지점(Copy Map 나열 순서, 9블록 하한선, 순차 레시피 불릿)을 완전히 제거하고, 블록 역할을 알파벳순 사전식 메뉴로 분리.
+     - 블록별 엄격한 선택·생략 조건 도입: 특히 `statement` 블록은 제작자 입력에 제작 기법/과정(`howMade` / `making_method`) 데이터가 공급된 경우에만 포함되며, 데이터 부재 시 완전히 생략하도록 강제 (외형 묘사를 제작 스토리로 날조 금지).
+     - 주입된 레이아웃 원형 시퀀스 지시를 따르되, **근거로 뒷받침할 수 없는 블록은 지어내지 않고 생략(Grounding Omission)**하도록 지시.
    - **BE-AI 콘텐츠 생성 계약 반영**:
      - 공급자 입력 필드(`productName`, `howMade`, `careTips`)를 마케팅 카피의 최우선 근거(Product Introduction Copy Brief)로 삼도록 강제.
      - 환각(Hallucination) 방지를 위해 사실 슬롯을 6개 범주(`identity`, `making/process`, `sensory/visual`, `use`, `care`, `unknown`)로 분리 추출하도록 지시하며, 이미지로 확인되지 않는 성능·인증·가격·원산지는 추측하지 않고 미확인(`uncertain_information` 또는 "확인 필요")으로 유지.
      - 결과는 반드시 지정된 JSON 스키마만을 따르도록 MLX-Serve의 Grammar 제어(`POST /v1/chat/completions` with grammar)를 통해 문법적 완전성을 보장.
 
-2. **구조화된 DTO 계층 ([`src/detail_page_ai/dto.py`](../../src/detail_page_ai/dto.py))**
+2. **코드 결정론적 레이아웃 아키텍처 ([`src/detail_page_ai/layout_archetypes.py`](../../src/detail_page_ai/layout_archetypes.py)) 및 카탈로그 ([`assets/references/detail-page-layouts.json`](../../assets/references/detail-page-layouts.json))**
+   - **페이지 구성을 코드가 결정**: 모델에 자연어 지시만으로 구조 다양성을 유도하는 방식의 한계(모델의 default 10블록 시퀀스 고착)를 극복하기 위해, **원본 이미지 SHA-256 해시를 시드로 카탈로그에서 원형 하나를 재현 가능하게 결정론적으로 선택**하여 프롬프트의 구성 지시로 주입.
+   - **레이아웃 원형 25종 카탈로그 (`detail-page-layouts.json`)**: 25종의 고유 블록 시퀀스 및 10종 이상의 고유 variant 조합 정의.
+   - **카탈로그 엄격 검증 ([`tests/test_layout_catalog.py`](../../tests/test_layout_catalog.py))**: 허용 블록 타입 및 variant 화이트리스트 검속, 4개 이상 블록 길이 분포(단일 길이 60% 미만 점유), 14블록 상한 및 edge 블록(hero/closing) 고정 강제.
+
+3. **구조화된 DTO 계층 ([`src/detail_page_ai/dto.py`](../../src/detail_page_ai/dto.py))**
    - **`ProductProfileDto`**: `product_type`, `display_name`, `is_traditional_craft`, `craft_type`, `classification_confidence`, `craft_confidence`, `layout_id`, `page_plan`, `summary`, `features`, `copy_sections`, `usage_scene`, `uncertain_information`, `safety_notes` 등 엄격한 필드 유효성 검증(`extra="forbid"`).
    - **`LayoutId`**: `"editorial-split"` | `"image-first"` | `"catalog-grid"` 3종 분기 지원.
    - **`PageBlockDto`**: 상세페이지를 구성하는 모듈형 블록 구조(`hero`, `statement`, `feature_grid`, `detail_split`, `wide_image`, `gallery`, `usage_scene`, `scale_reference`, `palette`, `recommendation`, `info_table`, `notice`, `closing`).
+   - **`PageBlockVariant`**: 8종 스타일 variant(`paper`, `light`, `sand`, `dark`, `image-left`, `image-right`, `full-bleed`, `compact`).
 
-3. **프로필 검증 및 레이아웃 정합성 보장 ([`src/detail_page_ai/validation.py`](../../src/detail_page_ai/validation.py))**
+4. **프로필 검증 및 레이아웃 보존 ([`src/detail_page_ai/validation.py`](../../src/detail_page_ai/validation.py))**
    - `validate_product_profile`: `product_type`, `summary` 길이(500자 이하), `features` 개수(5개 이하), 신뢰도 범위(0.0~1.0) 검증.
-   - `ensure_editorial_page_plan`: AI 모델이 생략할 수 있는 필수 에디토리얼 비트(Hero와 Closing 블록의 시작/종료 위치 고정, `detail_split`, `notice` 등)를 결정론적으로 보정.
+   - **블록 패딩 제거 및 모델 계획 보존**: 기존의 9블록 강제 패딩 로직을 걷어내고, 중간 블록이 6개 이상(`len(middle) >= 6`)이면 모델이 결정한 블록 시퀀스와 구성을 그대로 보존.
+   - **variant 고정 배정 제거**: `detail_split`이나 `usage_scene`에 `dark`나 `full-bleed`를 무조건 덮어쓰던 하드코딩을 제거하여 모델과 카탈로그의 variant 지정 의도를 존중(`block.variant or "dark"`).
 
-4. **디자인 가이드 고정 ([`src/detail_page_ai/reference_guide.py`](../../src/detail_page_ai/reference_guide.py))**
+5. **디자인 가이드 고정 ([`src/detail_page_ai/reference_guide.py`](../../src/detail_page_ai/reference_guide.py))**
    - **가이드 버전**: `REFERENCE_GUIDE_VERSION = "detail-page-guide-v2-premium-editorial"`
    - `REFERENCE_GUIDE_COLORS`: Black(`#101010`), White(`#FFFFFF`), Cool Grey 계열(50~900), Jade Blue 계열(50~500), Yellow 500, Red 500 등 16색 팔레트 상수 고정.
    - `REFERENCE_GUIDE_TYPE_SCALE`: Display(28px), Title(17px), Body(16px), Body Small(13px), Caption(10px) 등 활자 계층 구조 고정.
 
-5. **추론 백엔드 모델**
+6. **추론 백엔드 모델**
    - `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`: 로컬 Apple Silicon 통합 메모리(Unified Memory)에서 구동되는 27B 규모의 비전-언어 멀티모달 모델. 단일 이미지와 텍스트 프롬프트를 결합 추론하여 JSON 응답 생성.
 
 ---
@@ -124,8 +135,19 @@
 4. **HTML 및 PNG 렌더링 파이프라인 ([`src/detail_page_ai/html_renderer.py`](../../src/detail_page_ai/html_renderer.py))**
    - Node + Playwright 기반 스크립트([`scripts/runtime/render_detail_page.mjs`](../../scripts/runtime/render_detail_page.mjs))를 subprocess로 구동하여 실제 브라우저 환경에서 10개 섹션 및 전체 상세페이지를 각각 고해상도 PNG로 래스터화.
 
-5. **이미지 생성 모델**
+5. **이미지 생성 및 편집 모델 클라이언트 ([`src/local_detail_page_ai/clients.py`](../../src/local_detail_page_ai/clients.py))**
    - `mlx-community/flux2-klein-9b-4bit`: 4-step 고속 추론으로 구동되는 로컬 Flux 9B 이미지 생성 모델. 원본 제품 이미지를 컨디셔닝 참조로 전달하여 배경 씬 및 활용 컷 생성.
+   - **이미지 편집 전송 스키마 개정 (`mode: "edit"`)**:
+     - 기존 multipart/form-data 전송 어댑터 사용 시 추론 스텝(`steps`) 및 강도(`strength`) 파라미터가 서버로 누락/전달되지 않던 문제를 해결하기 위해, JSON POST `/v1/images/generations`의 `mode: "edit"` 스키마로 전환.
+     - FLUX.2 Klein 4-step 증류 모델의 기본값인 `steps=4`를 명시적으로 전달.
+
+6. **디자인 시스템 및 시각적 Variant 확장 ([`web/detail_page.css`](../../web/detail_page.css), [`web/variants-agy.css`](../../web/variants-agy.css))**
+   - DTO(`PageBlockVariant`)에 선언만 되어 있고 CSS 규칙 수가 0개여서 화면에 반영되지 않던 4종 variant(`sand`, `image-left`, `image-right`, `compact`) 및 `full-bleed` 오버레이 규칙 구현.
+   - **실사용 공예 테이블웨어 맥락 반영**:
+     - `image-left + dark`: 40%:60% 비대칭 컬럼 분할(310px:464px), 좌측 접사 이미지 세로 스택, 우측 어두운 색면(`--espresso`) 및 세리프(`Noto Serif KR`) 제목과 `01`, `02` 악센트 넘버링 항목 조판.
+     - `full-bleed`: 전면 이미지 위 중앙 정렬된 흰색 세리프 문구 및 반투명 스크림 오버레이.
+     - `sand`: 따뜻한 흙/모래 색면(`#EAE1D6`) 기반의 마무리 섹션 중앙 정렬 카피 조판.
+     - `compact`: `info-section`의 명세 표를 2x2 그리드로 조판하여 품목명/소재/컬러/사이즈를 촘촘하게 배치하고 타이포·마진 스케일 다운.
 
 ---
 
@@ -246,9 +268,44 @@
 
 ---
 
+### 4.4 품질 게이트 4: 섹션 구성 다양성 검증 ([`scripts/check_plan_diversity.py`](../../scripts/check_plan_diversity.py))
+
+AI 생성 상세페이지의 구조적 천편일률성(모든 제품이 동일한 블록 시퀀스로 고착되는 현상)을 진단하고 차단하기 위해 신설된 정량 다양성 측정 게이트입니다.
+
+- **실행 명령**: `.venv/bin/python scripts/check_plan_diversity.py --pilot-dir generated/evaluation/pilot-20260909-224737`
+- **종료 코드**: `1` (FAIL — 기준 미달)
+- **품질 게이트 판정 기준 (Quality Gate Thresholds)**:
+  1. 쌍별 평균 집합 일치도 (Average Jaccard Similarity): **≤ 60.0%**
+  2. 전 케이스 공통 블록 종수 (Common Block Types): **≤ 4종**
+  3. 완전 일치 쌍 수 (100% 동일 집합 쌍): **0쌍**
+
+```
+========================================================================
+      파일럿 섹션 구성 다양성 측정 보고서 (Section Plan Diversity)
+========================================================================
+- 대상: generated/evaluation/pilot-20260909-224737 (총 6건)
+
+1. 공통 블록 수: 9종 (closing, detail_split, feature_grid, gallery, hero, info_table, notice, recommendation, usage_scene)
+2. 평균 집합 일치도 (Jaccard): 96.7%
+3. 완전 일치 쌍 수 (100% 동일 집합): 10쌍 (6건 중 5건이 10개 블록 완전 동일 시퀀스)
+4. 길이 분포: 9블록: 1건, 10블록: 5건
+5. 고유 시퀀스 종수: 2종 / 6건 (최빈 시퀀스 5회 반복)
+
+### 품질 게이트 판정 결과
+- [FAIL] 평균 집합 일치도: 96.7% (기준: <= 60.0%)
+- [FAIL] 공통 블록 종수: 9종 (기준: <= 4종)
+- [FAIL] 완전 일치 쌍 수: 10쌍 (기준: <= 0쌍)
+
+최종 판정: [FAIL] 구성 다양성 기준 미달로 탈락 (종료 코드 1)
+========================================================================
+```
+*실측 분석*: 기존에는 "고유 시퀀스 3종 이상, 중간 집합 3종 이상"이라는 지나치게 느슨한 기준으로 인해 73% 이상 블록이 중복되는 상태에서도 통과 판정이 나는 심각한 결함이 있었습니다. 신규 게이트 도입 결과 96.7%의 극심한 획일성이 확인되어 명시적 탈락(FAIL)으로 판정되었습니다.
+
+---
+
 ## 5. 아직 안 된 것 (한계 및 미구현 항목)
 
-본 시스템의 1차 구현과 파일럿 실행은 파이프라인의 **기술적·구조적 완결성**을 입증한 것이며, 상용 배포를 위해 반드시 확인해야 할 아래 항목들은 **아직 수행되지 않은 미완료 상태**입니다.
+본 시스템의 1차 구현과 파일럿 실행은 파이프라인의 **기술적·구조적 완결성**을 입증한 것이며, 상용 배포를 위해 반드시 확인해야 할 아래 항목들은 **아직 수행되지 않았거나 기준에 미달한 미완료 상태**입니다.
 
 1. **사람 정성 검수(Human Review) 미실행**
    - [`docs/evaluation/metrics-definition.md`](../evaluation/metrics-definition.md) 3절에 정의된 **사실성(Factuality)·명료성(Clarity)·상품성(Marketability)·시각 품질(Visual Quality) 4대 축의 정량 점수(1~5점)는 아직 존재하지 않습니다.**
@@ -258,17 +315,23 @@
    - 현재까지의 실측치는 카테고리당 1건씩 추출한 6건의 파일럿 결과에 불과합니다.
    - `cma_real_v1` 데이터셋 60건 전체(카테고리당 10건)에 대한 대규모 일괄 배치 실행 및 통계적 유의성(95% Wilson 신뢰구간) 평가는 미실행 상태입니다.
 
-3. **이미지 생성 강도(`strength`) 제어 불가**
-   - 현재 서빙 중인 이미지 생성 모델(`flux2-klein-9b-4bit`) 및 로컬 엔드포인트는 디노이징 강도(`strength`) 파라미터를 지원하지 않습니다.
+3. **생성 참고 컷의 '참고용' 표시 노출 누락 (배포 차단 조건 5, 미수정 결정)**
+   - 데이터 모델 및 메타데이터(`result_summary.json`)에는 `product_generated: true`와 `generated_scene`/`generated_view`가 정상 기록되지만, `react_document.json` 및 최종 고객 렌더 화면(HTML/PNG)에는 '참고용' 배지/라벨이 전혀 노출되지 않는 상태입니다.
+   - 이는 리뷰 가이드 상의 명백한 배포 차단 조건(Release-blocking condition)이며, 현재 사이클에서는 미수정으로 유지하기로 결정되었습니다.
+
+4. **이미지 생성 강도(`strength`) 제어 불가**
+   - 로컬 엔드포인트(`flux2-klein-9b-4bit`)는 JSON `mode: "edit"` 전송을 통해 스텝 수(`steps=4`)를 전달하도록 교정되었으나, 모델 서버의 in-context edit 구현 특성상 디노이징 강도(`strength`) 파라미터는 여전히 무시됩니다.
    - 이에 따라 원본 이미지와 생성 배경 사이의 변형 강도를 미세하게 조절하는 기능은 구현되지 못했습니다.
 
-4. **스텝 수 인상에 따른 품질 향상 근거 부재**
-   - 현재 4-step 고속 추론을 표준으로 사용하고 있으며, 스텝 수를 8스텝이나 12스텝으로 늘렸을 때 시각적 완성도나 상품성이 유의미하게 개선된다는 실험적·통계적 근거가 확보되지 않았습니다.
+5. **구성 다양성 기준 미달 (Section Plan Diversity Gate Failure)**
+   - 최신 정량 게이트 기준인 **평균 집합 일치도 ≤ 60.0%, 공통 블록 종수 ≤ 4종, 완전 일치 0쌍**을 충족하지 못하고 있습니다.
+   - 파일럿 기준 실측치는 평균 일치도 96.7%, 공통 블록 9종, 완전 일치 10쌍으로 전 항목 기준치에 미달합니다.
+   - 코드 결정론적 레이아웃 원형 선택(`layout_archetypes.py`) 도입 및 프롬프트 개편 후 평균 일치도가 72.4% 수준까지 개선되었으나, 여전히 60% 상한 목표에는 미달하며 hero/closing 고정 블록으로 인한 기저 일치도 한계가 남아 있는 미해결 과제입니다.
 
 ---
 
 ## 6. 요약 및 결론
 
-- **영역 1(분석·카피)**: Qwen-27B 멀티모달 모델, BE-AI 계약 프롬프트(`analysis-v11`), 디자인 가이드(`v2`)를 결합하여 제품 유형 식별, 공예 여부 판정, 10개 블록 에디토리얼 기획을 전건 성공적으로 추출함.
-- **영역 2(이미지·렌더링)**: 테두리 연결 배경 정의와 마스크 결함 Fallback 안전장치를 통해 컷아웃 보존율 6건 전건 OK 판정(심각 손실 0건, ceramic 64.1% ~ 나머지 100%)을 달성하였으며, 7개 씬 분기 적합률 100%, 건당 8장의 사진 셋 및 고해상도 상세페이지 렌더링을 완전히 완수함.
-- **후속 과제**: 기술적 기능 구현과 자동 게이트 검증이 완료되었으므로, 다음 단계로 60건 전체 데이터셋 배치 평가 실행 및 검수자 2인의 4축 정성 평가(Human Review)를 거쳐 실질적 마케팅 상품성을 검증해야 합니다.
+- **영역 1(분석·카피)**: Qwen-27B 멀티모달 모델, BE-AI 계약 프롬프트(`analysis-v11`), 25종 레이아웃 원형 카탈로그(`detail-page-layouts.json`), 원본 해시 기반 결정론적 원형 선택기(`layout_archetypes.py`)를 구축함. 모델의 근거 없는 블록 날조를 방지하는 생략 규칙을 도입하여 구조 제어와 카피 생성을 분리 정착시킴.
+- **영역 2(이미지·렌더링)**: 테두리 연결 배경 정의와 마스크 결함 Fallback 안전장치로 컷아웃 보존율 전건 OK를 달성했고, 이미지 편집 JSON 전송 스키마(`mode: "edit"`, steps=4)와 4종 variant CSS(`sand`, `image-left`, `image-right`, `compact`)를 신규 구현하여 디자인 시스템의 시각적 표현력을 확보함.
+- **품질 게이트 및 당면 과제**: 문법·스키마·보존율 게이트는 전건 통과하였으나, 구성 다양성 게이트는 최신 기준(평균 일치도 ≤60%) 대비 96.7%(개선 후 72.4%)로 기준에 미달함. 생성 컷 '참고용' 라벨링 누락(미수정)과 함께 60건 전체 데이터셋 배치 평가 및 검수자 2인의 4축 정성 평가(Human Review) 수행이 핵심 과제로 남아 있음.
