@@ -629,14 +629,131 @@ h2 { font-size: 22px; line-height: 1.35; letter-spacing: -.05em; word-break: kee
 .detail-page:not(.detail-page--adaptive) :is(.info-section, .recommendation-section) { padding: 48px 54px 0; }
 .detail-page:not(.detail-page--adaptive) :is(.info-section, .recommendation-section) .section-heading { padding: 0 0 26px; }
 
+/* DTO presentation variants. Keep these scoped to the adaptive page-plan renderer. */
+.detail-page--adaptive .block--sand {
+  background: color-mix(in srgb, var(--yellow-500) 18%, var(--jade-blue-50));
+  color: var(--black);
+  border-block: 1px solid var(--yellow-500);
+}
+
+.detail-page--adaptive .block--sand .eyebrow { color: var(--cool-grey-500); }
+.detail-page--adaptive .block--sand :is(h2, h3) { color: var(--black); }
+.detail-page--adaptive .block--sand :is(p, li, td) { color: var(--cool-grey-500); }
+
+.detail-page--adaptive .closing-section.block--sand {
+  padding: 64px 54px 68px;
+  text-align: center;
+}
+
+/* detail_split emits media first; image-right additionally has split-section--reverse. */
+.detail-page--adaptive .split-section.block--image-left {
+  grid-template-columns: minmax(0, 42fr) minmax(0, 58fr);
+}
+
+.detail-page--adaptive .split-section.block--image-left .split-section__media { order: 1; }
+.detail-page--adaptive .split-section.block--image-left .split-section__copy { order: 2; }
+
+.detail-page--adaptive .split-section.block--image-right {
+  grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
+}
+
+.detail-page--adaptive .split-section.block--image-right .split-section__media { order: 2; }
+.detail-page--adaptive .split-section.block--image-right .split-section__copy { order: 1; }
+
+.detail-page--adaptive .split-section.block--image-left.block--dark .split-section__copy {
+  padding: 48px 46px;
+}
+
+.detail-page--adaptive .split-section.block--image-left.block--dark h2 {
+  font-family: "Noto Serif KR", Batang, Georgia, serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* usage_scene and palette use the same copy/media sibling layout. */
+.detail-page--adaptive .usage-section.block--image-left .usage-section__media,
+.detail-page--adaptive .palette-section.block--image-left .palette-section__media { order: 1; }
+
+.detail-page--adaptive .usage-section.block--image-left .usage-section__copy,
+.detail-page--adaptive .palette-section.block--image-left .palette-section__copy { order: 2; }
+
+.detail-page--adaptive .usage-section.block--image-right .usage-section__media,
+.detail-page--adaptive .palette-section.block--image-right .palette-section__media { order: 2; }
+
+.detail-page--adaptive .usage-section.block--image-right .usage-section__copy,
+.detail-page--adaptive .palette-section.block--image-right .palette-section__copy { order: 1; }
+
+/* Compact is an information-dense 2-by-2 specification block. */
+.detail-page--adaptive .info-section.block--compact {
+  padding: 32px 40px 0;
+}
+
+.detail-page--adaptive .info-section.block--compact .section-heading {
+  padding-bottom: 18px;
+}
+
+.detail-page--adaptive .info-section.block--compact h2 {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.detail-page--adaptive .info-section.block--compact table {
+  display: block;
+  width: 100%;
+  background: var(--cool-grey-100);
+}
+
+.detail-page--adaptive .info-section.block--compact tbody {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+}
+
+.detail-page--adaptive .info-section.block--compact tr {
+  display: block;
+  padding: 20px;
+  background: var(--paper);
+}
+
+.detail-page--adaptive .info-section.block--compact :is(th, td) {
+  display: block;
+  width: auto;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+
+.detail-page--adaptive .info-section.block--compact th {
+  color: var(--cool-grey-500);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.detail-page--adaptive .info-section.block--compact td {
+  margin-top: 8px;
+  color: var(--black);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
 @media (max-width: 640px) {
   .detail-page--adaptive .hero { padding: 46px 28px; }
   .detail-page--adaptive .hero__media { height: 300px; }
   .detail-page--adaptive .feature-grid { grid-template-columns: 1fr; padding: 48px 28px; }
   .detail-page--adaptive .split-section,
   .detail-page--adaptive .palette-section { grid-template-columns: 1fr; }
+  .detail-page--adaptive .split-section.block--image-left,
+  .detail-page--adaptive .split-section.block--image-right,
+  .detail-page--adaptive .info-section.block--compact tbody {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .detail-page--adaptive .split-section__media { min-height: 280px; }
   .detail-page--adaptive .usage-section { grid-template-columns: 1fr; margin: 54px 28px 0; }
+  .detail-page--adaptive .info-section.block--compact { padding: 28px 28px 0; }
 }
 
 @media print {
