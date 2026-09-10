@@ -93,7 +93,7 @@ def _is_relevant(attr: dict, expected: dict) -> bool:
     price = attr.get("price")
     return max_price is not None and price is not None and price <= max_price
 
-  
+
 def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
     """질의 하나를 의도분류 + 추천(장인 가중치 포함)하여 정답 여부·순위·score를 계산."""
 
@@ -168,7 +168,7 @@ def _eval_query(query_text: str, item: dict, attrs_cache: dict) -> dict:
         ],
     }
 
-  
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="검색 및 장인 가중치 추천 통합 평가")
     parser.add_argument(
@@ -259,4 +259,3 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-    
