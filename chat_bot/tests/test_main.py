@@ -76,7 +76,7 @@ _INTENT_PRODUCT_SEARCH = {
 }
 _GENERATE_OK = {
     "reply": "이 찻잔을 추천드려요.",
-    "products": [{"product_id": 9, "reason": "청자 다완입니다."}],
+    "allowed_ids": [9],
     "suggestions": ["다른 색상으로", "가격대 낮춰서", "포장까지 되는 것만"],
 }
 _CANDIDATES = [
@@ -107,7 +107,7 @@ def test_chat_returns_only_external_contract_fields():
     assert response.status_code == 200
     body = response.json()
     assert set(body.keys()) == {"reply", "intent", "products", "suggestions"}
-    assert body["products"] == [{"product_id": 9, "reason": "청자 다완입니다."}]
+    assert body["products"] == [{"product_id": 9, "reason": "이 찻잔을 추천드려요."}]
 
 
 def test_narrow_down_reuses_previous_candidates_via_session_id():
