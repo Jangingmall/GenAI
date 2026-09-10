@@ -108,6 +108,40 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
         body=profile.summary,
     )).model_copy(update={"variant": "paper"})
 
+    # The pilot models produced 8–10 blocks total, or 6–8 middle blocks after
+    # hero/closing. At that density the model has supplied enough structure;
+    # preserve its sequence and only apply the existing fidelity normalizations.
+    if len(middle) >= 6:
+        normalized_middle = []
+        for block in middle:
+            if block.block_type == "detail_split":
+                block = block.model_copy(
+                    update={"variant": "dark", "photo_id": block.photo_id or "detail"}
+                )
+            elif block.block_type == "usage_scene":
+                block = block.model_copy(
+                    update={"variant": "full-bleed", "photo_id": "lifestyle"}
+                )
+            elif block.block_type == "notice":
+                block = block.model_copy(update={"variant": "dark"})
+            normalized_middle.append(block)
+        plan = [hero, *normalized_middle, closing]
+        if len(plan) > 14:
+            optional_types = {"wide_image", "scale_reference", "statement"}
+            while len(plan) > 14:
+                removable = next(
+                    (
+                        index
+                        for index in range(len(plan) - 2, 0, -1)
+                        if plan[index].block_type in optional_types
+                    ),
+                    None,
+                )
+                if removable is None:
+                    break
+                plan.pop(removable)
+        return profile.model_copy(update={"page_plan": plan[:13] + [closing] if len(plan) > 14 else plan})
+
     def first_index(*block_types: str) -> int:
         return next(
             (

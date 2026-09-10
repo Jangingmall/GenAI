@@ -135,3 +135,50 @@ def test_editorial_plan_keeps_palette_and_adds_missing_product_gallery():
     assert block_types.count("palette") == 1
     assert block_types.index("usage_scene") < block_types.index("gallery")
     assert block_types.index("gallery") < block_types.index("palette")
+
+
+def test_editorial_plan_preserves_a_sufficient_model_sequence():
+    profile = ProductProfileDto.minimal("모델 계획 상품").model_copy(
+        update={
+            "page_plan": [
+                PageBlockDto(section_id="hero", block_type="hero", title="상품", photo_id="hero"),
+                PageBlockDto(section_id="story", block_type="statement", title="이야기"),
+                PageBlockDto(section_id="palette", block_type="palette", title="색감"),
+                PageBlockDto(section_id="detail", block_type="detail_split", title="디테일"),
+                PageBlockDto(section_id="scene", block_type="usage_scene", title="활용"),
+                PageBlockDto(section_id="gallery", block_type="gallery", title="갤러리"),
+                PageBlockDto(section_id="notice", block_type="notice", title="안내"),
+                PageBlockDto(section_id="closing", block_type="closing", title="마무리"),
+            ],
+        }
+    )
+
+    normalized = ensure_editorial_page_plan(profile)
+
+    assert [block.block_type for block in normalized.page_plan] == [
+        "hero",
+        "statement",
+        "palette",
+        "detail_split",
+        "usage_scene",
+        "gallery",
+        "notice",
+        "closing",
+    ]
+
+
+def test_editorial_plan_still_builds_context_for_a_sparse_model_sequence():
+    profile = ProductProfileDto.minimal("빈약한 계획 상품").model_copy(
+        update={
+            "page_plan": [
+                PageBlockDto(section_id="hero", block_type="hero", title="상품", photo_id="hero"),
+            ],
+        }
+    )
+
+    normalized = ensure_editorial_page_plan(profile)
+    block_types = [block.block_type for block in normalized.page_plan]
+
+    assert block_types[0] == "hero"
+    assert block_types[-1] == "closing"
+    assert {"detail_split", "usage_scene", "gallery", "recommendation", "info_table", "notice"} <= set(block_types)
