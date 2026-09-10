@@ -1,0 +1,298 @@
+{
+  "_comment": "build_fixtures.py 생성물 — 직접 수정 금지. evidence 는 load_products.build_evidence 실제 출력.",
+  "tau": 0.35,
+  "cases": {
+    "b01": [
+      {
+        "product_id": 9,
+        "name": "청자 다완",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "손으로 직접 흙을 치대어 공기를 뺀 뒤 청자 물레 성형, 초벌 800도, 재벌 1250도로 구웠습니다. 가마 안 위치에 따라 색이 미세하게 달라집니다. 중성세제로 가볍게 씻고 완전히 건조한 뒤 보관해 주세요. 겹쳐 쌓을 때는 사이에 천을 끼워 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b02": [
+      {
+        "product_id": 822,
+        "name": "황토 김치독",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "전통 옹기 가마에서 장작불로 구워 자연스러운 재유가 형성되었습니다. 숨 쉬는 소재로 저장 식품의 발효를 돕습니다. 직화 사용 가능합니다. 사용 후 그늘에서 건조하고 통풍이 잘 되는 곳에 보관해 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b03": [
+      {
+        "product_id": 850,
+        "name": "주칠 함",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "주칠 목태에 연꽃 문양 자개를 상감하고 투명 옻칠로 마감했습니다. 100% 천연 옻칠로 내구성이 뛰어납니다. 옻칠 제품은 자외선에 약합니다. 실내 보관을 권장하며, 화학 세제는 절대 사용하지 마세요.",
+          "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b04": [
+      {
+        "product_id": 350,
+        "name": "감물염 이불",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "감물염 재료를 발효시켜 만든 천연 염액에 광목을 9번 담갔다 말리기를 반복해 깊은 색을 냈습니다. 계절과 날씨에 따라 색이 조금씩 달라집니다. 찬물에 단독 세탁해 주시고, 그늘에서 말려 주세요. 자연염색 특성상 여러 번 세탁하면 색이 서서히 옅어질 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b05": [
+      {
+        "product_id": 470,
+        "name": "자작나무 서랍장",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "원목을 재단해 충분히 건조한 뒤, 대패와 끌로 결을 살려 다듬고 천연 오일로 마감했습니다. 마른 천으로 먼지를 닦아 주시고, 물이 닿으면 바로 닦아 주세요. 직사광선과 난방기 근처는 피해 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b06": [
+      {
+        "product_id": 598,
+        "name": "은 다기받침",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "은를 두드려 형태를 잡는 단조 기법으로 만들고, 문양은 끌로 하나하나 새겼습니다. 두드린 자국이 은은한 결로 남습니다. 전용 광택천으로 가볍게 닦아 주시면 변색을 늦출 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b07": [
+      {
+        "product_id": 498,
+        "name": "자작나무 트레이",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "원목을 재단해 충분히 건조한 뒤, 대패와 끌로 결을 살려 다듬고 천연 오일로 마감했습니다. 마른 천으로 먼지를 닦아 주시고, 물이 닿으면 바로 닦아 주세요. 직사광선과 난방기 근처는 피해 주세요.",
+          "verified": "YOUNG_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b08": [
+      {
+        "product_id": 808,
+        "name": "옹기토 항아리",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "백자토를 물레 성형 후 초벌·재벌 두 번 구워 완성했습니다. 투명유가 흘러내리며 만든 무늬는 매번 다릅니다. 세제 없이 흐르는 물에 씻고 통풍이 잘 되는 곳에서 건조하세요. 충격에 약하므로 취급 시 주의하세요.",
+          "verified": "YOUNG_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b09": [
+      {
+        "product_id": 413,
+        "name": "오배자염 보자기",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "오배자염 재료를 발효시켜 만든 천연 염액에 광목을 12번 담갔다 말리기를 반복해 깊은 색을 냈습니다. 계절과 날씨에 따라 색이 조금씩 달라집니다. 중성세제로 손세탁하고 직사광선을 피해 건조해 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b10": [
+      {
+        "product_id": 880,
+        "name": "면 손수건",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "닥나무 껍질로 만든 한지에 쪽물을 들이고, 풀로 배접한 뒤 전통 가위로 재단했습니다. 중성 세제로 손세탁 후 그늘에서 건조하세요. 직사광선에 오래 노출되면 색이 바랄 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b11": [
+      {
+        "product_id": 379,
+        "name": "쪽염 방석",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "직접 재배한 재료로 쪽염 염액을 우려낸 뒤, 손으로 짠 광목에 여러 번 침염해 은은한 색을 완성했습니다. 중성세제로 손세탁하고 직사광선을 피해 건조해 주세요.",
+          "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b12": [
+      {
+        "product_id": 647,
+        "name": "백동 노리개",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "백동를 두드려 형태를 잡는 단조 기법으로 만들고, 문양은 끌로 하나하나 새겼습니다. 두드린 자국이 은은한 결로 남습니다. 부드러운 천으로 문질러 광을 내주시고, 습기 있는 곳은 피해 보관해 주세요.",
+          "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b13": [
+      {
+        "product_id": 850,
+        "name": "주칠 함",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "주칠 목태에 연꽃 문양 자개를 상감하고 투명 옻칠로 마감했습니다. 100% 천연 옻칠로 내구성이 뛰어납니다. 옻칠 제품은 자외선에 약합니다. 실내 보관을 권장하며, 화학 세제는 절대 사용하지 마세요.",
+          "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b14": [
+      {
+        "product_id": 9,
+        "name": "청자 다완",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "손으로 직접 흙을 치대어 공기를 뺀 뒤 청자 물레 성형, 초벌 800도, 재벌 1250도로 구웠습니다. 가마 안 위치에 따라 색이 미세하게 달라집니다. 중성세제로 가볍게 씻고 완전히 건조한 뒤 보관해 주세요. 겹쳐 쌓을 때는 사이에 천을 끼워 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b15": [
+      {
+        "product_id": 598,
+        "name": "은 다기받침",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "은를 두드려 형태를 잡는 단조 기법으로 만들고, 문양은 끌로 하나하나 새겼습니다. 두드린 자국이 은은한 결로 남습니다. 전용 광택천으로 가볍게 닦아 주시면 변색을 늦출 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b16": [],
+    "b17": [],
+    "b18": [],
+    "b19": [
+      {
+        "product_id": 598,
+        "name": "은 다기받침",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "은를 두드려 형태를 잡는 단조 기법으로 만들고, 문양은 끌로 하나하나 새겼습니다. 두드린 자국이 은은한 결로 남습니다. 전용 광택천으로 가볍게 닦아 주시면 변색을 늦출 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b20": [
+      {
+        "product_id": 822,
+        "name": "황토 김치독",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "전통 옹기 가마에서 장작불로 구워 자연스러운 재유가 형성되었습니다. 숨 쉬는 소재로 저장 식품의 발효를 돕습니다. 직화 사용 가능합니다. 사용 후 그늘에서 건조하고 통풍이 잘 되는 곳에 보관해 주세요.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b21": [
+      {
+        "product_id": 350,
+        "name": "감물염 이불",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "감물염 재료를 발효시켜 만든 천연 염액에 광목을 9번 담갔다 말리기를 반복해 깊은 색을 냈습니다. 계절과 날씨에 따라 색이 조금씩 달라집니다. 찬물에 단독 세탁해 주시고, 그늘에서 말려 주세요. 자연염색 특성상 여러 번 세탁하면 색이 서서히 옅어질 수 있습니다.",
+          "verified": "MASTER_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b22": [
+      {
+        "product_id": 850,
+        "name": "주칠 함",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "주칠 목태에 연꽃 문양 자개를 상감하고 투명 옻칠로 마감했습니다. 100% 천연 옻칠로 내구성이 뛰어납니다. 옻칠 제품은 자외선에 약합니다. 실내 보관을 권장하며, 화학 세제는 절대 사용하지 마세요.",
+          "verified": "NATIONAL_INTANGIBLE_HERITAGE",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b23": [],
+    "b24": [
+      {
+        "product_id": 235,
+        "name": "자개 거울함",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "나무 소지에 삼베를 바르고 옻칠 바탕을 다진 뒤, 자개를 문양대로 오려 붙이고 옻칠 연마를 반복해 광을 냈습니다. 마른 부드러운 천으로 닦아 주시고, 물기와 직사광선은 피해 주세요. 습도가 일정한 곳에 보관하시면 오래 갑니다.",
+          "verified": "SENIOR_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b25": [
+      {
+        "product_id": 122,
+        "name": "옹기토 곡물독",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "전통 방식 그대로 흙 반죽을 쌓아올려 성형하고, 자연 유약을 발라 고온에서 구워 통기성을 살렸습니다. 사용 후 물로 헹구고 그늘에서 완전히 말려 보관해 주세요.",
+          "verified": "SENIOR_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b26": [
+      {
+        "product_id": 141,
+        "name": "옹기토 김치독",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "전통 방식 그대로 흙 반죽을 쌓아올려 성형하고, 자연 유약을 발라 고온에서 구워 통기성을 살렸습니다. 사용 후 물로 헹구고 그늘에서 완전히 말려 보관해 주세요.",
+          "verified": "YOUNG_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b27": [
+      {
+        "product_id": 590,
+        "name": "놋쇠 노리개",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "놋쇠를 두드려 형태를 잡는 단조 기법으로 만들고, 문양은 끌로 하나하나 새겼습니다. 두드린 자국이 은은한 결로 남습니다. 전용 광택천으로 가볍게 닦아 주시면 변색을 늦출 수 있습니다.",
+          "verified": "SENIOR_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ],
+    "b28": [
+      {
+        "product_id": 595,
+        "name": "놋쇠 다기받침",
+        "score": 0.72,
+        "evidence": {
+          "artisan_input": "전통 주물 방식으로 놋쇠를 녹여 틀에 부은 뒤, 표면을 갈고 문양을 새겨 마감했습니다. 부드러운 천으로 문질러 광을 내주시고, 습기 있는 곳은 피해 보관해 주세요.",
+          "verified": "SENIOR_CRAFTSMAN",
+          "ai_inference": null
+        }
+      }
+    ]
+  }
+}
