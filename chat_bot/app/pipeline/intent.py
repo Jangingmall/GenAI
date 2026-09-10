@@ -95,7 +95,11 @@ _MAX_HISTORY_TURNS = 3
 
 def _format_history(history: list[dict] | None) -> str:
     if not history:
-        return ""
+        # "이전 대화:" 블록이 그냥 없는 것과 "첫 턴임을 명시"하는 건 다르다 — 전자는
+        # 모델이 "이력 유무"를 스스로 추론해야 해서, 가격 조건이 있는 문장("5만원
+        # 이하로 추천해줘")을 narrow_down 예시와 표면이 비슷하다는 이유로 잘못
+        # 분류하는 사례가 실측됐다(첫 턴인데도). 구조적으로 명시해 추론 부담을 없앤다.
+        return "[대화 시작 — 이전 턴 없음]\n\n"
     recent = history[-_MAX_HISTORY_TURNS * 2 :]
     lines = [
         f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in recent
