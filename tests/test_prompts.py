@@ -107,6 +107,12 @@ def test_same_hash_injects_the_same_selected_layout_sequence():
     assert first == second
     assert selected_sequence in prompt
     assert "Create page_plan using this exact block sequence." in prompt
+    assert first[0]["variants"] == second[0]["variants"]
+    for index, (block_type, variant) in enumerate(
+        zip(first[0]["sequence"], first[0]["variants"], strict=True),
+        start=1,
+    ):
+        assert f"{index}. {block_type} → {variant}" in prompt
 
 
 def test_selected_layout_sequences_vary_across_image_hashes():
@@ -119,6 +125,25 @@ def test_selected_layout_sequences_vary_across_image_hashes():
     }
 
     assert len(selections) >= 3
+
+
+def test_selected_layout_variant_assignments_vary_across_image_hashes():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+    assignments = set()
+    for index in range(12):
+        selected = select_layout_archetypes(f"{index:064x}", hints, count=1)
+        prompt = build_analysis_prompt("ko-KR", user_hints=hints, archetypes=selected)
+        assignment = tuple(
+            zip(selected[0]["sequence"], selected[0]["variants"], strict=True)
+        )
+        assignments.add(assignment)
+        assert "Apply these code-selected variants to the matching block positions." in prompt
+        for position, (block_type, variant) in enumerate(assignment, start=1):
+            assert f"{position}. {block_type} → {variant}" in prompt
+
+    assert len(assignments) >= 3
 
 
 def test_layout_archetype_selection_excludes_statement_without_making_method():
@@ -156,6 +181,7 @@ def test_analysis_prompt_uses_a_selected_layout_with_grounding_exception():
                 "name": "형태 확인형",
                 "when": "윤곽과 비례가 근거일 때",
                 "sequence": ["hero", "wide_image", "info_table", "closing"],
+                "variants": ["paper", "full-bleed", "compact", "sand"],
                 "rationale": "프롬프트에 포함되면 안 되는 긴 설명",
             },
         ],
@@ -168,12 +194,19 @@ def test_analysis_prompt_uses_a_selected_layout_with_grounding_exception():
     assert "형태 확인형" in layout_block
     assert "hero → wide_image → info_table → closing" in layout_block
     assert "Create page_plan using this exact block sequence." in layout_block
+    assert "Apply these code-selected variants to the matching block positions." in layout_block
+    assert "1. hero → paper" in layout_block
+    assert "2. wide_image → full-bleed" in layout_block
+    assert "3. info_table → compact" in layout_block
+    assert "4. closing → sand" in layout_block
+    assert "Do not choose, substitute, or reorder variants." in layout_block
     assert "If a specified block is unsupported by the image or creator-provided data, omit it" in layout_block
     assert "Preserve the relative order of every remaining block." in layout_block
     assert "프롬프트에 포함되면 안 되는 긴 설명" not in layout_block
     assert "Do not use one fixed sequence for every product." not in prompt
     assert "this is not a fixed template" not in prompt
     assert "Vary optional blocks and their order" not in prompt
+    assert "Choose the remaining order, count, and variants" not in prompt
 
 
 def test_analysis_prompt_applies_detail_page_guide_visual_direction():

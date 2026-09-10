@@ -13,6 +13,18 @@ BACKGROUND_PROMPT_VERSION = "background-v4-jewelry-coverage"
 USAGE_SCENE_PROMPT_VERSION = "usage-scene-v3"
 GENERATED_USAGE_SCENE_PROMPT_VERSION = "generated-usage-scene-v5-source-count-glass"
 GENERATED_DETAIL_CUT_PROMPT_VERSION = "generated-detail-cut-v3-source-count-glass"
+SUPPORTED_LAYOUT_VARIANTS = frozenset(
+    {
+        "paper",
+        "light",
+        "sand",
+        "dark",
+        "image-left",
+        "image-right",
+        "full-bleed",
+        "compact",
+    }
+)
 
 
 def _format_selected_layout_instruction(
@@ -21,23 +33,39 @@ def _format_selected_layout_instruction(
     for archetype in archetypes or ():
         name = archetype.get("name")
         sequence = archetype.get("sequence")
+        variants = archetype.get("variants")
         if (
             not isinstance(name, str)
             or not isinstance(sequence, list)
             or not sequence
             or not all(isinstance(block_type, str) for block_type in sequence)
+            or not isinstance(variants, list)
+            or len(variants) != len(sequence)
+            or not all(variant in SUPPORTED_LAYOUT_VARIANTS for variant in variants)
         ):
             continue
+        variant_assignments = "\n".join(
+            f"{index}. {block_type} → {variant}"
+            for index, (block_type, variant) in enumerate(
+                zip(sequence, variants, strict=True),
+                start=1,
+            )
+        )
         return (
             "Code-selected layout plan:\n"
             f"Selected archetype: {name}.\n"
             "Create page_plan using this exact block sequence.\n"
             f"{' → '.join(sequence)}\n"
+            "Apply these code-selected variants to the matching block positions.\n"
+            f"{variant_assignments}\n"
             "Code determines page_plan composition, length, and order. Write only "
             "grounded copy and content for each specified block.\n"
+            "Use the specified variant for every emitted block. Do not choose, "
+            "substitute, or reorder variants.\n"
             "If a specified block is unsupported by the image or creator-provided "
             "data, omit it rather than invent content. Preserve the relative order "
-            "of every remaining block.\n\n"
+            "of every remaining block. Every remaining block keeps its paired "
+            "code-selected variant.\n\n"
         )
     return ""
 
