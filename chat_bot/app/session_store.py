@@ -13,29 +13,42 @@ semantic_cache.py와 같은 패턴(모듈 전역 dict + TTL + 최대 개수 제�
 
 from __future__ import annotations
 
+import threading
 import time
 
-_TTL_SECONDS = 1800  # 대화 하나가 30분 안에는 끝난다고 가정 — 백엔드 세션 expiresInSeconds와
+_TTL_SECONDS = (
+    1800  # 대화 하나가 30분 안에는 끝난다고 가정 — 백엔드 세션 expiresInSeconds와
+)
 # 별개로, 우리 쪽 메모리 방어용 상한이다.
 _MAX_ENTRIES = 500
 
 _store: dict[str, dict] = {}
+# FastAPI는 동기 라우트를 스레드 풀에서 돌려서, 서로 다른 요청이 동시에 get/set을 호출할 수
+# 있다 — 락 없이는 get의 만료 삭제와 set의 최대 개수 제거가 동시에 같은 딕셔너리를 건드려
+# KeyError/RuntimeError로 죽을 수 있다. get·set 각각 통째로(삭제·제거 단계까지) 락을 잡는다.
+_lock = threading.Lock()
 
 
 def get(session_id: str) -> dict | None:
     """직전 턴의 {"candidates", "filters"}를 돌려준다. 없거나 만료됐으면 None."""
-    entry = _store.get(session_id)
-    if entry is None:
-        return None
-    if time.time() - entry["ts"] > _TTL_SECONDS:
-        del _store[session_id]
-        return None
-    return {"candidates": entry["candidates"], "filters": entry["filters"]}
+    with _lock:
+        entry = _store.get(session_id)
+        if entry is None:
+            return None
+        if time.time() - entry["ts"] > _TTL_SECONDS:
+            del _store[session_id]
+            return None
+        return {"candidates": entry["candidates"], "filters": entry["filters"]}
 
 
 def set(session_id: str, candidates: list[dict], filters: dict) -> None:
     """이번 턴에 쓴 candidates·filters를 저장해 다음 턴 narrow_down이 재사용할 수 있게 한다."""
-    _store[session_id] = {"candidates": candidates, "filters": filters, "ts": time.time()}
-    if len(_store) > _MAX_ENTRIES:
-        oldest_id = min(_store, key=lambda k: _store[k]["ts"])
-        del _store[oldest_id]
+    with _lock:
+        _store[session_id] = {
+            "candidates": candidates,
+            "filters": filters,
+            "ts": time.time(),
+        }
+        if len(_store) > _MAX_ENTRIES:
+            oldest_id = min(_store, key=lambda k: _store[k]["ts"])
+            del _store[oldest_id]

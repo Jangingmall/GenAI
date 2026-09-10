@@ -98,14 +98,22 @@ def test_to_contact1_assembles_filters():
 def test_to_contact1_passes_through_chat_reply():
     """chat_reply는 general_chat일 때 orchestrator가 generate.py 호출 없이 바로 쓰는
     필드다 — _to_contact1이 그대로 넘겨야 한다."""
-    raw = {"intent": "general_chat", "query_text": "", "chat_reply": "안녕하세요! 무엇을 도와드릴까요?"}
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    raw = {
+        "intent": "general_chat",
+        "query_text": "",
+        "chat_reply": "안녕하세요! 무엇을 도와드릴까요?",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result["chat_reply"] == "안녕하세요! 무엇을 도와드릴까요?"
 
 
 def test_to_contact1_missing_chat_reply_defaults_empty():
     raw = {"intent": "product_search", "query_text": "찻잔"}
-    result = it._to_contact1(raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS)
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+    )
     assert result["chat_reply"] == ""
 
 
@@ -197,9 +205,7 @@ def test_classify_and_extract_truncates_history_to_recent_turns():
         seen["user_content"] = messages[-1]["content"]
         return json.dumps({"intent": "general_chat", "query_text": ""})
 
-    history = [
-        {"role": "user", "content": f"{i}번째 메시지"} for i in range(10)
-    ]
+    history = [{"role": "user", "content": f"{i}번째 메시지"} for i in range(10)]
     it.classify_and_extract("최근 질문", history=history, chat=fake)
 
     assert "0번째 메시지" not in seen["user_content"]

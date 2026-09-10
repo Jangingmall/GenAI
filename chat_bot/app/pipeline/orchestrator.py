@@ -106,11 +106,15 @@ def run(
         new_filters.get(k) is not None and new_filters.get(k) != prev_filters.get(k)
         for k in ("max_price", "min_price")
     )
-    color_changed = bool(new_filters.get("color")) and new_filters.get("color") != prev_filters.get(
+    color_changed = bool(new_filters.get("color")) and new_filters.get(
         "color"
-    )
+    ) != prev_filters.get("color")
     has_new_filter = price_changed or color_changed
-    if contact1["intent"] == "narrow_down" and previous_candidates and not has_new_filter:
+    if (
+        contact1["intent"] == "narrow_down"
+        and previous_candidates
+        and not has_new_filter
+    ):
         candidates = previous_candidates
     else:
         candidates = search_and_rank(contact1)
