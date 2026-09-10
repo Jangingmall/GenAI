@@ -15,35 +15,118 @@ GENERATED_USAGE_SCENE_PROMPT_VERSION = "generated-usage-scene-v5-source-count-gl
 GENERATED_DETAIL_CUT_PROMPT_VERSION = "generated-detail-cut-v3-source-count-glass"
 
 
-def _format_layout_archetype_examples(
+def _format_selected_layout_instruction(
     archetypes: Sequence[Mapping[str, Any]] | None,
 ) -> str:
-    rendered = []
     for archetype in archetypes or ():
         name = archetype.get("name")
-        when = archetype.get("when")
         sequence = archetype.get("sequence")
         if (
             not isinstance(name, str)
-            or not isinstance(when, str)
             or not isinstance(sequence, list)
+            or not sequence
             or not all(isinstance(block_type, str) for block_type in sequence)
         ):
             continue
-        rendered.append(
-            f"- {name} — when: {when}; example sequence: {' → '.join(sequence)}."
+        return (
+            "Code-selected layout plan:\n"
+            f"Selected archetype: {name}.\n"
+            "Create page_plan using this exact block sequence.\n"
+            f"{' → '.join(sequence)}\n"
+            "Code determines page_plan composition, length, and order. Write only "
+            "grounded copy and content for each specified block.\n"
+            "If a specified block is unsupported by the image or creator-provided "
+            "data, omit it rather than invent content. Preserve the relative order "
+            "of every remaining block.\n\n"
         )
+    return ""
 
-    if not rendered:
-        return ""
-    return (
-        "Layout archetype examples:\n"
-        "These are examples of how evidence can produce different structures, not a menu or checklist.\n"
-        "Do not choose one by name. If none of these examples fit, create a different "
-        "evidence-grounded composition.\n"
-        + "\n".join(rendered)
-        + "\n\n"
-    )
+
+def _build_page_plan_contract(selected_layout_instruction: str) -> str:
+    """Keep layout composition in code while preserving an adaptive fallback."""
+
+    if selected_layout_instruction:
+        return f"""The layout choice is only a backward-compatible style hint, not the page layout.
+The authoritative layout is page_plan. For this analysis, code determines page-plan
+composition, length, and order.
+
+Use only these block_type values: hero, statement, feature_grid, detail_split, wide_image,
+gallery, usage_scene, scale_reference, palette, recommendation, info_table, notice, closing.
+Every block must contain section_id, block_type, eyebrow, title, body, variant. Use photo_id
+only from hero, packshot, detail, detail-02, detail-03, detail-04, detail-05, lifestyle,
+scale. Use items for cards, palettes, recommendations, or tables. Use photo_ids for galleries.
+Always include hero. Do not add, substitute, or reorder page_plan blocks; the selected layout
+sequence determines which blocks exist. Populate only the selected blocks with grounded content.
+
+Reference-inspired composition constraints:
+{build_reference_guide_prompt()}
+For page_plan structure, the code-selected layout plan below overrides the guide and any
+adaptive composition advice. The guide controls visual and copy direction only.
+{selected_layout_instruction}"""
+
+    return f"""The layout choice is only a backward-compatible style hint, not the page layout. The
+authoritative layout is page_plan. Do not use one fixed sequence for every product.
+
+page_plan must contain 8 to 12 safe, whitelisted blocks. Compose it like a premium craft editorial
+detail page, but keep it adaptive and product-specific; this is not a fixed template. Build an
+eight-block plan first: hero, closing, exactly one gallery, the care-gated notice, and four
+evidence-qualified middle blocks. Add a ninth or later block only when it answers a distinct
+product-specific question that no selected block already answers. Do not add a generic block merely
+to reach the minimum or make the page feel complete. Hero must be first and closing must be last.
+Choose the remaining order, count, and variants from the product's visual character and available evidence. Use only these
+block_type values: hero, statement, feature_grid, detail_split, wide_image, gallery,
+usage_scene, scale_reference, palette, recommendation, info_table, notice, closing.
+Every block must contain section_id, block_type, eyebrow, title, body, variant. Use photo_id
+only from hero, packshot, detail, detail-02, detail-03, detail-04, detail-05, lifestyle,
+scale. Use items for cards, palettes, recommendations, or tables. Use photo_ids for galleries.
+Always include hero. The detailed selection gates below decide whether usage_scene, palette, and
+info_table are included; the mere availability of a lifestyle role or visible attribute does not qualify.
+Before producing JSON, silently run this planning sequence and do not expose the reasoning:
+1. Rank the source-visible product anchors by distinctiveness and confidence.
+2. Select one primary editorial archetype from silhouette-led, texture-led, set-led, or process-led.
+3. Assign every selected image a different communication job; do not use decorative repetition.
+4. Remove any section whose claim lacks image evidence or creator-provided support.
+Reference-inspired composition constraints:
+{build_reference_guide_prompt()}
+Page-plan selection precedence: for page_plan, these constraints override any fixed page-plan order
+or implied block set in the Reference guide contract above. The guide controls visual and copy
+direction only; it does not require a page_plan block_type.
+- Required skeleton: hero is first, closing is last, include exactly
+  one gallery with eyebrow PRODUCT GALLERY and photo_ids
+  ["detail", "detail-02", "detail-03", "detail-04", "detail-05"]. The renderer uses available
+  distinct assets in a 3-up then 2-up arrangement; never promise five original photographs.
+  A palette is optional and must never replace the gallery. If generated cuts are included,
+  describe the gallery as original detail plus AI styling references, not all original views.
+- Required care protection: include a dark notice block for supplied careTips or concise verification notes. Supplied
+  careTips are the product's declared care guidance and should be retained when present.
+- Evidence-led menu: treat detail_split, feature_grid, info_table, palette, recommendation,
+  scale_reference, statement, usage_scene, and wide_image as a menu, not a checklist. Select exactly
+  four evidence-qualified menu block types for the eight-block plan, in addition to hero, gallery,
+  notice, and closing. Add a ninth or later menu block only for a non-overlapping,
+  product-specific evidence job. Do not include all blocks or select/order them by the order in this prompt.
+- Selection gates (alphabetized; these are not page order): detail_split requires a real detail crop
+  with a distinct surface, construction, or process fact not already carried by feature_grid,
+  gallery, or info_table; feature_grid requires three independent visible facts not repeated by
+  detail_split or info_table, otherwise omit it; info_table requires at least three discrete
+  creator-provided or image-visible facts that are not generic form/color restatements or repeated
+  feature cards, otherwise omit it; palette requires a color relationship or surface variation that
+  is a primary product anchor and is not already fully explained by gallery; recommendation requires
+  at least two distinct, product-specific styling suggestions, never generic table, shelf, light, or
+  background advice; scale_reference requires a real visible scale reference, otherwise omit it;
+  statement: include ONLY when creator-provided making_method (howMade) is supplied. If making data
+  is absent, OMIT statement entirely; do not invent a making story or rewrite appearance as a statement;
+  usage_scene requires a product-specific use or scale context beyond generic placement, and lifestyle
+  availability alone is not evidence; wide_image requires a non-hero source view that proves silhouette
+  or spatial form beyond the hero, otherwise omit it. When feature_grid is selected, use three concise
+  feature cards with distinct observations.
+- Archetype preferences, not required bundles: use the chosen archetype only to break a tie between
+  evidence-qualified types; it is not a fixed block bundle or page order. silhouette-led favors
+  wide_image or scale_reference; texture-led favors detail_split or palette; set-led favors
+  feature_grid, gallery, or info_table; process-led favors statement and detail_split.
+Use dark for selected detail_split and notice, full-bleed for selected usage_scene, sand for palette
+when present, and paper for hero and closing. Vary optional blocks and their order when the evidence
+calls for it; do not copy one fixed middle sequence for every product.
+"""
 
 
 def build_analysis_prompt(
@@ -60,8 +143,21 @@ def build_analysis_prompt(
         if user_hints.care_guide:
             data_lines.append(f"- care guide data: {user_hints.care_guide}")
     data_block = "\n".join(data_lines) or "(none)"
-    archetype_examples = _format_layout_archetype_examples(archetypes)
-    return f"""You are a careful e-commerce product analyst.
+    selected_layout_instruction = _format_selected_layout_instruction(archetypes)
+    page_plan_contract = (
+        _build_page_plan_contract(selected_layout_instruction)
+        if selected_layout_instruction
+        else ""
+    )
+    archetype_examples = ""
+    final_structure_check = (
+        "- Check identifiers are unique, the remaining emitted blocks preserve the selected "
+        "order after any grounding omissions, and all output fields conform to the provided schema."
+        if selected_layout_instruction
+        else "- Check gallery exists even when palette exists, identifiers are unique, hero is first, "
+        "closing is last, and all output fields conform to the provided schema."
+    )
+    prompt = f"""You are a careful e-commerce product analyst.
 Analyze the attached product image and return JSON only. The output language is {locale}.
 
 Agreed BE → AI content-generation contract:
@@ -267,6 +363,22 @@ Final copy consistency checks:
 Creator product data:
 {data_block}
 """
+    if selected_layout_instruction:
+        adaptive_start = (
+            "The layout choice is only a backward-compatible style hint, not the page layout. The\n"
+            "authoritative layout is page_plan. Do not use one fixed sequence for every product."
+        )
+        example_block = "Example block shape (illustrative, adapt to the product):"
+        start = prompt.index(adaptive_start)
+        end = prompt.index(example_block, start)
+        prompt = f"{prompt[:start]}{page_plan_contract}{prompt[end:]}"
+        prompt = prompt.replace(
+            "- Check gallery exists even when palette exists, identifiers are unique, hero is first,\n"
+            "  closing is last, and all output fields conform to the provided schema.",
+            final_structure_check,
+            1,
+        )
+    return prompt
 
 
 def build_craft_research_prompt(

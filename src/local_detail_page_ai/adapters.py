@@ -72,7 +72,7 @@ class LocalProductAnalyzer(ProductAnalyzer):
         image_sha256: str,
     ) -> tuple[str, dict[str, Any]]:
         schema = ProductProfileDto.model_json_schema()
-        archetypes = select_layout_archetypes(image_sha256, user_hints)
+        archetypes = select_layout_archetypes(image_sha256, user_hints, count=1)
         prompt = (
             f"{build_analysis_prompt(self.locale, user_hints=user_hints, archetypes=archetypes)}\n"
             "입력된 제품명·제작과정·관리법은 장인이 제공한 상품 데이터이므로 상품별 "
