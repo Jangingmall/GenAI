@@ -61,9 +61,25 @@ _GENERATE_OUTPUT_SCHEMA = (
 )  # 매 요청마다 재계산할 필요 없다
 
 
+_OVERBROAD_TERMS = {
+    # 실데이터상 "항아리"는 POTTERY 세부품목명으로만 쓰인다(옹기 물항아리는
+    # "물항아리"로 별도 표기돼 taxonomy.py 생성 로직이 정확히 POTTERY로만
+    # 매핑함 — 데이터 자체는 정상). 하지만 실제 손님은 "항아리"를 종목 구분
+    # 없이 아무 큰 단지나 가리키는 일상어로 쓴다(실측 확인: "김치 담글 때 쓸
+    # 항아리"가 옹기 김치독을 잘못 걸러낸 사례) — 이런 카탈로그-일상어 괴리는
+    # build_taxonomy.py의 데이터 분포 기반 중의성 판정으로는 못 잡으므로
+    # 여기서 수동으로 제외한다.
+    "항아리",
+}
+
+
 def _mentioned_categories(message: str) -> set[str]:
     """소비자 발화에서 taxonomy.CATEGORY_SIGNALS로 매칭되는 카테고리 코드 전체 집합."""
-    return {code for term, code in taxonomy.CATEGORY_SIGNALS.items() if term in message}
+    return {
+        code
+        for term, code in taxonomy.CATEGORY_SIGNALS.items()
+        if term in message and term not in _OVERBROAD_TERMS
+    }
 
 
 def _mentioned_category(message: str) -> str | None:
