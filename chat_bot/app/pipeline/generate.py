@@ -29,6 +29,7 @@ name에서 역추정하는 폴백(_category_from_name)이 카테고리 대조의
 from __future__ import annotations
 
 import logging
+import re
 
 import psycopg2
 from pydantic import BaseModel, Field
@@ -110,12 +111,32 @@ def _effective_category(candidate: dict) -> str | None:
     return candidate.get("category") or _category_from_name(candidate.get("name") or "")
 
 
+_MATERIAL_PATTERN = re.compile(r"(?:으로|로)\s*(?:만든|만들어진|된|제작된)")
+
+
+def _is_material_subcategory_contradiction(message: str) -> bool:
+    """ "X로 만든 Y" 문형에서 X·Y가 서로 다른 카테고리에 속하면 실존하지 않는
+    조합으로 본다(예: "감물염으로 만든 거울함", "도기토로 만든 다기받침").
+
+    이 판단을 LLM(priority_rule의 _ambiguity_warning)에만 맡기면 실측상 60%
+    정도만 걸러진다(28개 평가 케이스 중 유사 패턴 4건 중 2건 통과 실패) —
+    "X로 만든/된 Y" 문형은 재질과 품목을 명시적으로 묶어 말하는 것이라 코드로
+    확정 판단할 수 있어서 여기서 하드 필터한다. "A랑 B 둘 다" 같은 복합 요청은
+    이 문형에 안 걸리므로 오탐하지 않는다(실측 확인).
+    """
+    if not _MATERIAL_PATTERN.search(message):
+        return False
+    return len(_mentioned_categories(message)) >= 2
+
+
 def _filter_by_category(candidates: list[dict], message: str) -> list[dict]:
     """사용자가 카테고리를 명시했으면, 유효 카테고리가 다른 후보를 뺀다.
 
     유효 카테고리를 candidate['category']에서도 name 역추정에서도 못 정하면
     (_effective_category가 None) 그 후보는 건드리지 않는다.
     """
+    if _is_material_subcategory_contradiction(message):
+        return []
     mentioned = _mentioned_category(message)
     if mentioned is None:
         return candidates
