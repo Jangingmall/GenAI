@@ -33,28 +33,41 @@ def _grade_bonus(candidate: dict) -> float:
 
 
 def rank(candidates: list[dict], top_k: int = MAX_RESULTS) -> list[dict]:
-    """검색 후보를 (유사도 + 등급 가중)으로 재정렬해 상위 top_k개를 돌려준다.
-
-    Args:
-        candidates: search가 넘긴 접점 2 형식 리스트 (score=유사도)
-        top_k: 최대 반환 개수 (기본 3)
-
-    Returns:
-        최종 score로 내림차순 정렬된 상위 top_k개. score는 가중이 더해진 값으로 갱신.
-    """
+    """검색 후보를 (유사도 + 등급 가중)으로 재정렬한 뒤,
+    동명 상품 중복을 걷어내고(다양성) 상위 top_k개를 돌려준다."""
     ranked = []
     for cand in candidates:
-        base = cand.get("score", 0.0)  # 검색 유사도
-        bonus = _grade_bonus(cand)  # 등급 가중
-        final = base + bonus
-        # 원본을 건드리지 않도록 복사해서 score만 최종값으로 교체
+        base = cand.get("score", 0.0)
+        bonus = _grade_bonus(cand)
         item = dict(cand)
-        item["score"] = final
+        item["score"] = base + bonus
         ranked.append(item)
 
-    # 최종 점수 내림차순, 상위 top_k
     ranked.sort(key=lambda x: x["score"], reverse=True)
-    return ranked[:top_k]
+
+    # 다양성: 같은 이름이 이미 뽑혔으면 건너뛴다.
+    # (데이터에 동명의 서로 다른 상품이 다수 존재 → 사용자에겐 선택지 하나로 보임)
+    seen_names = set()
+    diversified = []
+    for item in ranked:
+        name = item.get("name")
+        if name in seen_names:
+            continue
+        seen_names.add(name)
+        diversified.append(item)
+        if len(diversified) >= top_k:
+            break
+
+    # 동명이 너무 많아 top_k를 못 채우면 남은 것으로 보충(순위 유지)
+    if len(diversified) < top_k:
+        for item in ranked:
+            if item not in diversified:
+                diversified.append(item)
+                if len(diversified) >= top_k:
+
+                    break
+
+    return diversified
 
 
 # 단독 실행용: 가짜 후보로 랭킹 동작 확인
