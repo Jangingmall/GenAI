@@ -30,6 +30,7 @@ SUPPORTED_LAYOUT_VARIANTS = frozenset(
 def _format_selected_layout_instruction(
     archetypes: Sequence[Mapping[str, Any]] | None,
 ) -> str:
+    valid_archetypes = []
     for archetype in archetypes or ():
         name = archetype.get("name")
         sequence = archetype.get("sequence")
@@ -44,6 +45,16 @@ def _format_selected_layout_instruction(
             or not all(variant in SUPPORTED_LAYOUT_VARIANTS for variant in variants)
         ):
             continue
+        valid_archetypes.append(archetype)
+
+    if not valid_archetypes:
+        return ""
+
+    if len(valid_archetypes) == 1:
+        archetype = valid_archetypes[0]
+        name = archetype.get("name")
+        sequence = archetype.get("sequence", [])
+        variants = archetype.get("variants", [])
         variant_assignments = "\n".join(
             f"{index}. {block_type} → {variant}"
             for index, (block_type, variant) in enumerate(
@@ -67,7 +78,48 @@ def _format_selected_layout_instruction(
             "of every remaining block. Every remaining block keeps its paired "
             "code-selected variant.\n\n"
         )
-    return ""
+
+    candidate_entries = []
+    for index, arch in enumerate(valid_archetypes, start=1):
+        arch_id = arch.get("id", f"archetype-{index}")
+        name = arch.get("name", "")
+        when = arch.get("when", "")
+        avoid_when = arch.get("avoid_when", "")
+        sequence = arch.get("sequence", [])
+        variants = arch.get("variants", [])
+        variant_assignments = ", ".join(
+            f"{block_type} → {variant}"
+            for block_type, variant in zip(sequence, variants, strict=True)
+        )
+        avoid_line = f"  - avoid_when: {avoid_when}\n" if avoid_when else ""
+        candidate_entries.append(
+            f"[Option {index}] id: {arch_id} ({name})\n"
+            f"  - when: {when}\n"
+            f"{avoid_line}"
+            f"  - sequence: {' → '.join(sequence)}\n"
+            f"  - block variants: {variant_assignments}"
+        )
+
+    candidates_text = "\n\n".join(candidate_entries)
+
+    return (
+        "Candidate layout archetypes (choose exactly one; 넷 중 하나를 반드시 선택하라):\n"
+        "아래 4종의 레이아웃 원형 중 상품에서 관찰한 것과 when 조건이 가장 맞는 하나를 고르고 그 시퀀스를 그대로 만들라. "
+        "넷 중 하나를 반드시 고르고 그 시퀀스를 그대로 쓰라. "
+        "이것은 단순 참고 예시가 아니라 필수 선택지다. 고른 원형의 시퀀스가 곧 page_plan의 골격이다.\n\n"
+        f"{candidates_text}\n\n"
+        "Selection and page_plan composition rules:\n"
+        "1. Select exactly one archetype above whose 'when' condition best matches the observed product characteristics. "
+        "관찰한 것과 when이 가장 맞는 하나를 고르라. "
+        "Do not select an archetype if the product matches its 'avoid_when' condition.\n"
+        "2. Create page_plan following the exact block sequence of the chosen archetype. "
+        "Apply the chosen archetype's paired block variants to the matching positions. "
+        "Do not substitute or reorder variants.\n"
+        "3. Grounding exception: if a specified block in the chosen archetype is unsupported by the image evidence "
+        "or creator-provided data, omit it rather than invent content. "
+        "Do not invent facts to fill a block. Preserve the relative order of every remaining block. "
+        "Every remaining block keeps its paired variant.\n\n"
+    )
 
 
 def _build_page_plan_contract(selected_layout_instruction: str) -> str:

@@ -209,13 +209,77 @@ def test_analysis_prompt_uses_a_selected_layout_with_grounding_exception():
     assert "Choose the remaining order, count, and variants" not in prompt
 
 
+def test_prompt_includes_four_candidate_archetype_ids_and_when_conditions():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+    candidates = select_layout_archetypes("image_hash_seed_01", hints, count=4)
+    assert len(candidates) == 4
+    prompt = build_analysis_prompt("ko-KR", user_hints=hints, archetypes=candidates)
+
+    for arch in candidates:
+        assert arch["id"] in prompt
+        assert arch["when"] in prompt
+        assert arch["avoid_when"] in prompt
+
+
+def test_prompt_instructs_to_choose_one_archetype_and_omits_illustrative_example_phrase():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+    candidates = select_layout_archetypes("image_hash_seed_02", hints, count=4)
+    prompt = build_analysis_prompt("ko-KR", user_hints=hints, archetypes=candidates)
+
+    assert "하나를 고르라" in prompt
+    assert "예시일 뿐" not in prompt
+
+
+def test_different_hashes_produce_different_candidate_pools():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    hints = UserHintsDto()
+    pools = [
+        tuple(arch["id"] for arch in select_layout_archetypes(f"seed_{i:04d}", hints, count=4))
+        for i in range(10)
+    ]
+    unique_pools = set(pools)
+    assert len(unique_pools) >= 3
+
+
+def test_missing_catalog_gracefully_falls_back_to_default_plan(tmp_path):
+    from detail_page_ai.layout_archetypes import load_layout_catalog
+
+    empty_catalog = load_layout_catalog(tmp_path / "non_existent_catalog.json")
+    assert empty_catalog == []
+    prompt = build_analysis_prompt("ko-KR", archetypes=empty_catalog)
+
+    assert "Candidate layout archetypes" not in prompt
+    assert "Code-selected layout plan" not in prompt
+    assert "Build an eight-block plan first" in " ".join(prompt.split())
+
+
+def test_match_page_plan_to_archetype_finds_correct_candidate():
+    from detail_page_ai.layout_archetypes import match_page_plan_to_archetype
+
+    archetypes = [
+        {"id": "arch-a", "sequence": ["hero", "wide_image", "detail_split", "closing"]},
+        {"id": "arch-b", "sequence": ["hero", "statement", "gallery", "closing"]},
+    ]
+    matched = match_page_plan_to_archetype(["hero", "statement", "gallery", "closing"], archetypes)
+    assert matched is not None
+    assert matched["id"] == "arch-b"
+
+    matched_omitted = match_page_plan_to_archetype(["hero", "gallery", "closing"], archetypes)
+    assert matched_omitted is not None
+    assert matched_omitted["id"] == "arch-b"
+
+
 def test_analysis_prompt_applies_detail_page_guide_visual_direction():
     prompt = build_analysis_prompt("ko-KR")
 
     assert "Pretendard" in prompt
-    assert "cool grey" in prompt.lower()
-    assert "jade blue" in prompt.lower()
-    assert "black and white" in prompt.lower()
+    assert "jade" in prompt.lower()
+    assert "neutral" in prompt.lower()
     assert "image and text" in prompt.lower()
     assert "do not copy sample text" in prompt.lower()
     assert "no gradients" in prompt.lower()
@@ -301,10 +365,11 @@ def test_analysis_prompt_blocks_invented_care_and_search_claims_in_customer_copy
 def test_detail_page_guide_is_a_single_reusable_prompt_contract():
     guide = build_reference_guide_prompt()
 
-    assert REFERENCE_GUIDE_VERSION == "detail-page-guide-v2-premium-editorial"
+    assert REFERENCE_GUIDE_VERSION == "detail-page-guide-v3-product-color-tokens"
     assert "Pretendard" in guide
     assert "#FAFBFC" in guide
-    assert "#DAE6E8" in guide
+    assert "#C6D9DC" in guide
+    assert "#121B29" in guide
     assert "3-up then 2-up" in guide
     assert "Do / Don't" in guide
     assert "Do not copy sample text" in guide
