@@ -1,4 +1,7 @@
 import json
+import itertools
+import random
+import statistics
 from collections import Counter
 from pathlib import Path
 
@@ -112,3 +115,32 @@ def test_catalog_entries_have_all_documented_fields():
     for layout in load_catalog():
         assert REQUIRED_KEYS <= layout.keys()
 
+
+def test_catalog_sticky_blocks_stay_within_target_frequency():
+    counts = Counter(block for layout in load_catalog() for block in layout["sequence"])
+    for block in ("notice", "info_table", "detail_split", "usage_scene"):
+        assert 15 <= counts[block] <= 17
+
+
+def test_catalog_sequence_variants_remain_aligned():
+    for layout in load_catalog():
+        assert len(layout["sequence"]) == len(layout["variants"])
+
+
+def test_catalog_sampled_sequence_jaccard_is_diverse():
+    layouts = load_catalog()
+    sequence_sets = [set(layout["sequence"]) for layout in layouts]
+    rng = random.Random(0)
+
+    def mean_jaccard(sample):
+        scores = [
+            len(sequence_sets[left] & sequence_sets[right])
+            / len(sequence_sets[left] | sequence_sets[right])
+            for left, right in itertools.combinations(sample, 2)
+        ]
+        return statistics.mean(scores)
+
+    average = statistics.mean(
+        mean_jaccard(rng.sample(range(len(layouts)), 6)) for _ in range(3000)
+    )
+    assert average <= 0.55
