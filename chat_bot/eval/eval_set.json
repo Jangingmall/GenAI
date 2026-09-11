@@ -218,7 +218,7 @@
       "type": "search",
       "judge": "auto",
       "expected": { "max_price": 50000, "should_be_empty": false },
-      "note": "가격 필터 — B의 intent가 붙어야 작동. 현재는 미작동 관찰용."
+      "note": "가격 필터 — B의 intent가 붙어야 작동."
     },
     {
       "id": "price_002",

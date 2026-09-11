@@ -43,6 +43,8 @@ except Exception:  # noqa: BLE001
 GIFT_THEME_BONUS = 0.05
 # RRF 상수. 관례적으로 60을 쓴다(순위 차이를 완만하게 반영).
 RRF_K = 60
+# 억지 추천 방지를 위한 코사인 유사도 임계치 (BGE-M3 코사인 유사도 기준)
+SIMILARITY_THRESHOLD = 0.46
 
 
 def _vector_search(cur, qvec_literal, where_sql, where_params, limit):
@@ -88,28 +90,52 @@ def _bm25_candidates(cur, query_tokens, where_sql, where_params, limit):
 def _rrf_fuse(vector_rows, bm25_rows):
     """RRF(Reciprocal Rank Fusion)로 두 순위를 합친다.
 
-    각 결과에서의 순위(rank) 역수를 더해 최종 점수를 만든다. 양쪽 상위일수록 높다.
-    반환: {product_id: {name, evidence, gift_theme, rrf}}
+    반환: {product_id: {name, evidence, gift_theme, rrf, similarity}}
     """
     fused: dict = {}
 
-    def add(rows):
-        for rank_idx, row in enumerate(rows, start=1):
-            pid, name, _score, evidence, gift_theme = row
-            entry = fused.setdefault(
-                pid,
-                {
-                    "name": name,
-                    "evidence": evidence,
-                    "gift_theme": gift_theme,
-                    "rrf": 0.0,
-                },
-            )
-            entry["rrf"] += 1.0 / (RRF_K + rank_idx)
+    # 1. 벡터 검색 결과 반영 (벡터 유사도 점수 저장)
+    for rank_idx, row in enumerate(vector_rows, start=1):
+        pid, name, similarity, evidence, gift_theme = row
+        fused[pid] = {
+            "name": name,
+            "evidence": evidence,
+            "gift_theme": gift_theme,
+            "rrf": 1.0 / (RRF_K + rank_idx),
+            "similarity": float(similarity),  # 코사인 유사도 저장
+        }
 
-    add(vector_rows)
-    add(bm25_rows)
+    # 2. BM25 검색 결과 반영
+    for rank_idx, row in enumerate(bm25_rows, start=1):
+        pid, name, _score, evidence, gift_theme = row
+        if pid in fused:
+            fused[pid]["rrf"] += 1.0 / (RRF_K + rank_idx)
+        else:
+            # BM25에만 존재하는 경우 코사인 유사도는 0.0으로 임시 설정
+            fused[pid] = {
+                "name": name,
+                "evidence": evidence,
+                "gift_theme": gift_theme,
+                "rrf": 1.0 / (RRF_K + rank_idx),
+                "similarity": 0.0,
+            }
+
     return fused
+
+
+def _get_missing_similarities(cur, qvec_literal, missing_pids):
+    """BM25로만 선택된 후보들의 벡터 코사인 유사도를 별도로 단일 조회하여 보완한다."""
+    if not missing_pids:
+        return {}
+
+    sql = """
+        SELECT p.product_id,
+               1 - (p.embedding <=> %s::vector) AS similarity
+        FROM products p
+        WHERE p.product_id = ANY(%s);
+    """
+    cur.execute(sql, (qvec_literal, list(missing_pids)))
+    return {row[0]: float(row[1]) for row in cur.fetchall()}
 
 
 def _build_where(filters):
@@ -132,18 +158,32 @@ def _build_where(filters):
     return where_sql, params
 
 
-def search(query: dict, top_k: int = 10) -> list[dict]:
+def search(
+    query: dict,
+    top_k: int = 10,
+    similarity_threshold: float = SIMILARITY_THRESHOLD,
+) -> list[dict]:
     """접점 1을 받아 하이브리드 검색 후보를 접점 2 형식으로 돌려준다.
 
     Args:
         query: { query_text, filters, intent }
-        top_k: 랭킹에 넘길 후보 수 (랭킹이 최종 3개로 자름)
+        top_k: 랭킹에 넘길 후보 수
+        similarity_threshold: 억지 추천 방지를 위한 코사인 유사도 최소 기준값 (기본 0.45)
 
     Returns:
-        [ { product_id, name, score, evidence }, ... ]  (score=RRF+부스팅)
+        [ { product_id, name, score, similarity, evidence }, ... ]
     """
     query_text = query.get("query_text", "")
     filters = query.get("filters") or {}
+
+    # 하드필터(가격·색상)가 명확히 있으면 유사도 컷을 면제한다.
+    # 사용자가 명확한 조건을 말한 경우, 유사도가 낮아도 정당한 결과이지 억지 추천이 아니다.
+    has_hard_filter = bool(
+        filters.get("max_price") is not None
+        or filters.get("min_price") is not None
+        or filters.get("color")
+    )
+    effective_threshold = 0.0 if has_hard_filter else similarity_threshold
 
     qvec = embed_query(query_text)
     qvec_literal = "[" + ",".join(str(x) for x in qvec) + "]"
@@ -152,42 +192,68 @@ def search(query: dict, top_k: int = 10) -> list[dict]:
     conn = psycopg2.connect(settings.dsn())
     try:
         with conn.cursor() as cur:
+            # RRF 융합을 위해 후보를 top_k * 2개 정도 수집
+            fetch_limit = max(top_k * 2, 20)
+
             vector_rows = _vector_search(
-                cur, qvec_literal, where_sql, where_params, top_k
+                cur, qvec_literal, where_sql, where_params, fetch_limit
             )
             bm25_rows = []
             if tokenize_ko is not None:
                 tokens = tokenize_ko(query_text)
                 bm25_rows = _bm25_candidates(
-                    cur, tokens, where_sql, where_params, top_k
+                    cur, tokens, where_sql, where_params, fetch_limit
                 )
+
+            # RRF 융합
+            fused = _rrf_fuse(vector_rows, bm25_rows)
+
+            # BM25로만 뽑혀 유사도가 0.0인 후보들의 실제 코사인 유사도 채우기
+            missing_pids = [
+                pid for pid, entry in fused.items() if entry["similarity"] == 0.0
+            ]
+            if missing_pids:
+                sim_map = _get_missing_similarities(cur, qvec_literal, missing_pids)
+                for pid, sim_val in sim_map.items():
+                    if pid in fused:
+                        fused[pid]["similarity"] = sim_val
+
     finally:
         conn.close()
 
-    # RRF 융합
-    fused = _rrf_fuse(vector_rows, bm25_rows)
-
-    # gift_theme 부스팅 + 접점 2 형식 조립
+    # gift_theme 부스팅 + 2단계 유사도 컷(Threshold) 적용
     want_themes = set(filters.get("gift_theme") or [])
     results = []
+
     for pid, entry in fused.items():
+        cosine_sim = entry["similarity"]
+
+        # [핵심] 코사인 유사도 컷 (Threshold) - 억지 추천 방지
+        if cosine_sim < effective_threshold:
+            continue
+
         evidence = entry["evidence"]
         if isinstance(evidence, str):
             evidence = json.loads(evidence)
+
         score = entry["rrf"]
-        # 요청 선물테마가 상품 gift_theme에 있으면 소폭 가점 (부스팅, 하드필터 아님)
+
+        # gift_theme 부스팅 (하드 필터 아님)
         product_themes = set(entry.get("gift_theme") or [])
         if want_themes and (want_themes & product_themes):
             score += GIFT_THEME_BONUS
+
         results.append(
             {
                 "product_id": pid,
                 "name": entry["name"],
                 "score": float(score),
+                "similarity": round(float(cosine_sim), 4),
                 "evidence": evidence,
             }
         )
 
+    # RRF+부스팅 최종 스코어 기준 정렬
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:top_k]
 
@@ -204,5 +270,12 @@ if __name__ == "__main__":
 
     q = sys.argv[1] if len(sys.argv) > 1 else "차 마실 때 쓸 것"
     print(f'질의: "{q}"\n')
-    for i, r in enumerate(search({"query_text": q, "filters": {}}), 1):
-        print(f"{i}. {r['name']}  (score {r['score']:.4f})")
+    search_results = search({"query_text": q, "filters": {}})
+
+    if not search_results:
+        print("유사도 임계치를 만족하는 추천 상품이 없습니다 (억지 추천 차단).")
+    else:
+        for i, r in enumerate(search_results, 1):
+            print(
+                f"{i}. {r['name']} | RRF score: {r['score']:.4f} | Cosine Sim: {r['similarity']:.4f}"
+            )
