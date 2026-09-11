@@ -25,6 +25,11 @@ class _RawIntent(BaseModel):
     """
 
     intent: str
+    # "왜 추천했어?"류 이유 질문인지 — 어떤 상품을 설명할지(순번·"모두")는 코드로 확정
+    # 판단하지만(extract_ordinal·is_all_request), "설명이 필요한 질문인가" 자체는 진짜
+    # 자연어 뉘앙스 판단이라 LLM에 맡긴다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는
+    # intent 분류 호출의 출력 필드 하나로 얹어서 속도 비용을 없앴다.
+    wants_reason: bool
     max_price: int | None
     min_price: int | None
     gift_theme: list[str]
@@ -121,6 +126,7 @@ def _to_contact1(
             "color": color or None,
         },
         "intent": intent,
+        "wants_reason": bool(raw.get("wants_reason")),
         "chat_reply": raw.get("chat_reply") or "",
     }
 

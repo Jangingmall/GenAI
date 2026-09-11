@@ -108,6 +108,13 @@ def run(
     비워서 반환한다(reply 텍스트만 답). 다르면(예: "포장되는 것만"으로 3개→1개로 좁혀짐)
     새 정보이므로 그대로 보여준다. explain_product·explain_products 경로는 사용자가
     명시적으로 상품을 다시 보여달라 요청한 것이라 이 억제를 적용하지 않는다.
+
+    "왜 추천했어?"류는 is_explain_request(키워드 하드코딩)로 못 잡는다 — "어떤 상품을"
+    설명할지(순번·"모두")는 코드로 확정 판단해야 안정적이지만, "설명이 필요한
+    질문인가" 자체는 진짜 자연어 뉘앙스 판단이 필요해 intent.py의 wants_reason
+    필드(LLM 판단)로 잡는다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는 intent
+    분류 호출에 필드 하나를 얹었다 — classify_and_extract 이후에만 확인 가능하므로
+    이 분기는 general_chat 처리 다음, 검색·narrow_down 분기 이전에 둔다.
     """
     # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
     # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
@@ -192,6 +199,32 @@ def run(
             "candidates": previous_candidates or [],
             "filters": contact1["filters"],
             "shown_product_ids": previous_product_ids or [],
+        }
+
+    if contact1.get("wants_reason"):
+        # "왜 추천했어?"류 — 어떤 상품을(순번·"모두") 설명할지는 코드로 확정 판단하지만
+        # (파일 상단 is_explain_request 분기), "이유를 궁금해하는 질문인가" 자체는
+        # intent 분류 LLM이 이미 판단해 넘겨준 신호를 그대로 쓴다. 순번을 안 짚었으므로
+        # explain_products(전체 설명)로 답한다 — is_all_request 분기와 같은 처리.
+        if not previous_candidates:
+            return {
+                "reply": "아직 추천해 드린 상품이 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                "intent": contact1["intent"],
+                "product_ids": [],
+                "suggestions": [],
+                "candidates": [],
+                "filters": contact1["filters"],
+                "shown_product_ids": [],
+            }
+        explained = explain_products(message, previous_candidates, chat=chat)
+        return {
+            "reply": explained["reply"],
+            "intent": contact1["intent"],
+            "product_ids": explained["product_ids"],
+            "suggestions": explained["suggestions"],
+            "candidates": previous_candidates,
+            "filters": contact1["filters"],
+            "shown_product_ids": explained["product_ids"],
         }
 
     prev_filters = previous_filters or {}

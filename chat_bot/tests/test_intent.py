@@ -151,6 +151,7 @@ def test_to_contact1_assembles_filters():
     )
     assert result == {
         "query_text": "환갑 선물",
+        "wants_reason": False,
         "filters": {
             "max_price": 300000,
             "min_price": None,
@@ -213,6 +214,27 @@ def test_to_contact1_missing_query_text_defaults_empty():
         raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="안녕"
     )
     assert result["query_text"] == ""
+
+
+def test_to_contact1_passes_through_wants_reason_true():
+    """ "왜 추천했어?"류 이유 질문 판단은 LLM이 하고, _to_contact1은 그 신호를
+    그대로 넘기기만 한다."""
+    raw = {"intent": "narrow_down", "wants_reason": True, "query_text": "추천 이유"}
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="왜 이 상품들을 추천한거야?",
+    )
+    assert result["wants_reason"] is True
+
+
+def test_to_contact1_missing_wants_reason_defaults_false():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
+    )
+    assert result["wants_reason"] is False
 
 
 # ---------------------------------------------------------------------------
