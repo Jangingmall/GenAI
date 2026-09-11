@@ -78,9 +78,14 @@ intent는 반드시 다음 중 하나: {", ".join(INTENT_VALUES)}
 - gift_theme: {", ".join(sorted(GIFT_THEMES))} 중에서만. 목록 밖이면 빈 배열.
   예: "환갑"→BIRTHDAY_60TH, "집들이"→HOUSEWARMING.
 - color: {", ".join(sorted(COLORS))} 중에서만. 목록 밖이면 빈 배열.
-- query_text: **이번 문장에 실제로 등장한 종목·재료·용도 단어는 절대 빠뜨리지 않는다**
-  ("선물로 좋은 도자기 찾아줘"→"선물용 도자기", "선물"만 쓰면 오답). narrow_down 예시의
-  query_text가 짧은 건 새 주제어가 없는 순수 질문이라서지, 항상 짧게 쓰라는 뜻이 아니다.
+- query_text: **기본은 소비자 문장을 그대로 살린다** — 조사·어미까지 포함해 원문 표현을
+  거의 그대로 옮기고, "~해줘"·"~있나요"류 요청 동사만 뺀다(예: "다도용으로 쓸 만한 것
+  추천해줘"→"다도용으로 쓸 만한 것"). **의미 검색은 임베딩 기반이라 원문 표현 자체가
+  유사도에 직접 영향을 준다** — "다도용"에서 "-용"을 잘라 "다도"만 남기는 식으로 깎으면
+  오히려 유사도가 떨어져 검색이 안 될 수 있다(실측 확인). 문장에 사연·배경 설명이 길게
+  섞여 여러 절로 늘어질 때만 핵심 조건만 추려 짧게 정리한다 — **문장이 짧고 단일
+  요청이면 절대 축약하지 않는다.** narrow_down 예시의 query_text가 짧은 건 새 주제어가
+  없는 순수 질문이라서지, 항상 짧게 쓰라는 뜻이 아니다.
 - 문장(+맥락)에 없는 조건은 채우지 않는다 — null·빈 배열이 기본값.
 - 챗봇 자신의 이전 답변 문구(예: "친구에게")는 소비자가 말한 조건이 아니다 — 하드필터는
   소비자 발화에서만 뽑는다.
@@ -157,6 +162,30 @@ intent는 반드시 다음 중 하나: {", ".join(INTENT_VALUES)}
 gift_theme을 FRIEND로 채우지 않는다.
 출력: {{"intent": "narrow_down", "query_text": "가격대 확인", "max_price": null,
         "min_price": null, "gift_theme": [], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
+소비자: "다도용으로 쓸 만한 것 추천해줘"
+판단: 짧은 단일 요청 → 원문 표현을 그대로 살린다. "다도"만 남기고 "-용"을 잘라내면
+검색 유사도가 오히려 떨어진다(실측 확인) — 축약하지 않는다.
+출력: {{"intent": "product_search", "query_text": "다도용으로 쓸 만한 것", "max_price": null,
+        "min_price": null, "gift_theme": [], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
+소비자: "밥이나 국 담을 그릇 있나요"
+판단: 짧은 단일 요청 → "밥그릇 국그릇"처럼 합성어로 바꾸지 않고 원문 그대로 유지한다.
+출력: {{"intent": "product_search", "query_text": "밥이나 국 담을 그릇", "max_price": null,
+        "min_price": null, "gift_theme": [], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
+소비자: "저희 어머니가 다음 달에 환갑이신데 뜻깊은 선물을 하고 싶은데 요즘 살림을 새로
+늘리신다고 해서 집에 두고 쓰실 그릇 같은 걸 오만원 정도 예산으로 알아보고 있어요"
+판단: 사연·배경 설명이 길게 섞인 문장 → 이럴 때만 핵심 조건(대상·용도·예산)만 추려
+짧게 정리한다. "환갑"→BIRTHDAY_60TH, "오만원"→50000.
+출력: {{"intent": "gift_recommendation", "query_text": "환갑 선물 그릇", "max_price": 50000,
+        "min_price": null, "gift_theme": ["BIRTHDAY_60TH"], "color": [], "chat_reply": ""}}
 </example>
 
 <example>
