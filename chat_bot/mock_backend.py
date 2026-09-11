@@ -109,12 +109,15 @@ def send_message(session_id: str, body: MessageRequest):
     resp.raise_for_status()
     ai_result = resp.json()
 
-    product_ids = [p["product_id"] for p in ai_result["products"]]
+    # AI가 상품마다 다른 reason을 안 주고 product_ids + 공유 reply로 준다 — 백엔드가
+    # 카드 조립 시 이 reply를 각 상품의 reason 자리에 그대로 채운다(Notion 응답 스키마의
+    # products[].reason은 그대로 두고, 채우는 값만 공유 reply로 바뀐 셈).
+    product_ids = ai_result["product_ids"]
     cards = _fetch_product_cards(product_ids)
     products = [
-        {**cards[p["product_id"]], "reason": p["reason"]}
-        for p in ai_result["products"]
-        if p["product_id"] in cards
+        {**cards[pid], "reason": ai_result["reply"]}
+        for pid in product_ids
+        if pid in cards
     ]
 
     # 백엔드 "히스토리 조회" API 명세의 실제 필드명(sender: USER|ARTISAN|ADMIN)을 그대로

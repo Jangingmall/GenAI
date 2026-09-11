@@ -24,25 +24,28 @@ _JUDGE_ROUNDS = 3
 
 
 def _response_text(response: dict) -> str:
-    """forbidden_substrings/must_not_echo 대조용 — reply + 모든 reason을 이어붙인다."""
-    reasons = " ".join(p["reason"] for p in response["products"])
-    return response["reply"] + " " + reasons
+    """forbidden_substrings/must_not_echo 대조용.
+
+    allowed_ids+공유 reply 구조에서는 reply 하나가 소비자에게 보이는 텍스트 전부다 —
+    예전엔 product_ids 리스트로 바뀌어 reason이 없어졌으니 reply만 보면 된다.
+    """
+    return response["reply"]
 
 
 def grade_l1(case: dict, response: dict, intent_value: str) -> dict[str, bool]:
     """cases.json expect 라벨 기준 채점. 케이스에 없는 규칙 키는 결과에도 없다."""
     expect = case["expect"]
-    products = response["products"]
+    product_ids = response["product_ids"]
     text = _response_text(response)
     checks: dict[str, bool] = {}
 
     if "products_empty" in expect:
-        checks["products_empty"] = (len(products) == 0) == expect["products_empty"]
+        checks["products_empty"] = (len(product_ids) == 0) == expect["products_empty"]
     if "allowed_ids" in expect:
         allowed = set(expect["allowed_ids"])
-        checks["allowed_ids"] = all(p["product_id"] in allowed for p in products)
+        checks["allowed_ids"] = all(pid in allowed for pid in product_ids)
     if "min_products" in expect:
-        checks["min_products"] = len(products) >= expect["min_products"]
+        checks["min_products"] = len(product_ids) >= expect["min_products"]
     if "forbidden_substrings" in expect:
         checks["forbidden_substrings"] = not any(
             s in text for s in expect["forbidden_substrings"]
@@ -72,31 +75,31 @@ def _extract_claims(reason: str) -> list[str]:
     return _NUMBER_RE.findall(reason) + _QUOTE_RE.findall(reason)
 
 
-def grade_l2(products: list[dict], candidates: list[dict]) -> dict:
-    """reason 속 숫자·인용이 해당 후보 evidence.artisan_input의 부분문자열인지 대조.
+def grade_l2(product_ids: list[int], reply: str, candidates: list[dict]) -> dict:
+    """reply 속 숫자·인용이 선택된 후보들의 evidence.artisan_input에 있는지 대조.
 
     반환: {"claims_total": int, "claims_supported": int, "citation_rate": float|None,
-           "flagged": [{"product_id", "claim"}]}  # 근거 없는 인용
+           "flagged": [claim, ...]}  # 근거 없는 인용
 
-    주의: allowed_ids+공유 reply 구조(오늘 반영)에서는 reason이 상품마다 다르지 않고
-    reply를 그대로 복제한 값이라, 이 채점의 실효성이 예전(상품별 reason)보다 낮다 —
-    참고 지표로만 본다.
+    product_ids+공유 reply 구조에서는 reply 하나가 선택된 상품 전체를 아우르므로,
+    상품별로 따로 대조하지 않고 "선택된 상품 중 하나라도 그 근거를 담고 있는가"로 본다
+    (예전엔 상품별 reason이 따로 있어 1:1 대조였지만, 지금은 애초에 reason이 상품마다
+    다르지 않으므로 1:다 대조가 맞는 형태다).
     """
-    evidence_by_id = {
-        c["product_id"]: (c.get("evidence") or {}).get("artisan_input", "")
+    evidence_texts = [
+        (c.get("evidence") or {}).get("artisan_input", "")
         for c in candidates
-    }
+        if c["product_id"] in product_ids
+    ]
     flagged = []
     total = 0
     supported = 0
-    for p in products:
-        evidence_text = evidence_by_id.get(p["product_id"], "")
-        for claim in _extract_claims(p["reason"]):
-            total += 1
-            if claim in evidence_text:
-                supported += 1
-            else:
-                flagged.append({"product_id": p["product_id"], "claim": claim})
+    for claim in _extract_claims(reply):
+        total += 1
+        if any(claim in evidence_text for evidence_text in evidence_texts):
+            supported += 1
+        else:
+            flagged.append(claim)
     return {
         "claims_total": total,
         "claims_supported": supported,
@@ -111,7 +114,7 @@ def grade_l2(products: list[dict], candidates: list[dict]) -> dict:
 
 
 class _JudgeScore(BaseModel):
-    faithfulness: float  # 0~1: reason이 evidence로 뒷받침되는 정도
+    faithfulness: float  # 0~1: reply가 evidence로 뒷받침되는 정도
     relevance: float  # 0~1: reply가 소비자 질문에 답이 되는 정도
 
 
@@ -119,7 +122,7 @@ _JUDGE_SCORE_SCHEMA = _JudgeScore.model_json_schema()  # 판정 3회마다 재�
 
 
 _JUDGE_SYSTEM = """너는 추천 챗봇 응답의 품질을 0~1 사이 점수로 평가하는 채점자다.
-faithfulness: products의 reason이 제공된 evidence에서 벗어난 사실을 말하지 않을수록 1에 가깝게.
+faithfulness: reply가 제공된 evidence에서 벗어난 사실을 말하지 않을수록 1에 가깝게.
 relevance: reply가 소비자의 질문에 실제로 답이 될수록 1에 가깝게.
 소수점 둘째 자리까지, 근거 없이 후하게 주지 마라."""
 
@@ -130,7 +133,7 @@ def _judge_once(
     user_content = (
         f"소비자 질문: {message}\n\n[후보 상품]\n{_format_candidates(candidates)}\n\n"
         f"[챗봇 응답] reply: {response['reply']}\n"
-        f"reasons: {[p['reason'] for p in response['products']]}"
+        f"product_ids: {response['product_ids']}"
     )
     raw = chat(
         [
