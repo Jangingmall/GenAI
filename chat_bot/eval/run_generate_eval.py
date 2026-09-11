@@ -75,12 +75,12 @@ def main() -> None:
         }
         if response is not None:
             l1 = grade_l1(case, response, intent_result["intent"])
-            l2 = grade_l2(response["products"], candidates)
+            l2 = grade_l2(response["product_ids"], response["reply"], candidates)
             report.update(
                 {
                     "intent": intent_result["intent"],
                     "reply": response["reply"],
-                    "products": response["products"],
+                    "product_ids": response["product_ids"],
                     "l1": l1,
                     "l1_pass": all(l1.values()) if l1 else True,
                     "l2": l2,

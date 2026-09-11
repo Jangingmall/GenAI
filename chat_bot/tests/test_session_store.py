@@ -30,17 +30,21 @@ def test_get_returns_none_when_missing():
 
 def test_set_then_get_roundtrip():
     session_store.set(
-        "s1", candidates=[{"product_id": 1}], filters={"max_price": 50000}
+        "s1",
+        candidates=[{"product_id": 1}],
+        filters={"max_price": 50000},
+        product_ids=[1],
     )
     result = session_store.get("s1")
     assert result == {
         "candidates": [{"product_id": 1}],
         "filters": {"max_price": 50000},
+        "product_ids": [1],
     }
 
 
 def test_get_expires_after_ttl(monkeypatch):
-    session_store.set("s1", candidates=[], filters={})
+    session_store.set("s1", candidates=[], filters={}, product_ids=[])
     # TTL을 넘긴 것처럼 보이게 저장된 타임스탬프를 과거로 되돌린다.
     session_store._store["s1"]["ts"] -= session_store._TTL_SECONDS + 1
     assert session_store.get("s1") is None
@@ -49,10 +53,12 @@ def test_get_expires_after_ttl(monkeypatch):
 
 def test_set_evicts_oldest_when_over_max_entries(monkeypatch):
     monkeypatch.setattr(session_store, "_MAX_ENTRIES", 2)
-    session_store.set("s1", candidates=[], filters={})
+    session_store.set("s1", candidates=[], filters={}, product_ids=[])
     session_store._store["s1"]["ts"] -= 10  # s1이 가장 오래된 것으로 보이게 한다.
-    session_store.set("s2", candidates=[], filters={})
-    session_store.set("s3", candidates=[], filters={})  # 3개째 → 가장 오래된 s1 제거
+    session_store.set("s2", candidates=[], filters={}, product_ids=[])
+    session_store.set(
+        "s3", candidates=[], filters={}, product_ids=[]
+    )  # 3개째 → 가장 오래된 s1 제거
     assert set(session_store._store) == {"s2", "s3"}
 
 
@@ -72,7 +78,7 @@ def test_concurrent_get_on_expired_session_does_not_raise():
 
         def trial():
             session_store._store.clear()
-            session_store.set("x", candidates=[], filters={})
+            session_store.set("x", candidates=[], filters={}, product_ids=[])
             session_store._store["x"]["ts"] -= session_store._TTL_SECONDS + 1
 
             barrier = threading.Barrier(20)

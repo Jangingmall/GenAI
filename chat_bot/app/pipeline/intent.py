@@ -95,12 +95,33 @@ _MAX_HISTORY_TURNS = 3
 
 def _format_history(history: list[dict] | None) -> str:
     if not history:
-        return ""
+        # "이전 대화:" 블록이 그냥 없는 것과 "첫 턴임을 명시"하는 건 다르다 — 전자는
+        # 모델이 "이력 유무"를 스스로 추론해야 해서, 가격 조건이 있는 문장("5만원
+        # 이하로 추천해줘")을 narrow_down 예시와 표면이 비슷하다는 이유로 잘못
+        # 분류하는 사례가 실측됐다(첫 턴인데도). 구조적으로 명시해 추론 부담을 없앤다.
+        return "[대화 시작 — 이전 턴 없음]\n\n"
     recent = history[-_MAX_HISTORY_TURNS * 2 :]
     lines = [
         f"{'소비자' if m['role'] == 'user' else '챗봇'}: {m['content']}" for m in recent
     ]
     return "이전 대화:\n" + "\n".join(lines) + "\n\n"
+
+
+def _spacing_hint(message: str) -> str:
+    """단어 중간에 우연히 들어간 공백으로 오분류되는 문제 방어용 참고 문자열.
+
+    실측 확인된 버그: "도자기 추 천해줘"(공백 오타)를 LLM이 "추"+"천"(옷감이라는 별개
+    단어)으로 잘못 쪼개 해석해 "도자기 천을 찾으시는군요"로 응답이 오염됨. PyKoSpacing
+    같은 맞춤법 모델을 새로 얹는 방법도 검토했지만, 이 버그는 "특정 단어가 우연히 다른
+    실존 단어로 쪼개져야만" 터지는 드문 케이스라 모델 로딩 비용(콜드스타트가 이미 문제인
+    파이프라인에 하나 더 추가됨)을 감수할 만큼 흔하지 않다. 대신 공백을 다 제거한 원문을
+    참고용으로 같이 보여줘 LLM이 스스로 원래 단어를 재구성해 판단하게 한다 — 별도
+    의존성·모델 없이 문자열 처리 한 줄로 끝난다.
+    """
+    collapsed = message.replace(" ", "")
+    if collapsed == message:
+        return ""
+    return f"\n(공백 제거 참고: {collapsed})"
 
 
 def classify_and_extract(
@@ -115,7 +136,11 @@ def classify_and_extract(
     없었다. 그래서 각자 독립된 INTENT_SYSTEM을 그대로 쓴다 — 응답 속도는 대신 Ollama 자체
     업데이트(캐시 알고리즘 개선)와 llm.py의 num_ctx 고정으로 개선했다.
     """
-    user_content = _format_history(history) + f"소비자의 마지막 문장: {message}"
+    user_content = (
+        _format_history(history)
+        + f"소비자의 마지막 문장: {message}"
+        + _spacing_hint(message)
+    )
     raw_json = chat(
         [
             {"role": "system", "content": prompts.INTENT_SYSTEM},

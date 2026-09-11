@@ -8,12 +8,16 @@
   POST   /ai/chat                추천 대화
 
 /ai/chat의 백엔드 쪽 계약(Notion "서비스 전체 api" 문서, 챗봇 메시지 전송 API 설명 참고):
-"소비자 원문 메시지를 가공 없이 그대로 내부 AI파트 /ai/chat 으로 전달(최근 5~6턴 history
-동봉)한다. AI가 반환한 product_id+reason을 백엔드가 상품 상세와 결합해 카드로 조립한다."
+원래 문서 설명 텍스트는 "AI가 반환한 product_id+reason을 백엔드가 상품 상세와 결합해
+카드로 조립한다"였다. 실제로 상품마다 다른 reason을 만들지 않고(reply 하나를 공유) —
+프로토타입 화면(카드 위 공유 문구 1줄, 카드 자체엔 DB 필드만)과 일치하는 구조라, 계약도
+product_ids(정수 배열) + 공유 reply로 정리했다. 백엔드는 이 reply를 카드 조립 시 각
+상품의 reason 자리에 그대로 채우면 된다 — 백엔드 응답 스키마(products[].reason)엔
+변경이 필요 없고, 이 설명 문구만 갱신하면 된다(문서 갱신은 별도로 확인 필요).
 
 그래서 /ai/chat은:
 - session_id·history를 우리가 만들지 않는다 — 백엔드가 매 요청에 실어 보내는 값을 그대로 쓴다.
-- 상품명·가격·이미지·장인 정보를 채우지 않는다 — product_id·reason만 준다(백엔드가 조립).
+- 상품명·가격·이미지·장인 정보를 채우지 않는다 — product_ids·reply만 준다(백엔드가 조립).
 - 다만 narrow_down("그중 더 싼 거") 판단에 필요한 candidates·filters는 백엔드가 안 들고 있는
   우리만의 내부 개념이라, session_id를 키로 이 서버가 직접 보관한다(app/session_store.py).
 
@@ -160,15 +164,10 @@ def _to_pipeline_history(items: list[dict]) -> list[dict]:
     ]
 
 
-class ProductOut(BaseModel):
-    product_id: int
-    reason: str
-
-
 class ChatResponse(BaseModel):
     reply: str
     intent: str
-    products: list[ProductOut]
+    product_ids: list[int]
     suggestions: list[str]
 
 
@@ -187,6 +186,7 @@ def chat(
     state = session_store.get(request.session_id)
     previous_candidates = state["candidates"] if state else None
     previous_filters = state["filters"] if state else None
+    previous_product_ids = state["product_ids"] if state else None
 
     result = orchestrator.run(
         request.message,
@@ -195,20 +195,26 @@ def chat(
         search_and_rank=search_and_rank,
         previous_candidates=previous_candidates,
         previous_filters=previous_filters,
+        previous_product_ids=previous_product_ids,
         fetch_prices=fetch_prices,
         fetch_artisans=fetch_artisans,
         cache_lookup=cache_lookup,
         cache_store=cache_store,
     )
 
-    # candidates·filters는 확정된 외부 응답 계약에 없는 내부 전용 필드다(orchestrator.run
-    # docstring 참고) — 응답으로 내보내지 않고 다음 턴 narrow_down 재사용을 위해 세션
-    # 저장소에만 남긴다.
-    session_store.set(request.session_id, result["candidates"], result["filters"])
+    # candidates·filters·shown_product_ids는 확정된 외부 응답 계약에 없는 내부 전용
+    # 필드다(orchestrator.run docstring 참고) — 응답으로 내보내지 않고 다음 턴
+    # narrow_down 재사용·카드 중복 노출 억제를 위해 세션 저장소에만 남긴다.
+    session_store.set(
+        request.session_id,
+        result["candidates"],
+        result["filters"],
+        result["shown_product_ids"],
+    )
 
     return ChatResponse(
         reply=result["reply"],
         intent=result["intent"],
-        products=result["products"],
+        product_ids=result["product_ids"],
         suggestions=result["suggestions"],
     )

@@ -1,4 +1,5 @@
-"""세션별 내부 상태(candidates·filters) 보관 — narrow_down 재사용에 필요하다.
+"""세션별 내부 상태(candidates·filters·product_ids) 보관 — narrow_down 재사용과
+카드 중복 노출 억제(orchestrator.run의 previous_product_ids)에 필요하다.
 
 백엔드가 session_id·history는 자기가 관리해서 매 요청에 실어 보내주지만(§ app/main.py 참고),
 "직전 턴에 어떤 후보를 보여줬는지"·"어떤 하드필터가 이미 확정됐는지"는 orchestrator.run()
@@ -30,7 +31,7 @@ _lock = threading.Lock()
 
 
 def get(session_id: str) -> dict | None:
-    """직전 턴의 {"candidates", "filters"}를 돌려준다. 없거나 만료됐으면 None."""
+    """직전 턴의 {"candidates", "filters", "product_ids"}를 돌려준다. 없거나 만료됐으면 None."""
     with _lock:
         entry = _store.get(session_id)
         if entry is None:
@@ -38,15 +39,28 @@ def get(session_id: str) -> dict | None:
         if time.time() - entry["ts"] > _TTL_SECONDS:
             del _store[session_id]
             return None
-        return {"candidates": entry["candidates"], "filters": entry["filters"]}
+        return {
+            "candidates": entry["candidates"],
+            "filters": entry["filters"],
+            "product_ids": entry["product_ids"],
+        }
 
 
-def set(session_id: str, candidates: list[dict], filters: dict) -> None:
-    """이번 턴에 쓴 candidates·filters를 저장해 다음 턴 narrow_down이 재사용할 수 있게 한다."""
+def set(
+    session_id: str, candidates: list[dict], filters: dict, product_ids: list[int]
+) -> None:
+    """이번 턴에 쓴 candidates·filters·product_ids를 저장한다.
+
+    candidates·filters는 다음 턴 narrow_down 재사용에, product_ids는 orchestrator.run의
+    previous_product_ids(카드 중복 노출 억제)에 쓰인다. product_ids엔 orchestrator가
+    반환하는 shown_product_ids(화면 노출 여부와 무관한 실제 관련 상품)를 넘겨야 한다 —
+    억제돼서 비어 나온 product_ids를 그대로 저장하면 다음 턴 비교 기준이 사라져 버린다.
+    """
     with _lock:
         _store[session_id] = {
             "candidates": candidates,
             "filters": filters,
+            "product_ids": product_ids,
             "ts": time.time(),
         }
         if len(_store) > _MAX_ENTRIES:

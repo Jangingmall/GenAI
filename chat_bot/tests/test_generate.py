@@ -137,7 +137,7 @@ def test_build_reply_b13_empty_candidates_yields_empty_products():
     # "이 함, 국가 인증서도 따로 받은 거 맞죠?" 시나리오 — evidence(주칠 함, 국가무형유산
     # 등급)엔 "인증서" 언급이 없어 그 사실 하나는 미확인이지만, 상품 자체는 유지돼야
     # 한다(규칙2+5). 여기서는 fake_chat이 이미 "확인 안 됨" 판단을 내린 응답만 검증하므로
-    # products가 빈 배열로 나오는 경로만 본다.
+    # product_ids가 빈 배열로 나오는 경로만 본다.
     candidates = [
         {
             "product_id": 850,
@@ -162,7 +162,7 @@ def test_build_reply_b13_empty_candidates_yields_empty_products():
         chat=_fake_chat(payload),
         **_NO_DB,
     )
-    assert result["products"] == []
+    assert result["product_ids"] == []
 
 
 def test_build_reply_drops_id_not_in_candidates():
@@ -175,7 +175,7 @@ def test_build_reply_drops_id_not_in_candidates():
     result = gen.build_reply(
         "아무거나", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
     )
-    assert result["products"] == [{"product_id": 1, "reason": "추천합니다."}]
+    assert result["product_ids"] == [1]
 
 
 def test_build_reply_calls_chat_with_think_true():
@@ -202,7 +202,7 @@ def test_build_reply_filters_mismatched_category_by_name():
     result = gen.build_reply(
         "옹기 있나요", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
     )
-    assert result["products"] == []
+    assert result["product_ids"] == []
 
 
 # ---------------------------------------------------------------------------
@@ -276,3 +276,47 @@ def test_build_reply_truncates_history_to_recent_turns():
 
     assert "0번째 메시지" not in seen["user_content"]
     assert "9번째 메시지" in seen["user_content"]
+
+
+# ---------------------------------------------------------------------------
+# is_all_request / explain_products — "모두 설명해줘"류 일괄 선택 처리
+# ---------------------------------------------------------------------------
+
+
+def test_is_all_request_recognizes_batch_words():
+    assert gen.is_all_request("모두 설명해줘")
+    assert gen.is_all_request("전체 다 알려줘")
+    assert gen.is_all_request("둘 다 궁금해요")
+
+
+def test_is_all_request_false_for_single_ordinal():
+    assert not gen.is_all_request("첫번째 설명해줘")
+    assert not gen.is_all_request("1번 알려줘")
+
+
+def test_explain_products_calls_llm_once_and_shares_reply_across_products():
+    """explain_product를 후보 수만큼 반복 호출하면 응답 시간이 배로 늘어난다 —
+    explain_products는 LLM을 정확히 1번만 불러야 한다."""
+    calls = {"n": 0}
+
+    def fake(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        return json.dumps({"reply": "두 상품 모두 장인이 직접 만든 작품입니다."})
+
+    candidates = [
+        {
+            "product_id": 1,
+            "name": "도기토 수반",
+            "evidence": {"artisan_input": "물레 성형"},
+        },
+        {
+            "product_id": 2,
+            "name": "도기토 찻잔",
+            "evidence": {"artisan_input": "유약 흘림"},
+        },
+    ]
+    result = gen.explain_products("모두 설명해줘", candidates, chat=fake)
+
+    assert calls["n"] == 1
+    assert result["product_ids"] == [1, 2]
+    assert result["reply"] == "두 상품 모두 장인이 직접 만든 작품입니다."
