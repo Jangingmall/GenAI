@@ -43,6 +43,70 @@ def test_price_to_won_plain_digit_string():
 
 
 # ---------------------------------------------------------------------------
+# _restore_adjective_suffix — "-(으)로 [형용사] 명사" 문형에서 LLM이 수식어를
+# 요청 동사와 같이 잘라내는 경우를 코드로 복원(실측: 프롬프트 규칙·예시만으론
+# 문장 표면이 조금만 달라져도 재발)
+# ---------------------------------------------------------------------------
+
+
+def test_restore_adjective_suffix_recovers_dropped_modifier():
+    """LLM이 "쓸 만한"을 지워 "제사용 그릇"만 남겼어도 원문에서 복원해야 한다."""
+    restored = it._restore_adjective_suffix(
+        "제사용으로 쓸 만한 그릇 찾아줘", "제사용 그릇"
+    )
+    assert restored == "제사용으로 쓸 만한 그릇"
+
+
+def test_restore_adjective_suffix_keeps_leading_words_before_head():
+    """head 앞에 있던 단어(예: "손님")까지 유실 없이 남아야 한다."""
+    restored = it._restore_adjective_suffix(
+        "손님 접대용으로 좋은 다과상 뭐 있을까요", "손님 접대용 다과상"
+    )
+    assert restored == "손님 접대용으로 좋은 다과상"
+
+
+def test_restore_adjective_suffix_noop_when_already_preserved():
+    """query_text가 이미 수식어를 담고 있으면 손대지 않는다."""
+    query_text = "다도용으로 쓸 만한 것"
+    restored = it._restore_adjective_suffix(
+        "다도용으로 쓸 만한 것 추천해줘", query_text
+    )
+    assert restored == query_text
+
+
+def test_restore_adjective_suffix_noop_when_pattern_absent():
+    """ "-(으)로 [형용사]" 문형 자체가 없으면 query_text를 그대로 둔다."""
+    restored = it._restore_adjective_suffix(
+        "밥이나 국 담을 그릇 있나요", "밥이나 국 담을 그릇"
+    )
+    assert restored == "밥이나 국 담을 그릇"
+
+
+def test_to_contact1_applies_adjective_restoration_for_product_search():
+    raw = {"intent": "product_search", "query_text": "혼수용 반상기"}
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="혼수용으로 쓸 만한 반상기 보여줘",
+    )
+    assert result["query_text"] == "혼수용으로 쓸 만한 반상기"
+
+
+def test_to_contact1_skips_adjective_restoration_for_narrow_down():
+    """narrow_down은 이전 대화 주제어를 이어 붙이는 별도 로직이 있어 여기서
+    건드리면 안 된다 — 패턴이 우연히 매칭돼도 query_text를 그대로 둔다."""
+    raw = {"intent": "narrow_down", "query_text": "3만원으로 낮춰서 좋은 것"}
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="그럼 3만원으로 낮춰서 좋은 것도 있어요?",
+    )
+    assert result["query_text"] == "3만원으로 낮춰서 좋은 것"
+
+
+# ---------------------------------------------------------------------------
 # _keep_known
 # ---------------------------------------------------------------------------
 
@@ -80,7 +144,10 @@ def test_to_contact1_assembles_filters():
         "query_text": "환갑 선물",
     }
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="환갑 맞은 부모님께 드릴 선물 찾아줘",
     )
     assert result == {
         "query_text": "환갑 선물",
@@ -104,7 +171,10 @@ def test_to_contact1_passes_through_chat_reply():
         "chat_reply": "안녕하세요! 무엇을 도와드릴까요?",
     }
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="안녕하세요",
     )
     assert result["chat_reply"] == "안녕하세요! 무엇을 도와드릴까요?"
 
@@ -112,7 +182,7 @@ def test_to_contact1_passes_through_chat_reply():
 def test_to_contact1_missing_chat_reply_defaults_empty():
     raw = {"intent": "product_search", "query_text": "찻잔"}
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
     )
     assert result["chat_reply"] == ""
 
@@ -120,7 +190,7 @@ def test_to_contact1_missing_chat_reply_defaults_empty():
 def test_to_contact1_unknown_intent_becomes_general_chat():
     raw = {"intent": "made_up_intent", "query_text": "아무말"}
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="아무말"
     )
     assert result["intent"] == "general_chat"
 
@@ -132,7 +202,7 @@ def test_to_contact1_drops_hallucinated_gift_theme():
         "query_text": "",
     }
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="선물 추천"
     )
     assert result["filters"]["gift_theme"] is None
 
@@ -140,7 +210,7 @@ def test_to_contact1_drops_hallucinated_gift_theme():
 def test_to_contact1_missing_query_text_defaults_empty():
     raw = {"intent": "general_chat"}
     result = it._to_contact1(
-        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="안녕"
     )
     assert result["query_text"] == ""
 
