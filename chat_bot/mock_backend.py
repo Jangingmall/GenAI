@@ -109,16 +109,15 @@ def send_message(session_id: str, body: MessageRequest):
     resp.raise_for_status()
     ai_result = resp.json()
 
-    # AI가 상품마다 다른 reason을 안 주고 product_ids + 공유 reply로 준다 — 백엔드가
-    # 카드 조립 시 이 reply를 각 상품의 reason 자리에 그대로 채운다(Notion 응답 스키마의
-    # products[].reason은 그대로 두고, 채우는 값만 공유 reply로 바뀐 셈).
+    # AI가 상품마다 다른 reason을 안 주고 product_ids + 공유 reply로 준다. reply를 각
+    # 상품의 reason에 그대로 복사하는 방식도 해봤지만, reply가 특정 상품 이름을 콕 집어
+    # 말하는 문장을 포함하게 되면서(예: "청자 찻잔은 ~, 백자 머그는 ~") 다른 상품의
+    # reason에 엉뚱한 상품 얘기가 들어가는 오류가 생겨 그만뒀다 — products[].reason은
+    # 아예 채우지 않고, reply는 data.reply로만 내려서 프론트가 카드 목록 위에 한 줄로
+    # 보여주게 한다.
     product_ids = ai_result["product_ids"]
     cards = _fetch_product_cards(product_ids)
-    products = [
-        {**cards[pid], "reason": ai_result["reply"]}
-        for pid in product_ids
-        if pid in cards
-    ]
+    products = [cards[pid] for pid in product_ids if pid in cards]
 
     # 백엔드 "히스토리 조회" API 명세의 실제 필드명(sender: USER|ARTISAN|ADMIN)을 그대로
     # 쓴다 — 챗봇 자신의 답변을 나타낼 sender 값이 명세엔 없어 ADMIN으로 임시 표시한다

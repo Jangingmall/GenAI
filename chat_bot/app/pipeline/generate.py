@@ -447,7 +447,19 @@ def extract_ordinal(message: str, total: int) -> int | None:
     return None
 
 
-_EXPLAIN_SYSTEM = """너는 한국 전통 공예품 쇼핑몰 "미담"의 챗봇이다. 아래 [상품] 하나의
+# explain_product·explain_products 둘 다 이 문단을 그대로 쓴다(둘 다 evidence 기반
+# 설명 후 "더 물어볼 만한 것"을 제안하는 같은 상황) — 상수 하나로 묶어 두 프롬프트가
+# 어긋나지 않게 한다. 각 시스템 프롬프트가 독립적으로 모델에 전달되므로 이 상수화
+# 자체가 응답 속도를 줄이지는 않는다 — 소스 중복 제거가 목적이다.
+_EXPLAIN_SUGGESTIONS_RULES = """<suggestions_rules>
+suggestions는 2~4어절 짧은 문구(칩) 최대 3개 — 완전한 문장·질문형 아님.
+방금 설명에서 다룬 적 없는 축(다른 색상·재질·용도·포장 여부 등)으로 더 물어볼 만한
+것을 제안한다. 이미 이 설명에서 다룬 내용은 칩으로 반복하지 않는다. 마땅한 게 없으면
+빈 배열도 된다.
+</suggestions_rules>"""
+
+
+_EXPLAIN_SYSTEM = f"""너는 한국 전통 공예품 쇼핑몰 "미담"의 챗봇이다. 아래 [상품] 하나의
 evidence(장인 서술)만 근거로 손님에게 이 상품을 자세히 설명한다.
 
 <rules>
@@ -456,13 +468,16 @@ evidence(장인 서술)만 근거로 손님에게 이 상품을 자세히 설명
 3. 2~4문장, 친근한 대화체로 설명한다.
 </rules>
 
+{_EXPLAIN_SUGGESTIONS_RULES}
+
 [상품]
-{product_block}
+{{product_block}}
 """
 
 
 class _ExplainOutput(BaseModel):
     reply: str = Field(max_length=500)
+    suggestions: list[str]
 
 
 _EXPLAIN_SCHEMA = _ExplainOutput.model_json_schema()
@@ -494,11 +509,11 @@ def explain_product(message: str, candidate: dict, *, chat=chat_json) -> dict:
     return {
         "reply": output.reply,
         "product_ids": [candidate["product_id"]],
-        "suggestions": [],
+        "suggestions": _cap_suggestions(output.suggestions),
     }
 
 
-_EXPLAIN_ALL_SYSTEM = """너는 한국 전통 공예품 쇼핑몰 "미담"의 챗봇이다. 아래 [상품 목록]
+_EXPLAIN_ALL_SYSTEM = f"""너는 한국 전통 공예품 쇼핑몰 "미담"의 챗봇이다. 아래 [상품 목록]
 각각의 evidence(장인 서술)만 근거로 손님에게 하나씩 설명한다.
 
 <rules>
@@ -508,14 +523,17 @@ _EXPLAIN_ALL_SYSTEM = """너는 한국 전통 공예품 쇼핑몰 "미담"의 �
 4. 전체 3~6문장, 친근한 대화체.
 </rules>
 
+{_EXPLAIN_SUGGESTIONS_RULES}
+
 [상품 목록]
-{products_block}
+{{products_block}}
 """
 
 
 class _ExplainAllOutput(BaseModel):
     # 상품 여러 개를 한 문단에 다 설명해야 해서 _ExplainOutput(500자)보다 여유를 둔다.
     reply: str = Field(max_length=1000)
+    suggestions: list[str]
 
 
 _EXPLAIN_ALL_SCHEMA = _ExplainAllOutput.model_json_schema()
@@ -550,5 +568,5 @@ def explain_products(message: str, candidates: list[dict], *, chat=chat_json) ->
     return {
         "reply": output.reply,
         "product_ids": [c["product_id"] for c in candidates],
-        "suggestions": [],
+        "suggestions": _cap_suggestions(output.suggestions),
     }

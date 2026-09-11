@@ -301,7 +301,12 @@ def test_explain_products_calls_llm_once_and_shares_reply_across_products():
 
     def fake(messages, schema, *, think, model=None):
         calls["n"] += 1
-        return json.dumps({"reply": "두 상품 모두 장인이 직접 만든 작품입니다."})
+        return json.dumps(
+            {
+                "reply": "두 상품 모두 장인이 직접 만든 작품입니다.",
+                "suggestions": ["다른 색상으로", "포장 여부 확인"],
+            }
+        )
 
     candidates = [
         {
@@ -320,3 +325,4 @@ def test_explain_products_calls_llm_once_and_shares_reply_across_products():
     assert calls["n"] == 1
     assert result["product_ids"] == [1, 2]
     assert result["reply"] == "두 상품 모두 장인이 직접 만든 작품입니다."
+    assert result["suggestions"] == ["다른 색상으로", "포장 여부 확인"]

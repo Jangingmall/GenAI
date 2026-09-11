@@ -705,9 +705,9 @@ def test_warmup_also_warms_search_and_rank():
 # ---------------------------------------------------------------------------
 
 
-def _explain_chat(reply_text: str):
+def _explain_chat(reply_text: str, suggestions: list[str] | None = None):
     def fake(messages, schema, *, think, model=None):
-        return json.dumps({"reply": reply_text})
+        return json.dumps({"reply": reply_text, "suggestions": suggestions or []})
 
     return fake
 
@@ -752,7 +752,12 @@ def test_run_disambiguation_followup_all_chip_explains_all_in_one_call():
 
     def fake(messages, schema, *, think, model=None):
         calls["n"] += 1
-        return json.dumps({"reply": "세 상품 모두 전통 기법으로 만들어졌습니다."})
+        return json.dumps(
+            {
+                "reply": "세 상품 모두 전통 기법으로 만들어졌습니다.",
+                "suggestions": ["다른 색상으로", "포장 여부 확인"],
+            }
+        )
 
     history = [
         {"role": "user", "content": "이 상품들 설명해줘"},
@@ -773,6 +778,7 @@ def test_run_disambiguation_followup_all_chip_explains_all_in_one_call():
     assert calls["n"] == 1
     assert result["product_ids"] == [1, 2, 6]
     assert result["reply"] == "세 상품 모두 전통 기법으로 만들어졌습니다."
+    assert result["suggestions"] == ["다른 색상으로", "포장 여부 확인"]
 
 
 def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
@@ -789,12 +795,16 @@ def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
     result = rr.run(
         "1번",
         history=history,
-        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        chat=_explain_chat(
+            "도기토 수반은 물레로 직접 성형한 작품입니다.",
+            suggestions=["다른 재질로"],
+        ),
         previous_candidates=_CANDIDATES_3,
         **_NO_DB,
     )
 
     assert result["product_ids"] == [1]
+    assert result["suggestions"] == ["다른 재질로"]
 
 
 def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():
@@ -829,6 +839,103 @@ def test_run_plain_message_without_disambiguation_history_is_not_treated_as_expl
         chat=chat,
         search_and_rank=search_and_rank_must_not_be_called,
         previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "ok"
+
+
+# ---------------------------------------------------------------------------
+# wants_reason — "왜 추천했어?"류 이유 질문(키워드 하드코딩이 아니라 intent 분류
+# LLM의 판단 신호를 그대로 씀)
+# ---------------------------------------------------------------------------
+
+
+def test_run_wants_reason_routes_to_explain_products():
+    """intent 분류가 wants_reason=true를 주면, "설명해"·"자세히" 키워드가 전혀
+    없어도 explain_products로 이어져야 한다."""
+    calls = {"n": 0}
+
+    def chat(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return json.dumps(
+                {
+                    "intent": "narrow_down",
+                    "wants_reason": True,
+                    "max_price": None,
+                    "min_price": None,
+                    "gift_theme": [],
+                    "color": [],
+                    "query_text": "추천 이유",
+                }
+            )
+        return json.dumps(
+            {"reply": "세 상품 모두 전통 기법으로 만들어졌습니다.", "suggestions": []}
+        )
+
+    history = [
+        {"role": "user", "content": "도자기 추천해줘"},
+        {"role": "assistant", "content": "도자기 3점을 소개해 드릴게요."},
+    ]
+
+    result = rr.run(
+        "왜 이 상품들을 추천한거야?",
+        history=history,
+        chat=chat,
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert calls["n"] == 2
+    assert result["product_ids"] == [1, 2, 6]
+    assert result["reply"] == "세 상품 모두 전통 기법으로 만들어졌습니다."
+
+
+def test_run_wants_reason_without_previous_candidates_asks_to_search_first():
+    """추천받은 상품이 아직 없는 상태에서 이유를 물으면, explain_products를 부르지
+    않고 먼저 검색을 유도해야 한다."""
+
+    def chat(messages, schema, *, think, model=None):
+        return json.dumps(
+            {
+                "intent": "narrow_down",
+                "wants_reason": True,
+                "max_price": None,
+                "min_price": None,
+                "gift_theme": [],
+                "color": [],
+                "query_text": "",
+            }
+        )
+
+    result = rr.run(
+        "왜 그걸 추천한거야?", chat=chat, previous_candidates=None, **_NO_DB
+    )
+
+    assert result["product_ids"] == []
+    assert "먼저" in result["reply"]
+
+
+def test_run_wants_reason_false_does_not_shortcut_to_explain():
+    """wants_reason=false면 평소처럼 일반 경로(build_reply)로 가야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "wants_reason": False,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [1], "suggestions": []},
+    )
+
+    result = rr.run(
+        "찻잔 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(_CANDIDATES_3),
         **_NO_DB,
     )
 
