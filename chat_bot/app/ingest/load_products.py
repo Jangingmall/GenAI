@@ -112,6 +112,9 @@ CREATE TABLE IF NOT EXISTS products (
     search_text            TEXT,
     evidence               JSONB
 );
+
+CREATE INDEX IF NOT EXISTS idx_products_embedding_hnsw
+    ON products USING hnsw (embedding vector_cosine_ops);
 """
 
 
@@ -265,20 +268,45 @@ CATEGORY_KO = {
     "METAL": "금속공예",
 }
 
+# gift_theme 영문 코드 → "~ 선물" 한글. category처럼 임베딩 모델이 한국어 의미로
+# 읽게 변환하되, "선물"이라는 의도가 드러나도록 맥락을 함께 넣는다
+# (값만 넣으면 "집들이"인지 "집들이 선물"인지 임베딩이 구분 못 함).
+GIFT_THEME_KO = {
+    "BIRTHDAY": "돌잔치 생일 선물",
+    "BIRTHDAY_60TH": "환갑 선물",
+    "BOSS": "상사 선물",
+    "CORPORATE": "거래처 비즈니스 선물",
+    "COUPLE": "연인 커플 선물",
+    "FRIEND": "친구 동료 선물",
+    "HOUSEWARMING": "집들이 선물",
+    "PARENTS": "부모님 선물",
+    "PROMOTION": "승진 축하 선물",
+    "WEDDING": "결혼 웨딩 혼수 선물",
+}
+
 
 def build_embedding_text(product: dict, artisan_intro: str | None) -> str:
     """임베딩할 텍스트를 이어붙인다.
 
-    name(상품명) + 종목(한글) + subcategory_code(품목, 이미 한글) + material +
-    making_story + usage_care + 장인 introduction, 빈 값은 건너뛰고 " "로 join.
-    확정 스키마엔 artisan introduction이 없어(§ 위 docstring) 호출부(build_rows)가
-    항상 None을 넘긴다.
+    name + 종목(한글) + subcategory + material + purpose_tags(한글) +
+    gift_theme(→"~선물" 한글) + making_story + usage_care + 장인 intro.
+    빈 값은 건너뛰고 " "로 join.
     """
+    # purpose_tags: 이미 한글(선물·인테리어·혼수·다도·패션)이라 그대로 넣는다.
+    purpose_tags = product.get("purpose_tags") or []
+    purpose_part = " ".join(purpose_tags)
+
+    # gift_theme: 영문 코드라 "~ 선물" 한글로 변환해 선물 의도를 명시한다.
+    gift_themes = product.get("gift_theme") or []
+    gift_part = " ".join(GIFT_THEME_KO.get(g, g) for g in gift_themes)
+
     parts = [
         product.get("name"),
         CATEGORY_KO.get(product.get("category_code"), product.get("category_code")),
         product.get("subcategory_code"),
         product.get("material"),
+        purpose_part,
+        gift_part,
         product.get("making_story"),
         product.get("usage_care"),
         artisan_intro,
