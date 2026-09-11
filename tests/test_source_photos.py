@@ -196,8 +196,13 @@ def test_complex_background_returns_safe_source_fallback():
         options=GenerationOptions(),
     )
 
-    assert {photo.fidelity_status for photo in photos.photos} == {"FALLBACK"}
-    assert {photo.asset_mode for photo in photos.photos} == {"source"}
+    hero = next(photo for photo in photos.photos if photo.photo_id == "hero")
+    fallbacks = [photo for photo in photos.photos if photo.photo_id != "hero"]
+
+    assert hero.asset_mode == "source_original"
+    assert hero.fidelity_status == "VERIFIED"
+    assert all(photo.fidelity_status == "FALLBACK" for photo in fallbacks)
+    assert all(photo.asset_mode == "source" for photo in fallbacks)
     assert all(photo.data == source for photo in photos.photos)
 
 
@@ -242,6 +247,28 @@ def test_single_input_never_creates_alternate_and_default_roles_are_explicit():
     assert len([photo for photo in photos.photos if photo.photo_id.startswith("detail")]) >= 3
 
 
+def test_hero_is_designated_original_while_packshot_remains_composite():
+    source = _source_fixture()
+
+    photos = _generator().generate(
+        source_image=source,
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+    hero = next(photo for photo in photos.photos if photo.photo_id == "hero")
+    packshot = next(photo for photo in photos.photos if photo.photo_id == "packshot")
+
+    assert hero.data == source
+    assert hero.label == "원본 보존 대표 이미지"
+    assert hero.asset_mode == "source_original"
+    assert hero.fidelity_status == "VERIFIED"
+    assert hero.product_generated is False
+    assert hero.source_sha256 == hashlib.sha256(source).hexdigest()
+    assert packshot.asset_mode == "source_composite"
+    assert packshot.fidelity_status == "VERIFIED"
+
+
 def test_lifestyle_product_is_placed_on_lower_surface_with_contact_shadow():
     class GeneratedBackground:
         def generate(self, **kwargs):
@@ -278,7 +305,15 @@ def test_lifestyle_product_is_smaller_than_the_catalog_hero_for_natural_scale():
 
     hero = next(photo for photo in photos.photos if photo.photo_id == "hero")
     lifestyle = next(photo for photo in photos.photos if photo.photo_id == "lifestyle")
-    assert lifestyle.transform.scale < hero.transform.scale * 0.75
+    # The hero now intentionally retains its source pixels, so its transform
+    # scale is no longer comparable to a 320px composite. Compare the product
+    # share of each displayed frame instead (the fixture product is x=20..60).
+    hero_product_width_ratio = 40 / hero.width
+    left, _, right, _ = lifestyle.transform.crop
+    lifestyle_product_width_ratio = (
+        (right - left) * lifestyle.transform.scale / lifestyle.width
+    )
+    assert lifestyle_product_width_ratio < hero_product_width_ratio
 
 
 def test_multi_item_catalog_profile_preserves_pixels_without_usage_scene_generator():
@@ -334,11 +369,14 @@ def test_multi_item_set_preserves_original_frame_for_hero_and_packshot_only():
         options=GenerationOptions(),
     )
 
-    for photo_id in ("hero", "packshot"):
-        photo = next(photo for photo in photos.photos if photo.photo_id == photo_id)
-        assert photo.data == source
-        assert photo.asset_mode == "source"
-        assert photo.fidelity_status == "FALLBACK"
+    hero = next(photo for photo in photos.photos if photo.photo_id == "hero")
+    packshot = next(photo for photo in photos.photos if photo.photo_id == "packshot")
+    assert hero.data == source
+    assert hero.asset_mode == "source_original"
+    assert hero.fidelity_status == "VERIFIED"
+    assert packshot.data == source
+    assert packshot.asset_mode == "source"
+    assert packshot.fidelity_status == "FALLBACK"
 
     lifestyle = next(photo for photo in photos.photos if photo.photo_id == "lifestyle")
     assert lifestyle.asset_mode == "source_composite"
@@ -556,7 +594,9 @@ def test_four_or_more_sources_skip_variation_generation_and_fill_layout_roles():
         "lifestyle",
     ]
     assert [photo.data for photo in photos.photos] == [primary, *[data for data, _ in additional]]
-    assert all(photo.asset_mode == "source" for photo in photos.photos)
+    assert photos.photos[0].photo_id == "hero"
+    assert photos.photos[0].asset_mode == "source_original"
+    assert all(photo.asset_mode == "source" for photo in photos.photos[1:])
     assert all(photo.fidelity_status == "VERIFIED" for photo in photos.photos)
 
 
@@ -634,7 +674,9 @@ def test_four_sources_skip_all_generated_detail_jobs():
         additional_source_images=additional,
     )
 
-    assert all(photo.asset_mode == "source" for photo in photos.photos)
+    assert photos.photos[0].photo_id == "hero"
+    assert photos.photos[0].asset_mode == "source_original"
+    assert all(photo.asset_mode == "source" for photo in photos.photos[1:])
 
 
 def test_fewer_than_threshold_keeps_source_preserving_variation_path():

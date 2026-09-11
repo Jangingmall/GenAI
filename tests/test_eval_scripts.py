@@ -446,6 +446,66 @@ def test_cutout_fidelity_reports_source_fallback_as_not_performed(tmp_path: Path
     assert result["summary"]["has_cutout_unperformed"] is True
 
 
+def test_cutout_fidelity_excludes_designated_original_hero_from_cutout_rate(
+    tmp_path: Path,
+) -> None:
+    pilot_dir = tmp_path / "pilot"
+    pilot_dir.mkdir()
+    original = tmp_path / "source.png"
+    Image.new("RGB", (100, 100), (30, 30, 30)).save(original)
+
+    case_dir = pilot_dir / "designated-original"
+    photos_dir = case_dir / "photos"
+    photos_dir.mkdir(parents=True)
+    Image.new("RGB", (100, 100), (30, 30, 30)).save(photos_dir / "01-hero.png")
+    (case_dir / "result_summary.json").write_text(
+        json.dumps(
+            {
+                "detail_page": {
+                    "photos": [
+                        {
+                            "photo_id": "hero",
+                            "asset_mode": "source_original",
+                            "fidelity_status": "VERIFIED",
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pilot_dir / "run_index.json").write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {
+                        "case_id": "designated-original",
+                        "category": "textile",
+                        "image_path": str(original),
+                        "output_dir": str(case_dir),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = check_cutout_fidelity.evaluate_cutout_fidelity(pilot_dir=pilot_dir, roles=["hero"])
+    record = result["records"][0]
+
+    assert record["judgment"] == "원본 사용(설계)"
+    assert record["cutout_performed"] is None
+    assert record["cutout_designated_original"] is True
+    assert result["summary"]["cutout_performed_count"] == 0
+    assert result["summary"]["cutout_unperformed_count"] == 0
+    assert result["summary"]["cutout_designated_original_count"] == 1
+    assert result["summary"]["cutout_metadata_missing_count"] == 0
+    assert result["summary"]["cutout_attempt_count"] == 0
+    assert result["summary"]["cutout_performed_rate"] is None
+    assert result["summary"]["has_cutout_unperformed"] is False
+    assert result["summary"]["all_ok"] is True
+
+
 def test_cutout_fidelity_flags_enclosed_renderer_background_as_product_loss(
     tmp_path: Path,
 ) -> None:

@@ -410,7 +410,17 @@ class ProductFidelityValidator:
             return "GENERATED" if photo.source_sha256 in source_hashes else "REJECTED"
         if photo.product_generated:
             return "REJECTED"
-        if photo.asset_mode not in {"source", "source_crop", "source_composite"}:
+        if photo.asset_mode not in {
+            "source",
+            "source_original",
+            "source_crop",
+            "source_composite",
+        }:
+            return "REJECTED"
+        if (
+            photo.asset_mode == "source_original"
+            and (photo.photo_id != "hero" or photo.fidelity_status != "VERIFIED")
+        ):
             return "REJECTED"
         if not photo.source_sha256:
             return "REJECTED"
@@ -432,7 +442,7 @@ class ProductFidelityValidator:
             return "REJECTED"
         source_data, source_mime_type = source_record
 
-        if photo.asset_mode == "source":
+        if photo.asset_mode in {"source", "source_original"}:
             if hashlib.sha256(photo.data).hexdigest() != photo.source_sha256:
                 return "REJECTED"
             return photo.fidelity_status
@@ -581,14 +591,25 @@ class SourcePreservingProductPhotoGenerator:
 
         if cutout is None:
             photos = [
-                self._source_fallback(
-                    role=role,
-                    order=index,
-                    source_image=source_image,
-                    source_mime_type=source_mime_type,
-                    source_asset_id=source_record.asset_id,
-                    source_sha256=source_record.sha256,
-                    size=source_rgb.size,
+                (
+                    self._source_hero(
+                        order=index,
+                        source_image=source_image,
+                        source_mime_type=source_mime_type,
+                        source_asset_id=source_record.asset_id,
+                        source_sha256=source_record.sha256,
+                        size=source_rgb.size,
+                    )
+                    if role == "hero"
+                    else self._source_fallback(
+                        role=role,
+                        order=index,
+                        source_image=source_image,
+                        source_mime_type=source_mime_type,
+                        source_asset_id=source_record.asset_id,
+                        source_sha256=source_record.sha256,
+                        size=source_rgb.size,
+                    )
                 )
                 for index, role in enumerate(roles, start=1)
             ]
@@ -615,29 +636,16 @@ class SourcePreservingProductPhotoGenerator:
         else:
             photos = []
             if "hero" in roles:
-                if preserve_arrangement:
-                    photos.append(
-                        self._source_fallback(
-                            role="hero",
-                            order=len(photos) + 1,
-                            source_image=source_image,
-                            source_mime_type=source_mime_type,
-                            source_asset_id=source_record.asset_id,
-                            source_sha256=source_record.sha256,
-                            size=source_rgb.size,
-                        )
+                photos.append(
+                    self._source_hero(
+                        order=len(photos) + 1,
+                        source_image=source_image,
+                        source_mime_type=source_mime_type,
+                        source_asset_id=source_record.asset_id,
+                        source_sha256=source_record.sha256,
+                        size=source_rgb.size,
                     )
-                else:
-                    photos.append(
-                        self._composite(
-                            role="hero",
-                            order=len(photos) + 1,
-                            cutout=cutout,
-                            source_asset_id=source_record.asset_id,
-                            background=self._solid_background("#F7F7F5"),
-                            background_generated=False,
-                        )
-                    )
+                )
             if "packshot" in roles:
                 if preserve_arrangement:
                     photos.append(
@@ -891,6 +899,15 @@ class SourcePreservingProductPhotoGenerator:
     ) -> ProductPhoto:
         record = self.asset_store.put(data, mime_type, "source")
         image = _decode_rgb(data)
+        if photo_id == "hero":
+            return self._source_hero(
+                order=order,
+                source_image=data,
+                source_mime_type=mime_type,
+                source_asset_id=record.asset_id,
+                source_sha256=record.sha256,
+                size=image.size,
+            )
         return ProductPhoto(
             photo_id=photo_id,
             order=order,
@@ -902,6 +919,36 @@ class SourcePreservingProductPhotoGenerator:
             asset_mode="source",
             source_asset_id=record.asset_id,
             source_sha256=record.sha256,
+            product_generated=False,
+            fidelity_status="VERIFIED",
+        )
+
+    def _source_hero(
+        self,
+        *,
+        order: int,
+        source_image: bytes,
+        source_mime_type: str,
+        source_asset_id: str,
+        source_sha256: str,
+        size: tuple[int, int],
+    ) -> ProductPhoto:
+        """Return the hero's intentionally unmodified source photograph.
+
+        `source_original` is deliberately distinct from `source`/`FALLBACK`:
+        the latter records a failed cutout, while this is the hero policy.
+        """
+        return ProductPhoto(
+            photo_id="hero",
+            order=order,
+            label=self._labels["hero"],
+            data=source_image,
+            mime_type=source_mime_type,
+            width=size[0],
+            height=size[1],
+            asset_mode="source_original",
+            source_asset_id=source_asset_id,
+            source_sha256=source_sha256,
             product_generated=False,
             fidelity_status="VERIFIED",
         )

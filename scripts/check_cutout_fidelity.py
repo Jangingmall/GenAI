@@ -211,12 +211,22 @@ def _cutout_performed(
     asset_mode: str | None,
     fidelity_status: str | None,
 ) -> bool | None:
-    """Classify source-preserving hero metadata as performed, fallback, or unavailable."""
+    """Classify an actual cutout attempt as performed, fallback, or unavailable."""
+    if _is_designated_original(asset_mode, fidelity_status):
+        return None
     if asset_mode == "source" or fidelity_status == "FALLBACK":
         return False
     if asset_mode in {"source_composite", "source_crop"} and fidelity_status == "VERIFIED":
         return True
     return None
+
+
+def _is_designated_original(
+    asset_mode: str | None,
+    fidelity_status: str | None,
+) -> bool:
+    """Return whether metadata denotes the hero's intentional source image."""
+    return asset_mode == "source_original" and fidelity_status == "VERIFIED"
 
 
 def calculate_bbox_ink_ratio(
@@ -389,6 +399,10 @@ def evaluate_cutout_fidelity(
                 "source_foreground_density": None,
                 "background_residual_ratio": None,
                 "renderer_background_hole_ratio": None,
+                "asset_mode": None,
+                "fidelity_status": None,
+                "cutout_performed": None,
+                "cutout_designated_original": False,
             })
             continue
 
@@ -425,6 +439,10 @@ def evaluate_cutout_fidelity(
                 "source_foreground_density": None,
                 "background_residual_ratio": None,
                 "renderer_background_hole_ratio": None,
+                "asset_mode": None,
+                "fidelity_status": None,
+                "cutout_performed": None,
+                "cutout_designated_original": False,
             })
             continue
 
@@ -452,6 +470,7 @@ def evaluate_cutout_fidelity(
                 "asset_mode": None,
                 "fidelity_status": None,
                 "cutout_performed": None,
+                "cutout_designated_original": False,
             })
             continue
 
@@ -459,6 +478,9 @@ def evaluate_cutout_fidelity(
             try:
                 asset_mode, fidelity_status = photo_metadata.get(photo_role, (None, None))
                 cutout_performed = _cutout_performed(asset_mode, fidelity_status)
+                cutout_designated_original = _is_designated_original(
+                    asset_mode, fidelity_status
+                )
                 if use_bbox:
                     out_ink, out_bbox = calculate_bbox_ink_ratio(
                         photo_file,
@@ -491,6 +513,14 @@ def evaluate_cutout_fidelity(
                     renderer_background_hole_ratio = None
                     loss_judgment = None
                     judgment = "컷아웃 미수행"
+                elif cutout_designated_original:
+                    # The hero policy intentionally retains original bytes. It
+                    # is neither a cutout success nor a failed attempt, so it
+                    # is excluded from the actual-attempt rate below.
+                    background_residual_ratio = None
+                    renderer_background_hole_ratio = None
+                    loss_judgment = None
+                    judgment = "원본 사용(설계)"
                 else:
                     background_residual_ratio = calculate_enclosed_background_ratio(orig_path, photo_file)
                     renderer_background_hole_ratio = calculate_enclosed_renderer_background_ratio(photo_file)
@@ -540,6 +570,7 @@ def evaluate_cutout_fidelity(
                     "asset_mode": asset_mode,
                     "fidelity_status": fidelity_status,
                     "cutout_performed": cutout_performed,
+                    "cutout_designated_original": cutout_designated_original,
                 })
             except Exception as exc:
                 records.append({
@@ -561,6 +592,7 @@ def evaluate_cutout_fidelity(
                     "asset_mode": None,
                     "fidelity_status": None,
                     "cutout_performed": None,
+                    "cutout_designated_original": False,
                 })
 
     ok_count = sum(1 for r in records if r["judgment"] == "OK")
@@ -576,11 +608,30 @@ def evaluate_cutout_fidelity(
     )
     cutout_performed_count = sum(r.get("cutout_performed") is True for r in records)
     cutout_unperformed_count = sum(r.get("cutout_performed") is False for r in records)
-    cutout_metadata_missing_count = sum(r.get("cutout_performed") is None for r in records)
+    cutout_designated_original_count = sum(
+        r.get("cutout_designated_original") is True for r in records
+    )
+    # The cutout rate measures only assets for which a cutout was attempted:
+    # a VERIFIED composite/crop is a success and source/FALLBACK is a failed
+    # attempt. A hero marked source_original is deliberate original use, so it
+    # must not dilute the rate or be called missing metadata.
+    cutout_attempt_count = cutout_performed_count + cutout_unperformed_count
+    cutout_performed_rate = (
+        cutout_performed_count / cutout_attempt_count
+        if cutout_attempt_count
+        else None
+    )
+    cutout_metadata_missing_count = sum(
+        r.get("cutout_performed") is None
+        and not r.get("cutout_designated_original", False)
+        for r in records
+    )
     missing_count = sum(
         1 for r in records if r["judgment"] in ("산출물 누락", "원본 이미지 누락", "원본 분석 실패", "산출 분석 실패")
     )
-    all_ok = len(records) > 0 and ok_count == len(records)
+    all_ok = len(records) > 0 and all(
+        r["judgment"] in {"OK", "원본 사용(설계)"} for r in records
+    )
     has_severe = severe_count > 0
     has_missing = missing_count > 0
     has_background_residual = background_residual_count > 0
@@ -611,8 +662,11 @@ def evaluate_cutout_fidelity(
             "background_residual_count": background_residual_count,
             "cutout_performed_count": cutout_performed_count,
             "cutout_unperformed_count": cutout_unperformed_count,
+            "cutout_designated_original_count": cutout_designated_original_count,
+            "cutout_attempt_count": cutout_attempt_count,
             "cutout_metadata_missing_count": cutout_metadata_missing_count,
-            "cutout_performed_rate": (cutout_performed_count / len(records)) if records else 0.0,
+            "cutout_performed_rate": cutout_performed_rate,
+            "cutout_rate_basis": "attempted cutouts only: VERIFIED source_composite/source_crop versus source/FALLBACK",
             "missing_count": missing_count,
             "all_ok": all_ok,
             "has_severe_loss": has_severe,
@@ -645,8 +699,11 @@ def print_table(results: dict[str, Any]) -> None:
     background_c = summary.get("background_residual_count", 0)
     cutout_performed_c = summary.get("cutout_performed_count", 0)
     cutout_unperformed_c = summary.get("cutout_unperformed_count", 0)
+    cutout_designated_original_c = summary.get("cutout_designated_original_count", 0)
+    cutout_attempt_c = summary.get("cutout_attempt_count", total)
     cutout_metadata_missing_c = summary.get("cutout_metadata_missing_count", 0)
-    cutout_rate = summary.get("cutout_performed_rate", 0.0)
+    cutout_rate = summary.get("cutout_performed_rate")
+    cutout_rate_text = f"{cutout_rate:.1%}" if isinstance(cutout_rate, (int, float)) else "해당 없음"
     missing_c = summary.get("missing_count", 0)
     has_severe = summary.get("has_severe_loss", False)
     has_background_residual = summary.get("has_background_residual", False)
@@ -660,8 +717,10 @@ def print_table(results: dict[str, Any]) -> None:
         f"OK: {ok_c}건",
         f"부분 손실: {part_c}건",
         f"심각 손실: {sev_c}건",
-        f"컷아웃 수행: {cutout_performed_c}/{total}건 ({cutout_rate:.1%})",
+        f"컷아웃 수행: {cutout_performed_c}/{cutout_attempt_c}건 ({cutout_rate_text})",
     ]
+    if cutout_designated_original_c > 0:
+        summary_parts.append(f"설계상 원본 사용: {cutout_designated_original_c}건")
     if cutout_unperformed_c > 0:
         summary_parts.append(f"컷아웃 미수행: {cutout_unperformed_c}건")
     if cutout_metadata_missing_c > 0:

@@ -21,6 +21,7 @@ class ProductPhotoGenerationOptions(BaseModel):
 
 AssetMode = Literal[
     "source",
+    "source_original",
     "source_crop",
     "source_composite",
     "generated_scene",
