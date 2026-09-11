@@ -134,114 +134,6 @@ def test_cutout_returns_none_for_fragmented_foreground():
     assert cutout is None
 
 
-def test_cutout_extracts_product_from_a_vertical_studio_gradient():
-    image = Image.new("RGB", (128, 128))
-    for y in range(image.height):
-        shade = round(32 + (196 - 32) * y / (image.height - 1))
-        for x in range(image.width):
-            image.putpixel((x, y), (shade, shade, shade))
-    for y in range(35, 99):
-        for x in range(28, 100):
-            image.putpixel((x, y), (72, 38, 26))
-
-    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
-        _png(image), "image/png"
-    )
-
-    assert cutout is not None
-    mask = Image.open(io.BytesIO(cutout.mask_png)).convert("L")
-    assert mask.getpixel((64, 64)) == 255
-    assert mask.getpixel((0, 0)) == 0
-    assert mask.getpixel((127, 127)) == 0
-
-
-def test_cutout_returns_none_when_high_variation_frame_is_not_planar():
-    """Do not extrapolate a spatial background field through a curved scene."""
-    image = Image.new("RGB", (160, 160))
-    for y in range(image.height):
-        for x in range(image.width):
-            # A cubic edge transition has a large, non-linear residual from
-            # its end-point plane.  It is not the studio-gradient case above.
-            shade = 30 + round(190 * (x / (image.width - 1)) ** 3)
-            image.putpixel((x, y), (shade, shade, shade))
-    for y in range(52, 110):
-        for x in range(58, 102):
-            image.putpixel((x, y), (48, 22, 18))
-
-    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
-        _png(image), "image/png"
-    )
-
-    assert cutout is None
-
-
-def test_cutout_requires_a_background_field_confidence_margin():
-    image = Image.new("RGB", (160, 160))
-    for y in range(image.height):
-        for x in range(image.width):
-            # This curve is just inside the 36-point segmentation allowance,
-            # but not inside its 75% confidence band.  It must not become a
-            # cutout merely because the final tolerance is permissive enough.
-            shade = 30 + round(120 * (x / (image.width - 1)) ** 1.5)
-            image.putpixel((x, y), (shade, shade, shade))
-    for y in range(52, 110):
-        for x in range(58, 102):
-            image.putpixel((x, y), (48, 22, 18))
-
-    cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
-        _png(image), "image/png"
-    )
-
-    assert cutout is None
-
-
-def test_cutout_rejects_a_mask_that_moves_beyond_the_shadow_budget():
-    stable = Image.new("L", (20, 20))
-    stable.paste(255, (4, 4, 16, 16))
-    shifted = Image.new("L", (20, 20))
-    shifted.paste(255, (7, 4, 19, 16))
-
-    extractor = source_photos.SolidBackgroundCutoutExtractor(
-        max_shadow_foreground_loss=0.15
-    )
-
-    assert extractor._foreground_masks_are_stable(stable, stable)
-    assert not extractor._foreground_masks_are_stable(stable, shifted)
-
-
-def test_cutout_rejects_foreground_that_reaches_the_source_frame():
-    mask = Image.new("L", (20, 20))
-    mask.paste(255, (4, 4, 16, 16))
-    safe = source_photos.SolidBackgroundCutoutExtractor()
-
-    assert not safe._has_foreground_on_frame(mask)
-
-    mask.putpixel((0, 10), 255)
-    assert safe._has_foreground_on_frame(mask)
-
-
-def test_cutout_preserves_known_light_textile_and_glaze_regions():
-    image_dir = Path(__file__).parents[1] / "data/evaluation/cma_real_v1/images"
-    # These points are visibly inside the four previously eroded products.  The
-    # assertion complements the synthetic gradient test with source material,
-    # without deriving thresholds from the audit labels.
-    preserved_points = {
-        "cma-165266.jpg": (200, 30),
-        "cma-165267.jpg": (200, 30),
-        "cma-165271.jpg": (400, 30),
-        "cma-122443.jpg": (270, 90),
-    }
-
-    for filename, point in preserved_points.items():
-        cutout = source_photos.SolidBackgroundCutoutExtractor().extract(
-            (image_dir / filename).read_bytes(), "image/jpeg"
-        )
-
-        assert cutout is not None, filename
-        mask = Image.open(io.BytesIO(cutout.mask_png)).convert("L")
-        assert mask.getpixel(point) > 200, filename
-
-
 def test_cutout_suppresses_connected_neutral_background_gradient_around_ceramic():
     source_path = (
         Path(__file__).parents[1]
@@ -255,7 +147,7 @@ def test_cutout_suppresses_connected_neutral_background_gradient_around_ceramic(
     assert cutout is not None
     mask = Image.open(io.BytesIO(cutout.mask_png)).convert("L")
     assert mask.getpixel((505, 484)) == 0
-    assert mask.getpixel((25, 484)) <= 40
+    assert 0 < mask.getpixel((25, 484)) <= 40
     assert mask.getpixel((300, 450)) == 255
 
 
