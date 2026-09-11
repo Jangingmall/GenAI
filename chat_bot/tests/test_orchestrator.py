@@ -705,9 +705,9 @@ def test_warmup_also_warms_search_and_rank():
 # ---------------------------------------------------------------------------
 
 
-def _explain_chat(reply_text: str):
+def _explain_chat(reply_text: str, suggestions: list[str] | None = None):
     def fake(messages, schema, *, think, model=None):
-        return json.dumps({"reply": reply_text})
+        return json.dumps({"reply": reply_text, "suggestions": suggestions or []})
 
     return fake
 
@@ -752,7 +752,12 @@ def test_run_disambiguation_followup_all_chip_explains_all_in_one_call():
 
     def fake(messages, schema, *, think, model=None):
         calls["n"] += 1
-        return json.dumps({"reply": "세 상품 모두 전통 기법으로 만들어졌습니다."})
+        return json.dumps(
+            {
+                "reply": "세 상품 모두 전통 기법으로 만들어졌습니다.",
+                "suggestions": ["다른 색상으로", "포장 여부 확인"],
+            }
+        )
 
     history = [
         {"role": "user", "content": "이 상품들 설명해줘"},
@@ -773,6 +778,7 @@ def test_run_disambiguation_followup_all_chip_explains_all_in_one_call():
     assert calls["n"] == 1
     assert result["product_ids"] == [1, 2, 6]
     assert result["reply"] == "세 상품 모두 전통 기법으로 만들어졌습니다."
+    assert result["suggestions"] == ["다른 색상으로", "포장 여부 확인"]
 
 
 def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
@@ -789,12 +795,16 @@ def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
     result = rr.run(
         "1번",
         history=history,
-        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        chat=_explain_chat(
+            "도기토 수반은 물레로 직접 성형한 작품입니다.",
+            suggestions=["다른 재질로"],
+        ),
         previous_candidates=_CANDIDATES_3,
         **_NO_DB,
     )
 
     assert result["product_ids"] == [1]
+    assert result["suggestions"] == ["다른 재질로"]
 
 
 def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():
