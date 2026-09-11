@@ -3,7 +3,7 @@
 전체 흐름:
     classify_and_extract(message)              → 접점1 {query_text, filters, intent}
     app.run_recommend.recommend(접점1)          → 접점2 [{product_id, name, score, evidence}, ...] (A 담당)
-    build_reply(message, 접점2, intent, filters) → {reply, products, suggestions}
+    build_reply(message, 접점2, intent, filters) → {reply, product_ids, suggestions}
 
 intent는 접점1 결과에서 여기서 부착한다(§0: "합체 단계에서 오케스트레이터가 부착").
 
@@ -32,12 +32,34 @@ from app.pipeline.generate import (
     _fetch_prices,
     build_reply,
     explain_product,
+    explain_products,
     extract_ordinal,
+    is_all_request,
     is_explain_request,
 )
 from app.pipeline.intent import classify_and_extract
 from app.pipeline.llm import chat_json
 from app.run_recommend import recommend as _recommend
+
+# "이 상품 설명해줘"류 요청에 순번을 못 찾았을 때 되묻는 고정 문구. 상수로 빼서
+# _is_disambiguation_followup이 "직전 봇 턴이 이 되물음이었는가"를 문자열로 재확인할 수
+# 있게 한다 — 문구를 바꿀 땐 이 상수만 바꾸면 양쪽(생성·판정)이 같이 맞는다.
+_DISAMBIGUATION_PROMPT = "몇 번째 상품을 말씀하시는 건가요?"
+
+
+def _is_disambiguation_followup(history: list[dict] | None) -> bool:
+    """직전 봇 턴이 _DISAMBIGUATION_PROMPT 되물음이었는지 본다.
+
+    "설명해줘"류 키워드 없이 "모두"·"1번"만 답해도(clarification subdialogue 원칙 —
+    명확화 질문 다음 턴은 새 메시지로 재분류하지 않고 그 질문의 답으로 먼저 해석한다)
+    이 함수가 True를 반환해 is_explain_request 없이도 설명 경로로 이어지게 한다.
+    """
+    if not history:
+        return False
+    last = history[-1]
+    return last.get("role") == "assistant" and last.get("content", "").startswith(
+        _DISAMBIGUATION_PROMPT
+    )
 
 
 def run(
@@ -49,12 +71,13 @@ def run(
     search_and_rank=_recommend,
     previous_candidates: list[dict] | None = None,
     previous_filters: dict | None = None,
+    previous_product_ids: list[int] | None = None,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
     cache_lookup=semantic_cache.lookup,
     cache_store=semantic_cache.store,
 ) -> dict:
-    """자연어 한 문장 → 최종 응답 계약 {reply, intent, products, suggestions} + candidates.
+    """자연어 한 문장 → 최종 응답 계약 {reply, intent, product_ids, suggestions} + candidates.
 
     chat·search_and_rank는 테스트에서 가짜 함수로 갈아끼울 수 있게 인자로 받는다.
     search_and_rank 기본값(A의 실제 search+ranking)은 PostgreSQL·임베딩 모델이 필요하다.
@@ -77,41 +100,71 @@ def run(
     있어(실측: 완전히 같은 문장인데 한 번은 뽑히고 한 번은 안 뽑힘) 이걸 "새 조건"
     판단에 넣으면 노이즈로 불필요한 재검색이 계속 발생한다. max_price·min_price·color만
     진짜 하드필터(SQL WHERE)라 이 셋만 본다.
+
+    previous_product_ids는 직전 턴에 실제로 화면에 보여준 상품 ID 목록이다(내부 전용,
+    §0 계약엔 없음). "포장되나요?"·"가격대 확인해줘"처럼 순수 속성 질문이 이어지면
+    narrow_down이 매번 같은 후보를 재사용해 매 턴 똑같은 카드가 또 뜨는 문제가 있었다
+    (실측 확인) — 이번 턴 product_ids가 previous_product_ids와 완전히 같은 세트면 카드를
+    비워서 반환한다(reply 텍스트만 답). 다르면(예: "포장되는 것만"으로 3개→1개로 좁혀짐)
+    새 정보이므로 그대로 보여준다. explain_product·explain_products 경로는 사용자가
+    명시적으로 상품을 다시 보여달라 요청한 것이라 이 억제를 적용하지 않는다.
     """
     # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
     # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
     # 확인: 후보 전체를 설명하거나 엉뚱한 걸 고름). 순서 지정은 코드로 확정 판단하고,
     # 없으면 되묻는다(추가 LLM 호출 없이 즉시 응답).
-    if is_explain_request(message):
+    #
+    # _is_disambiguation_followup도 같이 본다 — 직전 봇 턴이 "몇 번째예요?" 되물음이면,
+    # 이번 메시지("모두"·"1번" 등)엔 "설명해"라는 단어가 없어도 그 질문에 대한 답으로
+    # 먼저 해석한다(clarification subdialogue 원칙 — 명확화 질문 다음 턴을 새 메시지로
+    # 재분류하면 안 된다는 실측 확인된 버그: "모두"가 일반 narrow_down으로 새 분류되면서
+    # evidence 없는 뭉뚱그린 답이 나갔었다).
+    if is_explain_request(message) or _is_disambiguation_followup(history):
         if not previous_candidates:
             return {
                 "reply": "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
                 "intent": "narrow_down",
-                "products": [],
+                "product_ids": [],
                 "suggestions": [],
                 "candidates": [],
                 "filters": previous_filters or {},
+                "shown_product_ids": [],
+            }
+        if is_all_request(message):
+            explained = explain_products(message, previous_candidates, chat=chat)
+            return {
+                "reply": explained["reply"],
+                "intent": "narrow_down",
+                "product_ids": explained["product_ids"],
+                "suggestions": explained["suggestions"],
+                "candidates": previous_candidates,
+                "filters": previous_filters or {},
+                "shown_product_ids": explained["product_ids"],
             }
         ordinal = extract_ordinal(message, len(previous_candidates))
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
-            chips = [f"{i + 1}번" for i in range(len(previous_candidates))]
+            chips = [f"{i + 1}번" for i in range(len(previous_candidates))] + [
+                "전체 설명"
+            ]
             return {
-                "reply": f"몇 번째 상품을 말씀하시는 건가요? ({'/'.join(chips)} 중에서 골라주세요)",
+                "reply": f"{_DISAMBIGUATION_PROMPT} ({'/'.join(chips)} 중에서 골라주세요)",
                 "intent": "narrow_down",
-                "products": [],
+                "product_ids": [],
                 "suggestions": chips,
                 "candidates": previous_candidates,
                 "filters": previous_filters or {},
+                "shown_product_ids": previous_product_ids or [],
             }
         target = previous_candidates[ordinal - 1]
         explained = explain_product(message, target, chat=chat)
         return {
             "reply": explained["reply"],
             "intent": "narrow_down",
-            "products": explained["products"],
+            "product_ids": explained["product_ids"],
             "suggestions": explained["suggestions"],
             "candidates": previous_candidates,
             "filters": previous_filters or {},
+            "shown_product_ids": explained["product_ids"],
         }
 
     # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
@@ -134,10 +187,11 @@ def run(
         return {
             "reply": contact1["chat_reply"],
             "intent": "general_chat",
-            "products": [],
+            "product_ids": [],
             "suggestions": [],
             "candidates": previous_candidates or [],
             "filters": contact1["filters"],
+            "shown_product_ids": previous_product_ids or [],
         }
 
     prev_filters = previous_filters or {}
@@ -173,16 +227,29 @@ def run(
         fetch_prices=fetch_prices,
         fetch_artisans=fetch_artisans,
     )
+    # 직전 턴에 보여준 것과 완전히 똑같은 세트면 카드를 다시 안 띄운다 — "가격대
+    # 확인해줘"처럼 순수 속성 질문이 이어지면 매번 같은 카드가 또 뜨는 문제가 실측
+    # 확인됐다. 부분적으로만 겹치거나(예: 3개→1개로 좁혀짐) 완전히 새 후보면 새
+    # 정보이므로 그대로 보여준다 — set 비교라 순서 차이는 무시한다.
+    raw_product_ids = generated["product_ids"]
+    is_repeat = bool(previous_product_ids) and set(raw_product_ids) == set(
+        previous_product_ids
+    )
     return {
         "reply": generated["reply"],
         "intent": contact1["intent"],
-        "products": generated["products"],
+        "product_ids": [] if is_repeat else raw_product_ids,
         "suggestions": generated["suggestions"],
         # build_reply가 종목 대조까지 마친 뒤 돌려준 candidates를 쓴다 — search_and_rank의
         # 원본(미필터링) 출력을 그대로 넘기면, 이번 턴에 걸러낸 다른 종목 후보가 다음 턴
         # narrow_down 재사용에서 그대로 다시 나타난다(실측 확인).
         "candidates": generated["candidates"],
         "filters": contact1["filters"],
+        # 카드 억제 여부와 무관하게 "실제로 관련된 상품이 뭔지"는 그대로 넘긴다 — 다음
+        # 턴 previous_product_ids 비교 기준이 화면 표시 여부에 따라 계속 바뀌면(억제된
+        # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
+        # 뜨는 역효과가 난다.
+        "shown_product_ids": raw_product_ids,
     }
 
 
@@ -234,9 +301,7 @@ if __name__ == "__main__":
     print(f'질의: "{message}"\n')
     print("reply:", result["reply"])
     print("intent:", result["intent"])
-    print("products:")
-    for p in result["products"]:
-        print(f"  - {p['product_id']}: {p['reason']}")
+    print("product_ids:", result["product_ids"])
     print("suggestions:")
     for s in result["suggestions"]:
         print(f"  - {s}")

@@ -106,8 +106,8 @@ def test_chat_returns_only_external_contract_fields():
 
     assert response.status_code == 200
     body = response.json()
-    assert set(body.keys()) == {"reply", "intent", "products", "suggestions"}
-    assert body["products"] == [{"product_id": 9, "reason": "이 찻잔을 추천드려요."}]
+    assert set(body.keys()) == {"reply", "intent", "product_ids", "suggestions"}
+    assert body["product_ids"] == [9]
 
 
 def test_narrow_down_reuses_previous_candidates_via_session_id():
@@ -143,6 +143,35 @@ def test_narrow_down_reuses_previous_candidates_via_session_id():
 
     assert response.status_code == 200
     assert calls["n"] == 1  # 재검색 없이 이전 후보를 그대로 재사용했다
+
+
+def test_repeated_narrow_down_suppresses_duplicate_cards_via_session_id():
+    """세션 저장소를 거쳐 previous_product_ids가 실제로 전달되는지 HTTP 계층까지
+    확인한다 — 1턴과 완전히 같은 product_ids가 2턴에도 나오면 카드를 비워야 한다."""
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=lambda contact1: _CANDIDATES,
+    )
+    first = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+    assert first.json()["product_ids"] == [9]
+
+    intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
+    _override(
+        chat=_sequenced_chat(intent_narrow_down, _GENERATE_OK),  # 같은 allowed_ids=[9]
+        search_and_rank=lambda contact1: _CANDIDATES,
+    )
+    second = client.post(
+        "/ai/chat",
+        json={
+            "session_id": "s1",
+            "message": "가격대 확인해줘",
+            "history": [{"sender": "USER", "content": "찻잔 있나요"}],
+        },
+    )
+
+    assert second.json()["product_ids"] == []  # 완전히 같은 세트라 카드 억제
 
 
 def test_history_sender_field_is_mapped_to_role_for_pipeline():

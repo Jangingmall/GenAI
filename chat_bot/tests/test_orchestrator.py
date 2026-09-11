@@ -87,13 +87,14 @@ def test_run_assembles_final_contract():
     assert set(result.keys()) == {
         "reply",
         "intent",
-        "products",
+        "product_ids",
         "suggestions",
         "candidates",
         "filters",
+        "shown_product_ids",
     }
     assert result["intent"] == "product_search"
-    assert result["products"] == [{"product_id": 9, "reason": "이 찻잔을 추천드려요."}]
+    assert result["product_ids"] == [9]
     assert result["suggestions"] == [
         "다른 색상으로",
         "가격대 낮춰서",
@@ -146,7 +147,7 @@ def test_run_drops_hallucinated_product_id():
     )
     result = rr.run("찻잔 있나요", chat=chat, search_and_rank=search_and_rank, **_NO_DB)
 
-    assert result["products"] == []
+    assert result["product_ids"] == []
 
 
 def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
@@ -186,9 +187,7 @@ def test_run_narrow_down_reuses_previous_candidates_instead_of_searching():
     )
 
     assert result["candidates"] == previous
-    assert result["products"] == [
-        {"product_id": 78, "reason": "가격 정보는 확인되지 않습니다."}
-    ]
+    assert result["product_ids"] == [78]
 
 
 def test_run_narrow_down_treats_zero_price_as_new_filter():
@@ -372,6 +371,110 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
 
 
 # ---------------------------------------------------------------------------
+# 카드 중복 노출 억제 — previous_product_ids와 완전히 같은 세트면 카드를 안 띄운다
+# ---------------------------------------------------------------------------
+
+
+def test_run_suppresses_product_ids_when_identical_to_previous_turn():
+    """ "가격대 확인해줘"처럼 순수 속성 질문이 이어져 후보가 하나도 안 바뀌면,
+    매 턴 같은 카드가 또 뜨지 않도록 product_ids를 비워서 반환해야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "가격 정보는 확인되지 않습니다.",
+            "allowed_ids": [1, 2, 6],
+            "suggestions": [],
+        },
+    )
+    previous = [
+        {"product_id": 1, "name": "A", "score": 0.9, "evidence": {}},
+        {"product_id": 2, "name": "B", "score": 0.8, "evidence": {}},
+        {"product_id": 6, "name": "C", "score": 0.7, "evidence": {}},
+    ]
+
+    result = rr.run(
+        "가격대 확인해줘",
+        chat=chat,
+        previous_candidates=previous,
+        previous_product_ids=[1, 2, 6],
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == []
+    # 화면엔 안 띄워도 "실제로 관련된 상품이 뭔지"는 다음 턴 비교를 위해 그대로 넘긴다.
+    assert result["shown_product_ids"] == [1, 2, 6]
+    assert result["reply"] == "가격 정보는 확인되지 않습니다."
+
+
+def test_run_does_not_suppress_when_narrowed_to_subset():
+    """ "포장되는 것만"처럼 3개 중 1개로 좁혀지면, 이전과 다른 세트이므로 진짜 새
+    정보다 — 억제하지 않고 그대로 보여준다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "포장 가능한 상품은 이것뿐입니다.",
+            "allowed_ids": [1],
+            "suggestions": [],
+        },
+    )
+    previous = [
+        {"product_id": 1, "name": "A", "score": 0.9, "evidence": {}},
+        {"product_id": 2, "name": "B", "score": 0.8, "evidence": {}},
+        {"product_id": 6, "name": "C", "score": 0.7, "evidence": {}},
+    ]
+
+    result = rr.run(
+        "포장되는 것만 보여줘",
+        chat=chat,
+        previous_candidates=previous,
+        previous_product_ids=[1, 2, 6],
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+    assert result["shown_product_ids"] == [1]
+
+
+def test_run_does_not_suppress_on_first_turn_without_previous_product_ids():
+    """previous_product_ids가 없는 첫 턴은 비교 대상이 없으니 당연히 억제하지 않는다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [1], "suggestions": []},
+    )
+    candidates = [{"product_id": 1, "name": "A", "score": 0.9, "evidence": {}}]
+
+    result = rr.run(
+        "도자기 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(candidates),
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+
+
+# ---------------------------------------------------------------------------
 # general_chat이면 검색·두 번째 LLM 호출을 모두 스킵 — 잡담에 엉뚱한 상품이 끼어드는 것 방지
 # ---------------------------------------------------------------------------
 
@@ -408,7 +511,7 @@ def test_run_general_chat_skips_second_llm_call_and_search():
         search_and_rank=search_and_rank_must_not_be_called,
         **_NO_DB,
     )
-    assert result["products"] == []
+    assert result["product_ids"] == []
     assert result["reply"] == "안녕하세요! 어떤 공예품을 찾으시나요?"
     assert (
         calls["n"] == 1
@@ -595,3 +698,138 @@ def test_warmup_also_warms_search_and_rank():
     )
 
     assert seen["called"] is True
+
+
+# ---------------------------------------------------------------------------
+# "몇 번째 상품 설명해줘" 및 그 되물음에 대한 후속 답변("모두"류) 처리
+# ---------------------------------------------------------------------------
+
+
+def _explain_chat(reply_text: str):
+    def fake(messages, schema, *, think, model=None):
+        return json.dumps({"reply": reply_text})
+
+    return fake
+
+
+_CANDIDATES_3 = [
+    {
+        "product_id": 1,
+        "name": "도기토 수반",
+        "evidence": {"artisan_input": "물레 성형"},
+    },
+    {
+        "product_id": 2,
+        "name": "도기토 찻잔",
+        "evidence": {"artisan_input": "유약 흘림"},
+    },
+    {"product_id": 6, "name": "분청 화병", "evidence": {"artisan_input": "문양 새김"}},
+]
+
+
+def test_run_explain_request_without_ordinal_asks_which_one_with_all_chip():
+    """순번을 못 찾으면 되묻는데, 이번엔 "전체 설명" 칩도 같이 나가야 한다."""
+
+    def chat_must_not_be_called(messages, schema, *, think, model=None):
+        raise AssertionError("순번을 못 찾았으면 LLM을 부르지 않고 바로 되물어야 한다")
+
+    result = rr.run(
+        "이 상품들 설명해줘",
+        chat=chat_must_not_be_called,
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert result["suggestions"] == ["1번", "2번", "3번", "전체 설명"]
+    assert "몇 번째" in result["reply"]
+
+
+def test_run_disambiguation_followup_all_chip_explains_all_in_one_call():
+    """되물음("몇 번째예요?") 직후 "전체 설명"류로 답하면, "설명해" 키워드가 없어도
+    explain_products(LLM 1회 호출)로 이어져야 한다 — 예전엔 이 답변이 새 메시지로
+    재분류되면서 근거 없는 뭉뚱그린 답이 나갔었다(실측 확인된 버그)."""
+    calls = {"n": 0}
+
+    def fake(messages, schema, *, think, model=None):
+        calls["n"] += 1
+        return json.dumps({"reply": "세 상품 모두 전통 기법으로 만들어졌습니다."})
+
+    history = [
+        {"role": "user", "content": "이 상품들 설명해줘"},
+        {
+            "role": "assistant",
+            "content": "몇 번째 상품을 말씀하시는 건가요? (1번/2번/3번/전체 설명 중에서 골라주세요)",
+        },
+    ]
+
+    result = rr.run(
+        "전체 설명",
+        history=history,
+        chat=fake,
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert calls["n"] == 1
+    assert result["product_ids"] == [1, 2, 6]
+    assert result["reply"] == "세 상품 모두 전통 기법으로 만들어졌습니다."
+
+
+def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
+    """되물음 직후 "1번"처럼 순번만 답해도("설명해" 키워드 없이도) 그 상품 하나를
+    explain_product로 설명해야 한다."""
+    history = [
+        {"role": "user", "content": "이 상품들 설명해줘"},
+        {
+            "role": "assistant",
+            "content": "몇 번째 상품을 말씀하시는 건가요? (1번/2번/3번/전체 설명 중에서 골라주세요)",
+        },
+    ]
+
+    result = rr.run(
+        "1번",
+        history=history,
+        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+
+
+def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():
+    """직전 봇 턴이 되물음이 아니었으면, "모두"류 메시지는 평소처럼 일반 경로로
+    가야 한다(오탐 방지) — is_explain_request도 False이므로 explain 경로에 들어가면
+    안 된다."""
+
+    def search_and_rank_must_not_be_called(contact1):
+        raise AssertionError(
+            "narrow_down + previous_candidates가 있으면 재검색하면 안 된다"
+        )
+
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [1, 2, 6], "suggestions": []},
+    )
+    history = [
+        {"role": "user", "content": "도자기 추천해줘"},
+        {"role": "assistant", "content": "도자기 3점을 소개해 드릴게요."},
+    ]
+
+    result = rr.run(
+        "모두",
+        history=history,
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "ok"
