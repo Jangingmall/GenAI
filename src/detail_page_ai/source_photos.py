@@ -90,13 +90,20 @@ class SolidBackgroundCutoutExtractor:
     def __init__(
         self,
         *,
-        background_tolerance: float = 28.0,
+        background_tolerance: float = 36.0,
         corner_uniformity_tolerance: float = 24.0,
         min_foreground_ratio: float = 0.01,
         max_foreground_ratio: float = 0.90,
         min_largest_component_ratio: float = 0.50,
+        max_shadow_foreground_loss: float = 0.15,
     ):
+        # The edge field is sampled on a 16-pixel grid, so matching needs an
+        # 8-point interpolation allowance beyond the former 28-point
+        # single-colour threshold.  This value applies only after the spatial
+        # model is built; it is not a replacement for that model.
         self.background_tolerance = background_tolerance
+        # Kept for baseline-diagnostic compatibility.  Extraction no longer
+        # rejects a photograph by comparing its four corners to this value.
         self.corner_uniformity_tolerance = corner_uniformity_tolerance
         self.min_foreground_ratio = min_foreground_ratio
         self.max_foreground_ratio = max_foreground_ratio
@@ -104,26 +111,37 @@ class SolidBackgroundCutoutExtractor:
         # half of the foreground to share one component rejects scattered
         # pattern/noise fragments while still allowing small detached details.
         self.min_largest_component_ratio = min_largest_component_ratio
+        # The wider tolerance is a shadow-only cleanup, never a second
+        # segmentation pass.  It may remove at most 15% of the primary mask,
+        # so it can clear a narrow contact shadow but cannot erase a light
+        # product surface that the primary, local-background mask retained.
+        self.max_shadow_foreground_loss = max_shadow_foreground_loss
 
     def extract(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
         del source_mime_type
         source = _decode_rgb(source_image)
         width, height = source.size
-        corners = (
-            source.getpixel((0, 0)),
-            source.getpixel((width - 1, 0)),
-            source.getpixel((0, height - 1)),
-            source.getpixel((width - 1, height - 1)),
-        )
-        background = tuple(round(sum(pixel[channel] for pixel in corners) / 4) for channel in range(3))
-        if any(self._distance(pixel, background) > self.corner_uniformity_tolerance for pixel in corners):
+        if min(width, height) < 6 * 16 and self._has_nonuniform_frame(source):
+            # The 16-pixel field has fewer than six cells on this axis, too few
+            # boundary samples to distinguish a product boundary from a scene
+            # gradient.  Preserve a small nonuniform source rather than guess.
             return None
+        confidence_tolerance = max(24.0, self.background_tolerance * 0.75)
+        if not self._edge_field_is_reliable(
+            source, tolerance=confidence_tolerance
+        ):
+            # The frame changes too much for the harmonic field to make a
+            # trustworthy interior/background decision.  Returning the source
+            # is safer than turning an unsupported scene interpolation into a
+            # product mask.
+            return None
+        background_model = self._edge_background_model(source)
 
         alpha_values = None
         for multiplier in (1, 2, 4):
             tolerance = self.background_tolerance * multiplier
             candidate_mask = self._connected_foreground_mask(
-                source, background, tolerance
+                source, background_model, tolerance
             )
             alpha_values = list(candidate_mask.getdata())
             foreground_ratio = sum(value > 0 for value in alpha_values) / (width * height)
@@ -137,8 +155,33 @@ class SolidBackgroundCutoutExtractor:
         mask = Image.new("L", source.size)
         mask.putdata(alpha_values)
         mask = self._refine_mask(mask)
-        mask = self._suppress_unreliable_edge_shadow(mask, source, background)
-        mask = self._suppress_connected_background_gradient(mask, source, background)
+        mask = self._suppress_unreliable_edge_shadow(
+            mask, source, background_model
+        )
+        confidence_mask = self._refine_mask(
+            self._connected_foreground_mask(
+                source, background_model, confidence_tolerance
+            )
+        )
+        primary_ratio = sum(value > 0 for value in mask.getdata()) / (width * height)
+        confidence_ratio = (
+            sum(value > 0 for value in confidence_mask.getdata()) / (width * height)
+        )
+        if (
+            self.min_foreground_ratio <= confidence_ratio <= self.max_foreground_ratio
+            and min(primary_ratio, confidence_ratio) > self.max_shadow_foreground_loss
+            and not self._foreground_masks_are_stable(mask, confidence_mask)
+        ):
+            # A product-sized foreground that moves by more than the already
+            # permitted shadow-loss budget when the tolerance narrows is not a
+            # stable segmentation.  Small isolated products are exempt: a
+            # small alpha footprint can legitimately grow around a thin edge.
+            return None
+        if self._has_foreground_on_frame(mask):
+            # A cutout destined for a new background must expose a transparent
+            # frame.  Frame contact is indistinguishable from a surviving
+            # source backdrop, so keep the original instead of compositing it.
+            return None
         bbox = mask.getbbox()
         if bbox is None:
             return None
@@ -175,22 +218,39 @@ class SolidBackgroundCutoutExtractor:
         # Do not let the blur create alpha outside the original foreground mask.
         return ImageChops.multiply(softened, mask)
 
-    @classmethod
+    @staticmethod
     def _connected_foreground_mask(
-        cls,
         source: Image.Image,
-        background: tuple[int, int, int],
+        background_model: Image.Image | tuple[int, int, int],
         tolerance: float,
     ) -> Image.Image:
         """Return foreground after flooding only edge-connected background candidates."""
         width, height = source.size
         source_pixels = source.load()
+        background_pixels = (
+            background_model.load()
+            if isinstance(background_model, Image.Image)
+            else None
+        )
         background_candidates = bytearray(width * height)
+        tolerance_squared = tolerance * tolerance
         for y in range(height):
             row_start = y * width
             for x in range(width):
+                source_pixel = source_pixels[x, y]
+                background_pixel = (
+                    background_pixels[x, y]
+                    if background_pixels is not None
+                    else background_model
+                )
                 background_candidates[row_start + x] = int(
-                    cls._distance(source_pixels[x, y], background) <= tolerance
+                    sum(
+                        (source_channel - background_channel) ** 2
+                        for source_channel, background_channel in zip(
+                            source_pixel, background_pixel, strict=True
+                        )
+                    )
+                    <= tolerance_squared
                 )
 
         reachable_background = bytearray(width * height)
@@ -229,21 +289,234 @@ class SolidBackgroundCutoutExtractor:
         )
         return mask
 
+    def _has_nonuniform_frame(self, source: Image.Image) -> bool:
+        """Return whether a small image's boundary exceeds one match tolerance."""
+        width, height = source.size
+        pixels = source.load()
+        frame = [pixels[x, 0] for x in range(width)]
+        frame += [pixels[x, height - 1] for x in range(width)]
+        frame += [pixels[0, y] for y in range(height)]
+        frame += [pixels[width - 1, y] for y in range(height)]
+        reference = tuple(
+            round(sum(pixel[channel] for pixel in frame) / len(frame))
+            for channel in range(3)
+        )
+        nonuniform_pixels = sum(
+            self._distance(pixel, reference) > self.corner_uniformity_tolerance
+            for pixel in frame
+        )
+        # A broad gradient affects at least a quarter of frame samples; a
+        # narrow contact shadow or JPEG outlier does not trigger this fallback.
+        return nonuniform_pixels * 4 >= len(frame)
+
+    def _edge_field_is_reliable(
+        self, source: Image.Image, *, tolerance: float | None = None
+    ) -> bool:
+        """Check whether a broad boundary change can be interpolated safely.
+
+        The spatial model is intentionally allowed to handle a dark-to-light
+        studio gradient.  A wide range alone therefore cannot reject a photo.
+        It becomes unsafe only when the full frame spans two match bands *and*
+        its edge samples deviate by more than one match band from their own
+        end-point trend.  In that situation a harmonic fill would be guessing
+        at interior scene structure, which is exactly the case where a source
+        fallback is safer than a plausible-looking partial cutout.
+        """
+        match_tolerance = tolerance or self.background_tolerance
+        width, height = source.size
+        pixels = source.load()
+        edge_radius = max(1, min(16, min(width, height) // 40))
+        edges = (
+            self._median_smoothed_edge(
+                [pixels[x, 0] for x in range(width)], edge_radius
+            ),
+            self._median_smoothed_edge(
+                [pixels[x, height - 1] for x in range(width)], edge_radius
+            ),
+            self._median_smoothed_edge(
+                [pixels[0, y] for y in range(height)], edge_radius
+            ),
+            self._median_smoothed_edge(
+                [pixels[width - 1, y] for y in range(height)], edge_radius
+            ),
+        )
+        samples = [pixel for edge in edges for pixel in edge]
+        mean = tuple(
+            sum(pixel[channel] for pixel in samples) / len(samples)
+            for channel in range(3)
+        )
+        spread = sorted(self._distance(pixel, mean) for pixel in samples)
+        spread_p90 = spread[round((len(spread) - 1) * 0.90)]
+        # Two tolerance bands are the minimum range where a field has to
+        # extrapolate rather than merely denoise a single background colour.
+        if spread_p90 <= match_tolerance * 2:
+            return True
+
+        trend_residuals: list[float] = []
+        for edge in edges:
+            first, last = edge[0], edge[-1]
+            denominator = max(1, len(edge) - 1)
+            for index, pixel in enumerate(edge):
+                weight = index / denominator
+                expected = tuple(
+                    first[channel] * (1 - weight) + last[channel] * weight
+                    for channel in range(3)
+                )
+                trend_residuals.append(self._distance(pixel, expected))
+        trend_residuals.sort()
+        trend_p90 = trend_residuals[
+            round((len(trend_residuals) - 1) * 0.90)
+        ]
+        return trend_p90 <= match_tolerance
+
+    @staticmethod
+    def _median_smoothed_edge(
+        pixels: list[tuple[int, int, int]], radius: int
+    ) -> list[tuple[int, int, int]]:
+        """Smooth one frame edge without borrowing product pixels from its interior."""
+        smoothed = []
+        for index in range(len(pixels)):
+            window = pixels[
+                max(0, index - radius) : min(len(pixels), index + radius + 1)
+            ]
+            smoothed.append(
+                tuple(
+                    sorted(pixel[channel] for pixel in window)[len(window) // 2]
+                    for channel in range(3)
+                )
+            )
+        return smoothed
+
+    def _edge_background_model(self, source: Image.Image) -> Image.Image:
+        """Estimate a smooth background field from the full image boundary.
+
+        A single corner average rejects ordinary studio gradients and vignettes.
+        Here every frame pixel participates; a local median removes isolated
+        JPEG noise and a thin edge contact before a harmonic interpolation fills
+        the image interior.  The smoothing radius is at most 16 source pixels
+        and otherwise 1/40 of the shorter side, keeping the model limited to
+        broad lighting changes rather than product texture.
+        """
+        width, height = source.size
+        pixels = source.load()
+        edge_radius = max(1, min(16, min(width, height) // 40))
+        top = self._median_smoothed_edge(
+            [pixels[x, 0] for x in range(width)], edge_radius
+        )
+        bottom = self._median_smoothed_edge(
+            [pixels[x, height - 1] for x in range(width)], edge_radius
+        )
+        left = self._median_smoothed_edge(
+            [pixels[0, y] for y in range(height)], edge_radius
+        )
+        right = self._median_smoothed_edge(
+            [pixels[width - 1, y] for y in range(height)], edge_radius
+        )
+
+        # One grid cell represents at least 16 source pixels.  This keeps the
+        # field a lighting model, while the 64-cell cap bounds extraction work
+        # for high-resolution inputs without changing its spatial intent.
+        grid_width = max(3, min(64, math.ceil(width / 16)))
+        grid_height = max(3, min(64, math.ceil(height / 16)))
+        all_edges = top + bottom + left + right
+        initial = tuple(
+            round(sum(pixel[channel] for pixel in all_edges) / len(all_edges))
+            for channel in range(3)
+        )
+        grid = [initial] * (grid_width * grid_height)
+
+        def source_x(grid_x: int) -> int:
+            return round(grid_x * (width - 1) / (grid_width - 1))
+
+        def source_y(grid_y: int) -> int:
+            return round(grid_y * (height - 1) / (grid_height - 1))
+
+        for grid_x in range(grid_width):
+            grid[grid_x] = top[source_x(grid_x)]
+            grid[(grid_height - 1) * grid_width + grid_x] = bottom[
+                source_x(grid_x)
+            ]
+        for grid_y in range(grid_height):
+            grid[grid_y * grid_width] = left[source_y(grid_y)]
+            grid[grid_y * grid_width + grid_width - 1] = right[
+                source_y(grid_y)
+            ]
+
+        # One relaxation step moves boundary information one grid cell.  Four
+        # times both dimensions is more than two traversals across this grid,
+        # enough for a smooth field to settle while remaining input-size bound.
+        for _ in range(4 * (grid_width + grid_height)):
+            next_grid = grid[:]
+            for grid_y in range(1, grid_height - 1):
+                for grid_x in range(1, grid_width - 1):
+                    above = grid[(grid_y - 1) * grid_width + grid_x]
+                    below = grid[(grid_y + 1) * grid_width + grid_x]
+                    left_pixel = grid[grid_y * grid_width + grid_x - 1]
+                    right_pixel = grid[grid_y * grid_width + grid_x + 1]
+                    next_grid[grid_y * grid_width + grid_x] = tuple(
+                        (
+                            above[channel]
+                            + below[channel]
+                            + left_pixel[channel]
+                            + right_pixel[channel]
+                        )
+                        // 4
+                        for channel in range(3)
+                    )
+            grid = next_grid
+
+        # A harmonic field can understate a broad, neutral spotlight because
+        # its dark top and bottom pull the center down.  For neutral-only
+        # boundary samples, retain the brightest of the vertical, horizontal,
+        # and harmonic estimates.  Colored backgrounds keep the harmonic value
+        # so this cannot turn a similarly colored product into background.
+        neutral_limit = self.background_tolerance / 2
+        for grid_y in range(grid_height):
+            vertical_weight = grid_y / (grid_height - 1)
+            for grid_x in range(grid_width):
+                horizontal_weight = grid_x / (grid_width - 1)
+                vertical = tuple(
+                    round(
+                        top[source_x(grid_x)][channel] * (1 - vertical_weight)
+                        + bottom[source_x(grid_x)][channel] * vertical_weight
+                    )
+                    for channel in range(3)
+                )
+                horizontal = tuple(
+                    round(
+                        left[source_y(grid_y)][channel]
+                        * (1 - horizontal_weight)
+                        + right[source_y(grid_y)][channel] * horizontal_weight
+                    )
+                    for channel in range(3)
+                )
+                index = grid_y * grid_width + grid_x
+                estimates = (grid[index], vertical, horizontal)
+                if all(
+                    max(estimate) - min(estimate) <= neutral_limit
+                    for estimate in estimates
+                ):
+                    grid[index] = max(estimates, key=sum)
+
+        coarse_model = Image.new("RGB", (grid_width, grid_height))
+        coarse_model.putdata(grid)
+        return coarse_model.resize(source.size, Image.Resampling.BILINEAR)
+
     def _suppress_unreliable_edge_shadow(
         self,
         mask: Image.Image,
         source: Image.Image,
-        background: tuple[int, int, int],
+        background_model: Image.Image | tuple[int, int, int],
     ) -> Image.Image:
         """Suppress a tolerant edge shadow only when its own mask is trustworthy."""
-        # Keep the legacy low-contrast edge-shadow behavior without using bbox
-        # contact as an escalation signal.  The wider border flood is accepted
-        # only when it still has a substantial, connected foreground core.
+        # Keep the low-contrast edge-shadow behavior without treating a broad
+        # local-background match as permission to re-segment the product.
         tolerant_mask = self._connected_foreground_mask(
-            source, background, self.background_tolerance * 4
+            source, background_model, self.background_tolerance * 4
         )
         tolerant_mask = self._refine_mask(tolerant_mask)
         tolerant_foreground_count = sum(value > 0 for value in tolerant_mask.getdata())
+        primary_foreground_count = sum(value > 0 for value in mask.getdata())
         if tolerant_foreground_count == 0:
             return mask
         tolerant_ratio = tolerant_foreground_count / (source.width * source.height)
@@ -256,6 +529,10 @@ class SolidBackgroundCutoutExtractor:
             < self.min_largest_component_ratio
         ):
             return mask
+        if isinstance(background_model, Image.Image) and tolerant_foreground_count < primary_foreground_count * (
+            1 - self.max_shadow_foreground_loss
+        ):
+            return mask
         return ImageChops.multiply(mask, tolerant_mask)
 
     def _suppress_connected_background_gradient(
@@ -264,72 +541,51 @@ class SolidBackgroundCutoutExtractor:
         source: Image.Image,
         background: tuple[int, int, int],
     ) -> Image.Image:
-        """Remove only a neutral, brighter gradient that reaches the frame."""
-        width, height = source.size
-        source_pixels = source.load()
-        background_brightness = sum(background) / 3
-        candidates = bytearray(width * height)
-        clearable = bytearray(width * height)
-        fadeable = bytearray(width * height)
-        for y in range(height):
-            row_start = y * width
-            for x in range(width):
-                pixel = source_pixels[x, y]
-                brightness = sum(pixel) / 3
-                chroma = max(pixel) - min(pixel)
-                neutral = chroma <= self.corner_uniformity_tolerance
-                # Let the flood cross the gradual gradient, but only clear
-                # pixels that are unambiguously brighter than the background.
-                candidates[row_start + x] = int(
-                    neutral and brightness >= background_brightness - 10
-                )
-                clearable[row_start + x] = int(
-                    neutral and brightness >= background_brightness + 60
-                )
-                fadeable[row_start + x] = int(
-                    neutral and brightness >= background_brightness + 30
-                )
+        """Compatibility hook for baseline-only regression diagnostics.
 
-        reachable_background = bytearray(width * height)
-        pending: deque[tuple[int, int]] = deque()
-
-        def enqueue_if_candidate(x: int, y: int) -> None:
-            index = y * width + x
-            if candidates[index] and not reachable_background[index]:
-                reachable_background[index] = 1
-                pending.append((x, y))
-
-        for x in range(width):
-            enqueue_if_candidate(x, 0)
-            enqueue_if_candidate(x, height - 1)
-        for y in range(height):
-            enqueue_if_candidate(0, y)
-            enqueue_if_candidate(width - 1, y)
-
-        while pending:
-            x, y = pending.popleft()
-            for neighbor_x, neighbor_y in (
-                (x - 1, y),
-                (x + 1, y),
-                (x, y - 1),
-                (x, y + 1),
-            ):
-                if 0 <= neighbor_x < width and 0 <= neighbor_y < height:
-                    enqueue_if_candidate(neighbor_x, neighbor_y)
-
-        values = list(mask.getdata())
-        shadow_fade_alpha = 40
-        for index in range(width * height):
-            if not reachable_background[index] or not values[index]:
-                continue
-            if clearable[index]:
-                values[index] = 0
-            elif fadeable[index]:
-                # Keep ambiguous product-colored pixels intact, but make the
-                # connected neutral shadow nearly disappear on a new backdrop.
-                values[index] = min(values[index], shadow_fade_alpha)
-        mask.putdata(values)
+        The live extractor uses the edge field in its primary flood instead of
+        applying a second global-colour gradient pass.  The comparison utility
+        still invokes this former private hook while reconstructing a baseline;
+        returning the supplied mask keeps that diagnostic path callable without
+        letting it alter the new extraction flow.
+        """
+        del source, background
         return mask
+
+    def _foreground_masks_are_stable(
+        self, primary: Image.Image, confidence: Image.Image
+    ) -> bool:
+        """Return whether a narrower confidence mask keeps the same silhouette."""
+        primary_values = primary.getdata()
+        confidence_values = confidence.getdata()
+        intersection = 0
+        union = 0
+        for primary_value, confidence_value in zip(
+            primary_values, confidence_values, strict=True
+        ):
+            primary_visible = primary_value > 0
+            confidence_visible = confidence_value > 0
+            intersection += primary_visible and confidence_visible
+            union += primary_visible or confidence_visible
+        if union == 0:
+            return False
+        # Keep this budget tied to the shadow cleanup invariant rather than a
+        # new image-set-specific threshold: a wider pass may move at most the
+        # silhouette share that was already considered a possible shadow.
+        return intersection / union >= 1 - self.max_shadow_foreground_loss
+
+    @staticmethod
+    def _has_foreground_on_frame(mask: Image.Image) -> bool:
+        """Return whether any visible alpha remains at the source boundary."""
+        width, height = mask.size
+        pixels = mask.load()
+        for x in range(width):
+            if pixels[x, 0] > 0 or pixels[x, height - 1] > 0:
+                return True
+        for y in range(height):
+            if pixels[0, y] > 0 or pixels[width - 1, y] > 0:
+                return True
+        return False
 
     @staticmethod
     def _largest_foreground_component_ratio(
@@ -373,6 +629,7 @@ class SolidBackgroundCutoutExtractor:
 
     @staticmethod
     def _distance(left: tuple[int, int, int], right: tuple[int, int, int]) -> float:
+        """Retain the diagnostic helper used by cutout regression reporting."""
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(left, right, strict=True)))
 
 

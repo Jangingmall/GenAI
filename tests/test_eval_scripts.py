@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
@@ -315,6 +315,180 @@ def test_check_cutout_fidelity_threshold_boundaries(tmp_path: Path) -> None:
     assert summary["ok_count"] == 1
     assert summary["partial_loss_count"] == 1
     assert summary["severe_loss_count"] == 2  # severe + missing
+
+
+def test_cutout_fidelity_detects_enclosed_background_and_preserves_sparse_product(
+    tmp_path: Path,
+) -> None:
+    """Catch source-colored closed residue without calling a sparse open product lost."""
+    pilot_dir = tmp_path / "pilot"
+    pilot_dir.mkdir()
+
+    residue_source = tmp_path / "residue-source.png"
+    Image.new("RGB", (100, 100), (140, 140, 140)).save(residue_source)
+    residue_photo_dir = pilot_dir / "residue" / "photos"
+    residue_photo_dir.mkdir(parents=True)
+    residue_output = Image.new("RGB", (100, 100), (255, 255, 255))
+    residue_draw = ImageDraw.Draw(residue_output)
+    residue_draw.rectangle((20, 20, 80, 80), outline=(30, 30, 30), width=6)
+    residue_draw.rectangle((28, 28, 72, 72), fill=(140, 140, 140))
+    residue_output.save(residue_photo_dir / "01-hero.png")
+
+    sparse_source = tmp_path / "sparse-source.png"
+    sparse_original = Image.new("RGB", (100, 100), (220, 220, 220))
+    sparse_draw = ImageDraw.Draw(sparse_original)
+    sparse_draw.line(((20, 20), (20, 80), (80, 80), (80, 20)), fill=(20, 20, 20), width=5)
+    sparse_original.save(sparse_source)
+    sparse_photo_dir = pilot_dir / "sparse" / "photos"
+    sparse_photo_dir.mkdir(parents=True)
+    sparse_output = Image.new("RGB", (100, 100), (255, 255, 255))
+    ImageDraw.Draw(sparse_output).line(
+        ((20, 20), (20, 80), (80, 80), (80, 20)), fill=(20, 20, 20), width=5
+    )
+    sparse_output.save(sparse_photo_dir / "01-hero.png")
+
+    (pilot_dir / "run_index.json").write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {
+                        "case_id": "residue",
+                        "category": "jewelry",
+                        "image_path": str(residue_source),
+                        "output_dir": str(pilot_dir / "residue"),
+                    },
+                    {
+                        "case_id": "sparse",
+                        "category": "jewelry",
+                        "image_path": str(sparse_source),
+                        "output_dir": str(pilot_dir / "sparse"),
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    residue_ratio = check_cutout_fidelity.calculate_enclosed_background_ratio(
+        residue_source, residue_photo_dir / "01-hero.png"
+    )
+    assert residue_ratio > 0.10
+
+    result = check_cutout_fidelity.evaluate_cutout_fidelity(pilot_dir=pilot_dir, roles=["hero"])
+    records = {record["case_id"]: record for record in result["records"]}
+
+    assert records["residue"]["judgment"] == "배경 잔존"
+    assert records["residue"]["background_residual_ratio"] > 0.10
+    assert records["sparse"]["judgment"] == "OK"
+    assert records["sparse"]["source_foreground_density"] <= 0.30
+    assert records["sparse"]["preservation_ratio"] > 0.60
+    assert result["summary"]["background_residual_count"] == 1
+    assert result["summary"]["has_background_residual"] is True
+
+
+def test_cutout_fidelity_reports_source_fallback_as_not_performed(tmp_path: Path) -> None:
+    """A byte-identical source fallback is not evidence that a cutout succeeded."""
+    pilot_dir = tmp_path / "pilot"
+    pilot_dir.mkdir()
+    original = tmp_path / "source.png"
+    Image.new("RGB", (100, 100), (30, 30, 30)).save(original)
+
+    case_dir = pilot_dir / "fallback"
+    photos_dir = case_dir / "photos"
+    photos_dir.mkdir(parents=True)
+    Image.new("RGB", (100, 100), (30, 30, 30)).save(photos_dir / "01-hero.png")
+    (case_dir / "result_summary.json").write_text(
+        json.dumps(
+            {
+                "detail_page": {
+                    "photos": [
+                        {
+                            "photo_id": "hero",
+                            "asset_mode": "source",
+                            "fidelity_status": "FALLBACK",
+                        }
+                    ]
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pilot_dir / "run_index.json").write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {
+                        "case_id": "fallback",
+                        "category": "textile",
+                        "image_path": str(original),
+                        "output_dir": str(case_dir),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = check_cutout_fidelity.evaluate_cutout_fidelity(pilot_dir=pilot_dir, roles=["hero"])
+    record = result["records"][0]
+
+    assert record["preservation_ratio"] == 1.0
+    assert record["judgment"] == "컷아웃 미수행"
+    assert record["asset_mode"] == "source"
+    assert record["fidelity_status"] == "FALLBACK"
+    assert record["cutout_performed"] is False
+    assert record["loss_judgment"] is None
+    assert record["background_residual_ratio"] is None
+    assert record["renderer_background_hole_ratio"] is None
+    assert result["summary"]["cutout_performed_count"] == 0
+    assert result["summary"]["cutout_unperformed_count"] == 1
+    assert result["summary"]["cutout_performed_rate"] == 0.0
+    assert result["summary"]["has_cutout_unperformed"] is True
+
+
+def test_cutout_fidelity_flags_enclosed_renderer_background_as_product_loss(
+    tmp_path: Path,
+) -> None:
+    """A white hole enclosed by product pixels is cutout erosion, not an open ring void."""
+    pilot_dir = tmp_path / "pilot"
+    pilot_dir.mkdir()
+    original = tmp_path / "source.png"
+    Image.new("RGB", (100, 100), (100, 100, 100)).save(original)
+
+    case_dir = pilot_dir / "glaze-hole"
+    photos_dir = case_dir / "photos"
+    photos_dir.mkdir(parents=True)
+    output = Image.new("RGB", (100, 100), (255, 255, 255))
+    draw = ImageDraw.Draw(output)
+    draw.rectangle((20, 20, 80, 80), fill=(30, 30, 30))
+    draw.rectangle((40, 40, 60, 60), fill=(255, 255, 255))
+    output.save(photos_dir / "01-hero.png")
+    (pilot_dir / "run_index.json").write_text(
+        json.dumps(
+            {
+                "cases": [
+                    {
+                        "case_id": "glaze-hole",
+                        "category": "ceramic",
+                        "image_path": str(original),
+                        "output_dir": str(case_dir),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    hole_ratio = check_cutout_fidelity.calculate_enclosed_renderer_background_ratio(
+        photos_dir / "01-hero.png"
+    )
+    assert hole_ratio > 0.01
+
+    result = check_cutout_fidelity.evaluate_cutout_fidelity(pilot_dir=pilot_dir, roles=["hero"])
+    record = result["records"][0]
+    assert record["renderer_background_hole_ratio"] > 0.01
+    assert record["loss_judgment"] == "부분 손실"
+    assert record["judgment"] == "부분 손실"
 
 
 # ==============================================================================

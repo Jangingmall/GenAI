@@ -11,12 +11,212 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import deque
 from pathlib import Path
 from typing import Any
 
 from PIL import Image
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+# Full60의 관리자가 확인한 최악 잔존 사례(cma-109609)는 네 모서리 평균 배경색에서
+# RGB 유클리드 거리 16일 때 19.22%가 되어, 육안 집계 19.2%와 일치한다. 같은 기준에서
+# 정상 목걸이(cma-168479)의 유사 색 픽셀은 0.62%에 그쳐 1% 게이트보다 낮다.
+BACKGROUND_COLOR_TOLERANCE: float = 16.0
+BACKGROUND_RESIDUE_THRESHOLD: float = 0.01
+
+# Full60에서 원본의 edge-connected background 제거 후 bbox 실루엣 밀도는 정상 고리
+# cma-168479만 27.77%였고, 다음 값은 45.35%였다. 30%는 이 15.35%p 분리 구간 안의
+# 보수적 값이다. 이 경우에만 원본 실루엣 밀도를 보존율 분모로 써서 성긴 제품을 보호한다.
+SPARSE_SOURCE_FOREGROUND_DENSITY_THRESHOLD: float = 0.30
+
+
+def _load_rgb_on_white(image_path: Path) -> Image.Image:
+    """Load an image as RGB, compositing transparency onto the renderer's white backdrop."""
+    if not image_path.is_file():
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+
+    with Image.open(image_path) as img:
+        if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+            rgba = img.convert("RGBA")
+            background = Image.new("RGBA", img.size, (255, 255, 255, 255))
+            background.alpha_composite(rgba)
+            return background.convert("RGB")
+        return img.convert("RGB")
+
+
+def _estimate_corner_background(image: Image.Image) -> tuple[int, int, int]:
+    """Estimate source background from the same four image corners used by the cutout extractor."""
+    width, height = image.size
+    corners = (
+        image.getpixel((0, 0)),
+        image.getpixel((width - 1, 0)),
+        image.getpixel((0, height - 1)),
+        image.getpixel((width - 1, height - 1)),
+    )
+    return tuple(
+        round(sum(pixel[channel] for pixel in corners) / len(corners))
+        for channel in range(3)
+    )
+
+
+def _background_candidates(
+    image: Image.Image,
+    background: tuple[int, int, int],
+    tolerance: float,
+) -> bytearray:
+    """Return pixels whose RGB distance is within tolerance of the source background."""
+    tolerance_squared = tolerance * tolerance
+    pixels = image.load()
+    candidates = bytearray(image.width * image.height)
+    for y in range(image.height):
+        row_start = y * image.width
+        for x in range(image.width):
+            pixel = pixels[x, y]
+            candidates[row_start + x] = int(
+                sum((pixel[channel] - background[channel]) ** 2 for channel in range(3))
+                <= tolerance_squared
+            )
+    return candidates
+
+
+def _edge_reachable(candidates: bytearray, width: int, height: int) -> bytearray:
+    """Mark 4-neighbor candidate pixels reachable from an image edge."""
+    reachable = bytearray(width * height)
+    pending: deque[int] = deque()
+
+    def enqueue(index: int) -> None:
+        if candidates[index] and not reachable[index]:
+            reachable[index] = 1
+            pending.append(index)
+
+    for x in range(width):
+        enqueue(x)
+        enqueue((height - 1) * width + x)
+    for y in range(1, height - 1):
+        enqueue(y * width)
+        enqueue(y * width + width - 1)
+
+    while pending:
+        index = pending.popleft()
+        x = index % width
+        y = index // width
+        if x > 0:
+            enqueue(index - 1)
+        if x + 1 < width:
+            enqueue(index + 1)
+        if y > 0:
+            enqueue(index - width)
+        if y + 1 < height:
+            enqueue(index + width)
+
+    return reachable
+
+
+def calculate_enclosed_background_ratio(
+    source_image_path: Path,
+    output_image_path: Path,
+    background_tolerance: float = BACKGROUND_COLOR_TOLERANCE,
+) -> float:
+    """Measure source-colored output pixels that cannot reach the output frame.
+
+    A cutout backdrop is expected to be white/transparent after rendering. Source
+    background-colored pixels therefore indicate residue only when a 4-neighbor
+    path through similarly colored pixels cannot reach the image edge. This keeps
+    ordinary source background at the edge and white holes in rings out of the
+    residue count.
+    """
+    source = _load_rgb_on_white(source_image_path)
+    output = _load_rgb_on_white(output_image_path)
+    background = _estimate_corner_background(source)
+    candidates = _background_candidates(output, background, background_tolerance)
+    reachable = _edge_reachable(candidates, output.width, output.height)
+    enclosed_count = sum(
+        candidate and not is_reachable
+        for candidate, is_reachable in zip(candidates, reachable)
+    )
+    return enclosed_count / (output.width * output.height)
+
+
+def calculate_enclosed_renderer_background_ratio(
+    output_image_path: Path,
+    background_tolerance: float = BACKGROUND_COLOR_TOLERANCE,
+) -> float:
+    """Measure renderer-background islands fully enclosed by visible product pixels.
+
+    This catches transparent/white holes in a product surface. It reuses the 1%
+    area threshold selected for background residue: in Full60, cma-122443 has
+    1.30% enclosed renderer background while the intact open necklace cma-168479
+    has 0.04%. The sparse-source exemption remains the guard for genuine rings.
+    """
+    output = _load_rgb_on_white(output_image_path)
+    render_background = _estimate_corner_background(output)
+    candidates = _background_candidates(output, render_background, background_tolerance)
+    reachable = _edge_reachable(candidates, output.width, output.height)
+    enclosed_count = sum(
+        candidate and not is_reachable
+        for candidate, is_reachable in zip(candidates, reachable)
+    )
+    return enclosed_count / (output.width * output.height)
+
+
+def calculate_source_foreground_density(
+    image_path: Path,
+    background_tolerance: float = BACKGROUND_COLOR_TOLERANCE,
+) -> float:
+    """Calculate source foreground density after removing only edge-connected background."""
+    source = _load_rgb_on_white(image_path)
+    background = _estimate_corner_background(source)
+    candidates = _background_candidates(source, background, background_tolerance)
+    reachable = _edge_reachable(candidates, source.width, source.height)
+    foreground_indices = [index for index, is_reachable in enumerate(reachable) if not is_reachable]
+    if not foreground_indices:
+        return 0.0
+
+    x_values = [index % source.width for index in foreground_indices]
+    y_values = [index // source.width for index in foreground_indices]
+    bbox_area = (max(x_values) - min(x_values) + 1) * (max(y_values) - min(y_values) + 1)
+    return len(foreground_indices) / bbox_area
+
+
+def _load_photo_metadata(output_dir: Path) -> dict[str, tuple[str | None, str | None]]:
+    """Read asset_mode and fidelity_status by photo_id without failing older output runs."""
+    summary_path = output_dir / "result_summary.json"
+    if not summary_path.is_file():
+        return {}
+    try:
+        summary_data = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    detail_page = summary_data.get("detail_page")
+    photos = detail_page.get("photos") if isinstance(detail_page, dict) else None
+    if not isinstance(photos, list):
+        return {}
+
+    metadata: dict[str, tuple[str | None, str | None]] = {}
+    for photo in photos:
+        if not isinstance(photo, dict) or not isinstance(photo.get("photo_id"), str):
+            continue
+        asset_mode = photo.get("asset_mode")
+        fidelity_status = photo.get("fidelity_status")
+        metadata[photo["photo_id"]] = (
+            asset_mode if isinstance(asset_mode, str) else None,
+            fidelity_status if isinstance(fidelity_status, str) else None,
+        )
+    return metadata
+
+
+def _cutout_performed(
+    asset_mode: str | None,
+    fidelity_status: str | None,
+) -> bool | None:
+    """Classify source-preserving hero metadata as performed, fallback, or unavailable."""
+    if asset_mode == "source" or fidelity_status == "FALLBACK":
+        return False
+    if asset_mode in {"source_composite", "source_crop"} and fidelity_status == "VERIFIED":
+        return True
+    return None
 
 
 def calculate_bbox_ink_ratio(
@@ -134,7 +334,7 @@ def evaluate_cutout_fidelity(
     resample_size: int = 256,
     crop_to_bbox: bool = True,
 ) -> dict[str, Any]:
-    """Evaluate cutout fidelity across all cases in run_index.json."""
+    """Evaluate cutout loss and enclosed source-background residue across a run."""
     index_file = pilot_dir / "run_index.json"
     if not index_file.is_file():
         raise FileNotFoundError(f"run_index.json not found in {pilot_dir}")
@@ -186,6 +386,9 @@ def evaluate_cutout_fidelity(
                 "output_photo_path": None,
                 "original_bbox": None,
                 "output_bbox": None,
+                "source_foreground_density": None,
+                "background_residual_ratio": None,
+                "renderer_background_hole_ratio": None,
             })
             continue
 
@@ -204,6 +407,7 @@ def evaluate_cutout_fidelity(
                     crop_to_bbox=False,
                 )
                 orig_bbox = None
+            source_foreground_density = calculate_source_foreground_density(orig_path)
         except Exception as exc:
             records.append({
                 "category": category,
@@ -218,11 +422,15 @@ def evaluate_cutout_fidelity(
                 "output_photo_path": None,
                 "original_bbox": None,
                 "output_bbox": None,
+                "source_foreground_density": None,
+                "background_residual_ratio": None,
+                "renderer_background_hole_ratio": None,
             })
             continue
 
         photos_dir = out_dir / "photos"
         matched_photos = find_photos_for_roles(photos_dir, roles)
+        photo_metadata = _load_photo_metadata(out_dir)
 
         if not matched_photos:
             records.append({
@@ -238,11 +446,19 @@ def evaluate_cutout_fidelity(
                 "output_photo_path": None,
                 "original_bbox": orig_bbox,
                 "output_bbox": None,
+                "source_foreground_density": round(source_foreground_density, 6),
+                "background_residual_ratio": None,
+                "renderer_background_hole_ratio": None,
+                "asset_mode": None,
+                "fidelity_status": None,
+                "cutout_performed": None,
             })
             continue
 
         for photo_role, photo_file in matched_photos:
             try:
+                asset_mode, fidelity_status = photo_metadata.get(photo_role, (None, None))
+                cutout_performed = _cutout_performed(asset_mode, fidelity_status)
                 if use_bbox:
                     out_ink, out_bbox = calculate_bbox_ink_ratio(
                         photo_file,
@@ -258,14 +474,44 @@ def evaluate_cutout_fidelity(
                     )
                     out_bbox = None
 
-                ratio = out_ink / orig_ink if orig_ink > 0 else (1.0 if out_ink == 0 else 0.0)
+                sparse_source = (
+                    0.0 < source_foreground_density <= SPARSE_SOURCE_FOREGROUND_DENSITY_THRESHOLD
+                )
+                comparison_ink = source_foreground_density if sparse_source else orig_ink
+                ratio = (
+                    out_ink / comparison_ink
+                    if comparison_ink > 0
+                    else (1.0 if out_ink == 0 else 0.0)
+                )
 
-                if ratio > ok_threshold:
-                    judgment = "OK"
-                elif ratio < severe_threshold:
-                    judgment = "심각 손실"
+                if cutout_performed is False:
+                    # A source/FALLBACK image never passed through a cutout. Its
+                    # 100% preservation ratio is expected and cannot assess loss.
+                    background_residual_ratio = None
+                    renderer_background_hole_ratio = None
+                    loss_judgment = None
+                    judgment = "컷아웃 미수행"
                 else:
-                    judgment = "부분 손실"
+                    background_residual_ratio = calculate_enclosed_background_ratio(orig_path, photo_file)
+                    renderer_background_hole_ratio = calculate_enclosed_renderer_background_ratio(photo_file)
+                    if ratio > ok_threshold:
+                        loss_judgment = "OK"
+                    elif ratio < severe_threshold:
+                        loss_judgment = "심각 손실"
+                    else:
+                        loss_judgment = "부분 손실"
+
+                    if (
+                        loss_judgment == "OK"
+                        and not sparse_source
+                        and renderer_background_hole_ratio >= BACKGROUND_RESIDUE_THRESHOLD
+                    ):
+                        loss_judgment = "부분 손실"
+
+                    if background_residual_ratio >= BACKGROUND_RESIDUE_THRESHOLD:
+                        judgment = "배경 잔존"
+                    else:
+                        judgment = loss_judgment
 
                 records.append({
                     "category": category,
@@ -275,10 +521,25 @@ def evaluate_cutout_fidelity(
                     "output_ink_ratio": round(out_ink, 6),
                     "preservation_ratio": round(ratio, 6),
                     "judgment": judgment,
+                    "loss_judgment": loss_judgment,
                     "original_image_path": str(orig_path),
                     "output_photo_path": str(photo_file),
                     "original_bbox": orig_bbox,
                     "output_bbox": out_bbox,
+                    "source_foreground_density": round(source_foreground_density, 6),
+                    "background_residual_ratio": (
+                        round(background_residual_ratio, 6)
+                        if background_residual_ratio is not None
+                        else None
+                    ),
+                    "renderer_background_hole_ratio": (
+                        round(renderer_background_hole_ratio, 6)
+                        if renderer_background_hole_ratio is not None
+                        else None
+                    ),
+                    "asset_mode": asset_mode,
+                    "fidelity_status": fidelity_status,
+                    "cutout_performed": cutout_performed,
                 })
             except Exception as exc:
                 records.append({
@@ -294,17 +555,36 @@ def evaluate_cutout_fidelity(
                     "output_photo_path": str(photo_file),
                     "original_bbox": orig_bbox,
                     "output_bbox": None,
+                    "source_foreground_density": round(source_foreground_density, 6),
+                    "background_residual_ratio": None,
+                    "renderer_background_hole_ratio": None,
+                    "asset_mode": None,
+                    "fidelity_status": None,
+                    "cutout_performed": None,
                 })
 
     ok_count = sum(1 for r in records if r["judgment"] == "OK")
+    # Summary categories are mutually exclusive final verdicts. The raw
+    # loss_judgment remains on each record for diagnostics when background
+    # residue takes precedence over a noisy density estimate.
     partial_count = sum(1 for r in records if r["judgment"] == "부분 손실")
     severe_count = sum(1 for r in records if r["judgment"] == "심각 손실")
+    background_residual_count = sum(
+        1
+        for r in records
+        if (r.get("background_residual_ratio") or 0.0) >= BACKGROUND_RESIDUE_THRESHOLD
+    )
+    cutout_performed_count = sum(r.get("cutout_performed") is True for r in records)
+    cutout_unperformed_count = sum(r.get("cutout_performed") is False for r in records)
+    cutout_metadata_missing_count = sum(r.get("cutout_performed") is None for r in records)
     missing_count = sum(
         1 for r in records if r["judgment"] in ("산출물 누락", "원본 이미지 누락", "원본 분석 실패", "산출 분석 실패")
     )
     all_ok = len(records) > 0 and ok_count == len(records)
     has_severe = severe_count > 0
     has_missing = missing_count > 0
+    has_background_residual = background_residual_count > 0
+    has_cutout_unperformed = cutout_unperformed_count > 0
 
     reported_severe = (severe_count + missing_count) if is_mock else severe_count
 
@@ -318,15 +598,26 @@ def evaluate_cutout_fidelity(
             "resample_size": resample_size,
             "roles": roles,
             "crop_to_bbox": use_bbox,
+            "background_color_tolerance": BACKGROUND_COLOR_TOLERANCE,
+            "background_residue": BACKGROUND_RESIDUE_THRESHOLD,
+            "renderer_background_hole": BACKGROUND_RESIDUE_THRESHOLD,
+            "sparse_source_foreground_density": SPARSE_SOURCE_FOREGROUND_DENSITY_THRESHOLD,
         },
         "summary": {
             "total": len(records),
             "ok_count": ok_count,
             "partial_loss_count": partial_count,
             "severe_loss_count": reported_severe,
+            "background_residual_count": background_residual_count,
+            "cutout_performed_count": cutout_performed_count,
+            "cutout_unperformed_count": cutout_unperformed_count,
+            "cutout_metadata_missing_count": cutout_metadata_missing_count,
+            "cutout_performed_rate": (cutout_performed_count / len(records)) if records else 0.0,
             "missing_count": missing_count,
             "all_ok": all_ok,
             "has_severe_loss": has_severe,
+            "has_background_residual": has_background_residual,
+            "has_cutout_unperformed": has_cutout_unperformed,
             "has_missing": has_missing,
         },
         "records": records,
@@ -351,23 +642,48 @@ def print_table(results: dict[str, Any]) -> None:
     ok_c = summary.get("ok_count", 0)
     part_c = summary.get("partial_loss_count", 0)
     sev_c = summary.get("severe_loss_count", 0)
+    background_c = summary.get("background_residual_count", 0)
+    cutout_performed_c = summary.get("cutout_performed_count", 0)
+    cutout_unperformed_c = summary.get("cutout_unperformed_count", 0)
+    cutout_metadata_missing_c = summary.get("cutout_metadata_missing_count", 0)
+    cutout_rate = summary.get("cutout_performed_rate", 0.0)
     missing_c = summary.get("missing_count", 0)
     has_severe = summary.get("has_severe_loss", False)
+    has_background_residual = summary.get("has_background_residual", False)
+    has_cutout_unperformed = summary.get("has_cutout_unperformed", False)
     has_missing = summary.get("has_missing", False)
     all_ok = summary.get("all_ok", False)
 
     print()
+    summary_parts = [
+        f"총 {total}건",
+        f"OK: {ok_c}건",
+        f"부분 손실: {part_c}건",
+        f"심각 손실: {sev_c}건",
+        f"컷아웃 수행: {cutout_performed_c}/{total}건 ({cutout_rate:.1%})",
+    ]
+    if cutout_unperformed_c > 0:
+        summary_parts.append(f"컷아웃 미수행: {cutout_unperformed_c}건")
+    if cutout_metadata_missing_c > 0:
+        summary_parts.append(f"컷아웃 상태 미확인: {cutout_metadata_missing_c}건")
+    if background_c > 0:
+        summary_parts.append(f"배경 잔존: {background_c}건")
     if missing_c > 0:
-        print(f"요약: 총 {total}건 | OK: {ok_c}건 | 부분 손실: {part_c}건 | 심각 손실: {sev_c}건 | 산출물 누락: {missing_c}건")
-    else:
-        print(f"요약: 총 {total}건 | OK: {ok_c}건 | 부분 손실: {part_c}건 | 심각 손실: {sev_c}건")
+        summary_parts.append(f"산출물 누락: {missing_c}건")
+    print("요약: " + " | ".join(summary_parts))
 
-    if has_severe and has_missing:
-        print(f"최종 판정: [FAIL] 심각 손실({sev_c}건) 및 산출물 누락({missing_c}건)이 감지되었습니다.")
-    elif has_severe:
-        print(f"최종 판정: [FAIL] 심각 손실(CRITICAL_LOSS: {sev_c}건)이 감지되었습니다.")
-    elif has_missing:
-        print(f"최종 판정: [FAIL] 산출물 누락(MISSING_OUTPUT: {missing_c}건)이 감지되었습니다.")
+    failure_reasons: list[str] = []
+    if has_severe:
+        failure_reasons.append(f"심각 손실(CRITICAL_LOSS: {sev_c}건)")
+    if has_background_residual:
+        failure_reasons.append(f"배경 잔존(BACKGROUND_RESIDUE: {background_c}건)")
+    if has_cutout_unperformed:
+        failure_reasons.append(f"컷아웃 미수행(CUTOUT_NOT_PERFORMED: {cutout_unperformed_c}건)")
+    if has_missing:
+        failure_reasons.append(f"산출물 누락(MISSING_OUTPUT: {missing_c}건)")
+
+    if failure_reasons:
+        print("최종 판정: [FAIL] " + " 및 ".join(failure_reasons) + "이 감지되었습니다.")
     elif not all_ok:
         print(f"최종 판정: [WARN/FAIL] 부분 손실(PARTIAL_LOSS: {part_c}건)이 존재하여 전건 OK가 아닙니다.")
     else:
@@ -486,8 +802,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"JSON 결과 저장됨: {out_json_path}")
 
     summary = results["summary"]
-    # Exit code: 1 if any severe loss or missing output, or not all_ok unless allow_partial is specified
-    if summary["has_severe_loss"] or summary.get("has_missing", False):
+    # Exit code: 1 for severe loss, background residue, cutout non-performance, or missing output.
+    # --allow-partial only relaxes partial-loss reporting, not a known residue defect.
+    if (
+        summary["has_severe_loss"]
+        or summary.get("has_background_residual", False)
+        or summary.get("has_cutout_unperformed", False)
+        or summary.get("has_missing", False)
+    ):
         return 1
     if not summary["all_ok"] and not args.allow_partial:
         return 1
