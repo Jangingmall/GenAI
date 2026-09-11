@@ -138,6 +138,8 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 | 7 | variant 전달 경로 개방 | `generated/evaluation/pilot-20260910-153208` | 72.4% | 4종 | 1쌍 | 구 기준 FAIL (5/6, `--image-provider none`, 사진 0장) |
 | 8 | 카탈로그와 판정 기준 재설계 | `generated/evaluation/pilot-20260910-161310` | 66.0% | 1종 | 2쌍 | 새 기준 FAIL (6/6, `--image-provider none`, 원본 파생 컷) |
 | **9** | **근거 기반 후보 원형 선택** | `generated/evaluation/pilot-20260910-164008` | **52.3%** | **0종** | **0쌍** | **새 기준 PASS (6/6, Flux 실제 생성)** |
+| **10** | **'참고용' 라벨 계약 수정 + 60건 전체 평가 1차** | `generated/evaluation/full60-20260910-204433` | **52.3%** | **0종** | **0쌍** | **60/60 성공 · 라벨 60/60 PASS · 다양성 6건 표본 PASS · 컷아웃 OK 55/부분손실 5** |
+| 11 | 컷아웃 게이트 보강(채택)·추출기 수정(되돌림) | `generated/evaluation/full60-v2-20260911-110752` | 52.3% | 0종 | 0쌍 | **되돌림** (지표 PASS 60/60·수행률 40%이나 육안 판정으로 추출기 되돌림 `162863d`, 게이트 채택 `696dd15`) |
 
 표의 `유효 공통 블록`은 `hero`·`closing`을 제외한 종수다.
 
@@ -154,6 +156,8 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 | 7 | [문서](experiments/round-07/01-implementation-checkpoint.md) | [문서](experiments/round-07/02-error-analysis.md) | [문서](experiments/round-07/03-experiment-report.md) | [문서](experiments/round-07/04-inference-api.md) | [문서](experiments/round-07/05-be-fe-interface.md) |
 | 8 | [문서](experiments/round-08/01-implementation-checkpoint.md) | [문서](experiments/round-08/02-error-analysis.md) | [문서](experiments/round-08/03-experiment-report.md) | [문서](experiments/round-08/04-inference-api.md) | [문서](experiments/round-08/05-be-fe-interface.md) |
 | 9 | [문서](experiments/round-09/01-implementation-checkpoint.md) | [문서](experiments/round-09/02-error-analysis.md) | [문서](experiments/round-09/03-experiment-report.md) | [문서](experiments/round-09/04-inference-api.md) | [문서](experiments/round-09/05-be-fe-interface.md) |
+| 10 | [문서](experiments/round-10/01-implementation-checkpoint.md) | [문서](experiments/round-10/02-error-analysis.md) | [문서](experiments/round-10/03-experiment-report.md) | [문서](experiments/round-10/04-inference-api.md) | [문서](experiments/round-10/05-be-fe-interface.md) |
+| 11 | [문서](experiments/round-11/01-implementation-checkpoint.md) | [문서](experiments/round-11/02-error-analysis.md) | [문서](experiments/round-11/03-experiment-report.md) | [문서](experiments/round-11/04-inference-api.md) | [문서](experiments/round-11/05-be-fe-interface.md) |
 
 ### 전체 결론
 
