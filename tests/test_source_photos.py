@@ -1,3 +1,4 @@
+import builtins
 import hashlib
 import io
 from dataclasses import replace
@@ -191,6 +192,21 @@ def test_default_generator_shares_its_rembg_extractor_with_the_validator():
 
     assert isinstance(generator.extractor, source_photos.RembgCutoutExtractor)
     assert generator.validator.extractor is generator.extractor
+
+
+def test_default_generator_defers_rembg_import_until_an_extraction(monkeypatch):
+    original_import = builtins.__import__
+
+    def reject_rembg_import(name, *args, **kwargs):
+        if name == "rembg":
+            raise AssertionError("rembg must not load while wiring the generator")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", reject_rembg_import)
+
+    generator = source_photos.SourcePreservingProductPhotoGenerator()
+
+    assert isinstance(generator.extractor, source_photos.RembgCutoutExtractor)
 
 
 def test_cutout_preserves_light_product_interior_on_similarly_light_background():

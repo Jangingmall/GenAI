@@ -21,7 +21,7 @@ def test_project_assets_docs_and_generated_outputs_are_grouped():
         ROOT / "scripts/dataset/build_training_dataset.py",
         ROOT / "scripts/dataset/setup_real_eval_dataset.py",
         ROOT / "scripts/runtime/build_detail_page_html.py",
-        ROOT / "scripts/runtime/generate_attached_detail_page.py",
+        ROOT / "scripts/runtime/demo_fixed_profile_render.py",
         ROOT / "scripts/runtime/render_detail_page.mjs",
         ROOT / "scripts/runtime/run_local_detail_page.py",
         ROOT / "docs/api/ai-dto-contract.md",

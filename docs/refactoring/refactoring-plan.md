@@ -1,12 +1,17 @@
 # 구조 리팩터링 확정 실행 계획
 
+> [!WARNING] **현재 실행 보류 (2026-09-14 기준)**
+> - **작성 기준 커밋**: `c1d413f` (작성 커밋 `fdd2db6`)
+> - **사진 정책 변경과 Task 4 전제 무효화**: 이후 커밋 `492e776`(hero `source_original`) 및 `cfd60bb`(`rembg` 기본 채택, '참고용' 표시 및 `reference-label` 노드 영구 제거, `scripts/check_reference_label.py` 삭제)로 사진 정책이 크게 바뀌어 Task 4의 이전 사진 정책(플러드필 추출기, 참고용 라벨 검사) 전제가 달라졌습니다.
+> - **정리 진단 판정**: 2026-09-14 코드 정리 진단(관리자 기준: "굳이 안 고쳐도 되면 안 고쳐도 된다")에서 계획서의 구조 작업(Task 1~3, Task 5)이 모두 [불필요]로 판정되어 **현재 전체 실행이 보류** 상태입니다.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 진행 중인 60건 평가의 기준선과 공개 계약을 보존하면서, 교차검증된 구조 결합만 단계적으로 분리하고 모든 변경을 전후 산출물 비교로 검증한다.
 
 **Architecture:** `detail_page_ai`의 공개 호출 경로와 두 렌더러의 제품 역할은 유지한다. 내부 책임만 프로필 준비, 생성 산출물 조립, 배송, 사진 정책, 프롬프트 영역으로 나누고, 기존 모듈은 필요한 경우 호환 façade/re-export로 남긴다. 기능·정책·문구·스키마 변경은 이 계획에서 수행하지 않는다.
 
-**Tech Stack:** Python, Pydantic DTO, `pytest`, Python `ast` import-graph 검사, 저장된 파일럿 품질 게이트(`check_cutout_fidelity.py`, `check_plan_diversity.py`, `check_reference_label.py`), Markdown.
+**Tech Stack:** Python, Pydantic DTO, `pytest`, Python `ast` import-graph 검사, 저장된 파일럿 품질 게이트(`check_cutout_fidelity.py`, `check_plan_diversity.py`), Markdown.
 
 **Spec:** [교차검증 A — diagnosis-codex.md](diagnosis-codex.md), [교차검증 B — diagnosis-agy.md](diagnosis-agy.md), 관리자 대조 판정이 포함된 작업 지시서 `.orchestration/tasks/20260910-204743-codex3.md`
 
@@ -50,7 +55,7 @@
 - 현재 기준 회귀인 `pytest -q`가 리팩터링 전후 각각 328 passed, 0 failed, 0 error다.
 - 공개 호출부와 직렬화 계약이 동일하다. `PipelineResult`, `DraftPipelineResult`, BE request, FE result, `react_document`, HTML, photo metadata, outbox 상태 전이를 기준선과 구조적으로 비교한다.
 - 기존 import 경로가 계속 동작한다. 분리된 모듈을 직접 참조하게 바꾸더라도 기존 façade의 공개 심볼과 `__all__`/module-level re-export 결과가 동일하다.
-- 저장된 동일 fixture에 대해 `check_cutout_fidelity.py`, `check_plan_diversity.py`, `check_reference_label.py`의 판정이 기준선과 달라지지 않는다.
+- 저장된 동일 fixture에 대해 `check_cutout_fidelity.py`, `check_plan_diversity.py`의 판정이 기준선과 달라지지 않는다.
 - 각 단계 전후 `git diff --check`와 새 Python interpreter import 검사를 통과한다.
 
 합격 조건을 만족하지 못한 단계는 다음 단계로 진행하지 않는다. “차이가 있지만 더 좋아 보인다”는 합격 사유가 아니며, 그 차이가 기능 변경이면 별도 작업으로 분리한다.
@@ -337,15 +342,14 @@
 
 ### Gate 4: 저장 산출물 품질 게이트
 
-- 기존 산출물 또는 승인된 고정 fixture에 다음 세 스크립트를 적용한다.
+- 기존 산출물 또는 승인된 고정 fixture에 다음 두 품질 게이트 스크립트를 적용한다 (기존 `scripts/check_reference_label.py`는 `cfd60bb`에서 삭제됨).
 
   ```bash
   .venv/bin/python scripts/check_cutout_fidelity.py <saved-pilot-or-fixture> --role hero
   .venv/bin/python scripts/check_plan_diversity.py <saved-pilot-or-fixture>
-  .venv/bin/python scripts/check_reference_label.py <saved-pilot-or-fixture>
   ```
 
-- cutout fidelity, plan diversity/Jaccard, `참고용` 라벨 및 원본 오표기 판정이 기준선과 달라지지 않아야 한다. 스크립트 인자나 대상 경로가 실제 저장 산출물과 맞지 않으면 실행을 강행하지 말고 확인 필요로 남긴다.
+- cutout fidelity, plan diversity/Jaccard 판정이 기준선과 달라지지 않아야 한다. 스크립트 인자나 대상 경로가 실제 저장 산출물과 맞지 않으면 실행을 강행하지 말고 확인 필요로 남긴다.
 
 ### 인수 및 중단 원칙
 

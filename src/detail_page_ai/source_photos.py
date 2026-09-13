@@ -418,17 +418,6 @@ class RembgCutoutExtractor:
         if not 0 <= visible_alpha_threshold <= 255:
             raise ValueError("visible_alpha_threshold must be between 0 and 255")
 
-        # Importing rembg does not load a model.  Creating the session lazily
-        # makes the first real extraction populate rembg's
-        # ~/.u2net/birefnet-general.onnx cache (rembg 2.0.69), while all later extracts
-        # reuse this same session object.
-        if session_factory is None or segmenter is None:
-            from rembg import new_session, remove
-
-            session_factory = session_factory or new_session
-            segmenter = segmenter or remove
-        assert session_factory is not None
-        assert segmenter is not None
         self._session = session
         self._session_factory = session_factory
         self._segmenter = segmenter
@@ -481,12 +470,26 @@ class RembgCutoutExtractor:
         )
 
     def _session_for_extraction(self) -> object:
-        if self._session is not None:
-            return self._session
         with self._session_lock:
             if self._session is None:
+                self._load_default_components()
+                assert self._session_factory is not None
                 self._session = self._session_factory(self.model_name)
+            if self._segmenter is None:
+                self._load_default_components()
             return self._session
+
+    def _load_default_components(self) -> None:
+        """Load rembg only for an extraction that needs an uninjected component."""
+        if self._session_factory is not None and self._segmenter is not None:
+            return
+        # Creating the session remains lazy: the first real extraction populates
+        # rembg's ~/.u2net/birefnet-general.onnx cache (rembg 2.0.69), while later
+        # extracts reuse this same session object.
+        from rembg import new_session, remove
+
+        self._session_factory = self._session_factory or new_session
+        self._segmenter = self._segmenter or remove
 
     @staticmethod
     def _decode_mask(data: bytes, expected_size: tuple[int, int]) -> Image.Image:

@@ -1,8 +1,7 @@
-"""Generate a self-contained detail page for a supplied product image.
+"""Demo a fixed-profile render without analyzing the input image.
 
-This path intentionally uses a hand-checked, image-grounded profile when the
-local vision model is unavailable. It does not invent product specifications
-and it does not call a paid or remote model.
+This script always renders the fixed pink-handled-fan example profile. For
+actual image analysis and generation, use scripts/runtime/run_local_detail_page.py.
 """
 from __future__ import annotations
 
@@ -204,7 +203,12 @@ def generate(image_path: Path, output_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=(
+            "Demo only: renders a fixed example profile without analyzing the input image. "
+            "For actual generation, use scripts/runtime/run_local_detail_page.py."
+        )
+    )
     parser.add_argument("--image", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "generated/runs/attached_671da9da26c699dfea1f767962bea070")
     args = parser.parse_args()

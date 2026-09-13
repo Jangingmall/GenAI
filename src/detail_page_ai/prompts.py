@@ -7,12 +7,6 @@ from .dto import ProductProfileDto, UserHintsDto
 from .reference_guide import build_image_mood_prompt, build_reference_guide_prompt
 
 
-ANALYSIS_PROMPT_VERSION = "analysis-v11-product-intro-copy-brief-care-gate"
-CRAFT_RESEARCH_PROMPT_VERSION = "craft-research-v2-product-data-first"
-BACKGROUND_PROMPT_VERSION = "background-v4-jewelry-coverage"
-USAGE_SCENE_PROMPT_VERSION = "usage-scene-v3"
-GENERATED_USAGE_SCENE_PROMPT_VERSION = "generated-usage-scene-v5-source-count-glass"
-GENERATED_DETAIL_CUT_PROMPT_VERSION = "generated-detail-cut-v3-source-count-glass"
 SUPPORTED_LAYOUT_VARIANTS = frozenset(
     {
         "paper",
@@ -1047,49 +1041,4 @@ recolored, redesigned, melted, floating, or replaced item. No text, logo, waterm
 infographic, collage, unrelated props, people, hands, wide-angle distortion, or glossy CGI. Return image only.
 Reference evidence wins over the requested view. Never fabricate hidden geometry; keep
 asymmetrical markings source-relative. Generated detail cuts are styling references, not proof.
-"""
-
-
-def build_generated_detail_view_prompt(
-    profile: ProductProfileDto,
-    role: str,
-    locale: str = "ko-KR",
-) -> str:
-    """Build a compact source-reference prompt for the two generated angle cuts."""
-    angle_directions = {
-        "detail-03": (
-            "FRONT-LEFT 18-DEGREE OBLIQUE VIEW. Move the camera to the product's left; "
-            "camera at table height, with the left edge appears closer and the right edge "
-            "clearly receding. Reveal edge thickness and surface relief. Not a top-down view"
-        ),
-        "detail-05": (
-            "HIGH FRONT-RIGHT 22-DEGREE OBLIQUE VIEW. Move the camera to the product's right "
-            "and make the camera visibly higher; the right edge appears closer while the left "
-            "edge recedes. Reveal the top surface, edge thickness, and folded layers"
-        ),
-    }
-    try:
-        angle = angle_directions[role]
-    except KeyError as exc:
-        raise ValueError("generated detail views are restricted to detail-03 and detail-05") from exc
-
-    observations = profile.observations if isinstance(profile.observations, dict) else {}
-    visible_components = observations.get("visible_components", [])
-    component_text = (
-        ", ".join(str(item) for item in visible_components[:8])
-        if isinstance(visible_components, list) and visible_components
-        else profile.product_type
-    )
-    return f"""Re-photograph the exact supplied product in {locale} as a premium e-commerce detail cut.
-
-Camera: {angle}; natural 85mm product-detail lens, no wide-angle distortion.
-Subject: {profile.display_name or profile.product_type}; visible components: {component_text}.
-Use a close, uncluttered composition on one matte white, light-grey, or deep neutral surface.
-Use soft directional lighting, controlled highlights, realistic contact shadows, and crisp material detail.
-
-IDENTITY LOCK: keep the exact supplied product and the same number of items. Preserve pattern,
-silhouette, proportions, colors, borders, finish, hardware, spacing, and every visible component.
-Change only the camera viewpoint and supporting background. No duplicate, added, removed, merged,
-split, recolored, redesigned, melted, floating, or replaced item. No hand, person, text, logo,
-watermark, packaging, infographic, collage, prop clutter, or glossy CGI. Return image only.
 """

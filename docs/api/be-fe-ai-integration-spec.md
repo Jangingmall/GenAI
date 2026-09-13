@@ -560,7 +560,7 @@ generated_view
 - Node Puppeteer HTML 렌더러: [`scripts/runtime/render_detail_page.mjs`](../../scripts/runtime/render_detail_page.mjs)
 - HTML 조립 스크립트: [`scripts/runtime/build_detail_page_html.py`](../../scripts/runtime/build_detail_page_html.py)
 - 로컬 단독 상세페이지 실행기: [`scripts/runtime/run_local_detail_page.py`](../../scripts/runtime/run_local_detail_page.py)
-- 첨부 산출물 일괄 생성기: [`scripts/runtime/generate_attached_detail_page.py`](../../scripts/runtime/generate_attached_detail_page.py)
+- 고정 프로필 렌더링 데모(입력 이미지를 분석하지 않음): [`scripts/runtime/demo_fixed_profile_render.py`](../../scripts/runtime/demo_fixed_profile_render.py). 실제 생성은 위 `run_local_detail_page.py`를 사용합니다.
 
 ### 브라우저 UI 및 통합 검증 (`scripts/browser/`)
 - 입력 폼 동작 검증: [`scripts/browser/test_input_page.mjs`](../../scripts/browser/test_input_page.mjs)

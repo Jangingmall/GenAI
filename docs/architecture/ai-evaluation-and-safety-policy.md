@@ -149,7 +149,7 @@ HTML/JSX/CSS/script/event handler는 출력 경계를 통과시키지 않는다.
 - clipping, broken asset, section completeness
 - 사람 5점 visual quality: 구도·가독성·배경 이질감·제품 근거성
 
-`generated_scene`와 `generated_view`는 참고용 생성 자산으로 평가하며, 제품의 정확한 근거 점수에는
+`generated_scene`와 `generated_view`는 `product_generated=true`인 생성 자산으로 평가하며, 제품의 정확한 근거 점수에는
 원본 `source`, `source_crop`, `source_composite` 자산만 사용한다.
 
 ### 3.4 사람 평가
@@ -248,12 +248,12 @@ HTML/JSX/CSS/script/event handler는 출력 경계를 통과시키지 않는다.
 - 모델이 반환한 태그·속성·URL을 그대로 실행하지 않고, `react_document_builder`와 Pydantic AST 검증을
   통과한 문서만 FE/BE 경계에 내보낸다.
 
-### 5.5 생성 배경과 참고 자산
+### 5.5 생성 배경과 생성 자산 정책
 
 - 배경판에는 제품·제품 유사 객체·추가 상품·로고·문자를 넣지 않는다.
 - 객체·문자·로고 안전성 검사 실패 시 중립 배경으로 낮춘다.
-- `generated_scene`는 “AI 생성 활용 장면(참고용)”, `generated_view`는 “AI 생성 디테일(참고용)”으로 표시한다.
-- 현재 구현은 생성 자산을 허용된 lifestyle/detail 참고 슬롯에 렌더링할 수 있다. 다만 `product_generated=true` 자산은 원본 상품 근거·사실성 증거·대표 상품 사진으로 취급하지 않으며, FE/BE에는 생성 여부와 원본 hash를 함께 노출한다.
+- 생성 사진은 `product_generated=true`로 구분해 전달한다(라벨은 "AI 생성 활용 장면", "AI 생성 디테일"). 화면 및 문서 상의 '참고용' 표시 요구는 관리자 결정으로 제거되었다(커밋 `cfd60bb`).
+- 현재 구현은 생성 자산을 허용된 lifestyle/detail 슬롯에 렌더링할 수 있다. 다만 `product_generated=true` 자산은 원본 상품 근거·사실성 증거·대표 상품 사진으로 취급하지 않으며, FE/BE에는 생성 여부와 원본 hash를 함께 노출한다.
 - `REJECTED` 자산은 renderer, FE response, BE persist, outbox에서 모두 제거한다.
 - React AST는 원본 URL을 직접 보관하지 않고 `imageId`만 참조한다. FE가 자산 manifest를 해석하며,
   해석되지 않는 image ID가 하나라도 있으면 구조 출력과 게시를 차단한다.
