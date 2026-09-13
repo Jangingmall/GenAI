@@ -75,6 +75,68 @@ def test_verified_label_unknown_value_falls_back_to_no_info():
     assert gen._verified_label({"verified": "SOME_NEW_GRADE"}) == "정보 없음"
 
 
+def test_category_from_name_resolves_when_longer_term_contains_shorter_ones_category():
+    """ "전통옻칠"(WOOD) 안에 "옻칠"(NACRE)이 부분 문자열로 들어있어도, 더 긴
+    복합어를 우선해 WOOD 하나로만 판정한다(둘 다 매칭돼 중의적으로 무산되면
+    안 된다)."""
+    assert gen._category_from_name("전통옻칠 도마") == "WOOD"
+
+
+def test_category_from_name_resolves_water_jar_despite_overbroad_substring():
+    """ "물항아리"(ONGGI) 안에 "항아리"(POTTERY)가 부분 문자열로 들어있어도
+    ONGGI로만 판정한다 — taxonomy.py에 비슷한 겹침 단어 쌍이 또 있어도
+    일반적으로 통해야 한다(이 이름은 오늘 고친 예시에 없던 것)."""
+    assert gen._category_from_name("물항아리") == "ONGGI"
+
+
+def test_mentioned_category_resolves_water_jar_from_message_too():
+    assert gen._mentioned_category("물항아리 있나요") == "ONGGI"
+
+
+def test_filter_by_category_excludes_wood_item_hidden_by_ambiguous_match():
+    candidates = [
+        {"product_id": 900, "name": "전통옻칠 도마"},
+        {"product_id": 78, "name": "청자 찻잔"},
+    ]
+    filtered = gen._filter_by_category(candidates, "도자기 선물 추천해줘")
+    assert [c["product_id"] for c in filtered] == [78]
+
+
+def test_purpose_relevance_warning_fires_for_unnamed_activity_word():
+    """ "낚시"처럼 가르친 적 없는 활동 단어라도, 종목명이 아니라 용도로 검색된
+    product_search면 경고를 붙인다(특정 단어에 하드코딩하지 않은 일반 조건)."""
+    candidates = [{"product_id": 1, "name": "쪽염 파우치"}]
+    warning = gen._purpose_relevance_warning(
+        "낚시할 때 쓰기 좋은 것 3만원대로 있나요", candidates, "product_search"
+    )
+    assert "시스템 경고" in warning
+
+
+def test_purpose_relevance_warning_skips_gift_recommendation():
+    """ "부모님 선물로 좋은거"는 특정 활동 적합성을 따질 게 없는 gift_recommendation
+    이라 경고를 붙이면 정상 선물 추천까지 잘못 거절해버린다(실측 확인) — intent가
+    product_search·narrow_down이 아니면 항상 빈 문자열."""
+    candidates = [{"product_id": 1, "name": "옻칠 함"}]
+    warning = gen._purpose_relevance_warning(
+        "부모님 선물로 좋은거 추천해줘", candidates, "gift_recommendation"
+    )
+    assert warning == ""
+
+
+def test_purpose_relevance_warning_skips_when_category_named():
+    """ "도자기 찻잔 있나요"처럼 종목명이 이미 있으면 검색이 종목으로 걸러졌으니
+    경고가 필요 없다."""
+    candidates = [{"product_id": 1, "name": "청자 찻잔"}]
+    warning = gen._purpose_relevance_warning(
+        "도자기 찻잔 있나요", candidates, "product_search"
+    )
+    assert warning == ""
+
+
+def test_purpose_relevance_warning_skips_when_no_candidates():
+    assert gen._purpose_relevance_warning("낚시용", [], "product_search") == ""
+
+
 def test_format_candidates_includes_category_and_evidence():
     candidates = [
         {

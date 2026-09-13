@@ -204,6 +204,41 @@ def _ambiguity_warning(message: str) -> str:
     )
 
 
+def _purpose_relevance_warning(
+    message: str, candidates: list[dict], intent: str
+) -> str:
+    """종목명이 아닌 "특정 활동" 용도로 검색됐으면, 그 요청에만 붙는 동적 경고를 만든다.
+
+    검색(임베딩)이 종목명이 아닌 자유 서술(예: "다도용", "제사상에 올릴", "캠핑용",
+    "낚시할 때 쓰기 좋은")로는 실제로 그 용도와 무관한 상품을 가져오는 경우가 실측상
+    잦다(다도·제사·캠핑·낚시 등 서로 다른 단어에서 반복 재현 확인 — 후보들의 종목이
+    전부 같아도 재현됨, 예: 낚시=천연염색 2개뿐이었는데도 그럴듯하게 소개해버림). 반면
+    gift_recommendation("부모님 선물로 좋은거 추천해줘")은 특정 활동 적합성을 따질
+    evidence가 애초에 없어도 되는 요청이라(품질 좋은 공예품이면 다 "선물"이 될 수
+    있음) 이 경고를 걸면 정상적인 선물 추천까지 "확인 안 됨"으로 잘못 거절해버린다
+    (실측 확인) — intent가 product_search·narrow_down일 때만 적용한다.
+
+    priority_rule 텍스트·전용 예시만으로 이 판단을 LLM에게 맡기면 특정 단어(예:
+    "다도")에만 안전하게 적용되고 다른 단어로는 잘 일반화되지 않는다(few-shot
+    anchoring — _ambiguity_warning과 같은 이유로 이 신호가 있을 때만 후보 바로 옆에
+    명시적 경고를 붙여 정적 규칙 하나에만 기대지 않게 한다). category(_mentioned_
+    category)가 명시된 요청(예: "도자기 찻잔 있나요")은 검색이 이미 종목 자체로
+    걸러졌으니 이 경고를 붙이지 않는다.
+    """
+    if intent not in ("product_search", "narrow_down"):
+        return ""
+    if _mentioned_category(message) is not None or not candidates:
+        return ""
+    return (
+        "\n\n[시스템 경고] 이 요청은 종목명이 아니라 용도·목적으로 검색됐다. 검색이 그 "
+        "용도와 실제로 무관한 상품을 가져왔을 수 있다(후보 종목이 서로 같아도 마찬가지). "
+        "각 후보의 이름·evidence를 다시 보고, 요청한 용도와 실제로 연관된 근거(이름 자체가 "
+        "그 용도를 뜻하거나 evidence에 명시)가 있는 것만 allowed_ids에 남겨라. 그럴듯해 "
+        "보여도 근거가 없으면 절대 포함하지 마라 — 하나도 없으면 allowed_ids를 비우고 "
+        "솔직히 못 찾았다고 답하라."
+    )
+
+
 def _fetch_prices(product_ids: list[int]) -> dict[int, int]:
     """product_id → price. 접점2엔 가격이 없지만, products 테이블 자체엔 있는 공유 컬럼이라
     A의 검색·랭킹을 거치지 않고 B가 직접 조회한다(search.py·ranking.py는 안 건드린다).
@@ -401,6 +436,7 @@ def build_reply(
         f"[추출된 조건]\n{_format_filters(filters)}\n\n"
         f"[후보 상품]\n{_format_candidates(candidates, prices, artisans)}"
         f"{_ambiguity_warning(category_text)}"
+        f"{_purpose_relevance_warning(category_text, candidates, intent)}"
     )
 
     raw = chat(
