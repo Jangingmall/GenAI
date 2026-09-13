@@ -76,6 +76,45 @@ def _price_to_won(text_or_num) -> int | None:
     return int(num_match.group()) if num_match else None
 
 
+_MIN_PRICE_WORDS = ("이상", "부터", "넘는", "넘게", "초과")
+_MAX_PRICE_WORDS = ("이하", "까지", "미만", "아래", "이내", "안으로")
+
+
+def _price_direction(message: str) -> str | None:
+    """메시지에 하한(min)·상한(max) 표현 중 한쪽만 있으면 그 방향을 돌려준다.
+
+    실측 확인: "100만원 이상"처럼 명확한 하한 표현도 LLM이 습관적으로 max_price에
+    넣는 경우가 있었다(프롬프트 규칙·전용 예시를 추가해도 재현 — 19개 기존 예시가
+    전부 "이하"만 다뤄서 생긴 강한 편향으로 추정). 방향이 반대로 뽑히면 정반대
+    가격대 상품을 보여주는 심각한 오류가 되므로, query_text와 같은 이유로 프롬프트
+    신뢰 대신 코드로 확정한다. 두 방향이 같이 있으면(예: "3만원 이상 5만원 이하"
+    범위 질문) 어느 숫자가 어느 쪽인지 코드로 안전하게 갈라낼 근거가 없어 None을
+    반환하고 LLM 추출을 그대로 둔다.
+    """
+    has_min = any(w in message for w in _MIN_PRICE_WORDS)
+    has_max = any(w in message for w in _MAX_PRICE_WORDS)
+    if has_min and not has_max:
+        return "min"
+    if has_max and not has_min:
+        return "max"
+    return None
+
+
+def _resolve_price_filters(
+    max_price: int | None, min_price: int | None, message: str
+) -> tuple[int | None, int | None]:
+    """LLM이 뽑은 max_price/min_price를 메시지의 실제 방향과 맞춰 확정한다."""
+    direction = _price_direction(message)
+    if direction is None:
+        return max_price, min_price
+    value = max_price if max_price is not None else min_price
+    if value is None:
+        return max_price, min_price
+    if direction == "min":
+        return None, value
+    return value, None
+
+
 def _keep_known(values: list[str] | None, allowed: set[str]) -> list[str]:
     """LLM이 뱉은 값 중 allowed 목록에 있는 것만 남긴다(환각 방어)."""
     if not values:
@@ -100,11 +139,17 @@ def _to_contact1(
         # 주제어를 이어 붙이는 별도 합성이 필요해(prompts.py 참고) 예외로 둔다.
         query_text = message
 
+    max_price, min_price = _resolve_price_filters(
+        _price_to_won(raw.get("max_price")),
+        _price_to_won(raw.get("min_price")),
+        message,
+    )
+
     return {
         "query_text": query_text,
         "filters": {
-            "max_price": _price_to_won(raw.get("max_price")),
-            "min_price": _price_to_won(raw.get("min_price")),
+            "max_price": max_price,
+            "min_price": min_price,
             "gift_theme": gift_theme or None,
             "color": color or None,
         },

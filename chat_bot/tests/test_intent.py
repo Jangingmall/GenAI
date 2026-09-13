@@ -144,6 +144,89 @@ def test_to_contact1_assembles_filters():
     }
 
 
+def test_to_contact1_corrects_llm_putting_lower_bound_into_max_price():
+    """ "100만원 이상"처럼 하한 표현인데 LLM이 습관적으로 max_price에 넣는 경우
+    (실측 확인: 전용 예시를 추가해도 재현됨) 메시지의 실제 방향에 맞게 min_price로
+    옮긴다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 1000000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "금속공예 100만원 이상 찾아줘",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="금속공예 100만원 이상 찾아줘",
+    )
+    assert result["filters"]["max_price"] is None
+    assert result["filters"]["min_price"] == 1000000
+
+
+def test_to_contact1_keeps_max_price_when_message_says_upper_bound():
+    raw = {
+        "intent": "product_search",
+        "max_price": 30000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 3만원 이하로",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="도자기 3만원 이하로",
+    )
+    assert result["filters"]["max_price"] == 30000
+    assert result["filters"]["min_price"] is None
+
+
+def test_to_contact1_leaves_price_untouched_when_message_has_no_direction_word():
+    """ "5만원으로"처럼 방향 표현이 아예 없으면 코드가 함부로 방향을 정하지 않고
+    LLM 추출을 그대로 둔다."""
+    raw = {
+        "intent": "narrow_down",
+        "max_price": 50000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 그럼 5만원으로 다시",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="그럼 5만원으로 다시",
+    )
+    assert result["filters"]["max_price"] == 50000
+    assert result["filters"]["min_price"] is None
+
+
+def test_to_contact1_leaves_price_untouched_when_both_directions_mentioned():
+    """ "3만원 이상 5만원 이하"처럼 범위 질문은 어느 숫자가 어느 쪽인지 코드로
+    안전하게 갈라낼 근거가 없어 LLM 추출을 그대로 둔다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 50000,
+        "min_price": 30000,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 3만원 이상 5만원 이하로",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="도자기 3만원 이상 5만원 이하로",
+    )
+    assert result["filters"]["max_price"] == 50000
+    assert result["filters"]["min_price"] == 30000
+
+
 def test_to_contact1_passes_through_chat_reply():
     """chat_reply는 general_chat일 때 orchestrator가 generate.py 호출 없이 바로 쓰는
     필드다 — _to_contact1이 그대로 넘겨야 한다."""

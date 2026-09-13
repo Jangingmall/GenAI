@@ -80,6 +80,11 @@ intent는 반드시 다음 중 하나: {", ".join(INTENT_VALUES)}
 - 하드필터(가격·gift_theme·color)는 정확히 명시된 것만 채운다. category(종목)·재료·취향은
   query_text에 자연어로 담는다(의미 검색이 처리).
 - max_price/min_price: 원 단위 정수. "만원"은 ×10000("5만원대"→50000). 언급 없으면 null.
+  **"이하"·"까지"·"안으로"·"원 정도"처럼 상한을 말하면 max_price에, "이상"·"부터"·
+  "넘는"·"이상으로"처럼 하한을 말하면 min_price에 넣는다** — 숫자를 무조건 max_price에
+  넣지 않는다. 두 방향을 헷갈리면 정반대 가격대 상품을 보여주는 심각한 오류가 된다
+  (예: "100만원 이상"을 max_price로 넣으면 100만원보다 훨씬 싼 상품도 전부 조건을
+  만족하는 것으로 잘못 통과된다).
 - gift_theme: {", ".join(sorted(GIFT_THEMES))} 중에서만. 목록 밖이면 빈 배열.
   예: "환갑"→BIRTHDAY_60TH, "집들이"→HOUSEWARMING.
 - color: {", ".join(sorted(COLORS))} 중에서만. 목록 밖이면 빈 배열.
@@ -125,6 +130,14 @@ intent는 반드시 다음 중 하나: {", ".join(INTENT_VALUES)}
 query_text는 가공 없이 문장 그대로.
 출력: {{"intent": "gift_recommendation", "wants_reason": false, "needs_clarification": false, "wants_alternatives": false, "query_text": "환갑 맞은 부모님께 드릴 선물 찾아줘", "max_price": null,
         "min_price": null, "gift_theme": ["BIRTHDAY_60TH"], "color": [], "chat_reply": ""}}
+</example>
+
+<example>
+소비자: "금속공예 100만원 이상 찾아줘"
+판단: "이상"은 하한이므로 min_price에 넣는다 — max_price에 넣으면 100만원보다
+훨씬 싼 상품까지 전부 조건을 만족하는 것으로 잘못 통과된다(정반대 결과).
+출력: {{"intent": "product_search", "wants_reason": false, "needs_clarification": false, "wants_alternatives": false, "query_text": "금속공예 100만원 이상 찾아줘", "max_price": null,
+        "min_price": 1000000, "gift_theme": [], "color": [], "chat_reply": ""}}
 </example>
 
 <example>
