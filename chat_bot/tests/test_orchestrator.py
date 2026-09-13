@@ -1158,6 +1158,38 @@ def test_run_needs_clarification_skips_search_and_returns_chat_reply():
     assert result["reply"] == "어떤 분께 드릴 선물인가요?"
     assert result["product_ids"] == []
     assert result["intent"] == "gift_recommendation"
+    # 열린 질문만 던지지 않고 후보 답까지 칩으로 같이 준다(clarifying question 연구 —
+    # 답 후보 제시가 사용자 응답 부담을 줄인다).
+    assert result["suggestions"] == rr._CLARIFICATION_CHIPS_GIFT
+
+
+def test_run_needs_clarification_product_search_uses_category_chips():
+    """product_search에서 되물을 땐 선물용 칩이 아니라 실제 카탈로그 카테고리 칩을
+    준다 — intent에 안 맞는 칩(예: 선물 아닌데 "생일 선물")을 내면 안 된다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "needs_clarification": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "아무거나",
+            "chat_reply": "어떤 종류의 공예품을 찾으시나요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+
+    result = rr.run(
+        "아무거나",
+        chat=chat,
+        search_and_rank=lambda contact1: (_ for _ in ()).throw(
+            AssertionError("needs_clarification이 true면 검색하면 안 된다")
+        ),
+        **_NO_DB,
+    )
+
+    assert result["suggestions"] == rr._CLARIFICATION_CHIPS_PRODUCT
 
 
 def test_run_needs_clarification_false_does_not_shortcut():

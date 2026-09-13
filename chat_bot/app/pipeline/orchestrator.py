@@ -39,7 +39,18 @@ from app.pipeline.generate import (
 )
 from app.pipeline.intent import classify_and_extract
 from app.pipeline.llm import chat_json
+from app.pipeline.taxonomy import CATEGORY_LABELS
 from app.run_recommend import recommend as _recommend
+
+# needs_clarification 되물음에 함께 낼 빠른 답변 칩 — 대화형 검색 연구(clarifying
+# question 관련 문헌)에 따르면 열린 질문만 던지는 것보다 후보 답까지 같이 제시하는
+# 편이 사용자 응답 부담을 줄인다. 카탈로그에 실제로 없는 옵션을 지어내면 안 되므로
+# (같은 연구가 지적하는 흔한 실패), 실제 스키마 값(GIFT_THEMES 일부·taxonomy 카테고리)에
+# 기반한 문구만 쓴다.
+_CLARIFICATION_CHIPS_GIFT = ["부모님 선물", "생일 선물", "집들이 선물"]
+_CLARIFICATION_CHIPS_PRODUCT = [
+    f"{label}로 검색" for label in sorted(CATEGORY_LABELS.values())
+][:3]
 
 # "이 상품 설명해줘"류 요청에 순번을 못 찾았을 때 되묻는 고정 문구. 상수로 빼서
 # _is_disambiguation_followup이 "직전 봇 턴이 이 되물음이었는가"를 문자열로 재확인할 수
@@ -249,12 +260,19 @@ def run(
         # "선물", "뭔가 좋은거 없나요"처럼 검색에 쓸 단서가 하나도 없으면 검색을
         # 건너뛰고 먼저 되묻는다 — 실측 확인: 이런 문장도 임베딩 검색이 유사도 낮은
         # 상품을 억지로 찾아와서, 근거 없이 자신 있게 추천해버리는 문제가 있었다
-        # (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화).
+        # (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화). 열린 질문만 던지지
+        # 않고 후보 답까지 칩으로 같이 준다 — 대화형 검색 clarifying question 연구에
+        # 따르면 이쪽이 사용자 응답 부담을 줄인다(직접 타이핑보다 탭 한 번).
+        clarification_chips = (
+            _CLARIFICATION_CHIPS_GIFT
+            if contact1["intent"] == "gift_recommendation"
+            else _CLARIFICATION_CHIPS_PRODUCT
+        )
         return {
             "reply": contact1["chat_reply"],
             "intent": contact1["intent"],
             "product_ids": [],
-            "suggestions": [],
+            "suggestions": clarification_chips,
             "candidates": previous_candidates or [],
             "filters": contact1["filters"],
             "shown_product_ids": previous_product_ids or [],
