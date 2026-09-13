@@ -36,6 +36,12 @@ class _RawIntent(BaseModel):
     # 근거 없이 자신 있게 답해버리는 문제가 있었다. wants_reason과 같은 이유로 새
     # LLM 호출 없이 이 필드로 판단해 검색 전에 되묻는다.
     needs_clarification: bool
+    # "다른 거 추천해줘"·"그거말고 또 없어?"처럼 새 종목·조건을 안 밝히고 그냥 다른
+    # 상품을 원하는 narrow_down인지 — 실측 확인: 이런 문장은 새 하드필터가 없어서
+    # 그냥 속성 질문("가격대 확인해줘")과 똑같이 취급돼 재검색을 안 했다. 그 결과
+    # 카피라이터가 "다른 걸 찾았다"면서 직전과 완전히 같은 상품을 또 보여주는
+    # 거짓 응답이 나갔다. wants_reason과 같은 이유로 새 LLM 호출 없이 이 필드로 잡는다.
+    wants_alternatives: bool
     max_price: int | None
     min_price: int | None
     gift_theme: list[str]
@@ -105,6 +111,7 @@ def _to_contact1(
         "intent": intent,
         "wants_reason": bool(raw.get("wants_reason")),
         "needs_clarification": bool(raw.get("needs_clarification")),
+        "wants_alternatives": bool(raw.get("wants_alternatives")),
         "chat_reply": raw.get("chat_reply") or "",
     }
 

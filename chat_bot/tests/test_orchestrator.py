@@ -1215,3 +1215,115 @@ def test_run_needs_clarification_false_does_not_shortcut():
     )
 
     assert result["reply"] == "ok"
+
+
+def test_run_wants_alternatives_excludes_already_shown_products():
+    """ "다른 거 추천해줘"는 새 하드필터가 없어도 재검색해야 한다 — 그냥 속성
+    질문처럼 후보를 재사용하면 직전과 똑같은 상품을 "다른 거"라고 거짓 응답하게
+    된다(실측 확인). 이미 보여준 product_id는 결과에서 빠져야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기 찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh_pool = [
+        {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 816, "name": "분청 찻잔", "score": 0.8, "evidence": {}},
+        {"product_id": 2, "name": "도기토 찻잔", "score": 0.7, "evidence": {}},
+    ]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["top_k"] = top_k
+        return fresh_pool
+
+    rr.run(
+        "다른 거 추천해줘",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        **_NO_DB,
+    )
+
+    # 더 넉넉히 받아오는지(top_k 확장), 이미 보여준 78번은 빠지는지 spy로 확인.
+    assert seen["top_k"] == 9
+
+
+def test_run_wants_alternatives_passes_only_unseen_candidates_to_build_reply():
+    """이미 보여준 product_id(78)는 build_reply에 넘기는 candidates에서 빠져야
+    한다 — 그래야 카피라이터가 그 상품을 다시 "다른 것"이라고 말하지 않는다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기 찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [816, 2], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh_pool = [
+        {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 816, "name": "분청 찻잔", "score": 0.8, "evidence": {}},
+        {"product_id": 2, "name": "도기토 찻잔", "score": 0.7, "evidence": {}},
+    ]
+
+    result = rr.run(
+        "다른 거 추천해줘",
+        chat=chat,
+        search_and_rank=lambda contact1, top_k=3: fresh_pool,
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        **_NO_DB,
+    )
+
+    candidate_ids = {c["product_id"] for c in result["candidates"]}
+    assert 78 not in candidate_ids
+    assert candidate_ids == {816, 2}
+
+
+def test_run_wants_alternatives_false_reuses_candidates_as_before():
+    """wants_alternatives가 false면 기존 동작(새 필터 없으면 재사용) 그대로다 —
+    이번 변경이 다른 narrow_down 흐름에 영향을 주면 안 된다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": False,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "가격대 확인",
+        },
+        generate_payload={
+            "reply": "가격 정보는 확인되지 않습니다.",
+            "allowed_ids": [78],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    def search_and_rank_must_not_be_called(contact1, top_k=3):
+        raise AssertionError("wants_alternatives가 false면 재검색하면 안 된다")
+
+    result = rr.run(
+        "가격대 확인해줘",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == previous

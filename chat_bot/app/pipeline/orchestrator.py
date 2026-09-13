@@ -163,6 +163,15 @@ def run(
     (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화). 실측 확인: 이런 문장도
     임베딩 검색은 유사도 낮은 상품을 억지로 찾아와서, 그대로 두면 근거 없이 자신 있게
     추천해버리는 문제가 있었다.
+
+    wants_alternatives는 narrow_down 재검색 분기 안에서 처리한다(§ 아래 본문) —
+    "다른 거 추천해줘"처럼 새 하드필터 없이 그냥 다른 상품을 원하는 요청은, 필터가
+    안 바뀌었다는 이유로 그냥 속성 질문("가격대 확인해줘")과 똑같이 취급돼 재검색을
+    건너뛰었었다(실측 확인: 그 결과 카피라이터가 직전과 완전히 같은 상품을 또
+    보여주면서 "다른 걸 찾았다"고 거짓 응답을 만들어냄). search_and_rank(recommend)가
+    이미 내부적으로 후보를 10개 뽑아둔 뒤 상위 top_k개만 돌려주는 구조라(app/
+    run_recommend.py, A담당 코드 안 건드림), top_k를 넉넉히 넘겨 더 받은 뒤 이미
+    보여준 product_id만 code에서 제외하면 진짜 다른 상품을 보여줄 수 있다.
     """
 
     def _short_circuit(
@@ -327,17 +336,25 @@ def run(
         "color"
     ) != prev_filters.get("color")
     has_new_filter = price_changed or color_changed
+    # "다른 거 추천해줘"·"그거말고 또 없어?" — 새 조건은 없지만 지금 후보 말고 다른
+    # 상품을 원하는 경우다. 실측 확인: 이걸 그냥 속성 질문("가격대 확인해줘")과 똑같이
+    # 취급해 재검색을 안 하면, 카피라이터가 직전과 완전히 같은 상품을 보여주면서도
+    # "다른 걸 찾았다"고 자신 있게 말해버리는 거짓 응답이 나갔다.
+    wants_alternatives = bool(contact1.get("wants_alternatives"))
     did_search = False
     if (
         contact1["intent"] == "narrow_down"
         and previous_candidates
         and not has_new_filter
+        and not wants_alternatives
     ):
         candidates = previous_candidates
     else:
-        if contact1["intent"] == "narrow_down" and has_new_filter:
-            # 새 하드필터가 있는 narrow_down 재검색 — query_text에 이전 대화
-            # 주제어가 빠지면 엉뚱한 종목으로 재검색된다(§ run() 문서 참고).
+        if contact1["intent"] == "narrow_down" and (
+            has_new_filter or wants_alternatives
+        ):
+            # 새 하드필터가 있거나 "다른 거"를 원하는 narrow_down 재검색 — query_text에
+            # 이전 대화 주제어가 빠지면 엉뚱한 종목으로 재검색된다(§ run() 문서 참고).
             # previous_query_text(직전 턴이 실제로 쓴 누적 문장)를 우선 쓰고, 아직
             # 그 값이 없는 호출자를 위해 history의 직전 사용자 발화로 대체한다. LLM이
             # 이미 주제어를 살렸어도 무조건 이어 붙인다 — 단어가 겹쳐 살짝 중복돼도
@@ -348,7 +365,17 @@ def run(
                 contact1["query_text"] = (
                     f"{topic_context} {contact1['query_text']}".strip()
                 )
-        candidates = search_and_rank(contact1)
+        if wants_alternatives:
+            # 그냥 재검색만 하면 조건(query_text·필터)이 그대로라 순위도 그대로라
+            # 완전히 같은 상품이 또 나온다 — recommend()는 이미 내부에서 후보를
+            # 10개 뽑아둔 뒤 상위 몇 개만 돌려주는 구조라(app/run_recommend.py),
+            # A담당 코드를 안 건드리고도 top_k만 넉넉히 넘겨 더 받은 뒤, 이미 보여준
+            # 상품만 code에서 빼면 진짜 다른 상품을 보여줄 수 있다.
+            already_shown = set(previous_product_ids or [])
+            fresh = search_and_rank(contact1, top_k=9)
+            candidates = [c for c in fresh if c["product_id"] not in already_shown]
+        else:
+            candidates = search_and_rank(contact1)
         did_search = True
     generated = build_reply(
         message,

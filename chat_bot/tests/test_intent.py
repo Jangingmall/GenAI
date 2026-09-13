@@ -132,6 +132,7 @@ def test_to_contact1_assembles_filters():
         "query_text": "환갑 맞은 부모님께 드릴 선물 찾아줘",
         "wants_reason": False,
         "needs_clarification": False,
+        "wants_alternatives": False,
         "filters": {
             "max_price": 300000,
             "min_price": None,
@@ -238,6 +239,31 @@ def test_to_contact1_missing_needs_clarification_defaults_false():
         raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
     )
     assert result["needs_clarification"] is False
+
+
+def test_to_contact1_passes_through_wants_alternatives_true():
+    """ "다른 거 추천해줘"처럼 새 조건 없이 그냥 다른 상품을 원하는지 판단은 LLM이
+    하고, _to_contact1은 그 신호를 그대로 넘기기만 한다."""
+    raw = {
+        "intent": "narrow_down",
+        "wants_alternatives": True,
+        "query_text": "도자기 찻잔",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="다른 거 추천해줘",
+    )
+    assert result["wants_alternatives"] is True
+
+
+def test_to_contact1_missing_wants_alternatives_defaults_false():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
+    )
+    assert result["wants_alternatives"] is False
 
 
 # ---------------------------------------------------------------------------
