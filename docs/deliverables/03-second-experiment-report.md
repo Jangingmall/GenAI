@@ -113,7 +113,7 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 
 파라미터가 연결된 뒤의 유효한 품질 A/B, 즉 사람 검수나 사전 정의된 품질 지표로 `steps=4`와 `steps=8`을 비교한 실험은 아직 수행하지 않았다. 따라서 8스텝이 더 낫다고 결론 내릴 근거가 없다. `strength`는 현재 모델 edit 모드에서 지원되지 않으므로 숫자형으로 전송하는 것만으로 활성화되지 않는다.
 
-## 실험 D — 섹션 구성 다양화 1~9차 전체 색인
+## 실험 D — 섹션 구성 다양화 1~12차 전체 색인
 
 앞의 실험 A·B·C 본문은 유지했다. 섹션 구성 다양화 실험은 차수마다 다섯 종류의 로그로 분리했으며, 아래 표는 전체 색인이다. 각 차수의 구현 체크포인트·에러 분석·실험 리포트·추론 API 영향·BE/FE 인터페이스 영향은 링크된 다섯 문서에 각각 기록했다.
 
@@ -125,7 +125,7 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 - 6차와 9차는 케이스별 `image_model=mlx-community/flux2-klein-9b-4bit`로 실제 이미지를 생성했다. 7차와 8차는 6차 자산을 복사한 실행이 아니라 `--image-provider none`으로 AI 이미지 생성을 끈 실행이었다.
 - 7차는 케이스별 `image_model=none`이고 `photos/`가 전 케이스 0장이었다. 8차도 케이스별 `image_model=none`이며 남은 사진은 모두 `product_generated=false`인 원본 파생 컷이었다. `run_index.json` 최상위 `image_model`은 설정값이므로 실제 실행 여부의 근거로 쓰지 않았다.
 
-### 1~9차 요약 표
+### 1~12차 요약 표
 
 | 차수 | 바꾼 것 | 파일럿 디렉터리 | 평균 Jaccard | 유효 공통 블록 | 완전 일치 쌍 | 판정 |
 |---:|---|---|---:|---:|---:|---|
@@ -140,6 +140,7 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 | **9** | **근거 기반 후보 원형 선택** | `generated/evaluation/pilot-20260910-164008` | **52.3%** | **0종** | **0쌍** | **새 기준 PASS (6/6, Flux 실제 생성)** |
 | **10** | **'참고용' 라벨 계약 수정 + 60건 전체 평가 1차** | `generated/evaluation/full60-20260910-204433` | **52.3%** | **0종** | **0쌍** | **60/60 성공 · 라벨 60/60 PASS · 다양성 6건 표본 PASS · 컷아웃 OK 55/부분손실 5** |
 | 11 | 컷아웃 게이트 보강(채택)·추출기 수정(되돌림) | `generated/evaluation/full60-v2-20260911-110752` | 52.3% | 0종 | 0쌍 | **되돌림** (지표 PASS 60/60·수행률 40%이나 육안 판정으로 추출기 되돌림 `162863d`, 게이트 채택 `696dd15`) |
+| 12 | hero 원본 고정·rembg 누끼 채택·'참고용' 표시 제거·누끼+생성배경 합성 시도(반려) | `generated/attached/najeon-hero-030813`, `generated/attached/petal-rembg-000846`, `generated/cutout-compare/`, `generated/composite-check/{nacre,petals}` | 확인 필요 | 확인 필요 | 확인 필요 | **rembg 채택·hero `source_original`·합성 반려·348 passed** |
 
 표의 `유효 공통 블록`은 `hero`·`closing`을 제외한 종수다.
 
@@ -158,6 +159,7 @@ MLX Core 26.9.1의 multipart `/v1/images/edits` 어댑터가 내부 `mode: "edit
 | 9 | [문서](experiments/round-09/01-implementation-checkpoint.md) | [문서](experiments/round-09/02-error-analysis.md) | [문서](experiments/round-09/03-experiment-report.md) | [문서](experiments/round-09/04-inference-api.md) | [문서](experiments/round-09/05-be-fe-interface.md) |
 | 10 | [문서](experiments/round-10/01-implementation-checkpoint.md) | [문서](experiments/round-10/02-error-analysis.md) | [문서](experiments/round-10/03-experiment-report.md) | [문서](experiments/round-10/04-inference-api.md) | [문서](experiments/round-10/05-be-fe-interface.md) |
 | 11 | [문서](experiments/round-11/01-implementation-checkpoint.md) | [문서](experiments/round-11/02-error-analysis.md) | [문서](experiments/round-11/03-experiment-report.md) | [문서](experiments/round-11/04-inference-api.md) | [문서](experiments/round-11/05-be-fe-interface.md) |
+| 12 | [문서](experiments/round-12/01-implementation-checkpoint.md) | [문서](experiments/round-12/02-error-analysis.md) | [문서](experiments/round-12/03-experiment-report.md) | [문서](experiments/round-12/04-inference-api.md) | [문서](experiments/round-12/05-be-fe-interface.md) |
 
 ### 전체 결론
 
