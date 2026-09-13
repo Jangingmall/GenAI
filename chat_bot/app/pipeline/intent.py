@@ -71,37 +71,6 @@ def _keep_known(values: list[str] | None, allowed: set[str]) -> list[str]:
     return [v for v in values if v in allowed]
 
 
-# "제사용으로 쓸 만한 그릇" 같은 "-(으)로 [형용사 수식어] 명사" 문형에서, 로컬 9B 모델이
-# 수식어(쓸 만한·좋은 등)를 요청 동사("찾아줘" 등)와 같은 부류의 "지워도 되는 말"로
-# 착각해 같이 잘라내는 경우가 있다(실측 확인: 같은 프롬프트 규칙·예시를 줘도 문장
-# 표면이 조금만 달라지면 50% 확률로 재발 — few-shot 예시를 늘려도 다음 변형에서 또
-# 터지는 악순환이라, 프롬프트만으론 안정적으로 못 잡는다). 패턴 자체는 명확하므로
-# extract_ordinal·is_all_request와 같은 이유로 여기서 코드로 확정 복원한다.
-_ADJ_SUFFIX_WORDS = ("쓸 만한", "쓸만한", "좋은", "괜찮은", "무난한", "적당한")
-_ADJ_SUFFIX_PATTERN = re.compile(
-    r"(?P<head>\S+?)(?P<conn>으로|로)\s*(?P<adj>"
-    + "|".join(re.escape(w) for w in _ADJ_SUFFIX_WORDS)
-    + r")\s*(?P<tail>\S+)"
-)
-
-
-def _restore_adjective_suffix(message: str, query_text: str) -> str:
-    """query_text가 원문의 "-(으)로 [형용사] 명사" 수식어를 놓쳤으면 원문에서 복원한다.
-
-    수식어 낱말이 이미 query_text에 남아 있으면(정상 동작) 손대지 않는다. 복원은
-    "head+adj+tail 조각을 새로 조립"하지 않고, 원문에서 tail이 끝나는 지점까지
-    그대로 잘라 쓴다 — 조각을 새로 이어붙이면 head 앞에 있던 다른 단어(예: "손님
-    접대용으로 좋은 다과상"의 "손님")가 유실된다.
-    """
-    m = _ADJ_SUFFIX_PATTERN.search(message)
-    if not m:
-        return query_text
-    adj_normalized = m.group("adj").replace(" ", "")
-    if adj_normalized in query_text.replace(" ", ""):
-        return query_text
-    return message[: m.end("tail")].strip()
-
-
 def _to_contact1(
     raw: dict, *, gift_themes: set[str], colors: set[str], message: str
 ) -> dict:
@@ -113,10 +82,12 @@ def _to_contact1(
     color = _keep_known(raw.get("color"), colors)
     query_text = raw.get("query_text") or ""
     if intent in ("product_search", "gift_recommendation"):
-        # narrow_down은 이전 대화 주제어를 query_text에 이어 붙이는 별도 로직을
-        # LLM이 맡고 있어서(prompts.py 참고) 여기서 건드리면 그 맥락이 깨진다 —
-        # 이 복원은 "이번 문장 자체가 새 주제인" 두 intent에만 적용한다.
-        query_text = _restore_adjective_suffix(message, query_text)
+        # 검색팀 실측: 축약·수식어 제거 없이 원문 그대로 넘길 때 임베딩 검색이 가장
+        # 잘 된다. LLM이 뭘 뽑아내든(축약·수식어 누락 등) 여기서 원문으로 덮어써
+        # 프롬프트 판단에 기대지 않고 코드로 확정한다. narrow_down은 이전 대화
+        # 주제어를 이어 붙이는 별도 합성이 필요해(prompts.py 참고) 예외로 둔다.
+        query_text = message
+
     return {
         "query_text": query_text,
         "filters": {

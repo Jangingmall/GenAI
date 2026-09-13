@@ -194,6 +194,7 @@ def chat(
     previous_candidates = state["candidates"] if state else None
     previous_filters = state["filters"] if state else None
     previous_product_ids = state["product_ids"] if state else None
+    previous_query_text = state["query_text"] if state else None
 
     result = orchestrator.run(
         request.message,
@@ -203,20 +204,22 @@ def chat(
         previous_candidates=previous_candidates,
         previous_filters=previous_filters,
         previous_product_ids=previous_product_ids,
+        previous_query_text=previous_query_text,
         fetch_prices=fetch_prices,
         fetch_artisans=fetch_artisans,
         cache_lookup=cache_lookup,
         cache_store=cache_store,
     )
 
-    # candidates·filters·shown_product_ids는 확정된 외부 응답 계약에 없는 내부 전용
-    # 필드다(orchestrator.run docstring 참고) — 응답으로 내보내지 않고 다음 턴
-    # narrow_down 재사용·카드 중복 노출 억제를 위해 세션 저장소에만 남긴다.
+    # candidates·filters·shown_product_ids·query_text는 확정된 외부 응답 계약에 없는
+    # 내부 전용 필드다(orchestrator.run docstring 참고) — 응답으로 내보내지 않고 다음
+    # 턴 narrow_down 재사용·카드 중복 노출 억제·주제어 유지를 위해 세션 저장소에만 남긴다.
     session_store.set(
         request.session_id,
         result["candidates"],
         result["filters"],
         result["shown_product_ids"],
+        result["query_text"],
     )
 
     return ChatResponse(

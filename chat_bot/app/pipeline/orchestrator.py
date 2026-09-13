@@ -47,6 +47,22 @@ from app.run_recommend import recommend as _recommend
 _DISAMBIGUATION_PROMPT = "몇 번째 상품을 말씀하시는 건가요?"
 
 
+def _last_user_message(history: list[dict] | None) -> str | None:
+    """history에서 가장 최근 사용자 발화를 찾는다(narrow_down 재검색 주제어 보강용).
+
+    intent.py가 "이전 대화 주제어 + 현재 문장"을 프롬프트만으로 합치도록 시켜봤지만
+    실측 확인 결과 새 문장이 조금만 바뀌어도 주제어가 빠졌다(예: "도자기"·"찻잔"·
+    "옹기" 전부 재현) — 프롬프트로 안정적으로 못 잡는 합성 작업이라 여기서 코드로
+    확정 보강한다.
+    """
+    if not history:
+        return None
+    for turn in reversed(history):
+        if turn.get("role") == "user":
+            return turn.get("content") or None
+    return None
+
+
 def _is_disambiguation_followup(history: list[dict] | None) -> bool:
     """직전 봇 턴이 _DISAMBIGUATION_PROMPT 되물음이었는지 본다.
 
@@ -72,6 +88,7 @@ def run(
     previous_candidates: list[dict] | None = None,
     previous_filters: dict | None = None,
     previous_product_ids: list[int] | None = None,
+    previous_query_text: str | None = None,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
     cache_lookup=semantic_cache.lookup,
@@ -109,6 +126,19 @@ def run(
     새 정보이므로 그대로 보여준다. explain_product·explain_products 경로는 사용자가
     명시적으로 상품을 다시 보여달라 요청한 것이라 이 억제를 적용하지 않는다.
 
+    previous_query_text는 직전 턴이 실제로 검색에 쓴 최종 query_text다(내부 전용, §0
+    계약엔 없음). narrow_down이 새 하드필터로 재검색할 때 이전 대화 주제어를 이어
+    붙이는 근거로 쓴다 — "직전 사용자 발화 1개"만 기억하면 narrow_down이 연달아 여러
+    번 이어질 때 두 번째 재검색부터 주제어가 다시 사라진다(실측 확인: "도자기 선물
+    찾아줘"→"3만원 이하로"→"그럼 5만원으로 다시"에서 세 번째 턴에 "도자기"가 없어짐 —
+    "직전 발화"가 "3만원 이하로"로 바뀌어버려서). previous_query_text는 매 턴 누적된
+    최종 문장이라(예: 2턴엔 "도자기 선물 찾아줘 3만원 이하로") 여기서 계속 이어 붙이면
+    몇 턴이 지나도 원래 주제어가 안 사라진다 — 대화형 검색에서 "직전 발화 하나만 보고
+    다시 쓰기"보다 "누적된 문맥을 그대로 이어 붙이기"가 더 안정적이라는 건 TREC CAsT
+    conversational search의 "Concat" 베이스라인과 같은 발상이다(주제 전환이 실제로
+    있으면 위험하다고도 알려져 있지만, 여기선 intent가 이미 narrow_down으로 "같은
+    주제의 연속"이라고 확정 판단한 경우에만 적용해 그 위험을 피한다).
+
     "왜 추천했어?"류는 is_explain_request(키워드 하드코딩)로 못 잡는다 — "어떤 상품을"
     설명할지(순번·"모두")는 코드로 확정 판단해야 안정적이지만, "설명이 필요한
     질문인가" 자체는 진짜 자연어 뉘앙스 판단이 필요해 intent.py의 wants_reason
@@ -136,6 +166,7 @@ def run(
                 "candidates": [],
                 "filters": previous_filters or {},
                 "shown_product_ids": [],
+                "query_text": previous_query_text or "",
             }
         if is_all_request(message):
             explained = explain_products(message, previous_candidates, chat=chat)
@@ -147,6 +178,7 @@ def run(
                 "candidates": previous_candidates,
                 "filters": previous_filters or {},
                 "shown_product_ids": explained["product_ids"],
+                "query_text": previous_query_text or "",
             }
         ordinal = extract_ordinal(message, len(previous_candidates))
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
@@ -161,6 +193,7 @@ def run(
                 "candidates": previous_candidates,
                 "filters": previous_filters or {},
                 "shown_product_ids": previous_product_ids or [],
+                "query_text": previous_query_text or "",
             }
         target = previous_candidates[ordinal - 1]
         explained = explain_product(message, target, chat=chat)
@@ -172,6 +205,7 @@ def run(
             "candidates": previous_candidates,
             "filters": previous_filters or {},
             "shown_product_ids": explained["product_ids"],
+            "query_text": previous_query_text or "",
         }
 
     # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
@@ -199,6 +233,7 @@ def run(
             "candidates": previous_candidates or [],
             "filters": contact1["filters"],
             "shown_product_ids": previous_product_ids or [],
+            "query_text": previous_query_text or "",
         }
 
     if contact1.get("wants_reason"):
@@ -215,6 +250,7 @@ def run(
                 "candidates": [],
                 "filters": contact1["filters"],
                 "shown_product_ids": [],
+                "query_text": previous_query_text or "",
             }
         explained = explain_products(message, previous_candidates, chat=chat)
         return {
@@ -225,6 +261,7 @@ def run(
             "candidates": previous_candidates,
             "filters": contact1["filters"],
             "shown_product_ids": explained["product_ids"],
+            "query_text": previous_query_text or "",
         }
 
     prev_filters = previous_filters or {}
@@ -240,6 +277,7 @@ def run(
         "color"
     ) != prev_filters.get("color")
     has_new_filter = price_changed or color_changed
+    did_search = False
     if (
         contact1["intent"] == "narrow_down"
         and previous_candidates
@@ -247,7 +285,21 @@ def run(
     ):
         candidates = previous_candidates
     else:
+        if contact1["intent"] == "narrow_down" and has_new_filter:
+            # 새 하드필터가 있는 narrow_down 재검색 — query_text에 이전 대화
+            # 주제어가 빠지면 엉뚱한 종목으로 재검색된다(§ run() 문서 참고).
+            # previous_query_text(직전 턴이 실제로 쓴 누적 문장)를 우선 쓰고, 아직
+            # 그 값이 없는 호출자를 위해 history의 직전 사용자 발화로 대체한다. LLM이
+            # 이미 주제어를 살렸어도 무조건 이어 붙인다 — 단어가 겹쳐 살짝 중복돼도
+            # 임베딩 검색엔 해가 없고(실측 확인), "이미 포함됐는지"를 문자열로 정확히
+            # 판별할 방법이 없어 조건부로 하면 오히려 놓치는 경우가 생긴다.
+            topic_context = previous_query_text or _last_user_message(history)
+            if topic_context:
+                contact1["query_text"] = (
+                    f"{topic_context} {contact1['query_text']}".strip()
+                )
         candidates = search_and_rank(contact1)
+        did_search = True
     generated = build_reply(
         message,
         candidates,
@@ -283,6 +335,12 @@ def run(
         # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
         # 뜨는 역효과가 난다.
         "shown_product_ids": raw_product_ids,
+        # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
+        # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
+        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다.
+        "query_text": (
+            contact1["query_text"] if did_search else (previous_query_text or "")
+        ),
     }
 
 

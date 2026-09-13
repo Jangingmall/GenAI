@@ -43,46 +43,14 @@ def test_price_to_won_plain_digit_string():
 
 
 # ---------------------------------------------------------------------------
-# _restore_adjective_suffix — "-(으)로 [형용사] 명사" 문형에서 LLM이 수식어를
-# 요청 동사와 같이 잘라내는 경우를 코드로 복원(실측: 프롬프트 규칙·예시만으론
-# 문장 표면이 조금만 달라져도 재발)
+# _to_contact1의 query_text 덮어쓰기 — product_search·gift_recommendation은
+# LLM이 뭘 뽑든 원문(message)으로 코드에서 확정한다(검색팀 실측: 축약·수식어
+# 제거 없이 원문 그대로 넘길 때 임베딩 검색이 가장 잘 됨 — 프롬프트 판단에
+# 맡기지 않고 코드로 보장).
 # ---------------------------------------------------------------------------
 
 
-def test_restore_adjective_suffix_recovers_dropped_modifier():
-    """LLM이 "쓸 만한"을 지워 "제사용 그릇"만 남겼어도 원문에서 복원해야 한다."""
-    restored = it._restore_adjective_suffix(
-        "제사용으로 쓸 만한 그릇 찾아줘", "제사용 그릇"
-    )
-    assert restored == "제사용으로 쓸 만한 그릇"
-
-
-def test_restore_adjective_suffix_keeps_leading_words_before_head():
-    """head 앞에 있던 단어(예: "손님")까지 유실 없이 남아야 한다."""
-    restored = it._restore_adjective_suffix(
-        "손님 접대용으로 좋은 다과상 뭐 있을까요", "손님 접대용 다과상"
-    )
-    assert restored == "손님 접대용으로 좋은 다과상"
-
-
-def test_restore_adjective_suffix_noop_when_already_preserved():
-    """query_text가 이미 수식어를 담고 있으면 손대지 않는다."""
-    query_text = "다도용으로 쓸 만한 것"
-    restored = it._restore_adjective_suffix(
-        "다도용으로 쓸 만한 것 추천해줘", query_text
-    )
-    assert restored == query_text
-
-
-def test_restore_adjective_suffix_noop_when_pattern_absent():
-    """ "-(으)로 [형용사]" 문형 자체가 없으면 query_text를 그대로 둔다."""
-    restored = it._restore_adjective_suffix(
-        "밥이나 국 담을 그릇 있나요", "밥이나 국 담을 그릇"
-    )
-    assert restored == "밥이나 국 담을 그릇"
-
-
-def test_to_contact1_applies_adjective_restoration_for_product_search():
+def test_to_contact1_overrides_query_text_with_raw_message_for_product_search():
     raw = {"intent": "product_search", "query_text": "혼수용 반상기"}
     result = it._to_contact1(
         raw,
@@ -90,20 +58,31 @@ def test_to_contact1_applies_adjective_restoration_for_product_search():
         colors=prompts.COLORS,
         message="혼수용으로 쓸 만한 반상기 보여줘",
     )
-    assert result["query_text"] == "혼수용으로 쓸 만한 반상기"
+    assert result["query_text"] == "혼수용으로 쓸 만한 반상기 보여줘"
 
 
-def test_to_contact1_skips_adjective_restoration_for_narrow_down():
-    """narrow_down은 이전 대화 주제어를 이어 붙이는 별도 로직이 있어 여기서
-    건드리면 안 된다 — 패턴이 우연히 매칭돼도 query_text를 그대로 둔다."""
-    raw = {"intent": "narrow_down", "query_text": "3만원으로 낮춰서 좋은 것"}
+def test_to_contact1_overrides_query_text_with_raw_message_for_gift_recommendation():
+    raw = {"intent": "gift_recommendation", "query_text": "환갑 선물"}
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="환갑 맞은 부모님께 드릴 선물 찾아줘",
+    )
+    assert result["query_text"] == "환갑 맞은 부모님께 드릴 선물 찾아줘"
+
+
+def test_to_contact1_skips_query_text_override_for_narrow_down():
+    """narrow_down은 이전 대화 주제어를 이어 붙이는 별도 로직이 LLM에 있어
+    여기서 원문으로 덮어쓰면 그 맥락이 깨진다 — LLM이 뽑은 값을 그대로 둔다."""
+    raw = {"intent": "narrow_down", "query_text": "3만원으로 낮춰서 도자기"}
     result = it._to_contact1(
         raw,
         gift_themes=prompts.GIFT_THEMES,
         colors=prompts.COLORS,
         message="그럼 3만원으로 낮춰서 좋은 것도 있어요?",
     )
-    assert result["query_text"] == "3만원으로 낮춰서 좋은 것"
+    assert result["query_text"] == "3만원으로 낮춰서 도자기"
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +129,7 @@ def test_to_contact1_assembles_filters():
         message="환갑 맞은 부모님께 드릴 선물 찾아줘",
     )
     assert result == {
-        "query_text": "환갑 선물",
+        "query_text": "환갑 맞은 부모님께 드릴 선물 찾아줘",
         "wants_reason": False,
         "filters": {
             "max_price": 300000,

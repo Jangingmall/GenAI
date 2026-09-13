@@ -31,7 +31,8 @@ _lock = threading.Lock()
 
 
 def get(session_id: str) -> dict | None:
-    """직전 턴의 {"candidates", "filters", "product_ids"}를 돌려준다. 없거나 만료됐으면 None."""
+    """직전 턴의 {"candidates", "filters", "product_ids", "query_text"}를 돌려준다.
+    없거나 만료됐으면 None."""
     with _lock:
         entry = _store.get(session_id)
         if entry is None:
@@ -43,24 +44,34 @@ def get(session_id: str) -> dict | None:
             "candidates": entry["candidates"],
             "filters": entry["filters"],
             "product_ids": entry["product_ids"],
+            "query_text": entry["query_text"],
         }
 
 
 def set(
-    session_id: str, candidates: list[dict], filters: dict, product_ids: list[int]
+    session_id: str,
+    candidates: list[dict],
+    filters: dict,
+    product_ids: list[int],
+    query_text: str,
 ) -> None:
-    """이번 턴에 쓴 candidates·filters·product_ids를 저장한다.
+    """이번 턴에 쓴 candidates·filters·product_ids·query_text를 저장한다.
 
     candidates·filters는 다음 턴 narrow_down 재사용에, product_ids는 orchestrator.run의
     previous_product_ids(카드 중복 노출 억제)에 쓰인다. product_ids엔 orchestrator가
     반환하는 shown_product_ids(화면 노출 여부와 무관한 실제 관련 상품)를 넘겨야 한다 —
     억제돼서 비어 나온 product_ids를 그대로 저장하면 다음 턴 비교 기준이 사라져 버린다.
+
+    query_text는 orchestrator.run이 반환하는 값(이번 턴이 실제로 검색에 쓴 최종
+    문장)을 그대로 저장한다 — narrow_down이 새 하드필터로 여러 턴 연속 재검색될 때
+    이전 대화 주제어가 안 사라지게 다음 턴 previous_query_text로 이어 붙이는 용도다.
     """
     with _lock:
         _store[session_id] = {
             "candidates": candidates,
             "filters": filters,
             "product_ids": product_ids,
+            "query_text": query_text,
             "ts": time.time(),
         }
         if len(_store) > _MAX_ENTRIES:
