@@ -164,6 +164,40 @@ def run(
     임베딩 검색은 유사도 낮은 상품을 억지로 찾아와서, 그대로 두면 근거 없이 자신 있게
     추천해버리는 문제가 있었다.
     """
+
+    def _short_circuit(
+        reply: str,
+        intent: str,
+        *,
+        product_ids: list[int] | None = None,
+        suggestions: list[str] | None = None,
+        candidates: list[dict] | None = None,
+        filters: dict | None = None,
+        shown_product_ids: list[int] | None = None,
+    ) -> dict:
+        """검색을 새로 하지 않고 즉시 반환하는 조기 응답 8개 지점이 전부 같은 8개
+        키 구조를 반복해서 여기로 모았다. 이번 턴에 검색을 안 했으니 candidates·
+        filters·shown_product_ids·query_text는 대부분 "이전 값 그대로"가 맞다 —
+        인자로 안 주면 그 기본값을 쓰고, 준 값이 있으면(예: 설명 대상 상품으로
+        candidates를 좁힘) 그 값으로 덮어쓴다.
+        """
+        return {
+            "reply": reply,
+            "intent": intent,
+            "product_ids": product_ids or [],
+            "suggestions": suggestions or [],
+            "candidates": (
+                candidates if candidates is not None else (previous_candidates or [])
+            ),
+            "filters": filters if filters is not None else (previous_filters or {}),
+            "shown_product_ids": (
+                shown_product_ids
+                if shown_product_ids is not None
+                else (previous_product_ids or [])
+            ),
+            "query_text": previous_query_text or "",
+        }
+
     # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
     # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
     # 확인: 후보 전체를 설명하거나 엉뚱한 걸 고름). 순서 지정은 코드로 확정 판단하고,
@@ -176,55 +210,43 @@ def run(
     # evidence 없는 뭉뚱그린 답이 나갔었다).
     if is_explain_request(message) or _is_disambiguation_followup(history):
         if not previous_candidates:
-            return {
-                "reply": "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
-                "intent": "narrow_down",
-                "product_ids": [],
-                "suggestions": [],
-                "candidates": [],
-                "filters": previous_filters or {},
-                "shown_product_ids": [],
-                "query_text": previous_query_text or "",
-            }
+            return _short_circuit(
+                "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                "narrow_down",
+                candidates=[],
+                shown_product_ids=[],
+            )
         if is_all_request(message):
             explained = explain_products(message, previous_candidates, chat=chat)
-            return {
-                "reply": explained["reply"],
-                "intent": "narrow_down",
-                "product_ids": explained["product_ids"],
-                "suggestions": explained["suggestions"],
-                "candidates": previous_candidates,
-                "filters": previous_filters or {},
-                "shown_product_ids": explained["product_ids"],
-                "query_text": previous_query_text or "",
-            }
+            return _short_circuit(
+                explained["reply"],
+                "narrow_down",
+                product_ids=explained["product_ids"],
+                suggestions=explained["suggestions"],
+                candidates=previous_candidates,
+                shown_product_ids=explained["product_ids"],
+            )
         ordinal = extract_ordinal(message, len(previous_candidates))
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
             chips = [f"{i + 1}번" for i in range(len(previous_candidates))] + [
                 "전체 설명"
             ]
-            return {
-                "reply": f"{_DISAMBIGUATION_PROMPT} ({'/'.join(chips)} 중에서 골라주세요)",
-                "intent": "narrow_down",
-                "product_ids": [],
-                "suggestions": chips,
-                "candidates": previous_candidates,
-                "filters": previous_filters or {},
-                "shown_product_ids": previous_product_ids or [],
-                "query_text": previous_query_text or "",
-            }
+            return _short_circuit(
+                f"{_DISAMBIGUATION_PROMPT} ({'/'.join(chips)} 중에서 골라주세요)",
+                "narrow_down",
+                suggestions=chips,
+                candidates=previous_candidates,
+            )
         target = previous_candidates[ordinal - 1]
         explained = explain_product(message, target, chat=chat)
-        return {
-            "reply": explained["reply"],
-            "intent": "narrow_down",
-            "product_ids": explained["product_ids"],
-            "suggestions": explained["suggestions"],
-            "candidates": previous_candidates,
-            "filters": previous_filters or {},
-            "shown_product_ids": explained["product_ids"],
-            "query_text": previous_query_text or "",
-        }
+        return _short_circuit(
+            explained["reply"],
+            "narrow_down",
+            product_ids=explained["product_ids"],
+            suggestions=explained["suggestions"],
+            candidates=previous_candidates,
+            shown_product_ids=explained["product_ids"],
+        )
 
     # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
     # 직전 대화에 따라 의미가 완전히 달라지는데, 문장만 보고 캐시를 맞히면 엉뚱한 이전
@@ -243,16 +265,9 @@ def run(
         # 이미 만들어둔 chat_reply를 그대로 쓴다. 검색도 안 한다: query_text가 빈 문자열
         # 이어도 검색 엔진(임베딩 유사도)은 뭔가는 반환해서(실측: "안녕하십니까?" → 옹기
         # 아닌 나전칠기 상품 3건) 잡담에 엉뚱한 상품이 낄 위험이 있다.
-        return {
-            "reply": contact1["chat_reply"],
-            "intent": "general_chat",
-            "product_ids": [],
-            "suggestions": [],
-            "candidates": previous_candidates or [],
-            "filters": contact1["filters"],
-            "shown_product_ids": previous_product_ids or [],
-            "query_text": previous_query_text or "",
-        }
+        return _short_circuit(
+            contact1["chat_reply"], "general_chat", filters=contact1["filters"]
+        )
 
     if contact1["intent"] in ("product_search", "gift_recommendation") and contact1.get(
         "needs_clarification"
@@ -268,16 +283,12 @@ def run(
             if contact1["intent"] == "gift_recommendation"
             else _CLARIFICATION_CHIPS_PRODUCT
         )
-        return {
-            "reply": contact1["chat_reply"],
-            "intent": contact1["intent"],
-            "product_ids": [],
-            "suggestions": clarification_chips,
-            "candidates": previous_candidates or [],
-            "filters": contact1["filters"],
-            "shown_product_ids": previous_product_ids or [],
-            "query_text": previous_query_text or "",
-        }
+        return _short_circuit(
+            contact1["chat_reply"],
+            contact1["intent"],
+            suggestions=clarification_chips,
+            filters=contact1["filters"],
+        )
 
     if contact1.get("wants_reason"):
         # "왜 추천했어?"류 — 어떤 상품을(순번·"모두") 설명할지는 코드로 확정 판단하지만
@@ -285,27 +296,23 @@ def run(
         # intent 분류 LLM이 이미 판단해 넘겨준 신호를 그대로 쓴다. 순번을 안 짚었으므로
         # explain_products(전체 설명)로 답한다 — is_all_request 분기와 같은 처리.
         if not previous_candidates:
-            return {
-                "reply": "아직 추천해 드린 상품이 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
-                "intent": contact1["intent"],
-                "product_ids": [],
-                "suggestions": [],
-                "candidates": [],
-                "filters": contact1["filters"],
-                "shown_product_ids": [],
-                "query_text": previous_query_text or "",
-            }
+            return _short_circuit(
+                "아직 추천해 드린 상품이 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                contact1["intent"],
+                candidates=[],
+                filters=contact1["filters"],
+                shown_product_ids=[],
+            )
         explained = explain_products(message, previous_candidates, chat=chat)
-        return {
-            "reply": explained["reply"],
-            "intent": contact1["intent"],
-            "product_ids": explained["product_ids"],
-            "suggestions": explained["suggestions"],
-            "candidates": previous_candidates,
-            "filters": contact1["filters"],
-            "shown_product_ids": explained["product_ids"],
-            "query_text": previous_query_text or "",
-        }
+        return _short_circuit(
+            explained["reply"],
+            contact1["intent"],
+            product_ids=explained["product_ids"],
+            suggestions=explained["suggestions"],
+            candidates=previous_candidates,
+            filters=contact1["filters"],
+            shown_product_ids=explained["product_ids"],
+        )
 
     prev_filters = previous_filters or {}
     new_filters = contact1["filters"]
