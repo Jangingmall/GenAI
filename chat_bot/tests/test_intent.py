@@ -131,6 +131,7 @@ def test_to_contact1_assembles_filters():
     assert result == {
         "query_text": "환갑 맞은 부모님께 드릴 선물 찾아줘",
         "wants_reason": False,
+        "needs_clarification": False,
         "filters": {
             "max_price": 300000,
             "min_price": None,
@@ -214,6 +215,29 @@ def test_to_contact1_missing_wants_reason_defaults_false():
         raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
     )
     assert result["wants_reason"] is False
+
+
+def test_to_contact1_passes_through_needs_clarification_true():
+    """ "선물"처럼 검색 단서가 하나도 없는 문장인지 판단은 LLM이 하고, _to_contact1은
+    그 신호를 그대로 넘기기만 한다(사용자 시나리오 E23 대응)."""
+    raw = {
+        "intent": "gift_recommendation",
+        "needs_clarification": True,
+        "query_text": "선물",
+        "chat_reply": "어떤 분께 드릴 선물인가요?",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="선물"
+    )
+    assert result["needs_clarification"] is True
+
+
+def test_to_contact1_missing_needs_clarification_defaults_false():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
+    )
+    assert result["needs_clarification"] is False
 
 
 # ---------------------------------------------------------------------------

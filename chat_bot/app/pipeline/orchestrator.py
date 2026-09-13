@@ -145,6 +145,13 @@ def run(
     필드(LLM 판단)로 잡는다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는 intent
     분류 호출에 필드 하나를 얹었다 — classify_and_extract 이후에만 확인 가능하므로
     이 분기는 general_chat 처리 다음, 검색·narrow_down 분기 이전에 둔다.
+
+    needs_clarification도 같은 방식이다 — "선물"처럼 product_search·gift_recommendation
+    인데 검색에 쓸 단서(용도·받는사람·예산·재질·색상·종목)가 하나도 없으면, 검색을
+    시도하지 않고 intent.py가 미리 만들어둔 chat_reply(되묻는 질문)를 그대로 반환한다
+    (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화). 실측 확인: 이런 문장도
+    임베딩 검색은 유사도 낮은 상품을 억지로 찾아와서, 그대로 두면 근거 없이 자신 있게
+    추천해버리는 문제가 있었다.
     """
     # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
     # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
@@ -228,6 +235,24 @@ def run(
         return {
             "reply": contact1["chat_reply"],
             "intent": "general_chat",
+            "product_ids": [],
+            "suggestions": [],
+            "candidates": previous_candidates or [],
+            "filters": contact1["filters"],
+            "shown_product_ids": previous_product_ids or [],
+            "query_text": previous_query_text or "",
+        }
+
+    if contact1["intent"] in ("product_search", "gift_recommendation") and contact1.get(
+        "needs_clarification"
+    ):
+        # "선물", "뭔가 좋은거 없나요"처럼 검색에 쓸 단서가 하나도 없으면 검색을
+        # 건너뛰고 먼저 되묻는다 — 실측 확인: 이런 문장도 임베딩 검색이 유사도 낮은
+        # 상품을 억지로 찾아와서, 근거 없이 자신 있게 추천해버리는 문제가 있었다
+        # (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화).
+        return {
+            "reply": contact1["chat_reply"],
+            "intent": contact1["intent"],
             "product_ids": [],
             "suggestions": [],
             "candidates": previous_candidates or [],

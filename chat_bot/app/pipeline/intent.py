@@ -30,6 +30,12 @@ class _RawIntent(BaseModel):
     # 자연어 뉘앙스 판단이라 LLM에 맡긴다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는
     # intent 분류 호출의 출력 필드 하나로 얹어서 속도 비용을 없앴다.
     wants_reason: bool
+    # "선물", "뭔가 좋은거" 처럼 검색에 쓸 구체적인 단서(용도·받는사람·예산·재질·색상
+    # 등)가 하나도 없는 product_search·gift_recommendation 요청인지 — 실측 확인:
+    # 이런 문장도 임베딩 검색이 뭔가는 찾아와서(유사도 낮은 억지 매칭) 시스템이
+    # 근거 없이 자신 있게 답해버리는 문제가 있었다. wants_reason과 같은 이유로 새
+    # LLM 호출 없이 이 필드로 판단해 검색 전에 되묻는다.
+    needs_clarification: bool
     max_price: int | None
     min_price: int | None
     gift_theme: list[str]
@@ -98,6 +104,7 @@ def _to_contact1(
         },
         "intent": intent,
         "wants_reason": bool(raw.get("wants_reason")),
+        "needs_clarification": bool(raw.get("needs_clarification")),
         "chat_reply": raw.get("chat_reply") or "",
     }
 

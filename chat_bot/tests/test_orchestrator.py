@@ -1126,3 +1126,60 @@ def test_run_wants_reason_false_does_not_shortcut_to_explain():
     )
 
     assert result["reply"] == "ok"
+
+
+def test_run_needs_clarification_skips_search_and_returns_chat_reply():
+    """ "선물"처럼 검색 단서가 하나도 없으면 검색을 건너뛰고 되묻는 chat_reply를
+    그대로 반환한다(사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화)."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "gift_recommendation",
+            "needs_clarification": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "선물",
+            "chat_reply": "어떤 분께 드릴 선물인가요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+
+    def search_and_rank_must_not_be_called(contact1):
+        raise AssertionError("needs_clarification이 true면 검색하면 안 된다")
+
+    result = rr.run(
+        "선물",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "어떤 분께 드릴 선물인가요?"
+    assert result["product_ids"] == []
+    assert result["intent"] == "gift_recommendation"
+
+
+def test_run_needs_clarification_false_does_not_shortcut():
+    """단서가 하나라도 있으면(needs_clarification=false) 평소처럼 검색한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "needs_clarification": False,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [1], "suggestions": []},
+    )
+
+    result = rr.run(
+        "찻잔 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(_CANDIDATES_3),
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "ok"
