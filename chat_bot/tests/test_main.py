@@ -10,6 +10,7 @@ TestClient(app)를 컨텍스트 매니저(with) 없이 쓰면 lifespan(=orchestr
 import json
 
 import pytest
+import requests
 from fastapi.testclient import TestClient
 
 from app import main, session_store
@@ -108,6 +109,27 @@ def test_chat_returns_only_external_contract_fields():
     body = response.json()
     assert set(body.keys()) == {"reply", "intent", "product_ids", "suggestions"}
     assert body["product_ids"] == [9]
+
+
+def test_chat_returns_friendly_reply_on_llm_timeout():
+    """llm.py의 chat_json은 Ollama에 requests로 붙어 타임아웃·연결 실패 시
+    requests.exceptions.RequestException을 던진다 — 잡지 않으면 FastAPI 기본 500
+    에러(안내 문구 없음)로 나간다(사용자 시나리오 E29: AI 응답 지연/타임아웃 →
+    Timeout 처리 및 재시도 제공). 200으로 안내 문구를 돌려줘야 한다."""
+
+    def timeout_chat(messages, schema, *, think, model=None):
+        raise requests.exceptions.Timeout("연결 시간 초과")
+
+    _override(chat=timeout_chat, search_and_rank=lambda contact1: [])
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["product_ids"] == []
+    assert "다시 시도" in body["reply"]
 
 
 def test_narrow_down_reuses_previous_candidates_via_session_id():
