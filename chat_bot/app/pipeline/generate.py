@@ -64,6 +64,26 @@ _GENERATE_OUTPUT_SCHEMA = (
 )  # 매 요청마다 재계산할 필요 없다
 
 
+# evidence.verified는 DB에 영문 enum 그대로 저장돼 있다(실측 확인: products 테이블
+# 4종 전부). 번역 없이 LLM에 그대로 넘기면 대부분은 스스로 "명장"·"국가무형유산"으로
+# 옮겨 쓰지만, 가끔 "MASTER_CRAFTSMAN" 원문이 reply에 그대로 새어나가는 경우가
+# 있었다(실측 확인) — LLM 번역에 기대지 않고 여기서 미리 한국어로 바꿔 넘긴다.
+_VERIFIED_LABELS = {
+    "NATIONAL_INTANGIBLE_HERITAGE": "국가무형유산",
+    "MASTER_CRAFTSMAN": "명장",
+    "SENIOR_CRAFTSMAN": "숙련장인",
+    "YOUNG_CRAFTSMAN": "청년장인",
+}
+
+
+def _verified_label(evidence: dict) -> str:
+    """evidence['verified'] 영문 enum을 한국어 라벨로 바꾼다. 값이 없거나 목록 밖이면
+    "정보 없음"(모르는 값을 그대로 노출하지 않는다 — 카탈로그에 새 등급이 추가돼도
+    안전하게 대체)."""
+    verified = evidence.get("verified")
+    return _VERIFIED_LABELS.get(verified, "정보 없음")
+
+
 _OVERBROAD_TERMS = {
     # 실데이터상 "항아리"는 POTTERY 세부품목명으로만 쓰인다(옹기 물항아리는
     # "물항아리"로 별도 표기돼 taxonomy.py 생성 로직이 정확히 POTTERY로만
@@ -256,7 +276,7 @@ def _format_candidates(
                 if artisan
                 else "  장인: 정보 없음"
             ),
-            f"  장인 등급(verified): {ev.get('verified') or '정보 없음'}",
+            f"  장인 등급(verified): {_verified_label(ev)}",
             f"  장인 서술(artisan_input): {ev.get('artisan_input') or '없음'}",
         ]
         blocks.append("\n".join(lines))
@@ -494,7 +514,7 @@ def explain_product(message: str, candidate: dict, *, chat=chat_json) -> dict:
     product_block = (
         f"- 이름: {candidate['name']}\n"
         f"  장인 서술: {ev.get('artisan_input') or '없음'}\n"
-        f"  장인 등급: {ev.get('verified') or '정보 없음'}"
+        f"  장인 등급: {_verified_label(ev)}"
     )
     prompt = _EXPLAIN_SYSTEM.replace("{product_block}", product_block)
     raw = chat(
@@ -552,7 +572,7 @@ def explain_products(message: str, candidates: list[dict], *, chat=chat_json) ->
         blocks.append(
             f"- 이름: {c['name']}\n"
             f"  장인 서술: {ev.get('artisan_input') or '없음'}\n"
-            f"  장인 등급: {ev.get('verified') or '정보 없음'}"
+            f"  장인 등급: {_verified_label(ev)}"
         )
     products_block = "\n\n".join(blocks)
     prompt = _EXPLAIN_ALL_SYSTEM.replace("{products_block}", products_block)

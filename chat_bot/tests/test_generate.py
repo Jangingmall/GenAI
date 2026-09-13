@@ -49,19 +49,51 @@ def test_format_candidates_empty_returns_placeholder():
     assert gen._format_candidates([]) == "(검색 결과 없음)"
 
 
+# ---------------------------------------------------------------------------
+# _verified_label — evidence.verified 영문 enum(DB 실측: NATIONAL_INTANGIBLE_HERITAGE·
+# MASTER_CRAFTSMAN·SENIOR_CRAFTSMAN·YOUNG_CRAFTSMAN 4종) → 한국어 라벨
+# ---------------------------------------------------------------------------
+
+
+def test_verified_label_translates_all_known_enum_values():
+    assert (
+        gen._verified_label({"verified": "NATIONAL_INTANGIBLE_HERITAGE"})
+        == "국가무형유산"
+    )
+    assert gen._verified_label({"verified": "MASTER_CRAFTSMAN"}) == "명장"
+    assert gen._verified_label({"verified": "SENIOR_CRAFTSMAN"}) == "숙련장인"
+    assert gen._verified_label({"verified": "YOUNG_CRAFTSMAN"}) == "청년장인"
+
+
+def test_verified_label_missing_value_returns_no_info():
+    assert gen._verified_label({}) == "정보 없음"
+    assert gen._verified_label({"verified": None}) == "정보 없음"
+
+
+def test_verified_label_unknown_value_falls_back_to_no_info():
+    """카탈로그에 새 등급이 추가돼도 원문 영문을 그대로 노출하지 않는다."""
+    assert gen._verified_label({"verified": "SOME_NEW_GRADE"}) == "정보 없음"
+
+
 def test_format_candidates_includes_category_and_evidence():
     candidates = [
         {
             "product_id": 1,
             "name": "여성용 챙모자",
             "category": "총모자",
-            "evidence": {"artisan_input": "말총으로 엮었습니다", "verified": "이수자"},
+            "evidence": {
+                "artisan_input": "말총으로 엮었습니다",
+                "verified": "MASTER_CRAFTSMAN",
+            },
         }
     ]
     text = gen._format_candidates(candidates)
     assert "product_id: 1" in text
     assert "총모자" in text
-    assert "이수자" in text
+    # evidence.verified는 DB에 영문 enum으로 저장돼 있어 한국어 라벨로 바꿔 넘긴다
+    # (_verified_label) — 원문 그대로 새는지 회귀 확인.
+    assert "명장" in text
+    assert "MASTER_CRAFTSMAN" not in text
     assert "말총으로 엮었습니다" in text
 
 
