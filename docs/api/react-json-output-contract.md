@@ -94,6 +94,7 @@ table, caption, thead, tbody, tr, th, td
 ```
 
 현재 builder는 page-plan block을 `section` 중심으로 조립하며, 이미지 노드는 `figure > img`로 만든다.
+생성 여부는 `product_generated` 플래그로 구분하며, `react_document` 내부에는 별도의 `figcaption`(`...-reference-label` 노드)을 붙이지 않는다 (계약 변경: 생성 이미지에 붙이던 `...-reference-label` 노드는 제거됨).
 임의 태그, `script`, `style`, `iframe`, form control, SVG 실행 경로는 계약에 없다.
 
 ### 4.2 element props
@@ -161,7 +162,7 @@ FE는 다음 순서로 처리한다.
 3. `text.value`는 텍스트 node로 출력하고 HTML 문자열로 재해석하지 않는다.
 4. `img`의 `imageId`를 asset manifest에 조회하고, 없는 자산은 렌더하지 않고 오류로 표시한다.
 5. `style/layout`은 FE design token으로 매핑한다. raw CSS를 실행하지 않는다.
-6. `product_generated=true`, `asset_mode=generated_scene/generated_view` 사진에는 “AI 생성 참고용” 라벨을 표시한다.
+6. 생성 여부는 `product_generated` 플래그로 구분한다 (`asset_mode=generated_scene/generated_view`).
 7. `fidelity_status=REJECTED` 자산은 표시·저장·게시하지 않는다.
 
 AI 서버는 FE component, design token, 공개 asset URL, 공개 인증을 제공하지 않는다. 상품 BE가 이를 공개

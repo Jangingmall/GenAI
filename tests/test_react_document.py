@@ -3,7 +3,6 @@ from pydantic import ValidationError
 
 from detail_page_ai.dto import (
     ApprovedDraftDto,
-    GeneratedPhotoMetadataDto,
     PageBlockDto,
     PageBlockItemDto,
 )
@@ -80,7 +79,7 @@ def test_builder_emits_react_json_ast_with_image_ids_and_aliases():
     )
 
 
-def test_builder_emits_reference_label_for_generated_photos_only():
+def test_builder_does_not_emit_reference_labels():
     draft = ApprovedDraftDto(
         product_name="숨의잔",
         summary="자유 취입으로 완성한 유리 잔입니다.",
@@ -95,28 +94,10 @@ def test_builder_emits_reference_label_for_generated_photos_only():
             ),
         ],
     )
-    photos = [
-        GeneratedPhotoMetadataDto(
-            photo_id="hero",
-            order=1,
-            label="원본 대표 이미지 메타데이터",
-            mime_type="image/jpeg",
-            sha256="hero-sha",
-            product_generated=False,
-        ),
-        GeneratedPhotoMetadataDto(
-            photo_id="lifestyle",
-            order=2,
-            label="AI 생성 활용 장면(참고용)",
-            mime_type="image/jpeg",
-            sha256="lifestyle-sha",
-            product_generated=True,
-        ),
-    ]
 
-    payload = build_react_document_from_draft(
-        draft, generated_photos=photos
-    ).model_dump(by_alias=True, exclude_none=True)
+    payload = build_react_document_from_draft(draft).model_dump(
+        by_alias=True, exclude_none=True
+    )
     figures = {
         figure["children"][0]["props"]["imageId"]: figure
         for root in payload["root"]
@@ -125,10 +106,14 @@ def test_builder_emits_reference_label_for_generated_photos_only():
     }
 
     assert figures["hero"]["children"] == [figures["hero"]["children"][0]]
-    assert figures["lifestyle"]["children"][1]["tag"] == "figcaption"
-    assert figures["lifestyle"]["children"][1]["children"][0]["value"] == (
-        "AI 생성 활용 장면(참고용)"
-    )
+    assert figures["lifestyle"]["children"] == [figures["lifestyle"]["children"][0]]
+    figcaptions = [
+        node
+        for root in payload["root"]
+        for node in _walk(root)
+        if node.get("type") == "element" and node.get("tag") == "figcaption"
+    ]
+    assert not figcaptions
 
 
 def test_builder_emits_guide_driven_typography_groups_and_feature_cards():

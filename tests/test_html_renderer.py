@@ -540,7 +540,7 @@ def test_html_renderer_includes_explicit_generated_lifestyle_scene():
             ProductPhoto(
                 photo_id="lifestyle",
                 order=1,
-                label="AI 생성 활용 장면(참고용)",
+                label="AI 생성 활용 장면",
                 data=b"generated-lifestyle",
                 mime_type="image/png",
                 source_sha256="source-hash",
@@ -562,7 +562,7 @@ def test_html_renderer_includes_explicit_generated_lifestyle_scene():
     assert "Z2VuZXJhdGVkLWxpZmVzdHlsZQ==" in html
 
 
-def test_html_renderer_renders_generated_photo_label_but_not_source_photo_label():
+def test_html_renderer_does_not_render_reference_label_for_photos():
     renderer = importlib.import_module("detail_page_ai.html_renderer")
     photo_set = ProductPhotoSet(
         photos=(
@@ -579,7 +579,7 @@ def test_html_renderer_renders_generated_photo_label_but_not_source_photo_label(
             ProductPhoto(
                 photo_id="lifestyle",
                 order=2,
-                label="AI 생성 활용 장면(참고용)",
+                label="AI 생성 활용 장면",
                 data=b"generated-lifestyle",
                 mime_type="image/png",
                 source_sha256="source-hash",
@@ -598,7 +598,9 @@ def test_html_renderer_renders_generated_photo_label_but_not_source_photo_label(
         photo_set=photo_set,
     )
 
-    assert '<figcaption class="generated-photo-label">AI 생성 활용 장면(참고용)</figcaption>' in html
+    assert "generated-photo-label" not in html
+    assert "generated-photo-reference" not in html
+    assert "AI 생성 활용 장면" not in html
     assert "원본 대표 이미지 메타데이터" not in html
 
 
@@ -609,7 +611,7 @@ def test_html_renderer_includes_explicit_generated_angle_detail():
             ProductPhoto(
                 photo_id="detail-03",
                 order=6,
-                label="AI 생성 각도 디테일(참고용)",
+                label="AI 생성 디테일",
                 data=b"generated-angle-detail",
                 mime_type="image/png",
                 source_sha256="source-hash",
@@ -664,7 +666,7 @@ def test_gallery_uses_both_generated_angle_slots_when_they_are_available():
         ProductPhoto(
             photo_id=photo_id,
             order=order,
-            label="AI 생성 각도 디테일(참고용)",
+            label="AI 생성 디테일",
             data=f"generated-{photo_id}".encode(),
             mime_type="image/png",
             asset_mode="generated_view",

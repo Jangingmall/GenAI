@@ -101,15 +101,15 @@ AI renderer가 동일한 계획으로 PNG를 생성합니다.
 `usage_scene`이 계획에 포함되고 원본 사진이 부족하면 최종 승인 렌더링 단계에서 Flux2
 이미지 편집 프롬프트를 사용합니다. 원본 이미지를 참조로 함께 전달하고, 제품의 개수·실루엣·
 비율·색·표면·손잡이·주둥이·배열을 유지하면서 배경과 사용 환경만 바꾸도록 지시합니다.
-결과는 `asset_mode: "generated_scene"`인 `lifestyle` 참고용 자산으로 전달합니다. 디테일은
+결과는 `asset_mode: "generated_scene"`인 `lifestyle` 생성 자산으로 전달합니다. 디테일은
 `detail` 1컷만 원본 크롭으로 유지하고, `detail-02`는 각도 보존, `detail-03`은 표면 매크로,
 `detail-04`는 실제 사용 상황, `detail-05`는 탑뷰·에디토리얼 배치로 `asset_mode:
-"generated_view"` 참고용 자산을 생성합니다. 생성 실패 시 해당 슬롯은 원본 크롭으로 자동
+"generated_view"` 생성 자산을 만듭니다. 생성 실패 시 해당 슬롯은 원본 크롭으로 자동
 대체하며, 생성 결과를 상품의 정확한 근거로 사용하지 않습니다.
 
 생성 자산을 응답할 때는 `product_generated=true`, `asset_mode`, `source_sha256`,
-`fidelity_status=GENERATED`를 함께 보냅니다. FE/상품 BE는 이를 참고 슬롯과 “AI 생성” 라벨로
-표시하고, `source`·`source_crop`·`source_composite`만 상품 픽셀의 권위 있는 근거로 사용합니다.
+`fidelity_status=GENERATED`를 함께 보냅니다. 생성 여부는 `product_generated` 플래그로
+구분하며, `source`·`source_crop`·`source_composite`만 상품 픽셀의 권위 있는 근거로 사용합니다.
 현재 기본 이미지 모델은 `mlx-community/flux2-klein-9b-4bit`이며,
 `Runpod/FLUX.2-klein-4B-mflux-4bit`는 별도 endpoint의 개발 smoke test에서만 사용합니다.
 

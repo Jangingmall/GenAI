@@ -158,7 +158,7 @@ def test_persist_sends_generated_lifestyle_scene_with_explicit_marker():
             ProductPhoto(
                 photo_id="lifestyle",
                 order=4,
-                label="AI 생성 활용 장면(참고용)",
+                label="AI 생성 활용 장면",
                 data=b"generated-scene",
                 mime_type="image/png",
                 asset_mode="generated_scene",
@@ -190,7 +190,7 @@ def test_persist_sends_generated_angle_detail_with_explicit_marker():
             ProductPhoto(
                 photo_id="detail-03",
                 order=6,
-                label="AI 생성 각도 디테일(참고용)",
+                label="AI 생성 디테일",
                 data=b"generated-angle",
                 mime_type="image/png",
                 asset_mode="generated_view",

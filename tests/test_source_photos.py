@@ -2,8 +2,9 @@ import hashlib
 import io
 from dataclasses import replace
 from pathlib import Path
+from threading import Event, Thread
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from detail_page_ai.assets import MemoryAssetStore
 from detail_page_ai.dto import GenerationOptions, ProductProfileDto
@@ -37,11 +38,16 @@ def _complex_background_fixture() -> bytes:
     return _png(image)
 
 
+def _mask_png(size: tuple[int, int], *, fill: int = 0) -> bytes:
+    return _png(Image.new("L", size, fill))
+
+
 def _profile() -> ProductProfileDto:
     return ProductProfileDto.minimal("장식함")
 
 
 def _generator(**kwargs):
+    kwargs.setdefault("extractor", source_photos.SolidBackgroundCutoutExtractor())
     return source_photos.SourcePreservingProductPhotoGenerator(
         asset_store=MemoryAssetStore(),
         canvas_size=(320, 320),
@@ -73,6 +79,10 @@ def test_mask_failure_still_edits_original_for_scene_and_four_detail_views():
     assert [call["role"] for call in editor.calls] == [
         "lifestyle", "detail-02", "detail-03", "detail-04", "detail-05"
     ]
+    assert {photo.label for photo in photos if photo.product_generated} == {
+        "AI 생성 활용 장면",
+        "AI 생성 디테일",
+    }
     assert all(call["source_image"] == source for call in editor.calls)
     assert sum(photo.fidelity_status == "GENERATED" for photo in photos) == 5
     assert next(photo for photo in photos if photo.photo_id == "hero").data == source
@@ -90,6 +100,97 @@ def test_cutout_rgb_channels_are_copied_from_source_pixels():
         for x in range(source_rgb.width):
             if mask.getpixel((x, y)):
                 assert cutout_rgba.getpixel((x, y))[:3] == source_rgb.getpixel((x, y))
+
+
+def test_rembg_cutout_uses_injected_segmenter_and_reuses_one_session():
+    source = _source_fixture()
+    created_sessions = []
+    segmenter_calls = []
+    session = object()
+
+    def session_factory(model_name):
+        created_sessions.append(model_name)
+        return session
+
+    def segmenter(data, *, session, only_mask):
+        segmenter_calls.append((data, session, only_mask))
+        mask = Image.new("L", (80, 80), 0)
+        ImageDraw.Draw(mask).rectangle((20, 15, 59, 64), fill=255)
+        return _png(mask)
+
+    extractor = source_photos.RembgCutoutExtractor(
+        session_factory=session_factory,
+        segmenter=segmenter,
+    )
+
+    first = extractor.extract(source, "image/png")
+    second = extractor.extract(source, "image/png")
+
+    assert first is not None
+    assert second is not None
+    assert created_sessions == ["birefnet-general"]
+    assert segmenter_calls == [(source, session, True), (source, session, True)]
+    assert first.bbox == (20, 15, 60, 65)
+    assert first.source_sha256 == hashlib.sha256(source).hexdigest()
+    source_rgb = Image.open(io.BytesIO(source)).convert("RGB")
+    cutout_rgba = Image.open(io.BytesIO(first.rgba_png)).convert("RGBA")
+    assert cutout_rgba.getpixel((30, 30))[:3] == source_rgb.getpixel((30, 30))
+
+
+def test_rembg_cutout_creates_one_session_when_two_extractions_start_together():
+    source = _source_fixture()
+    factory_started = Event()
+    second_factory_started = Event()
+    release_factory = Event()
+    created_sessions = []
+    results = []
+
+    def session_factory(_model_name):
+        created_sessions.append(object())
+        (second_factory_started if len(created_sessions) == 2 else factory_started).set()
+        assert release_factory.wait(timeout=2)
+        return created_sessions[0]
+
+    extractor = source_photos.RembgCutoutExtractor(
+        session_factory=session_factory,
+        segmenter=lambda _data, *, session, only_mask: _mask_png((80, 80)),
+    )
+    first = Thread(target=lambda: results.append(extractor.extract(source, "image/png")))
+    second = Thread(target=lambda: results.append(extractor.extract(source, "image/png")))
+
+    first.start()
+    assert factory_started.wait(timeout=1)
+    second.start()
+    try:
+        assert not second_factory_started.wait(timeout=0.25)
+    finally:
+        release_factory.set()
+        first.join(timeout=2)
+        second.join(timeout=2)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert len(created_sessions) == 1
+    assert results == [None, None]
+
+
+def test_rembg_cutout_returns_none_for_effectively_empty_or_full_mask():
+    source = _source_fixture()
+
+    for fill in (0, 255):
+        extractor = source_photos.RembgCutoutExtractor(
+            session=object(),
+            segmenter=lambda _data, *, session, only_mask: _mask_png((80, 80), fill=fill),
+        )
+
+        assert extractor.extract(source, "image/png") is None
+
+
+def test_default_generator_shares_its_rembg_extractor_with_the_validator():
+    generator = source_photos.SourcePreservingProductPhotoGenerator()
+
+    assert isinstance(generator.extractor, source_photos.RembgCutoutExtractor)
+    assert generator.validator.extractor is generator.extractor
 
 
 def test_cutout_preserves_light_product_interior_on_similarly_light_background():

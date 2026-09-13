@@ -6,7 +6,6 @@ import re
 
 from .dto import (
     ApprovedDraftDto,
-    GeneratedPhotoMetadataDto,
     PageBlockDto,
     PageBlockItemDto,
 )
@@ -223,11 +222,7 @@ def _photo_ids(block: PageBlockDto) -> list[str]:
 
 
 def _image_figures(
-    *,
-    block_id: str,
-    block: PageBlockDto,
-    product_name: str,
-    generated_photo_labels: dict[str, str],
+    *, block_id: str, block: PageBlockDto, product_name: str
 ) -> list[ReactElementNodeDto]:
     figures: list[ReactElementNodeDto] = []
     for index, photo_id in enumerate(_photo_ids(block), start=1):
@@ -248,25 +243,6 @@ def _image_figures(
                 ),
             ),
         )
-        figure_children: list[ReactElementNodeDto | ReactTextNodeDto] = [image]
-        reference_label = generated_photo_labels.get(photo_id)
-        if reference_label is not None:
-            figure_children.append(
-                _element(
-                    block_id=block_id,
-                    suffix=f"image-{index:02d}-reference-label",
-                    tag="figcaption",
-                    children=[
-                        ReactTextNodeDto(
-                            id=_node_id(
-                                block_id,
-                                f"image-{index:02d}-reference-label-text",
-                            ),
-                            value=reference_label,
-                        )
-                    ],
-                )
-            )
         figures.append(
             _element(
                 block_id=block_id,
@@ -275,25 +251,16 @@ def _image_figures(
                 props=ReactElementPropsDto(
                     style=ReactStylePropsDto(margin=_edges(0))
                 ),
-                children=figure_children,
+                children=[image],
             )
         )
     return figures
 
 
 def _media_group(
-    *,
-    block_id: str,
-    block: PageBlockDto,
-    product_name: str,
-    generated_photo_labels: dict[str, str],
+    *, block_id: str, block: PageBlockDto, product_name: str
 ) -> ReactElementNodeDto | None:
-    figures = _image_figures(
-        block_id=block_id,
-        block=block,
-        product_name=product_name,
-        generated_photo_labels=generated_photo_labels,
-    )
+    figures = _image_figures(block_id=block_id, block=block, product_name=product_name)
     if not figures:
         return None
 
@@ -570,12 +537,7 @@ def _fallback_blocks(draft: ApprovedDraftDto) -> list[PageBlockDto]:
 
 
 def _build_block(
-    *,
-    block: PageBlockDto,
-    index: int,
-    product_name: str,
-    draft: ApprovedDraftDto,
-    generated_photo_labels: dict[str, str],
+    *, block: PageBlockDto, index: int, product_name: str, draft: ApprovedDraftDto
 ) -> ReactElementNodeDto:
     slug = _slug(block.section_id) or "section"
     block_id = f"section-{index:02d}-{slug}"[:70]
@@ -603,10 +565,7 @@ def _build_block(
 
     if block.block_type in _IMAGE_BLOCK_TYPES:
         media_group = _media_group(
-            block_id=block_id,
-            block=block,
-            product_name=product_name,
-            generated_photo_labels=generated_photo_labels,
+            block_id=block_id, block=block, product_name=product_name
         )
         if media_group:
             if block.block_type == "detail_split":
@@ -629,8 +588,6 @@ def _build_block(
 
 def build_react_document_from_draft(
     draft: ApprovedDraftDto,
-    *,
-    generated_photos: list[GeneratedPhotoMetadataDto] | None = None,
 ) -> ReactDetailPageDocumentDto:
     """Convert a validated approved draft into the FE's restricted JSON AST.
 
@@ -639,11 +596,6 @@ def build_react_document_from_draft(
     props, and unverified image URLs cannot leak into the response.
     """
 
-    generated_photo_labels = {
-        photo.photo_id: photo.label
-        for photo in generated_photos or []
-        if photo.product_generated
-    }
     blocks = draft.page_plan or _fallback_blocks(draft)
     root = [
         _build_block(
@@ -651,7 +603,6 @@ def build_react_document_from_draft(
             index=index,
             product_name=draft.product_name,
             draft=draft,
-            generated_photo_labels=generated_photo_labels,
         )
         for index, block in enumerate(blocks[:14], start=1)
     ]

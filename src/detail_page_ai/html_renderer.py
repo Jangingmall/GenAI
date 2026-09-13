@@ -29,23 +29,10 @@ def _image_data_uri(image: bytes, mime_type: str) -> str:
     return f"data:{mime_type};base64,{encoded}"
 
 
-def _image_tag(
-    image_uri: str,
-    *,
-    alt: str,
-    class_name: str,
-    reference_label: str | None = None,
-) -> str:
-    image = (
+def _image_tag(image_uri: str, *, alt: str, class_name: str) -> str:
+    return (
         f'<img class="{_escape(class_name)}" src="{_escape(image_uri)}" '
         f'alt="{_escape(alt)}" loading="eager">'
-    )
-    if reference_label is None:
-        return image
-    return (
-        f'<figure class="generated-photo-reference">{image}'
-        f'<figcaption class="generated-photo-label">{_escape(reference_label)}</figcaption>'
-        "</figure>"
     )
 
 
@@ -67,10 +54,7 @@ def _feature_cards(profile: ProductProfileDto) -> str:
     return "\n".join(cards)
 
 
-def _split_sections(
-    profile: ProductProfileDto,
-    images: tuple[tuple[str, str | None], ...],
-) -> str:
+def _split_sections(profile: ProductProfileDto, image_uris: tuple[str, ...]) -> str:
     sections = []
     for index, feature in enumerate(profile.features[:3]):
         side = "split-section--reverse" if index % 2 else ""
@@ -83,7 +67,7 @@ def _split_sections(
                 f'<p class="split-section__research-note"><strong>{context_label}</strong> '
                 f"{_escape(characteristic.description)}</p>"
             )
-        image_uri, reference_label = images[index % len(images)]
+        image_uri = image_uris[index % len(image_uris)]
         sections.append(
             """<section class="split-section {side}" data-section="detail-{number:02d}" data-section-title="{title}">
   <div class="split-section__media split-section__media--{position}">
@@ -102,7 +86,6 @@ def _split_sections(
                     image_uri,
                     alt=f"{feature.title} 상세 이미지",
                     class_name="product-image product-image--split",
-                    reference_label=reference_label,
                 ),
                 number=index + 1,
                 title=_escape(feature.title),
@@ -113,20 +96,17 @@ def _split_sections(
     return "\n".join(sections)
 
 
-def _gallery(
-    image_assets: tuple[tuple[str, str | None], ...], product_name: str
-) -> tuple[str, str]:
+def _gallery(image_uris: tuple[str, ...], product_name: str) -> tuple[str, str]:
     # Do not manufacture extra views by cycling through the available photos.
-    unique_assets = tuple(dict.fromkeys(image_assets))[:5]
-    first_count = 2 if len(unique_assets) == 4 else min(3, len(unique_assets))
+    unique_uris = tuple(dict.fromkeys(image_uris))[:5]
+    first_count = 2 if len(unique_uris) == 4 else min(3, len(unique_uris))
     images = [
         _image_tag(
             uri,
             alt=f"{product_name} 디테일 이미지 {index + 1}",
             class_name=f"product-image crop-{index}",
-            reference_label=reference_label,
         )
-        for index, (uri, reference_label) in enumerate(unique_assets)
+        for index, uri in enumerate(unique_uris)
     ]
     return "\n".join(images[:first_count]), "\n".join(images[first_count:])
 
@@ -304,20 +284,12 @@ def _page_plan(profile: ProductProfileDto) -> tuple[PageBlockDto, ...]:
 def _block_image(
     block: PageBlockDto,
     photo_uris: dict[str, str],
-    generated_photo_labels: dict[str, str],
     fallback_uri: str,
     *,
     fallback_photo_id: str,
-) -> tuple[str, str | None]:
+) -> str:
     photo_id = block.photo_id or fallback_photo_id
-    if photo_id in photo_uris:
-        return photo_uris[photo_id], generated_photo_labels.get(photo_id)
-    if fallback_photo_id in photo_uris:
-        return (
-            photo_uris[fallback_photo_id],
-            generated_photo_labels.get(fallback_photo_id),
-        )
-    return fallback_uri, None
+    return photo_uris.get(photo_id, photo_uris.get(fallback_photo_id, fallback_uri))
 
 
 def _block_items(block: PageBlockDto, profile: ProductProfileDto) -> tuple[PageBlockItemDto, ...]:
@@ -340,7 +312,6 @@ def _render_page_block(
     index: int,
     profile: ProductProfileDto,
     photo_uris: dict[str, str],
-    generated_photo_labels: dict[str, str],
     fallback_uri: str,
     product_name: str,
 ) -> str:
@@ -353,17 +324,11 @@ def _render_page_block(
     items = _block_items(block, profile)
 
     if block_type == "hero":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="hero",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="hero")
         hero_variant = variant if block.variant != "paper" else ""
         return f'''<section class="hero{hero_variant}" data-section="{section_id}" data-section-title="상품 소개">
   <div class="hero__copy"><span class="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{body}</p></div>
-  <div class="hero__media">{_image_tag(image_uri, alt=f"{product_name} 대표 이미지", class_name="product-image product-image--hero", reference_label=reference_label)}</div>
+  <div class="hero__media">{_image_tag(image, alt=f"{product_name} 대표 이미지", class_name="product-image product-image--hero")}</div>
 </section>'''
     if block_type == "statement":
         return f'''<section class="intro-band{variant}" data-section="{section_id}" data-section-title="핵심 메시지">
@@ -379,28 +344,16 @@ def _render_page_block(
   <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div>{cards}
 </section>'''
     if block_type == "detail_split":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="detail",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="detail")
         side = "split-section--reverse" if block.variant == "image-right" else ""
         return f'''<section class="split-section {side}{variant}" data-section="{section_id}" data-section-title="{title}">
-  <div class="split-section__media">{_image_tag(image_uri, alt=f"{product_name} {title} 상세 이미지", class_name="product-image product-image--split", reference_label=reference_label)}</div>
+  <div class="split-section__media">{_image_tag(image, alt=f"{product_name} {title} 상세 이미지", class_name="product-image product-image--split")}</div>
   <div class="split-section__copy"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div>
 </section>'''
     if block_type == "wide_image":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="packshot",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="packshot")
         return f'''<section class="wide-section{variant}" data-section="{section_id}" data-section-title="와이드 뷰">
-  <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="wide-section__media">{_image_tag(image_uri, alt=f"{product_name} 전체 이미지", class_name="product-image product-image--wide", reference_label=reference_label)}</div>
+  <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="wide-section__media">{_image_tag(image, alt=f"{product_name} 전체 이미지", class_name="product-image product-image--wide")}</div>
 </section>'''
     if block_type == "gallery":
         detail_slots = ("detail", "detail-02", "detail-03", "detail-04", "detail-05")
@@ -411,55 +364,31 @@ def _render_page_block(
             requested = [photo_id for photo_id in detail_slots if photo_id in photo_uris]
         else:
             requested = block.photo_ids or list(detail_slots)
-        gallery_images = tuple(
-            (photo_uris[photo_id], generated_photo_labels.get(photo_id))
-            for photo_id in requested
-            if photo_id in photo_uris
-        )
-        if not gallery_images:
-            gallery_images = (
-                (photo_uris.get("detail", fallback_uri), generated_photo_labels.get("detail")),
-            )
-        three, two = _gallery(gallery_images, product_name)
+        gallery_uris = tuple(photo_uris[photo_id] for photo_id in requested if photo_id in photo_uris)
+        if not gallery_uris:
+            gallery_uris = (photo_uris.get("detail", fallback_uri),)
+        three, two = _gallery(gallery_uris, product_name)
         return f'''<section class="gallery-section{variant}" data-section="{section_id}" data-section-title="상세 컷">
   <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div>{_gallery_row(three)}{_gallery_row(two)}
 </section>'''
     if block_type == "usage_scene":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="lifestyle",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="lifestyle")
         return f'''<section class="usage-section{variant}" data-section="{section_id}" data-section-title="활용 장면">
-  <div class="usage-section__copy"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="usage-section__media">{_image_tag(image_uri, alt=f"{product_name} 활용 이미지", class_name="product-image product-image--usage", reference_label=reference_label)}</div>
+  <div class="usage-section__copy"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="usage-section__media">{_image_tag(image, alt=f"{product_name} 활용 이미지", class_name="product-image product-image--usage")}</div>
 </section>'''
     if block_type == "scale_reference":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="scale",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="scale")
         return f'''<section class="scale-section{variant}" data-section="{section_id}" data-section-title="크기 참고">
-  <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="scale-section__media">{_image_tag(image_uri, alt=f"{product_name} 크기 참고 이미지", class_name="product-image product-image--scale", reference_label=reference_label)}</div>
+  <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="scale-section__media">{_image_tag(image, alt=f"{product_name} 크기 참고 이미지", class_name="product-image product-image--scale")}</div>
 </section>'''
     if block_type == "palette":
-        image_uri, reference_label = _block_image(
-            block,
-            photo_uris,
-            generated_photo_labels,
-            fallback_uri,
-            fallback_photo_id="packshot",
-        )
+        image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="packshot")
         palette_items = "\n".join(
             f'''<li><span class="palette-swatch palette-swatch--{item_index % 4}"></span><strong>{_escape(item.label)}</strong><span>{_escape(item.value or item.description)}</span></li>'''
             for item_index, item in enumerate(items)
         )
         return f'''<section class="palette-section{variant}" data-section="{section_id}" data-section-title="색과 표면">
-  <div class="palette-section__copy"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p><ul>{palette_items}</ul></div><div class="palette-section__media">{_image_tag(image_uri, alt=f"{product_name} 색상과 표면", class_name="product-image product-image--palette", reference_label=reference_label)}</div>
+  <div class="palette-section__copy"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p><ul>{palette_items}</ul></div><div class="palette-section__media">{_image_tag(image, alt=f"{product_name} 색상과 표면", class_name="product-image product-image--palette")}</div>
 </section>'''
     if block_type == "recommendation":
         cards = []
@@ -497,7 +426,6 @@ def _dynamic_sections(
     profile: ProductProfileDto,
     *,
     photo_uris: dict[str, str],
-    generated_photo_labels: dict[str, str],
     fallback_uri: str,
     product_name: str,
 ) -> str:
@@ -507,7 +435,6 @@ def _dynamic_sections(
             index=index + 1,
             profile=profile,
             photo_uris=photo_uris,
-            generated_photo_labels=generated_photo_labels,
             fallback_uri=fallback_uri,
             product_name=product_name,
         )
@@ -593,18 +520,13 @@ def build_detail_page_html(
         )
         and photo.source_sha256
     }
-    generated_photo_labels = {
-        photo.photo_id: photo.label
-        for photo in photos
-        if photo.product_generated and photo.photo_id in photo_uris
-    }
     hero_uri = photo_uris.get("hero", source_image_uri)
     packshot_uri = photo_uris.get("packshot", source_image_uri)
     lifestyle_uri = photo_uris.get("lifestyle", source_image_uri)
     scale_uri = photo_uris.get("scale", source_image_uri)
     detail_uri = photo_uris.get("detail", source_image_uri)
-    detail_images = tuple(
-        (uri, generated_photo_labels.get(photo.photo_id))
+    detail_uris = tuple(
+        uri
         for photo in sorted(
             (photo for photo in photos
              if photo.photo_id == "detail" or photo.photo_id.startswith("detail-")),
@@ -612,14 +534,14 @@ def build_detail_page_html(
         )
         for uri in (photo_uris.get(photo.photo_id),)
         if uri
-    ) or ((detail_uri, generated_photo_labels.get("detail")),)
-    split_images = detail_images
+    ) or (detail_uri,)
+    split_uris = detail_uris
     product_name = profile.display_name or profile.product_type
     hero_copy = next(
         (section for section in profile.copy_sections if section.section_type == "hero"),
         None,
     )
-    three_gallery, two_gallery = _gallery(detail_images, product_name)
+    three_gallery, two_gallery = _gallery(detail_uris, product_name)
     layout_class = "adaptive" if profile.page_plan else profile.layout_id
     values = {
         "{{PAGE_CSS}}": css,
@@ -627,7 +549,6 @@ def build_detail_page_html(
         "{{DYNAMIC_SECTIONS}}": _dynamic_sections(
             profile,
             photo_uris=photo_uris,
-            generated_photo_labels=generated_photo_labels,
             fallback_uri=source_image_uri,
             product_name=product_name,
         ),
@@ -642,31 +563,25 @@ def build_detail_page_html(
         ),
         "{{KEYWORDS}}": _keywords(profile),
         "{{HERO_IMAGE}}": _image_tag(
-            hero_uri,
-            alt=f"{product_name} 대표 이미지",
-            class_name="product-image product-image--hero",
-            reference_label=generated_photo_labels.get("hero"),
+            hero_uri, alt=f"{product_name} 대표 이미지", class_name="product-image product-image--hero"
         ),
         "{{USAGE_IMAGE}}": _image_tag(
             lifestyle_uri,
             alt=f"{product_name} 활용 이미지",
             class_name="product-image product-image--usage",
-            reference_label=generated_photo_labels.get("lifestyle"),
         ),
         "{{SCALE_IMAGE}}": _image_tag(
             scale_uri,
             alt=f"{product_name} 크기 참고 이미지",
             class_name="product-image product-image--scale",
-            reference_label=generated_photo_labels.get("scale"),
         ),
         "{{FEATURE_CARDS}}": _feature_cards(profile),
         "{{CRAFT_CONTEXT}}": _craft_context(profile),
-        "{{SPLIT_SECTIONS}}": _split_sections(profile, split_images),
+        "{{SPLIT_SECTIONS}}": _split_sections(profile, split_uris),
         "{{WIDE_IMAGE}}": _image_tag(
             packshot_uri,
             alt=f"{product_name} 전체 팩샷 이미지",
             class_name="product-image product-image--wide",
-            reference_label=generated_photo_labels.get("packshot"),
         ),
         "{{THREE_GALLERY}}": three_gallery,
         "{{TWO_GALLERY}}": two_gallery,

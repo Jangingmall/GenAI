@@ -8,7 +8,7 @@ FastAPI 서비스와 CLI runner 모두 같은 로컬 모델 경로를 사용합�
 
 - 이미지 분석 및 한국어 상품 카피: 로컬 Ollama vision API (`/api/chat`) 또는 MLX Serve OpenAI API (`/v1/chat/completions`)
 - 제품 사진: 원본 RGB 컷아웃, 실제 원본 crop, 결정적 Pillow 합성
-- 배경·연출: 기본은 중립 단색 배경, MLX 모드에서는 Flux2가 활용 장면과 디테일 참고 컷을 생성
+- 배경·연출: 기본은 중립 단색 배경, MLX 모드에서는 Flux2가 활용 장면과 디테일 컷을 생성
 - FE 구조 출력: `react_document` 제한형 JSON AST + `imageId` 자산 참조
 - 최종 상세페이지 이미지: 내부 HTML/CSS + Playwright
 - 백엔드: 외부 적재 없이 실제 BE DTO 조립 경로만 검증
@@ -51,8 +51,8 @@ Ollama를 별도 검증 경로로 사용할 때만 `--text-provider ollama`,
 `--image-provider none`을 명시합니다.
 
 원본 `hero`·`packshot`·대표 `detail`은 입력 이미지의 제품 픽셀을 보존합니다. Flux2가 만든
-`lifestyle`·추가 `detail-02`~`detail-05`는 생성 참고 컷으로 메타데이터에 `GENERATED`를
-표시하고, 상품 사실의 근거가 아니라 연출 슬롯에서만 사용합니다.
+`lifestyle`·추가 `detail-02`~`detail-05`는 생성 컷으로 메타데이터에 `GENERATED` 및
+`product_generated=true`를 표시하고, 상품 사실의 근거가 아니라 연출 슬롯에서만 사용합니다.
 
 ## 실행
 
@@ -77,13 +77,13 @@ generated/samples/local_najeon_box/
 └── result_summary.json
 ```
 
-`photos/`에는 `hero`·`packshot`·`detail` 원본 자산, `lifestyle` 프롬프트 편집 참고용
-`generated_scene`, 그리고 사진이 4장 미만일 때 `detail-02`·`detail-05` 디테일 참고용
+`photos/`에는 `hero`·`packshot`·`detail` 원본 자산, `lifestyle` 프롬프트 편집
+`generated_scene`, 그리고 사진이 4장 미만일 때 `detail-02`·`detail-05` 디테일
 `generated_view`가 저장될 수 있습니다. `detail-02`는 각도, `detail-03`은 표면 매크로,
 `detail-04`는 실제 사용 상황, `detail-05`는 에디토리얼 배치이며, 생성 실패 시 원본 크롭으로
 대체됩니다.
-`alternate`는 추가 촬영 원본이 있을 때만 허용되며, 생성 이미지는 최종 상품 근거가 아닌
-연출 참고 이미지로 취급합니다.
+`alternate`는 추가 촬영 원본이 있을 때만 허용되며, 생성 여부는 `product_generated` 플래그로
+구분하고 최종 상품 근거가 아닌 연출 이미지로 취급합니다.
 
 `react_document.json`은 `schemaVersion: "2.0"`, `canvasWidth`, `root[]`를 갖는 JSON AST다.
 문서에는 실제 URL·HTML·JSX·이벤트 핸들러를 넣지 않으며 `img.props.imageId`를 `photos/` 또는

@@ -1164,7 +1164,7 @@ def generate_html(data: dict[str, Any]) -> str:
           <li><strong>2. 허위 진품성·문화재 지위 날조:</strong> 공인되지 않은 인간문화재, 명장, 국가 지정 유물 지위 부여, "공식 인증 진품" 과장.</li>
           <li><strong>3. 거절 자산(REJECTED) 누출:</strong> 렌더러나 검증 단계에서 탈락한 결함 자산이 최종 캔버스에 유입된 경우.</li>
           <li><strong>4. 원본 제품의 임의적 형태 왜곡:</strong> 원본 사진의 비율 왜곡, 색상 변조, 주요 장식이나 각인의 무단 삭제/변형.</li>
-          <li><strong>5. 참고용 생성 라벨 누락:</strong> AI 연출 컷(lifestyle, detail-02~05)에 '참고용' 표시가 누락되어 실물로 오인될 위험이 있는 경우.</li>
+          <li><strong>5. AI 생성 자산 미표시:</strong> AI 연출 컷(lifestyle, detail-02~05)에 AI 생성 자산 표시(product_generated)가 누락되어 실물로 오인될 위험이 있는 경우.</li>
         </ul>
       </div>
     </div>
@@ -1588,7 +1588,7 @@ def _render_cases_html(cases: list[dict[str, Any]]) -> str:
             p_label = escape(p["label"])
             is_gen = p["is_generated"]
             cls_name = "generated" if is_gen else "verified"
-            badge_text = "AI 생성 (참고용)" if is_gen else "원본 보존"
+            badge_text = "AI 생성" if is_gen else "원본 보존"
 
             photos_cards.append(f"""
               <div class="photo-card {cls_name}" onclick="openImageModal('{p_rel}')" title="클릭하여 원본 크기 확대">
@@ -1694,7 +1694,7 @@ def _render_cases_html(cases: list[dict[str, Any]]) -> str:
       <div class="photos-gallery-box">
         <div class="photos-gallery-title">
           <span>🖼️ 자산 8장 (초록: 원본보존/크롭 | 보라: AI 연출 참고컷)</span>
-          <span style="color:var(--text-muted); font-size:11px;">P0 #5 참고용 라벨 검수</span>
+          <span style="color:var(--text-muted); font-size:11px;">P0 #5 AI 생성 표시 검수</span>
         </div>
         <div class="photos-grid">
           {photos_html}
@@ -1794,7 +1794,7 @@ def _render_cases_html(cases: list[dict[str, Any]]) -> str:
         </label>
         <label class="gate-check-item">
           <input type="checkbox" id="gate_5_{cid}" onchange="onGateChange('{cid}', 5, this.checked)">
-          <span>5. 연출 컷 참고용 라벨 누락</span>
+          <span>5. 연출 컷 AI 생성 미표시</span>
         </label>
 
         <div id="gateAlert_{cid}" class="gate-fail-alert">

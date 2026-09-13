@@ -243,7 +243,7 @@ def test_generated_lifestyle_scene_is_explicit_in_fe_and_be_metadata():
     common = {
         "photo_id": "lifestyle",
         "order": 4,
-        "label": "AI 생성 활용 장면(참고용)",
+        "label": "AI 생성 활용 장면",
         "mime_type": "image/png",
         "asset_mode": "generated_scene",
         "source_asset_id": "asset-1",
@@ -265,7 +265,7 @@ def test_generated_angle_detail_is_explicit_in_fe_and_be_metadata():
     common = {
         "photo_id": "detail-03",
         "order": 6,
-        "label": "AI 생성 각도 디테일(참고용)",
+        "label": "AI 생성 디테일",
         "mime_type": "image/png",
         "asset_mode": "generated_view",
         "source_asset_id": "asset-1",

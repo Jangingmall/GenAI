@@ -17,7 +17,7 @@
 | 구성 요소 | 포트 | 런타임/기술 스택 | 역할 | 현재 상태 |
 |---|---|---|---|---|
 | **ai-service** | **8000** | Python 3.13, FastAPI, Node.js/Chromium, SQLite | Job 접수, 상태 머신, Draft 생성, React 문서 조립, PNG 렌더, 상품 BE outbox 배달 | 컨테이너화 준비 완료 (`Dockerfile` 존재) |
-| **추론 서버** | **11234** (필요 시 11235) | vLLM + Diffusers / MLX Serve 호환 프록시 | 텍스트·비전 분석 + 배경 및 연출 참고 컷 생성 | **Apple Silicon 전용 (MLX Serve)** → CUDA 재포팅 필요 |
+| **추론 서버** | **11234** (필요 시 11235) | vLLM + Diffusers / MLX Serve 호환 프록시 | 텍스트·비전 분석 + 배경 및 연출 컷 생성 | **Apple Silicon 전용 (MLX Serve)** → CUDA 재포팅 필요 |
 
 ai-service는 추론 서버를 `LOCAL_TEXT_URL`과 `LOCAL_IMAGE_URL` 두 환경변수로만 참조한다. 추론 서버의 백엔드를 무엇으로 교체하든 애플리케이션 클라이언트가 기대하는 규약만 충족하면 핵심 비즈니스 로직 코드는 변경되지 않는다.
 
@@ -264,24 +264,21 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 - **6단계 (파드 장애 복구)**:
   - `kubectl delete pod <ai-service-pod>` 실행 후, 재기동된 파드가 기존 `state.sqlite3`를 인식하고 작업을 정상 유지하는지 확인.
 
-### (B) 자동화 릴리스 품질 게이트 4종 실행
+### (B) 자동화 릴리스 품질 게이트 3종 실행
 
-실제 운영 배포 전 스테이징 환경에서 파일럿 평가를 수행하고 아래 4개 게이트를 순차 실행한다:
+실제 운영 배포 전 스테이징 환경에서 파일럿 평가를 수행하고 아래 3개 게이트를 순차 실행한다:
 
 ```bash
 # 파일럿 또는 샘플 실행 (예: 6건 또는 60건 전체)
 python scripts/run_eval_pilot.py --all --output-dir generated/evaluation/aws-staging-run
 
-# 1. 참고용 라벨 도달 검증 게이트 (신규 필수 게이트)
-python scripts/check_reference_label.py --pilot-dir generated/evaluation/aws-staging-run
-
-# 2. 컷아웃 보존율 회귀 게이트
+# 1. 컷아웃 보존율 회귀 게이트
 python scripts/check_cutout_fidelity.py --pilot-dir generated/evaluation/aws-staging-run
 
-# 3. 레이아웃 계획 다양성 게이트
+# 2. 레이아웃 계획 다양성 게이트
 python scripts/check_plan_diversity.py --pilot-dir generated/evaluation/aws-staging-run
 
-# 4. 씬 방향 커버리지 진단 게이트
+# 3. 씬 방향 커버리지 진단 게이트
 python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluation/aws-staging-run
 ```
 

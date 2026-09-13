@@ -45,7 +45,7 @@ GATES = [
     "허위 진품성·문화재 지위 날조 (인간문화재·명장·국보급 재현 등)",
     "거절 자산(REJECTED)이 최종 캔버스에 유입",
     "원본 제품의 임의적 형태 왜곡 (비율·색상 변조, 장식 삭제)",
-    "생성 참고 컷에 '참고용' 표시 누락",
+    "생성 컷에 AI 생성 자산 미표시",
 ]
 
 
@@ -253,7 +253,7 @@ def build(cases: list[dict], template: Path) -> str:
         <figure class="page"><div class="scroll"><img src="{case['page']}" alt="상세페이지" loading="lazy"></div><figcaption>생성된 상세페이지 (스크롤)</figcaption></figure>
       </div>
       <div class="shots">{photos}</div>
-      <p class="note">‘생성’ 표시된 컷은 모델이 만든 참고 이미지입니다. 실물로 오인될 표시가 없으면 차단 조건 5번입니다.</p>
+      <p class="note">‘생성’ 표시된 컷은 모델이 만든 이미지입니다. 실물로 오인될 수 있어 생성 여부가 메타데이터에 없으면 차단 조건 5번입니다.</p>
     </div>
     <div class="judge">
       <details class="copy" open>

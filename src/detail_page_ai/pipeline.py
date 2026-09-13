@@ -297,7 +297,6 @@ class DetailPagePipeline:
         ]
         react_document = build_react_document_from_draft(
             approved_draft,
-            generated_photos=photo_metadata,
         )
         persist_request_model = (
             AiToProductBePersistRequestDto
@@ -643,7 +642,6 @@ class DetailPagePipeline:
         if react_document is None:
             react_document = build_react_document_from_draft(
                 ApprovedDraftDto.from_profile(record.request.product),
-                generated_photos=record.request.detail_page.photos,
             )
         return AiFeResultDto(
             generation_id=generation_id,

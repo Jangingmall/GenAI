@@ -161,32 +161,25 @@
 
 ---
 
-## Phase 6. 배포 전 릴리스 품질 게이트 4종 실행
+## Phase 6. 배포 전 릴리스 품질 게이트 3종 실행
 
-운영 배포 직전, 스테이징 환경에서 파일럿 6건(또는 샘플 10건)을 실행하고 아래 4개 게이트 검증 스크립트를 모두 통과(`exit code 0`)해야 최종 릴리스가 승인된다.
+운영 배포 직전, 스테이징 환경에서 파일럿 6건(또는 샘플 10건)을 실행하고 아래 3개 게이트 검증 스크립트를 모두 통과(`exit code 0`)해야 최종 릴리스가 승인된다.
 
-### 6-1. 참고용 라벨 도달 검증 게이트
-- **실행 명령**:
-  ```bash
-  python scripts/check_reference_label.py --pilot-dir generated/evaluation/<pilot-dir>
-  ```
-- **합격 기준**: 생성된 모든 이미지(`product_generated=True`)의 React 문서 및 HTML에 `참고용` 문구가 100% 도달하고, 원본 컷에는 오표기가 전혀 없어야 함 (`all_passed: true`).
-
-### 6-2. 컷아웃 보존율 회귀 게이트
+### 6-1. 컷아웃 보존율 회귀 게이트
 - **실행 명령**:
   ```bash
   python scripts/check_cutout_fidelity.py --pilot-dir generated/evaluation/<pilot-dir>
   ```
 - **합격 기준**: 6개 카테고리 전건 보존율 80% 이상 및 `심각 손실 [FAIL]` 0건.
 
-### 6-3. 레이아웃 계획 다양성 게이트
+### 6-2. 레이아웃 계획 다양성 게이트
 - **실행 명령**:
   ```bash
   python scripts/check_plan_diversity.py --pilot-dir generated/evaluation/<pilot-dir>
   ```
 - **합격 기준**: 카테고리 간 블록 구성 다양성 확보 (고정된 단일 시퀀스 반복 퇴행 없음).
 
-### 6-4. 씬 분기 방향 커버리지 게이트
+### 6-3. 씬 분기 방향 커버리지 게이트
 - **실행 명령**:
   ```bash
   python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluation/<pilot-dir>

@@ -1,7 +1,7 @@
 # FE 입출력 명세
 
 > 2026-09-08 최신화: Flux2 Klein 4B 비교 실행은 백엔드 로컬 모델 선택에만 영향을 주며,
-> FE 계약은 동일하다. 생성 참고 컷은 반드시 `GENERATED` 라벨과 provenance를 표시한다.
+> FE 계약은 동일하다. 생성 여부는 `product_generated` 플래그로 구분하며 provenance를 제공한다.
 
 운영 구조에서 FE는 AI를 직접 호출하지 않습니다.
 
@@ -142,7 +142,7 @@ AI 내부 토큰은 FE에 전달하지 않습니다.
 `fidelity_status=REJECTED` 자산은 FE에 전달하지 않습니다. 생성 자산은 허용된 참고 슬롯만
 전달합니다: `lifestyle/generated_scene`, `detail-02~detail-05/generated_view`.
 `asset_mode=generated_scene`인 `lifestyle`은 원본 이미지를 참조로 넣은 Flux2 프롬프트 편집
-결과입니다. FE는 `product_generated=true`와 함께 “AI 생성 활용 장면(참고용)”으로 표시하고, 정확한 제품 근거는
+결과입니다. 생성 여부는 `product_generated` 플래그로 구분하며, 정확한 제품 근거는
 `source_sha256`가 있는 원본 `hero`·`packshot`·`detail` 자산으로 확인합니다. 프롬프트 편집이
 실패한 경우에만 원본 이미지 또는 `source_composite` fallback이 전달됩니다.
 

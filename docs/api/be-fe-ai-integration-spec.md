@@ -496,8 +496,7 @@ generated_view
 화면 표시 규칙:
 
 - `VERIFIED`, `FALLBACK`: 일반 제품 이미지로 표시
-- `generated_scene`: “AI 생성 활용 장면(참고용)” 표시
-- `generated_view`: “AI 생성 디테일(참고용)” 표시
+- 생성 여부는 `product_generated` 플래그로 구분한다 (`asset_mode`가 `generated_scene`, `generated_view`인 경우 `product_generated=True`).
 - `REJECTED`: FE에 전달하지 않음
 - 정확한 상품 근거는 `source_sha256`가 있는 원본 기반 자산으로 확인
 

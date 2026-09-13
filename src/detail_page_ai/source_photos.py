@@ -3,6 +3,7 @@ import io
 import math
 from collections import deque
 from dataclasses import dataclass, replace
+from threading import Lock
 from typing import Protocol
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps, UnidentifiedImageError
@@ -69,6 +70,21 @@ class ProductCutout:
     mask_sha256: str
 
 
+class CutoutExtractor(Protocol):
+    def extract(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
+        ...
+
+
+class RembgSessionFactory(Protocol):
+    def __call__(self, model_name: str) -> object:
+        ...
+
+
+class RembgSegmenter(Protocol):
+    def __call__(self, data: bytes, *, session: object, only_mask: bool) -> bytes:
+        ...
+
+
 def _encode_png(image: Image.Image) -> bytes:
     output = io.BytesIO()
     image.save(output, format="PNG", optimize=False, compress_level=9)
@@ -85,7 +101,11 @@ def _decode_rgb(data: bytes) -> Image.Image:
 
 
 class SolidBackgroundCutoutExtractor:
-    """Build only an alpha mask; RGB bytes always come from the decoded source."""
+    """Legacy heuristic retained for training augmentation and visual comparisons.
+
+    Detail-page generation uses :class:`RembgCutoutExtractor`; this deterministic
+    extractor remains the comparison baseline and keeps augmentation reproducible.
+    """
 
     def __init__(
         self,
@@ -376,11 +396,117 @@ class SolidBackgroundCutoutExtractor:
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(left, right, strict=True)))
 
 
+class RembgCutoutExtractor:
+    """Build a source-RGB cutout from a reusable rembg segmentation session."""
+
+    # BiRefNet-General evaluates at 1024px and was chosen over U2Net/ISNet for
+    # its finer boundary preservation on translucent petals and glossy nacre.
+    model_name = "birefnet-general"
+
+    def __init__(
+        self,
+        *,
+        session: object | None = None,
+        session_factory: RembgSessionFactory | None = None,
+        segmenter: RembgSegmenter | None = None,
+        min_foreground_ratio: float = 0.005,
+        max_foreground_ratio: float = 0.995,
+        visible_alpha_threshold: int = 8,
+    ) -> None:
+        if not 0 <= min_foreground_ratio < max_foreground_ratio <= 1:
+            raise ValueError("foreground ratios must satisfy 0 <= min < max <= 1")
+        if not 0 <= visible_alpha_threshold <= 255:
+            raise ValueError("visible_alpha_threshold must be between 0 and 255")
+
+        # Importing rembg does not load a model.  Creating the session lazily
+        # makes the first real extraction populate rembg's
+        # ~/.u2net/birefnet-general.onnx cache (rembg 2.0.69), while all later extracts
+        # reuse this same session object.
+        if session_factory is None or segmenter is None:
+            from rembg import new_session, remove
+
+            session_factory = session_factory or new_session
+            segmenter = segmenter or remove
+        assert session_factory is not None
+        assert segmenter is not None
+        self._session = session
+        self._session_factory = session_factory
+        self._segmenter = segmenter
+        self._session_lock = Lock()
+        self.min_foreground_ratio = min_foreground_ratio
+        self.max_foreground_ratio = max_foreground_ratio
+        self.visible_alpha_threshold = visible_alpha_threshold
+
+    def extract(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
+        del source_mime_type
+        try:
+            source = _decode_rgb(source_image)
+            session = self._session_for_extraction()
+            mask_png = self._segmenter(
+                source_image,
+                session=session,
+                only_mask=True,
+            )
+            mask = self._decode_mask(mask_png, source.size)
+        except (OSError, RuntimeError, ValueError):
+            return None
+
+        # Low, isolated alpha values are model noise rather than a visible
+        # product edge.  Preserve normal soft edges while excluding that noise
+        # from both the bbox and the empty/full safety check.
+        mask = mask.point(
+            lambda alpha: alpha if alpha >= self.visible_alpha_threshold else 0
+        )
+        foreground_count = sum(value > 0 for value in mask.getdata())
+        foreground_ratio = foreground_count / (source.width * source.height)
+        if not self.min_foreground_ratio <= foreground_ratio <= self.max_foreground_ratio:
+            return None
+        bbox = mask.getbbox()
+        if bbox is None:
+            return None
+
+        red, green, blue = source.split()
+        rgba = Image.merge("RGBA", (red, green, blue, mask))
+        rgba_png = _encode_png(rgba)
+        mask_png = _encode_png(mask)
+        return ProductCutout(
+            rgba_png=rgba_png,
+            mask_png=mask_png,
+            bbox=bbox,
+            width=source.width,
+            height=source.height,
+            source_sha256=hashlib.sha256(source_image).hexdigest(),
+            cutout_sha256=hashlib.sha256(rgba_png).hexdigest(),
+            mask_sha256=hashlib.sha256(mask_png).hexdigest(),
+        )
+
+    def _session_for_extraction(self) -> object:
+        if self._session is not None:
+            return self._session
+        with self._session_lock:
+            if self._session is None:
+                self._session = self._session_factory(self.model_name)
+            return self._session
+
+    @staticmethod
+    def _decode_mask(data: bytes, expected_size: tuple[int, int]) -> Image.Image:
+        if not isinstance(data, bytes):
+            raise ValueError("rembg mask must be PNG bytes")
+        try:
+            image = Image.open(io.BytesIO(data))
+            image.load()
+        except (UnidentifiedImageError, OSError) as exc:
+            raise ValueError("rembg mask could not be decoded") from exc
+        if image.size != expected_size:
+            raise ValueError("rembg mask dimensions differ from the source image")
+        return image.convert("L")
+
+
 class ProductFidelityValidator:
     def __init__(
-        self, extractor: SolidBackgroundCutoutExtractor | None = None
+        self, extractor: CutoutExtractor | None = None
     ) -> None:
-        self.extractor = extractor or SolidBackgroundCutoutExtractor()
+        self.extractor = extractor or RembgCutoutExtractor()
 
     def validate(
         self,
@@ -537,7 +663,7 @@ class SourcePreservingProductPhotoGenerator:
         self,
         *,
         asset_store: SourceAssetStore | None = None,
-        extractor: SolidBackgroundCutoutExtractor | None = None,
+        extractor: CutoutExtractor | None = None,
         background_generator: BackgroundGenerator | None = None,
         usage_scene_generator: UsageSceneGenerator | None = None,
         detail_view_generator: DetailViewGenerator | None = None,
@@ -550,11 +676,11 @@ class SourcePreservingProductPhotoGenerator:
         if source_photo_variation_threshold < 1:
             raise ValueError("source_photo_variation_threshold must be at least 1")
         self.asset_store = asset_store or MemoryAssetStore()
-        self.extractor = extractor or SolidBackgroundCutoutExtractor()
+        self.extractor = extractor or RembgCutoutExtractor()
         self.background_generator = background_generator
         self.usage_scene_generator = usage_scene_generator
         self.detail_view_generator = detail_view_generator
-        self.validator = validator or ProductFidelityValidator()
+        self.validator = validator or ProductFidelityValidator(extractor=self.extractor)
         self.canvas_size = canvas_size
         self.include_scale = include_scale
         self.source_photo_variation_threshold = source_photo_variation_threshold
@@ -798,7 +924,7 @@ class SourcePreservingProductPhotoGenerator:
         return ProductPhoto(
             photo_id="lifestyle",
             order=order,
-            label="AI 생성 활용 장면(참고용)",
+            label="AI 생성 활용 장면",
             data=data,
             mime_type="image/png",
             width=image.width,
@@ -839,7 +965,7 @@ class SourcePreservingProductPhotoGenerator:
         return ProductPhoto(
             photo_id=role,
             order=order,
-            label="AI 생성 디테일(참고용)",
+            label="AI 생성 디테일",
             data=data,
             mime_type="image/png",
             width=image.width,

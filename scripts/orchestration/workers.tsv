@@ -5,8 +5,8 @@
 #   남아 있어서 idle 신호로 쓸 수 없다.
 # - tier: core = 핵심 작업을 둘이 교차검증, build = 도구·문서 생성, chore = 반복 실행·감시
 #   배정과 교차검증 절차는 docs/operations/orchestration.md 참고.
-codex	ttys004	codex	esc to interrupt|Working \(	core	핵심 로직·진단 (agy 와 교차검증)
-agy	ttys003	antigravity	esc to cancel|esc to interrupt	core	핵심 로직·진단 (codex 와 교차검증)
-agy2	ttys000	antigravity	esc to cancel|esc to interrupt	build	도구·스크립트·문서 생성
+codex	ttys003	codex	esc to interrupt|Working \(	core	핵심 로직·진단 (agy 와 교차검증)
+agy	ttys004	antigravity	esc to cancel|esc to interrupt	core	핵심 로직·진단 (codex 와 교차검증)
+agy2	ttys005	antigravity	esc to cancel|esc to interrupt	build	도구·스크립트·문서 생성
 codex3	ttys006	codex	esc to interrupt|Working \(	build	도구·문서 (luna max, 무거운 건 담당)
-codex2	ttys005	codex	esc to interrupt|Working \(	chore	반복 실행, 감시, 지표 도구
+codex2	ttys007	codex	esc to interrupt|Working \(	chore	반복 실행, 감시, 지표 도구
