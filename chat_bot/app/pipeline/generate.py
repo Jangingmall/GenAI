@@ -96,13 +96,33 @@ _OVERBROAD_TERMS = {
 }
 
 
+def _matched_category_codes(
+    text: str, *, exclude_terms: frozenset[str] = frozenset()
+) -> set[str]:
+    """CATEGORY_SIGNALS 중 text에 나타나는 항목의 카테고리 코드 집합(긴 단어 우선).
+
+    "전통옻칠"(WOOD) 안에 "옻칠"(NACRE)이 부분 문자열로 들어있는 것처럼, 더 긴 복합어
+    안에 다른 카테고리로 매핑된 짧은 단어가 우연히 포함되면 그 짧은 단어는 무시한다 —
+    안 그러면 "전통옻칠 도마" 하나가 WOOD·NACRE 둘 다로 잡혀 카테고리 판정 자체가
+    "중의적"으로 무산되고, 그 결과 종목 필터(_filter_by_category)가 이 후보를 아예
+    건드리지 않고 통과시켜버린다(실측 확인: "도자기 선물 추천해줘"에서 도자기와
+    무관한 "전통옻칠 도마"가 필터를 뚫고 나온 사례).
+    """
+    present = [
+        term
+        for term in taxonomy.CATEGORY_SIGNALS
+        if term in text and term not in exclude_terms
+    ]
+    return {
+        taxonomy.CATEGORY_SIGNALS[term]
+        for term in present
+        if not any(term != other and term in other for other in present)
+    }
+
+
 def _mentioned_categories(message: str) -> set[str]:
     """소비자 발화에서 taxonomy.CATEGORY_SIGNALS로 매칭되는 카테고리 코드 전체 집합."""
-    return {
-        code
-        for term, code in taxonomy.CATEGORY_SIGNALS.items()
-        if term in message and term not in _OVERBROAD_TERMS
-    }
+    return _matched_category_codes(message, exclude_terms=frozenset(_OVERBROAD_TERMS))
 
 
 def _mentioned_category(message: str) -> str | None:
@@ -124,7 +144,7 @@ def _category_from_name(name: str) -> str | None:
     유일한 방어선이다. candidate에 category가 실제로 오면 이 함수는 호출되지 않는다
     (_effective_category).
     """
-    matched = {code for term, code in taxonomy.CATEGORY_SIGNALS.items() if term in name}
+    matched = _matched_category_codes(name)
     return matched.pop() if len(matched) == 1 else None
 
 
