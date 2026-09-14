@@ -484,10 +484,9 @@ def build_reply(
     같은 이유 — 유닛 테스트가 실제 DB 연결 없이 돌아가야 한다). 기본값은 PostgreSQL이
     필요하다.
 
-    think 기본값 True: qwen3 계열로 되돌아갈 경우를 대비한 스위치다. 지금 쓰는
-    gemma2:9b는 think 파라미터 자체를 지원하지 않아(llm.py:_THINK_SUPPORTED_PREFIX가
-    "qwen3"만 허용) 이 값은 현재 아무 효과가 없다 — API 요청에 think 키 자체가 실리지
-    않는다.
+    think 기본값 True: thinking을 지원하는 모델(예: qwen3, gemma4)에서만 실제로 켜진다 —
+    llm.py가 Ollama의 /api/show capabilities로 지원 여부를 판단해 think 키를 붙이거나
+    뺀다. 지금 쓰는 gemma2:9b는 thinking을 지원하지 않아 이 값은 현재 효과가 없다.
 
     did_search 기본값 True: 오케스트레이터가 이번 턴에 실제로 재검색을 했는지 넘긴다.
     narrow_down이 새 조건 없이 직전 후보를 그대로 재사용하는 턴(예: "가격 얼마야?")은

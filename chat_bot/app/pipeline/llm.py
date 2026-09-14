@@ -39,9 +39,26 @@ _session = requests.Session()
 _session.mount("http://", HTTPAdapter(max_retries=_retry))
 _session.mount("https://", HTTPAdapter(max_retries=_retry))
 
-# think 파라미터는 Qwen3 계열 전용이다. exaone3.5·llama3.1·qwen2.5·dna는 지원 안 할 수 있어
-# 모델명이 qwen3로 시작하지 않으면 body에서 "think" 키를 아예 뺀다.
-_THINK_SUPPORTED_PREFIX = "qwen3"
+# think 지원 여부를 모델명 접두사로 하드코딩(과거 "qwen3"만 허용)했더니 gemma4:12b-mlx
+# 처럼 thinking을 지원하는 다른 모델이 붙는 순간 안 맞았다 — think 키가 아예 안 실려
+# 그 모델의 기본값(thinking 켜짐)으로 동작하면서 JSON 스키마 출력이 깨지고 응답도
+# 8배 느려졌다(실측 확인). 반대로 무조건 think 키를 보내면 thinking 미지원 모델엔 API가
+# 하드 에러를 낸다(실측: gemma2:9b에 think:true를 보내면 '"gemma2:9b" does not support
+# thinking'). 그래서 Ollama가 /api/show로 실제로 알려주는 capabilities로 판단한다 —
+# 모델별로 한 번만 조회하고 캐싱해 매 호출마다 왕복이 늘지 않게 한다.
+_capabilities_cache: dict[str, set[str]] = {}
+
+
+def _model_capabilities(model_name: str) -> set[str]:
+    if model_name not in _capabilities_cache:
+        resp = _session.post(
+            f"{settings.OLLAMA_HOST.rstrip('/')}/api/show",
+            json={"model": model_name},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        _capabilities_cache[model_name] = set(resp.json().get("capabilities", []))
+    return _capabilities_cache[model_name]
 
 
 def chat_json(
@@ -68,7 +85,7 @@ def chat_json(
         "options": {"temperature": 0.3, "seed": 42, "num_ctx": 8192},
         "stream": False,
     }
-    if model_name.startswith(_THINK_SUPPORTED_PREFIX):
+    if "thinking" in _model_capabilities(model_name):
         body["think"] = think
 
     resp = _session.post(
