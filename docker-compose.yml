@@ -83,13 +83,13 @@ services:
       - huggingface-cache:/root/.cache/huggingface
     command: >
       sglang serve
-      --model-path ${IMAGE_MODEL_PATH:-black-forest-labs/FLUX.2-klein-4B}
+      --model-path ${IMAGE_MODEL_PATH:-circulus/FLUX.2-klein-9B-bnb-4bit}
       --served-model-name ${IMAGE_SERVED_MODEL_NAME:-flux-klein}
       --host 0.0.0.0
       --port 30001
       --num-gpus 1
-      --performance-mode ${IMAGE_PERFORMANCE_MODE:-memory}
-      --pin-cpu-memory
+      --dit-cpu-offload false
+      --text-encoder-cpu-offload false
     deploy:
       resources:
         reservations:

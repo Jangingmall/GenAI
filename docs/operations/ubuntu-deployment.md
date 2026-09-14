@@ -5,7 +5,7 @@
 - **대상 구성**: Docker Compose 기반 3개 서비스 단일 호스트 공존
   - `detail-page-ai`: FastAPI 애플리케이션 (CPU 전용, 포트 8000)
   - `sglang-text`: SGLang SRT 텍스트/비전 추론 서버 (Qwen3.8-27B-AWQ-INT4, 포트 30000, 공개명 `qwen-text`)
-  - `sglang-image`: SGLang 확산 이미지 생성/편집 서버 (FLUX.2-klein-4B, 포트 30001, 공개명 `flux-klein`)
+  - `sglang-image`: SGLang 확산 이미지 생성/편집 서버 (`circulus/FLUX.2-klein-9B-bnb-4bit`, 포트 30001, 공개명 `flux-klein`)
 - **대상 플랫폼**: `linux/amd64` (Ubuntu 22.04 LTS / 24.04 LTS)
 
 이 문서는 Ubuntu GPU 서버(`g6e.xlarge`)에서 단일 NVIDIA L40S(48GB) GPU를 공유하여 텍스트 및 이미지 추론 서버를 SGLang으로 동시에 구동하고, 상세페이지 AI 서비스를 안정적으로 배포·운영하기 위한 절차를 설명합니다.
@@ -16,13 +16,13 @@
 
 ### 1.1 시스템 및 디스크 요구 사양
 - **인스턴스 사양**: AWS EC2 `g6e.xlarge`
-  - GPU: 1x NVIDIA L40S (48 GB GDDR6 with ECC, Ada Lovelace sm89)
+  - GPU: 1x NVIDIA L40S (48 GB GDDR6 with ECC, Ada Lovelace sm89, 가용 44.70 GiB)
   - vCPU / RAM: 4 vCPU / 32 GiB RAM
   - 로컬 스토리지: 1x 250 GB NVMe SSD (Instance Store)
 - **디스크 여유 공간 (권장 최소 150GB 이상)**:
-  - SGLang 베이스 이미지 (`lmsysorg/sglang:v0.5.19`) 및 확산 빌드 이미지: 약 18~22 GB
+  - SGLang 베이스 이미지 (`lmsysorg/sglang:v0.5.19`) 및 확산 빌드 이미지 (`sglang[diffusion]` + `bitsandbytes`): 약 18~22 GB
   - Qwen3.8-27B-AWQ-INT4 모델 가중치: 약 19.6 GiB (공식 FP8 대안 선택 시 28.8 GiB)
-  - FLUX.2-klein-4B 모델 가중치: 약 7.2 GiB (Diffusers 전체 구성 시 ~22 GiB)
+  - FLUX.2-klein-9B-bnb-4bit 모델 가중치: 약 10.2 GiB (트랜스포머 4.36 GiB + 텍스트 인코더 5.66 GiB + VAE 0.16 GiB)
   - rembg 누끼 모델 (`birefnet-general.onnx`): 약 973 MB
   - 생성된 산출물(`assets/`) 및 SQLite 작업 DB (`state.sqlite3`): 수 GB 이상
 - **[권장] NVMe 인스턴스 스토어 캐시 마운트**:
@@ -110,10 +110,9 @@ chmod 600 .env  # 비밀값이 포함되므로 권한 제한
 | **`TEXT_SERVED_MODEL_NAME`**| `qwen-text` | 텍스트 서버 공개 모델명 (`--served-model-name`) |
 | **`TEXT_MEM_FRACTION`** | `0.50` | 텍스트 VRAM 정적 할당 비율 (**인스턴스에서 측정 후 확정**) |
 | **`TEXT_CONTEXT_LENGTH`**| `8192` | KV 캐시 상한 제어를 위한 컨텍스트 길이 |
-| **`IMAGE_MODEL_PATH`** | `black-forest-labs/FLUX.2-klein-4B` | 이미지 모델 체크포인트 경로 (**Apache 2.0 라이선스**) |
+| **`IMAGE_MODEL_PATH`** | `circulus/FLUX.2-klein-9B-bnb-4bit` | 이미지 모델 체크포인트 경로 (**관리자 결정 9B 4bit 파이프라인**) |
 | **`IMAGE_SERVED_MODEL_NAME`**| `flux-klein` | 확산 서버 공개 모델명 (`--served-model-name`, 클라이언트 요청 model과 일치 필수) |
-| **`IMAGE_PERFORMANCE_MODE`**| `memory` | VRAM 절약 모드 활성화 |
-| **`HF_TOKEN`** | `""` | Hugging Face 토큰 (4B는 비게이트라 불필요, 비공개 저장소 시 필요) |
+| **`HF_TOKEN`** | `""` | Hugging Face 토큰 (현재 4bit 저장소는 비게이트라 불필요, 원본 BFL 9B 사용 시 필수) |
 | **`LOCAL_TEXT_PROVIDER`**| `sglang` | 텍스트 클라이언트 구현체 (FastAPI 앱 연동) |
 | **`LOCAL_TEXT_URL`** | `http://sglang-text:30000` | SGLang 텍스트 컨테이너 주소 |
 | **`LOCAL_TEXT_MODEL`** | `qwen-text` | 클라이언트 텍스트 모델명 (`TEXT_SERVED_MODEL_NAME`과 100% 일치) |
@@ -136,13 +135,13 @@ Docker Compose를 통해 이미지를 빌드하고 3개 서비스를 백그라�
 docker compose up -d --build
 ```
 > [!NOTE]
-> `sglang-image` 서비스는 공식 SGLang 이미지에 `sglang[diffusion]` 확산 의존성을 사전에 포함하기 위해 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성합니다.
+> `sglang-image` 서비스는 공식 SGLang 이미지에 `sglang[diffusion]==0.5.19` 확산 의존성과 함께 4bit 양자화 로딩에 필수적인 `bitsandbytes==0.50.2`를 사전 설치하기 위해 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성합니다.
 
 ### 4.2 컨테이너 기동 순서 및 헬스체크 의존성
 - `sglang-text`와 `sglang-image` 서비스가 먼저 기동되어 Hugging Face 가중치를 다운로드하고 GPU VRAM에 로드합니다.
 - 각 SGLang 서비스는 내부 모델 등록이 완료되면 OpenAI 호환 엔드포인트인 `GET /v1/models`에서 HTTP 200을 반환합니다.
 - `detail-page-ai`는 `depends_on: {condition: service_healthy}` 설정에 따라 **두 SGLang 서비스가 `GET /v1/models` 정상 응답(healthy)을 반환한 후에만 기동**되므로 부팅 중 연결 실패(Connection Refused)가 발생하지 않습니다.
-- 최초 실행 시 모델 다운로드(약 27GB)에 5~15분가량 소요될 수 있으므로 `start_period: 600s`(10분)가 부여되어 있습니다.
+- 최초 실행 시 모델 다운로드(텍스트 ~19.6GB, 이미지 ~10.2GB)에 네트워크 환경에 따라 5~15분가량 소요될 수 있으므로 `start_period: 600s`(10분)가 부여되어 있습니다.
 
 ### 4.3 서비스 상태 확인
 ```bash
@@ -199,28 +198,30 @@ docker run --rm \
 ## 6. 추론 서버 구성: SGLang 단일 GPU 공존 아키텍처
 
 ### 6.1 공존 구조
-`g6e.xlarge`는 물리 GPU 1장(NVIDIA L40S 48GB)을 탑재하고 있습니다. SGLang은 프로세스당 1개 모델을 서빙하므로, 동일 GPU 0번에 텍스트(`sglang-text`, 포트 30000)와 이미지 확산(`sglang-image`, 포트 30001) 컨테이너 2개를 띄워 공존시킵니다.
+`g6e.xlarge`는 물리 GPU 1장(NVIDIA L40S 48GB, 가용 44.70 GiB)을 탑재하고 있습니다. SGLang은 프로세스당 1개 모델을 서빙하므로, 동일 GPU 0번에 텍스트(`sglang-text`, 포트 30000)와 이미지 확산(`sglang-image`, 포트 30001) 컨테이너 2개를 띄워 공존시킵니다.
 
 ```
 +-------------------------------------------------------------------------+
 |                  AWS EC2 g6e.xlarge (Host RAM: 32 GiB)                  |
 |                                                                         |
 |  +-------------------------------------------------------------------+  |
-|  |                     NVIDIA L40S VRAM (48 GB)                      |  |
+|  |                     NVIDIA L40S VRAM (44.70 GiB)                  |  |
 |  |                                                                   |  |
 |  | [ sglang-text (SRT) ]            [ sglang-image (Diffusion) ]     |  |
 |  |  Port: 30000                      Port: 30001                     |  |
-|  |  Qwen3.8-27B-AWQ-INT4 (19.6 GiB)  FLUX.2-klein-4B (7.2 GiB)       |  |
-|  |  정적 풀 선점: ~24.0 GiB (0.50)    동적 할당: ~14.0 GiB (Denoising) |  |
-|  |  (가중치 + KV 캐시 풀)            (메모리 모드, pin-cpu)          |  |
+|  |  Qwen3.8-27B-AWQ-INT4 (19.6 GiB)  FLUX.2-klein-9B-bnb-4bit        |  |
+|  |  정적 풀 선점: ~22.35 GiB (0.50)  전체 가중치 GPU 상주: ~10.2 GiB  |  |
+|  |  (가중치 + KV 캐시 풀)            (오프로드 끔: dit/text offload F)|  |
 |  |                                                                   |  |
-|  | <------------- 공유 오버헤드: CUDA Context (~2 GiB) ------------> |  |
+|  |  가중치 합계: ~32.6 GiB | 순수 VRAM 동적 여유: 약 12.1 GiB 확보   |  |
+|  |  <------------- 공유 오버헤드: CUDA Context (~2 GiB) ------------> |  |
 |  +-------------------------------------------------------------------+  |
 |                                     ^                                   |
 |                                     | Compose Network                   |
 |                        +---------------------------+                    |
 |                        |  detail-page-ai (Port 8000)|                    |
 |                        |  FastAPI + Playwright (CPU) |                   |
+|                        |  호스트 RAM 오프로드 없음  |                   |
 |                        +---------------------------+                    |
 +-------------------------------------------------------------------------+
 ```
@@ -229,16 +230,16 @@ docker run --rm \
 
 정적 compose 문법 검사(`docker compose config`)만으로는 드러나지 않는 실제 런타임 기동 결함 3건을 공식 문서 기반으로 진단하고 해결했습니다.
 
-#### 1) 공식 SGLang 이미지 내 확산(Diffusion) 기능 부재
+#### 1) 공식 SGLang 이미지 내 확산(Diffusion) 기능 및 bitsandbytes 부재
 - **근거**: [SGLang Diffusion 공식 설치 문서](https://docs.sglang.io/docs/sglang-diffusion/installation.md)
   > *"The standard SGLang image does not include diffusion extras by default. Install with `pip install 'sglang[diffusion]'`..."*
-- **결함**: 공식 `lmsysorg/sglang:v0.5.19` 이미지는 LLM 전용이어서 `diffusers` 등 확산 의존성이 누락되어 있으며, `sglang serve` 실행 시 확산 모듈을 로드하지 못하고 종료됩니다.
-- **해결 조치**: 컨테이너 기동 시마다 매번 pip을 설치하는 위험을 피하기 위해, 전용 Dockerfile인 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 추가했습니다. 베이스 이미지 위에 동일 버전의 `sglang[diffusion]==${SGLANG_VERSION}`(의존성 23개 포함)을 사전 빌드하여 컨테이너 이미지화합니다.
+- **결함**: 공식 `lmsysorg/sglang:v0.5.19` 이미지는 LLM 전용이어서 `diffusers` 등 확산 의존성이 누락되어 있습니다. 또한 `bitsandbytes`는 sglang의 `test` extra에만 있어 diffusion 설치에도 포함되지 않으므로, 4bit 양자화 체크포인트(`circulus/FLUX.2-klein-9B-bnb-4bit`) 로딩 시 `ModuleNotFoundError`가 발생합니다.
+- **해결 조치**: 전용 Dockerfile인 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 작성하여 베이스 이미지 위에 동일 버전의 `sglang[diffusion]==0.5.19`와 `bitsandbytes==0.50.2`를 사전 설치하여 컨테이너 이미지화했습니다.
 
 #### 2) 클라이언트 요청의 `model` 파라미터와 서버 모델명 불일치 거부
 - **근거**: [SGLang Diffusion OpenAI API 규약](https://docs.sglang.io/docs/sglang-diffusion/api/openai_api.md)
   > *"The request's `model` parameter must match `--served-model-name`..."*
-- **결함**: 확산 서버는 `--served-model-name flux-klein`으로 띄웠으나, 클라이언트(`detail-page-ai`)가 가중치 체크포인트 경로인 `black-forest-labs/FLUX.2-klein-4B`를 `model` 값으로 보내면 확산 서버가 모델을 찾지 못하고 HTTP 400/404로 요청을 거부합니다.
+- **결함**: 확산 서버를 `--served-model-name flux-klein`으로 띄웠으나, 클라이언트(`detail-page-ai`)가 가중치 체크포인트 경로를 `model` 값으로 보내면 확산 서버가 모델을 찾지 못하고 HTTP 400/404로 요청을 거부합니다.
 - **해결 조치**: 다운로드 체크포인트 경로(`TEXT_MODEL_PATH`, `IMAGE_MODEL_PATH`)와 공개 서비스 모델명(`TEXT_SERVED_MODEL_NAME=qwen-text`, `IMAGE_SERVED_MODEL_NAME=flux-klein`)을 명확히 분리하고, 클라이언트의 `LOCAL_TEXT_MODEL`/`LOCAL_IMAGE_MODEL`이 공개 서비스 모델명을 그대로 참조하도록 단일화했습니다.
 
 #### 3) 확산 서버 `/health` 엔드포인트 부재로 인한 기동 정지(Hang)
@@ -249,23 +250,22 @@ docker run --rm \
 
 ---
 
-### 6.3 모델 라이선스 판정 및 주의사항
+### 6.3 이미지 모델 채택 및 라이선스 사실
 
-#### 1) FLUX.2-klein-9B의 상업적 사용 불가 판정
-- **라이선스**: **FLUX Non-Commercial License (FLUX NCL)**
-- **공식 근거**: [Black Forest Labs 공식 블로그](https://bfl.ai/blog/flux2-klein-towards-interactive-visual-intelligence)
-  > *"Note: The 'FLUX [dev] Non-Commercial License' has been renamed to 'FLUX Non-Commercial License' and will apply to the 9B Klein models. No material changes have been made to the license. License: FLUX NCL"*
-- **판정**: 이커머스 상품 상세페이지를 제작하여 고객에게 제공하는 본 서비스는 명백한 상업적 운영이므로, 별도의 BFL 엔터프라이즈 라이선스 계약 없이는 **FLUX.2-klein-9B를 프로덕션 기본값으로 채택할 수 없습니다.** 또한 9B는 Hugging Face 게이트 저장소(`gated: auto`)로 접근이 차단되어 있습니다.
+#### 1) FLUX.2-klein-9B 4bit 모델 채택 및 라이선스 사실 (관리자 결정)
+- **채택 모델**: `circulus/FLUX.2-klein-9B-bnb-4bit`
+- **구성 요소**: Diffusers `Flux2KleinPipeline` 전체 구성 (트랜스포머 4.36 GiB, 텍스트 인코더 5.66 GiB, VAE 0.16 GiB, 총 약 10.2 GiB).
+  - 트랜스포머와 텍스트 인코더 모두 bitsandbytes 4bit (`bnb_4bit_quant_type: nf4`, double quant, bfloat16 연산)로 사전 양자화되어 있습니다.
+  - 로컬 Mac 개발 환경의 `mlx-community/flux2-klein-9b-4bit`(9.5 GB)과 동일한 성격의 4bit 경량화 파이프라인입니다.
+- **라이선스 사실**:
+  - 원본 모델인 `black-forest-labs/FLUX.2-klein-9B`는 [FLUX Non-Commercial License(FLUX NCL)](https://huggingface.co/black-forest-labs/FLUX.2-klein-9B)가 적용되어 있습니다.
+  - 본 저장소(`circulus/FLUX.2-klein-9B-bnb-4bit`)는 해당 원본의 커뮤니티 양자화본이며, **관리자 결정으로 기본 채택**되었습니다. 상업 운영 전 BFL 상업 라이선스 확인이 필요합니다.
+  - 게이트 저장소가 아니므로(`gated: False`) `HF_TOKEN` 없이 다운로드 가능합니다.
 
-#### 2) FLUX.2-klein-4B 채택 근거
+#### 2) 오픈 대안 모델 (FLUX.2-klein-4B)
+- **저장소**: `black-forest-labs/FLUX.2-klein-4B` (가중치 7.22 GiB)
 - **라이선스**: **Apache 2.0 License** (상업적 이용 및 재배포 완벽 허용)
-- **공식 근거**:
-  > *"FLUX.2 [klein] 4B: Fully open under Apache 2.0. Built for local development, edge deployment, and production use... Open weights available for commercial use under the Apache 2.0 license."*
-- **기술적 이점**: 비게이트 저장소(`gated: False`)로 `HF_TOKEN` 없이 다운로드 가능하며, 4-step Rectified Flow 증류 모델로서 단일 GPU에서 1초 미만 추론이 가능합니다. VRAM 요구량이 가중치 7.22 GiB(FP8 3.8 GiB)에 불과하여 L40S 48GB를 텍스트 모델과 분할해 쓰기에 최적입니다.
-
-> [!WARNING]
-> **[확인 필요·결정 필요 — 관리자 결정 사항]**  
-> 현재 로컬 Mac 개발 환경에서 사용 중인 `mlx-community/flux2-klein-9b-4bit` 역시 BFL FLUX.2-klein-9B의 4bit 양자화 변환본이므로, **원천 라이선스인 FLUX Non-Commercial License의 적용 대상**입니다. 로컬 개발 환경 역시 라이선스 리스크를 제거하기 위해 4B 기반 MLX 모델로 교체할 것인지 관리자의 확인 및 결정이 필요합니다.
+- **역할**: 상업 라이선스 완전 개방이 필요한 경우 즉시 전환할 수 있는 검증된 대체 옵션입니다.
 
 ---
 
@@ -273,23 +273,26 @@ docker run --rm \
 
 | 모델 ID | 양자화 | 가중치 크기 | 비전 지원 | 채택 여부 및 선정 근거 |
 | :--- | :--- | :--- | :--- | :--- |
-| **`cyankiwi/Qwen3.8-27B-AWQ-INT4`** | AWQ INT4 | **19.60 GiB** | 지원 | **[1순위 기본값]**: 가중치가 19.6 GiB로 작아 48GB 중 `--mem-fraction-static 0.50`(~24 GiB) 설정만으로 KV 캐시를 충분히 확보하면서 확산 모델에 21 GiB 이상의 여유분을 제공함. |
-| **`Qwen/Qwen3.8-27B-FP8`** | 공식 FP8 | **28.77 GiB** | 지원 | **[대안 후보]**: Alibaba 공식 FP8 체크포인트로 L40S 텐서코어 가속에 최적이나, 가중치만으로 48GB의 60%를 점유하여 확산 모델과의 공존 여유가 12GB 미만으로 매우 타이트함. |
-| **`Qwen/Qwen3.8-27B`** | 원본 BF16 | **51.77 GiB** | 지원 | **[배제]**: 48GB VRAM 단독 적재도 불가능하므로 공존 불가. |
+| **`cyankiwi/Qwen3.8-27B-AWQ-INT4`** | AWQ INT4 | **19.60 GiB** | 지원 | **[1순위 기본값]**: 가중치가 19.6 GiB로 작아 44.7 GiB 중 `--mem-fraction-static 0.50`(~22.35 GiB) 설정만으로 KV 캐시를 충분히 확보하면서 확산 모델(10.2 GiB)과의 공존 시 12.1 GiB 이상의 여유분을 제공함. |
+| **`Qwen/Qwen3.8-27B-FP8`** | 공식 FP8 | **28.77 GiB** | 지원 | **[대안 후보]**: Alibaba 공식 FP8 체크포인트로 L40S 텐서코어 가속에 최적이나, 가중치만으로 28.8 GiB를 점유하여 확산 모델(10.2 GiB)과 공존 시 남는 여유가 ~5.7 GiB로 매우 타이트함. |
+| **`Qwen/Qwen3.8-27B`** | 원본 BF16 | **51.77 GiB** | 지원 | **[배제]**: 44.7 GiB VRAM 단독 적재도 불가능하므로 공존 불가. |
 
 ---
 
-### 6.5 메모리 비율 하한 계산 및 확정 원칙
+### 6.5 메모리 계산 및 CPU 오프로드를 제외한 이유
 
-- **물리적 가중치 하한(Lower Bound)**:
-  - `cyankiwi/Qwen3.8-27B-AWQ-INT4`: $19.60\text{ GiB} / 48\text{ GiB} \approx 0.408$ (약 41%)
-  - 순수 가중치만 올리는 데 최소 41%가 필요하므로, `--mem-fraction-static`은 0.41 미만으로 설정할 수 없습니다.
-  - 여기에 컨텍스트 8192 토큰 처리를 위한 최소 KV 캐시 풀(약 4~5 GiB)을 확보하기 위해 **초기 설정값으로 `0.50` (약 24.0 GiB)**을 권장합니다.
-- **확산 모델 여유 공간**:
-  - 총 48 GiB - 텍스트 정적 선점 24 GiB - 이중 CUDA Context 오버헤드 2 GiB = **약 22 GiB 동적 여유분**.
-  - FLUX 4B 가중치(7.22 GiB) + 1024x1024 Denoising 피크 메모리(12~14 GiB)를 안정적으로 수용할 수 있습니다.
-- **확정 원칙**:
-  수치 계산상의 추정이므로, **반드시 실제 인스턴스 기동 후 아래 체크리스트를 측정하여 최종 확정**해야 합니다.
+- **VRAM 분할 및 여유분 계산 (L40S 가용 44.70 GiB 기준)**:
+  - **텍스트 서버 (`sglang-text`)**: 정적 선점 22.35 GiB (`--mem-fraction-static 0.50`)
+    - 가중치 19.60 GiB + 컨텍스트 8192 토큰용 KV 캐시 풀 약 2.75 GiB
+  - **확산 서버 (`sglang-image`)**: 약 10.2 GiB
+    - 트랜스포머 4.36 GiB + 텍스트 인코더 5.66 GiB + VAE 0.16 GiB
+  - **GPU 순수 가중치 합계**: $19.60 + 10.18 = \mathbf{29.78\text{ GiB}}$ (텍스트 정적 선점 기준으로는 $22.35 + 10.18 = \mathbf{32.53\text{ GiB}}$)
+  - **GPU 동적 여유분**: $44.70 - 32.53 = \mathbf{12.17\text{ GiB}}$
+    - 확산 모델의 1024x1024 Denoising 피크 활성화 메모리와 2개 프로세스의 CUDA Context 오버헤드(~2 GiB)를 안정적으로 수용합니다.
+- **CPU 오프로드를 끈 이유 (`--dit-cpu-offload false --text-encoder-cpu-offload false`)**:
+  - **SGLang 런타임 제약**: SGLang 0.5.19 소스(`sglang/multimodal_gen/runtime/layers/quantization/bitsandbytes.py`) 및 단위 테스트(`test_bitsandbytes_native_load_requires_resident_encoder`)에 따르면, bitsandbytes 4bit 텍스트 인코더는 GPU 상주(resident)가 필수입니다.
+  - **SGLang 기본 오프로드 충돌 방지**: SGLang 기본값(`_adjust_offload`)은 명시하지 않을 경우 `dit_cpu_offload`와 `text_encoder_cpu_offload`를 켜려 하므로, 4bit 상주 조건과 충돌하지 않도록 둘 다 `false`를 명시합니다.
+  - **호스트 RAM 32 GiB 보호**: 텍스트 인코더와 트랜스포머가 모두 GPU 44.7 GiB 내에 넉넉히 상주하므로, 호스트 시스템 RAM(32 GiB)에 대규모 텐서를 오프로드하거나 핀(pinned)할 필요가 없어 시스템 OOM Killer 위험이 없습니다.
 
 ---
 
@@ -299,14 +302,19 @@ docker run --rm \
 
 | 번호 | 점검 및 측정 항목 | 기대 기준 | 실측값 / 상태 | 판정 |
 | :---: | :--- | :--- | :--- | :---: |
-| 1 | `docker/sglang-diffusion.Dockerfile` 빌드 성공 | `sglang[diffusion]` 0.5.19 설치 완료 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
-| 2 | `sglang-text` 및 `sglang-image` `GET /v1/models` 헬스체크 통과 | HTTP 200 반환 및 healthy 전환 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
-| 3 | 클라이언트 모델명 일치 검증 (`qwen-text`, `flux-klein`) | 400/404 거부 없이 정상 요청 접수 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
-| 4 | 유휴(Idle) 상태 `nvidia-smi` 메모리 점유<br>- 텍스트 서버 (`sglang-text`)<br>- 확산 서버 (`sglang-image`)<br>- 총 점유량 / 총 VRAM | <br>~24.0 GiB 내외<br>~7.5 GiB 내외<br>< 33.0 GiB / 48 GiB | <br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB<br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB<br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB | [ ] Pass / [ ] Fail |
-| 5 | 텍스트 서버 긴 프롬프트(상품설명+이미지) 분석 시 KV 캐시 여유 | OOM 없이 200 반환, 로그 상 KV 부족 없음 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
-| 6 | 1024x1024 해상도 이미지 생성/편집 시 순간 피크 VRAM | 전체 VRAM 46 GiB 이하 유지 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB | [ ] Pass / [ ] Fail |
-| 7 | 이중 CUDA Context 드라이버 고정 오버헤드 | 프로세스당 ~1 GiB 내외 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB | [ ] Pass / [ ] Fail |
-| 8 | 단일 상품 상세페이지 한 건 생성 총 소요 시간 (E2E) | 분석 + 생성 + 누끼 + 렌더링 총합 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] 초 | [ ] Pass / [ ] Fail |
+| 1 | `docker/sglang-diffusion.Dockerfile` 빌드 성공 | `sglang[diffusion]` 및 `bitsandbytes` 0.50.2 설치 완료 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 2 | bitsandbytes 4bit 파이프라인 SGLang 로딩 성공 | SGLang 로그 상 4bit nf4 해석 정상 로드 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 3 | 텍스트 인코더·트랜스포머 GPU 상주 확인 | `--dit-cpu-offload false --text-encoder-cpu-offload false` 적용 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 4 | `sglang-text` 및 `sglang-image` `GET /v1/models` 헬스체크 통과 | HTTP 200 반환 및 healthy 전환 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 5 | 클라이언트 모델명 일치 검증 (`qwen-text`, `flux-klein`) | 400/404 거부 없이 정상 요청 접수 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 6 | 유휴(Idle) 상태 `nvidia-smi` 메모리 점유<br>- 텍스트 서버 (`sglang-text`)<br>- 확산 서버 (`sglang-image`)<br>- 총 점유량 / 총 가용 VRAM | <br>~22.4 GiB 내외<br>~10.5 GiB 내외<br>< 35.0 GiB / 44.7 GiB | <br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB<br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB<br>[ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB | [ ] Pass / [ ] Fail |
+| 7 | 텍스트 서버 긴 프롬프트(상품설명+이미지) 분석 시 KV 캐시 여유 | OOM 없이 200 반환, 로그 상 KV 부족 없음 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 8 | 1024x1024 해상도 이미지 생성/편집 시 순간 피크 VRAM | 전체 VRAM 43 GiB 이하 유지 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] GiB | [ ] Pass / [ ] Fail |
+| 9 | 생성 및 편집(원본 참고) 품질 검증 | 로컬 Mac MLX 9b-4bit 생성 결과와 비교 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 10 | 단일 상품 상세페이지 한 건 생성 총 소요 시간 (E2E) | 분석 + 생성 + 누끼 + 렌더링 총합 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] 초 | [ ] Pass / [ ] Fail |
+
+> [!TIP]
+> 만약 인스턴스 실측에서 bitsandbytes 4bit 파이프라인 로딩에 문제가 발생할 경우, 즉각적인 복구 대안은 `IMAGE_MODEL_PATH=black-forest-labs/FLUX.2-klein-4B`로 전환하는 것입니다.
 
 ---
 

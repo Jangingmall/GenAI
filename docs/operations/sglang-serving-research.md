@@ -10,19 +10,34 @@
 ## 결론 요약 (Executive Summary)
 
 ### 1. 추천 모델 ID 후보
-| 구분 | 1순위 추천 (운영/라이선스 준수) | 2순위 대안 (품질 우선/별도 라이선스 계약 시) |
+| 구분 | 기본 채택 모델 (관리자 결정) | 대안 (상업 라이선스 완전 개방 대안) |
 | :--- | :--- | :--- |
-| **텍스트/비전 모델** | **`Qwen/Qwen3.8-27B-FP8`** (공식 FP8, 28.77 GiB) 또는<br>**`cyankiwi/Qwen3.8-27B-AWQ-INT4`** (19.60 GiB) | `Qwen/Qwen3.8-27B` (원본 BF16, 51.77 GiB) -> **48GB VRAM 단독 적재도 불가능하므로 배제** |
-| **이미지 확산 모델** | **`black-forest-labs/FLUX.2-klein-4B`** (Apache 2.0, 7.22 GiB) 또는<br>**`black-forest-labs/FLUX.2-klein-4b-fp8`** (Apache 2.0, 3.80 GiB) | `black-forest-labs/FLUX.2-klein-9B` (16.91 GiB safetensors / 49.26 GiB full diffusers) -> **비상업 라이선스로 이커머스 사용 불가** |
+| **텍스트/비전 모델** | **`cyankiwi/Qwen3.8-27B-AWQ-INT4`** (19.60 GiB, Apache 2.0 기반) 또는<br>**`Qwen/Qwen3.8-27B-FP8`** (공식 FP8, 28.77 GiB) | `Qwen/Qwen3.8-27B` (원본 BF16, 51.77 GiB) -> **48GB VRAM 단독 적재도 불가능하므로 배제** |
+| **이미지 확산 모델** | **`circulus/FLUX.2-klein-9B-bnb-4bit`**<br>(전체 약 10.2 GiB: 트랜스포머 4.36 GiB + 텍스트 인코더 5.66 GiB + VAE 0.16 GiB, GPU 상주) | **`black-forest-labs/FLUX.2-klein-4B`** (Apache 2.0, 7.22 GiB / FP8 3.80 GiB) -> 상업 운영 완전 허용 라이선스 대안 |
 
 ### 2. 라이선스 판정
-- **`FLUX.2-klein-9B`**: **상업적 사용 불가 (FLUX Non-Commercial License, FLUX NCL)**. BFL 공식 발표에 따라 9B는 비상업 연구 목적으로만 제한됩니다. 또한 Hugging Face 게이트 저장소(`gated: auto`)로 사전 웹 동의 및 `HF_TOKEN`이 필수입니다. 이커머스 상세페이지를 제작·판매하는 본 서비스 환경에서는 **라이선스 위반 위험이 있어 채택할 수 없습니다.**
-- **`FLUX.2-klein-4B`**: **상업적 사용 가능 (Apache 2.0 License)**. 비게이트 저장소(`gated: False`)로 토큰 없이 자유롭게 다운로드 가능하며 상업 운영이 허용됩니다. 4단계(step) 증류 모델로 단일 GPU에서 1초 미만 추론이 가능하므로 **최적의 운영 대안**입니다.
+- **`circulus/FLUX.2-klein-9B-bnb-4bit`**: **상업적 사용 제한 (FLUX Non-Commercial License, FLUX NCL 대상 커뮤니티 양자화본)**. 원본 FLUX.2-klein-9B의 커뮤니티 4bit(bnb nf4) 양자화본으로, 관리자 결정으로 기본 채택되었습니다. 상업 운영 시 BFL 상업 라이선스 확인이 필요합니다. 비게이트 저장소(`gated: False`)로 토큰 없이 다운로드 가능합니다.
+- **`black-forest-labs/FLUX.2-klein-4B`**: **상업적 사용 가능 (Apache 2.0 License)**. 비게이트 저장소(`gated: False`)로 토큰 없이 자유롭게 다운로드 가능하며 상업 운영이 허용되는 오픈 대안입니다.
 
 ### 3. 권장 SGLang Docker 이미지 태그
 - **공식 이미지**: `lmsysorg/sglang:v0.5.19` (또는 최신 검증 빌드 `lmsysorg/sglang:dev` / `lmsysorg/sglang:v0.5.19-cu129`)
 - **CUDA 환경**: Host Driver >= 535 (권장 >= 550), 컨테이너 내부 CUDA 12.9 / 13.0 지원.
 - **L40S 및 FP8 지원**: L40S(Ada Lovelace, Compute Capability 8.9)는 4세대 Tensor Core를 통해 FP8(E4M3, E5M2)을 하드웨어 레벨에서 네이티브 지원하며, SGLang 런타임 및 커널이 sm89를 완벽 지원합니다.
+
+### 3-1. SGLang 0.5.19 9B 4bit(bnb) 소스 지원 근거 및 CPU 오프로드 비활성화
+- **pre-quantized 4-bit 지원**: SGLang 0.5.19 소스(`sglang/multimodal_gen/runtime/layers/quantization/bitsandbytes.py`)의 `BitsAndBytesConfig`는 "pre-quantized bitsandbytes 4-bit checkpoints"를 직접 지원합니다.
+- **단위 테스트 검증 근거**:
+  - `test/unit/test_transformer_quant.py`: Hugging Face config의 bitsandbytes nf4 양자화 설정을 올바르게 해석함을 검증.
+  - `test/unit/test_text_encoder_loader.py`: 표준 bitsandbytes 텍스트 인코더는 transformers로 위임 로드하며, `test_bitsandbytes_native_load_requires_resident_encoder`에서 **텍스트 인코더의 GPU 상주(resident)가 필수**임을 명시하고 있습니다.
+- **Dockerfile 커스텀 빌드 이유**: `bitsandbytes`는 SGLang 공식 패키징의 `test` extra에만 선언되어 있어 `sglang[diffusion]` 설치 시 기본 누락됩니다. 따라서 `docker/sglang-diffusion.Dockerfile`에서 `bitsandbytes==0.50.2`를 사전 설치합니다.
+- **CPU 오프로드 해제 (`--dit-cpu-offload false --text-encoder-cpu-offload false`) 이유**:
+  - SGLang 0.5.19 `server_args.py`의 `_adjust_offload` 함수는 확산 작업 기동 시 사용자가 명시하지 않으면 `dit_cpu_offload`와 `text_encoder_cpu_offload`를 자동으로 `True`로 켭니다.
+  - 이는 bitsandbytes 4bit 텍스트 인코더의 GPU 상주 조건(`test_bitsandbytes_native_load_requires_resident_encoder`)과 정면 충돌하므로 두 플래그를 모두 `false`로 명시해야 합니다.
+  - 또한 전체 가중치(~10.2 GiB)가 GPU 44.7 GiB 내에 완전히 상주하므로, CPU 오프로드를 완전히 꺼서 호스트 시스템 RAM(32 GiB)의 압박 및 OOM Killer 위험을 원천 차단합니다.
+- **대안 양자화 비교 (4B / FP8 / nvfp4)**:
+  - **4B (Apache 2.0)**: 상업 운영 시 라이선스 완전 개방이 필요한 경우의 안전한 오픈 대안 (`black-forest-labs/FLUX.2-klein-4B`).
+  - **FP8**: L40S(sm89) 텐서코어에서 가속 가능하나 9B FP8 단일 파일(8.79 GiB) 등은 텍스트 인코더 포함 시 용량이 증가함.
+  - **nvfp4 (NVIDIA FP4)**: NVIDIA Blackwell 아키텍처(sm100) 전용이므로 L40S(Ada Lovelace, sm89)에서는 하드웨어 지원이 불가능하여 실행 불가.
 
 ### 4. 두 프로세스 기동 명령 초안 (단일 GPU 공존)
 
@@ -32,18 +47,20 @@
 > 아래 `--mem-fraction-static` 비율은 텍스트 가중치 크기에서 역산한 **물리적 최소 하한(Lower Bound)** 기준의 초안이며, 최종 최적값은 인스턴스 부하 측정을 통해 확정해야 합니다.  
 > 배포 계약에 따라 포트는 **텍스트 30000 (`sglang-text`)**, **이미지 30001 (`sglang-image`)**을 사용합니다.
 
-#### [안 1: 기본 권장 초안 — AWQ/INT4 텍스트 + FLUX 4B]
-가중치가 19.60 GiB인 AWQ-INT4 모델을 채택하여 텍스트와 확산 모델 양쪽에 충분한 동적 VRAM 여유를 확보하는 가장 안정적인 운영 구성입니다.
+#### [안 1: 기본 채택 구성 — AWQ/INT4 텍스트 + FLUX 9B bnb-4bit (관리자 결정)]
+텍스트 모델은 가중치가 19.60 GiB인 AWQ-INT4 모델을 채택하고, 확산 모델은 9B를 4bit(bitsandbytes nf4)로 양자화한 전체 파이프라인(`circulus/FLUX.2-klein-9B-bnb-4bit`, 약 10.2 GiB)을 채택하여 트랜스포머와 텍스트 인코더를 모두 GPU에 상주시키는 구성입니다.
 - **텍스트 가중치 역산 하한**: $19.60 \div 44.70 \approx 0.438$ (최소 43.8% 필요)
 - **텍스트 정적 할당 초안**: `--mem-fraction-static 0.50` (약 22.35 GiB 선점 $\rightarrow$ 가중치 19.60 GiB + KV 캐시 풀 약 2.75 GiB)
-- **확산 모델 잔여 VRAM**: $44.70 - 22.35 = \mathbf{22.35\text{ GiB}}$ (FLUX 4B 가중치 7.22 GiB 차감 후 순수 동적 여유 약 **15.13 GiB** 확보)
+- **확산 모델 VRAM**: 트랜스포머 4.36 GiB + 텍스트 인코더 5.66 GiB + VAE 0.16 GiB $\approx$ **10.18 GiB**
+- **GPU 여유분**: $44.70 - (22.35 + 10.18) = \mathbf{12.17\text{ GiB}}$ (피크 활성화 및 2개 CUDA Context 수용)
+- **호스트 RAM**: 오프로드가 없어 시스템 RAM 32 GiB에 압박이 없음.
 
 ```bash
 # [프로세스 1: 텍스트/비전 추론 서버 - 서비스명: sglang-text]
 # VRAM 44.7 GiB 중 50% (22.35 GiB) 정적 할당, 포트 30000
 python3 -m sglang.launch_server \
   --model-path cyankiwi/Qwen3.8-27B-AWQ-INT4 \
-  --served-model-name qwen-vl \
+  --served-model-name qwen-text \
   --host 0.0.0.0 \
   --port 30000 \
   --mem-fraction-static 0.50 \
@@ -51,15 +68,15 @@ python3 -m sglang.launch_server \
   --trust-remote-code
 
 # [프로세스 2: 이미지 생성/편집 서버 - 서비스명: sglang-image]
-# VRAM 잔여분(22.35 GiB) 동적 활용, 포트 30001 (OpenAI 호환 포트)
+# 전체 4bit 파이프라인 GPU 상주 (오프로드 제외), 포트 30001
 sglang serve \
-  --model-path black-forest-labs/FLUX.2-klein-4B \
-  --served-model-name sglang-image \
+  --model-path circulus/FLUX.2-klein-9B-bnb-4bit \
+  --served-model-name flux-klein \
   --host 0.0.0.0 \
   --port 30001 \
   --num-gpus 1 \
-  --performance-mode memory \
-  --pin-cpu-memory
+  --dit-cpu-offload false \
+  --text-encoder-cpu-offload false
 ```
 
 #### [안 2: 대안 초안 — FP8 텍스트 유지 시 + FLUX 4B FP8 결합]
@@ -134,43 +151,52 @@ sglang serve \
 
 ## 2. 이미지 모델 가중치와 라이선스 조사 (FLUX.2-klein)
 
-### 2.1 FLUX.2-klein-9B 상세 조사
+### 2.1 기본 채택 모델: FLUX.2-klein-9B-bnb-4bit (관리자 결정)
+- **저장소 ID**: `circulus/FLUX.2-klein-9B-bnb-4bit`
+  - URL: https://huggingface.co/circulus/FLUX.2-klein-9B-bnb-4bit
+- **가중치 및 파이프라인 구성**:
+  - Diffusers `Flux2KleinPipeline` 전체 구성 (단일 safetensors가 아닌 전체 파이프라인).
+  - **트랜스포머 (DiT)**: 약 **4.36 GiB**
+  - **텍스트 인코더 (Qwen3ForCausalLM)**: 약 **5.66 GiB**
+  - **VAE**: 약 **0.16 GiB**
+  - **총 가중치 크기**: 약 **10.18 GiB** (~10.2 GiB)
+  - 로컬 Mac 환경의 `mlx-community/flux2-klein-9b-4bit`(9.5 GB)와 동일한 성격의 4bit 경량화 파이프라인.
+- **양자화 형식**:
+  - 트랜스포머와 텍스트 인코더 모두 `quantization_config`에 bitsandbytes 4bit (`bnb_4bit_quant_type: nf4`, `bnb_4bit_use_double_quant: true`, compute dtype `bfloat16`)가 적용되어 사전 양자화됨.
+- **게이트 저장소 여부 및 다운로드**:
+  - 비게이트 저장소(`gated: False`), Hugging Face 토큰 불필요(익명 다운로드 가능).
+- **라이선스 사실**:
+  - 원본 모델인 `black-forest-labs/FLUX.2-klein-9B`는 FLUX Non-Commercial License(FLUX NCL) 대상입니다.
+  - 본 저장소는 해당 원본 모델의 커뮤니티 양자화본입니다(저장소 카드 별도 라이선스 미표기).
+  - 관리자 결정으로 기본 채택되었으며, 상업 운영 시 BFL 상업 라이선스 확인이 필요합니다(판단·권고 없이 사실만 기록).
+
+### 2.2 원본 FLUX.2-klein-9B 및 공식 FP8 현황 (참고)
 - **공식 저장소 ID**: `black-forest-labs/FLUX.2-klein-9B`
   - URL: https://huggingface.co/black-forest-labs/FLUX.2-klein-9B
 - **가중치 파일 크기**:
   - 단일 체크포인트 파일(`flux-2-klein-9b.safetensors`): **16.91 GiB** (18.16 GB)
   - 전체 Diffusers 저장소(Qwen3 8B text encoder 15.26 GiB + DiT 16.91 GiB + VAE 0.35 GiB): **49.26 GiB** (52.89 GB)
   - 공식 FP8 단일 파일(`black-forest-labs/FLUX.2-klein-9b-fp8`): **8.79 GiB** (9.44 GB)
-- **라이선스 및 상업적 이용 가능 여부**:
-  - **라이선스명**: **FLUX Non-Commercial License (FLUX NCL)** (구 FLUX [dev] Non-Commercial License)
-  - **상업적 사용 판정**: **상업적 사용 엄격히 불가 (Non-Commercial Only)**
-  - **공식 발표 근거** (BFL 공식 블로그):
-    > *"Note: The 'FLUX [dev] Non-Commercial License' has been renamed to 'FLUX Non-Commercial License' and will apply to the 9B Klein models. No material changes have been made to the license. License: FLUX NCL"*
-    - 출처: https://bfl.ai/blog/flux2-klein-towards-interactive-visual-intelligence
-  - **법적 결론**: 본 프로젝트는 전자상거래 상품 상세페이지를 제작·서비스하는 상업 프로젝트이므로, 별도의 BFL 엔터프라이즈 라이선스 계약을 체결하지 않는 한 **FLUX.2-klein-9B의 도입은 명백한 라이선스 위반**에 해당합니다.
-- **게이트 저장소 여부 및 다운로드 토큰**:
-  - 게이트 여부: **게이트 저장소임 (`gated: auto`)**
-  - HF 토큰 필요 여부: **필수**. Hugging Face 웹에서 이용 동의 절차를 거친 계정의 `HF_TOKEN`이 환경변수에 전달되지 않으면 401 Unauthorized 오류로 다운로드가 차단됩니다.
+- **라이선스**: **FLUX Non-Commercial License (FLUX NCL)**
+- **게이트 저장소 여부 및 토큰**: **게이트 저장소임 (`gated: auto`)**, HF_TOKEN 필수.
 
-### 2.2 대안 비교: FLUX.2-klein-4B (상업용 권장)
+### 2.3 대안 비교: FLUX.2-klein-4B (상업 오픈 대안)
 - **공식 저장소 ID**: `black-forest-labs/FLUX.2-klein-4B`
   - URL: https://huggingface.co/black-forest-labs/FLUX.2-klein-4B
 - **가중치 파일 크기**:
   - 단일 체크포인트 파일(`flux-2-klein-4b.safetensors`): **7.22 GiB** (7.75 GB)
   - 전체 Diffusers 저장소: **22.11 GiB** (23.74 GB)
   - 공식 FP8 단일 파일(`black-forest-labs/FLUX.2-klein-4b-fp8`): **3.80 GiB** (4.08 GB)
-- **라이선스 및 상업적 이용 가능 여부**:
-  - **라이선스명**: **Apache 2.0 License**
-  - **상업적 사용 판정**: **상업적 사용 완벽 허용 (Commercially Permissive)**
-  - **공식 발표 근거** (BFL 공식 블로그 및 HF README):
-    > *"FLUX.2 [klein] 4B: Fully open under Apache 2.0. Built for local development, edge deployment, and production use... Open weights available for commercial use under the Apache 2.0 license."*
+- **라이선스**: **Apache 2.0 License** (상업적 이용 및 재배포 완벽 허용)
 - **게이트 저장소 여부 및 다운로드 토큰**:
-  - 게이트 여부: **비게이트 (`gated: False`)**
-  - HF 토큰 필요 여부: **불필요 (Anonymous 다운로드 가능)**
-- **성능 및 기능 비교**:
-  - 4B 모델 역시 9B와 동일한 4-step Rectified Flow 증류 아키텍처를 채택하여 1초 미만 생성/편집 지원.
-  - Text-to-Image 및 Multi-reference In-context Image Editing 기능을 완전히 내장.
-  - VRAM 요구 사양이 약 13GB (FP8은 4~6GB 수준)에 불과하여 48GB GPU를 텍스트 모델과 분할해 쓰기에 이상적.
+  - 게이트 여부: **비게이트 (`gated: False`)**, HF 토큰 불필요.
+- **성능 및 기능**:
+  - 4B 모델 역시 4-step Rectified Flow 증류 아키텍처로 빠른 생성/편집을 지원하며, 상업 라이선스 완전 개방이 필요한 경우 즉시 교체 가능한 검증된 대안입니다.
+
+### 2.4 양자화 형식 비교 및 nvfp4 제약 (Blackwell 전용)
+- **bitsandbytes 4bit (bnb nf4)**: SGLang 0.5.19에서 pre-quantized 4-bit 체크포인트를 네이티브 지원. 트랜스포머와 텍스트 인코더 모두 GPU 상주 시 안정적으로 구동.
+- **FP8 (E4M3/E5M2)**: Ada Lovelace(L40S, sm89)의 4세대 텐서코어에서 네이티브 하드웨어 가속 지원.
+- **nvfp4 (NVIDIA FP4)**: NVIDIA Blackwell 아키텍처(Compute Capability 10.0 / sm100) 전용 양자화 형식입니다. L40S(sm89)에는 하드웨어 차원의 nvfp4 텐서코어가 존재하지 않아 실행이 불가능하므로, L40S 단일 GPU 공존을 위한 4bit 양자화는 bitsandbytes nf4를 채택합니다.
 
 ---
 
@@ -222,11 +248,10 @@ SGLang은 단일 프로세스에서 텍스트와 확산 모델을 동시에 서�
 
 #### 2) 확산 추론 서버 (SGLang Diffusion / multimodal_gen)
 - 확산 서버는 정적 풀 할당 인자(`--mem-fraction-static`)를 사용하지 않고 PyTorch 기본 동적 할당자(Dynamic Allocator)를 사용합니다.
-- **메모리 제어 인자**:
+- **메모리 제어 및 오프로드 설정 인자**:
   - `--num-gpus 1`: 단일 GPU 지정.
-  - `--performance-mode memory` (또는 `auto`): 메모리 절약 모드를 활성화하여 불필요한 VRAM 점유 억제.
-  - `--pin-cpu-memory`: CPU-GPU 텐서 전송 시 Pinned memory를 활용하여 전송 지연 단축.
-  - `--text-encoder-cpu-offload`, `--vae-cpu-offload`: VRAM 경합이 심할 경우 텍스트 인코더나 VAE를 CPU 호스트 RAM으로 오프로드하는 플래그 (단, g6e.xlarge의 시스템 RAM이 32GB이므로 과도한 오프로드는 시스템 OOM 유발 주의).
+  - `--dit-cpu-offload false`, `--text-encoder-cpu-offload false`: **9B bnb-4bit 채택 시 필수 지정**. SGLang 0.5.19 bitsandbytes 4bit 텍스트 인코더는 GPU 상주가 필수(`test_bitsandbytes_native_load_requires_resident_encoder`)이며, SGLang 기본 오프로드 활성화 동작(`server_args.py _adjust_offload`)을 끄고 호스트 시스템 RAM(32 GiB) 압박 및 OOM Killer 위험을 원천 차단합니다.
+  - *(참고)*: 과거 FP8 가중치 검토 시 언급되었던 `--performance-mode memory` 및 `--pin-cpu-memory` 플래그는 9B bnb-4bit 구성에서 제거되었으며, CPU 오프로드를 끄는 명시적 옵션(`--dit-cpu-offload false --text-encoder-cpu-offload false`)으로 대체되었습니다.
 - **출처**: https://raw.githubusercontent.com/sgl-project/sglang/main/docs/docs/sglang-diffusion/deployment_cookbook.mdx
 
 ### 4.2 44.70 GiB VRAM 순수 가중치 하한(Lower Bound) 계산 및 비교
@@ -237,13 +262,18 @@ SGLang은 단일 프로세스에서 텍스트와 확산 모델을 동시에 서�
 
 | 조합 번호 | 텍스트 모델 (가중치) | 확산 모델 (가중치) | 순수 가중치 합계 하한 | L40S 가용(44.70 GiB) 대비 여유분 | 판정 및 안정성 평가 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **조합 0 (기본 채택)** | **cyankiwi/Qwen 27B AWQ (19.60 GiB)** | **circulus/FLUX 9B bnb-4bit (약 10.18 GiB)** | **29.78 GiB** | **약 14.92 GiB** | **관리자 최종 채택**: 9B 4bit 전체 파이프라인 GPU 상주. 텍스트 50%(22.35 GiB 선점)와 공존 시 여유분 12.17 GiB 확보 |
 | **조합 1** | Qwen3.8-27B BF16 (51.77 GiB) | FLUX.2-klein-9B (16.91 GiB) | **68.68 GiB** | **-23.98 GiB (초과)** | **불가 (단독으로도 44.70 GiB 초과, OOM 즉시 발생)** |
 | **조합 2** | Qwen3.8-27B FP8 (28.77 GiB) | FLUX.2-klein-9B safetensors (16.91 GiB) | **45.68 GiB** | **-0.98 GiB (초과)** | **불가**: 가중치 합계만으로 44.70 GiB 초과. 기동 불가 |
-| **조합 3** | Qwen3.8-27B FP8 (28.77 GiB) | FLUX.2-klein-9b-fp8 (8.79 GiB) | **37.56 GiB** | **약 7.14 GiB** | **가중치는 들어가나 비상업 라이선스(FLUX NCL)로 법적 불가** |
+| **조합 3** | Qwen3.8-27B FP8 (28.77 GiB) | FLUX.2-klein-9b-fp8 (8.79 GiB) | **37.56 GiB** | **약 7.14 GiB** | **FP8 대안**: 원본 FLUX NCL 라이선스 적용 체크포인트. FP8 단일 파일 기준 약 7.1 GiB 여유 확보 |
 | **조합 4** | Qwen3.8-27B FP8 (28.77 GiB) | FLUX.2-klein-4B safetensors (7.22 GiB) | **35.99 GiB** | **약 8.71 GiB** | **타이트함**: 가중치 36GB 차지. 남는 8.7GB 중 CUDA context(~2GB) 제외 시 6.7GB뿐이라 Denoising 피크 시 OOM 위험 |
-| **조합 5** | **Qwen3.8-27B FP8 (28.77 GiB)** | **FLUX.2-klein-4b-fp8 (3.80 GiB)** | **32.57 GiB** | **약 12.13 GiB** | **FP8 유지 시 권장**: FP8 확산 모델로 가중치를 3.8GB로 줄여 동적 여유 약 12.1GB 확보 |
-| **조합 6** | **cyankiwi/Qwen 27B AWQ (19.60 GiB)** | **FLUX.2-klein-4B safetensors (7.22 GiB)** | **26.82 GiB** | **약 17.88 GiB** | **기본 권장 (가장 안정적)**: 상업 라이선스 준수. VRAM 17.9GB 여유로 KV 캐시와 Denoising 동시 수용 안정적 |
-| **조합 7** | **cyankiwi/Qwen 27B AWQ (19.60 GiB)** | **FLUX.2-klein-4b-fp8 (3.80 GiB)** | **23.40 GiB** | **약 21.30 GiB** | **최대 여유 확보**: VRAM 21.3GB 여유로 배치 처리 및 장기 세션 처리에 최적 |
+| **조합 5** | **Qwen3.8-27B FP8 (28.77 GiB)** | **FLUX.2-klein-4b-fp8 (3.80 GiB)** | **32.57 GiB** | **약 12.13 GiB** | **FP8 유지 시 대안**: FP8 확산 모델로 가중치를 3.8GB로 줄여 동적 여유 약 12.1GB 확보 |
+| **조합 6** | **cyankiwi/Qwen 27B AWQ (19.60 GiB)** | **FLUX.2-klein-4B safetensors (7.22 GiB)** | **26.82 GiB** | **약 17.88 GiB** | **상업 오픈 대안**: Apache 2.0 4B 모델 적용 대안. VRAM 17.9GB 여유로 KV 캐시와 Denoising 동시 수용 안정적 |
+| **조합 7** | **cyankiwi/Qwen 27B AWQ (19.60 GiB)** | **FLUX.2-klein-4b-fp8 (3.80 GiB)** | **23.40 GiB** | **약 21.30 GiB** | **최대 여유 확보 대안**: VRAM 21.3GB 여유로 배치 처리 및 장기 세션 처리에 최적 |
+
+> [!NOTE]
+> **nvfp4 (NVIDIA FP4) 미지원 안내**:  
+> 커뮤니티의 `nvfp4` 양자화 모델은 NVIDIA Blackwell 아키텍처(sm100) 전용이므로, L40S(Ada Lovelace sm89)에서는 하드웨어 미지원으로 실행할 수 없습니다. 따라서 L40S 환경에서의 4bit 확산 서빙은 bitsandbytes 4bit(bnb nf4)를 기본 채택합니다.
 
 ### 4.3 동일 GPU 공존 시 알려진 이슈 및 운영 고려사항
 1. **VRAM 경합에 따른 상호 OOM 위험**:
@@ -349,6 +379,7 @@ POST /v1/images/generations
    - `Qwen/Qwen3.8-27B`: https://huggingface.co/Qwen/Qwen3.8-27B
    - `Qwen/Qwen3.8-27B-FP8`: https://huggingface.co/Qwen/Qwen3.8-27B-FP8
    - `cyankiwi/Qwen3.8-27B-AWQ-INT4`: https://huggingface.co/cyankiwi/Qwen3.8-27B-AWQ-INT4
+   - `circulus/FLUX.2-klein-9B-bnb-4bit`: https://huggingface.co/circulus/FLUX.2-klein-9B-bnb-4bit
    - `black-forest-labs/FLUX.2-klein-9B`: https://huggingface.co/black-forest-labs/FLUX.2-klein-9B
    - `black-forest-labs/FLUX.2-klein-4B`: https://huggingface.co/black-forest-labs/FLUX.2-klein-4B
    - `black-forest-labs/FLUX.2-klein-4b-fp8`: https://huggingface.co/black-forest-labs/FLUX.2-klein-4b-fp8

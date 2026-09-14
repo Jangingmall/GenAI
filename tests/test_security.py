@@ -20,7 +20,7 @@ def test_env_example_contains_placeholders_not_credentials():
     # names the SGLang servers register, not local MLX checkpoints.
     assert values["LOCAL_TEXT_MODEL"] == values["TEXT_SERVED_MODEL_NAME"]
     assert values["LOCAL_IMAGE_MODEL"] == values["IMAGE_SERVED_MODEL_NAME"]
-    assert values["IMAGE_MODEL_PATH"] == "black-forest-labs/FLUX.2-klein-4B"
+    assert values["IMAGE_MODEL_PATH"] == "circulus/FLUX.2-klein-9B-bnb-4bit"
     assert "AWS_ACCESS_KEY_ID" not in values
     assert "GEMINI_API_KEY" not in values
 
