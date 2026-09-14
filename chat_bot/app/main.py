@@ -44,6 +44,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
+import requests
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -194,29 +195,47 @@ def chat(
     previous_candidates = state["candidates"] if state else None
     previous_filters = state["filters"] if state else None
     previous_product_ids = state["product_ids"] if state else None
+    previous_query_text = state["query_text"] if state else None
 
-    result = orchestrator.run(
-        request.message,
-        _to_pipeline_history(request.history),
-        chat=chat_fn,
-        search_and_rank=search_and_rank,
-        previous_candidates=previous_candidates,
-        previous_filters=previous_filters,
-        previous_product_ids=previous_product_ids,
-        fetch_prices=fetch_prices,
-        fetch_artisans=fetch_artisans,
-        cache_lookup=cache_lookup,
-        cache_store=cache_store,
-    )
+    try:
+        result = orchestrator.run(
+            request.message,
+            _to_pipeline_history(request.history),
+            chat=chat_fn,
+            search_and_rank=search_and_rank,
+            previous_candidates=previous_candidates,
+            previous_filters=previous_filters,
+            previous_product_ids=previous_product_ids,
+            previous_query_text=previous_query_text,
+            fetch_prices=fetch_prices,
+            fetch_artisans=fetch_artisans,
+            cache_lookup=cache_lookup,
+            cache_store=cache_store,
+        )
+    except requests.exceptions.RequestException:
+        # llm.py의 chat_json은 Ollama에 requests.post(timeout=...)로 붙는다 — 응답
+        # 지연·타임아웃·연결 실패가 여기서 그대로 예외로 올라오는데, 잡지 않으면
+        # FastAPI 기본 500 에러(안내 문구 없는 서버 오류)로 나가버린다(사용자 시나리오
+        # E29: AI 응답 지연/타임아웃 → Timeout 처리 및 재시도 제공). 세션 상태는 이번
+        # 턴에 확정된 게 없으니 session_store.set()을 안 거치고 바로 안내 문구만
+        # 돌려준다 — 다음 요청은 그대로 이전 상태를 이어서 쓴다.
+        logger.exception("AI 응답 지연 또는 실패")
+        return ChatResponse(
+            reply="지금 답변이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+            intent="general_chat",
+            product_ids=[],
+            suggestions=[],
+        )
 
-    # candidates·filters·shown_product_ids는 확정된 외부 응답 계약에 없는 내부 전용
-    # 필드다(orchestrator.run docstring 참고) — 응답으로 내보내지 않고 다음 턴
-    # narrow_down 재사용·카드 중복 노출 억제를 위해 세션 저장소에만 남긴다.
+    # candidates·filters·shown_product_ids·query_text는 확정된 외부 응답 계약에 없는
+    # 내부 전용 필드다(orchestrator.run docstring 참고) — 응답으로 내보내지 않고 다음
+    # 턴 narrow_down 재사용·카드 중복 노출 억제·주제어 유지를 위해 세션 저장소에만 남긴다.
     session_store.set(
         request.session_id,
         result["candidates"],
         result["filters"],
         result["shown_product_ids"],
+        result["query_text"],
     )
 
     return ChatResponse(

@@ -39,12 +39,39 @@ from app.pipeline.generate import (
 )
 from app.pipeline.intent import classify_and_extract
 from app.pipeline.llm import chat_json
+from app.pipeline.taxonomy import CATEGORY_LABELS
 from app.run_recommend import recommend as _recommend
+
+# needs_clarification 되물음에 함께 낼 빠른 답변 칩 — 대화형 검색 연구(clarifying
+# question 관련 문헌)에 따르면 열린 질문만 던지는 것보다 후보 답까지 같이 제시하는
+# 편이 사용자 응답 부담을 줄인다. 카탈로그에 실제로 없는 옵션을 지어내면 안 되므로
+# (같은 연구가 지적하는 흔한 실패), 실제 스키마 값(GIFT_THEMES 일부·taxonomy 카테고리)에
+# 기반한 문구만 쓴다.
+_CLARIFICATION_CHIPS_GIFT = ["부모님 선물", "생일 선물", "집들이 선물"]
+_CLARIFICATION_CHIPS_PRODUCT = [
+    f"{label}로 검색" for label in sorted(CATEGORY_LABELS.values())
+][:3]
 
 # "이 상품 설명해줘"류 요청에 순번을 못 찾았을 때 되묻는 고정 문구. 상수로 빼서
 # _is_disambiguation_followup이 "직전 봇 턴이 이 되물음이었는가"를 문자열로 재확인할 수
 # 있게 한다 — 문구를 바꿀 땐 이 상수만 바꾸면 양쪽(생성·판정)이 같이 맞는다.
 _DISAMBIGUATION_PROMPT = "몇 번째 상품을 말씀하시는 건가요?"
+
+
+def _last_user_message(history: list[dict] | None) -> str | None:
+    """history에서 가장 최근 사용자 발화를 찾는다(narrow_down 재검색 주제어 보강용).
+
+    intent.py가 "이전 대화 주제어 + 현재 문장"을 프롬프트만으로 합치도록 시켜봤지만
+    실측 확인 결과 새 문장이 조금만 바뀌어도 주제어가 빠졌다(예: "도자기"·"찻잔"·
+    "옹기" 전부 재현) — 프롬프트로 안정적으로 못 잡는 합성 작업이라 여기서 코드로
+    확정 보강한다.
+    """
+    if not history:
+        return None
+    for turn in reversed(history):
+        if turn.get("role") == "user":
+            return turn.get("content") or None
+    return None
 
 
 def _is_disambiguation_followup(history: list[dict] | None) -> bool:
@@ -72,6 +99,7 @@ def run(
     previous_candidates: list[dict] | None = None,
     previous_filters: dict | None = None,
     previous_product_ids: list[int] | None = None,
+    previous_query_text: str | None = None,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
     cache_lookup=semantic_cache.lookup,
@@ -109,13 +137,76 @@ def run(
     새 정보이므로 그대로 보여준다. explain_product·explain_products 경로는 사용자가
     명시적으로 상품을 다시 보여달라 요청한 것이라 이 억제를 적용하지 않는다.
 
+    previous_query_text는 직전 턴이 실제로 검색에 쓴 최종 query_text다(내부 전용, §0
+    계약엔 없음). narrow_down이 새 하드필터로 재검색할 때 이전 대화 주제어를 이어
+    붙이는 근거로 쓴다 — "직전 사용자 발화 1개"만 기억하면 narrow_down이 연달아 여러
+    번 이어질 때 두 번째 재검색부터 주제어가 다시 사라진다(실측 확인: "도자기 선물
+    찾아줘"→"3만원 이하로"→"그럼 5만원으로 다시"에서 세 번째 턴에 "도자기"가 없어짐 —
+    "직전 발화"가 "3만원 이하로"로 바뀌어버려서). previous_query_text는 매 턴 누적된
+    최종 문장이라(예: 2턴엔 "도자기 선물 찾아줘 3만원 이하로") 여기서 계속 이어 붙이면
+    몇 턴이 지나도 원래 주제어가 안 사라진다 — 대화형 검색에서 "직전 발화 하나만 보고
+    다시 쓰기"보다 "누적된 문맥을 그대로 이어 붙이기"가 더 안정적이라는 건 TREC CAsT
+    conversational search의 "Concat" 베이스라인과 같은 발상이다(주제 전환이 실제로
+    있으면 위험하다고도 알려져 있지만, 여기선 intent가 이미 narrow_down으로 "같은
+    주제의 연속"이라고 확정 판단한 경우에만 적용해 그 위험을 피한다).
+
     "왜 추천했어?"류는 is_explain_request(키워드 하드코딩)로 못 잡는다 — "어떤 상품을"
     설명할지(순번·"모두")는 코드로 확정 판단해야 안정적이지만, "설명이 필요한
     질문인가" 자체는 진짜 자연어 뉘앙스 판단이 필요해 intent.py의 wants_reason
     필드(LLM 판단)로 잡는다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는 intent
     분류 호출에 필드 하나를 얹었다 — classify_and_extract 이후에만 확인 가능하므로
     이 분기는 general_chat 처리 다음, 검색·narrow_down 분기 이전에 둔다.
+
+    needs_clarification도 같은 방식이다 — "선물"처럼 product_search·gift_recommendation
+    인데 검색에 쓸 단서(용도·받는사람·예산·재질·색상·종목)가 하나도 없으면, 검색을
+    시도하지 않고 intent.py가 미리 만들어둔 chat_reply(되묻는 질문)를 그대로 반환한다
+    (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화). 실측 확인: 이런 문장도
+    임베딩 검색은 유사도 낮은 상품을 억지로 찾아와서, 그대로 두면 근거 없이 자신 있게
+    추천해버리는 문제가 있었다.
+
+    wants_alternatives는 narrow_down 재검색 분기 안에서 처리한다(§ 아래 본문) —
+    "다른 거 추천해줘"처럼 새 하드필터 없이 그냥 다른 상품을 원하는 요청은, 필터가
+    안 바뀌었다는 이유로 그냥 속성 질문("가격대 확인해줘")과 똑같이 취급돼 재검색을
+    건너뛰었었다(실측 확인: 그 결과 카피라이터가 직전과 완전히 같은 상품을 또
+    보여주면서 "다른 걸 찾았다"고 거짓 응답을 만들어냄). search_and_rank(recommend)가
+    이미 내부적으로 후보를 10개 뽑아둔 뒤 상위 top_k개만 돌려주는 구조라(app/
+    run_recommend.py, A담당 코드 안 건드림), top_k를 넉넉히 넘겨 더 받은 뒤 이미
+    보여준 product_id만 code에서 제외하면 진짜 다른 상품을 보여줄 수 있다.
     """
+
+    def _short_circuit(
+        reply: str,
+        intent: str,
+        *,
+        product_ids: list[int] | None = None,
+        suggestions: list[str] | None = None,
+        candidates: list[dict] | None = None,
+        filters: dict | None = None,
+        shown_product_ids: list[int] | None = None,
+    ) -> dict:
+        """검색을 새로 하지 않고 즉시 반환하는 조기 응답 8개 지점이 전부 같은 8개
+        키 구조를 반복해서 여기로 모았다. 이번 턴에 검색을 안 했으니 candidates·
+        filters·shown_product_ids·query_text는 대부분 "이전 값 그대로"가 맞다 —
+        인자로 안 주면 그 기본값을 쓰고, 준 값이 있으면(예: 설명 대상 상품으로
+        candidates를 좁힘) 그 값으로 덮어쓴다.
+        """
+        return {
+            "reply": reply,
+            "intent": intent,
+            "product_ids": product_ids or [],
+            "suggestions": suggestions or [],
+            "candidates": (
+                candidates if candidates is not None else (previous_candidates or [])
+            ),
+            "filters": filters if filters is not None else (previous_filters or {}),
+            "shown_product_ids": (
+                shown_product_ids
+                if shown_product_ids is not None
+                else (previous_product_ids or [])
+            ),
+            "query_text": previous_query_text or "",
+        }
+
     # "이 상품 설명해줘"류 요청은 의도분류·검색을 거치지 않고 여기서 바로 처리한다 —
     # "몇 번째"를 LLM 자연어 판단에 맡기면 여러 후보가 남아있을 때 불안정하다(실측
     # 확인: 후보 전체를 설명하거나 엉뚱한 걸 고름). 순서 지정은 코드로 확정 판단하고,
@@ -128,51 +219,43 @@ def run(
     # evidence 없는 뭉뚱그린 답이 나갔었다).
     if is_explain_request(message) or _is_disambiguation_followup(history):
         if not previous_candidates:
-            return {
-                "reply": "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
-                "intent": "narrow_down",
-                "product_ids": [],
-                "suggestions": [],
-                "candidates": [],
-                "filters": previous_filters or {},
-                "shown_product_ids": [],
-            }
+            return _short_circuit(
+                "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                "narrow_down",
+                candidates=[],
+                shown_product_ids=[],
+            )
         if is_all_request(message):
             explained = explain_products(message, previous_candidates, chat=chat)
-            return {
-                "reply": explained["reply"],
-                "intent": "narrow_down",
-                "product_ids": explained["product_ids"],
-                "suggestions": explained["suggestions"],
-                "candidates": previous_candidates,
-                "filters": previous_filters or {},
-                "shown_product_ids": explained["product_ids"],
-            }
+            return _short_circuit(
+                explained["reply"],
+                "narrow_down",
+                product_ids=explained["product_ids"],
+                suggestions=explained["suggestions"],
+                candidates=previous_candidates,
+                shown_product_ids=explained["product_ids"],
+            )
         ordinal = extract_ordinal(message, len(previous_candidates))
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
             chips = [f"{i + 1}번" for i in range(len(previous_candidates))] + [
                 "전체 설명"
             ]
-            return {
-                "reply": f"{_DISAMBIGUATION_PROMPT} ({'/'.join(chips)} 중에서 골라주세요)",
-                "intent": "narrow_down",
-                "product_ids": [],
-                "suggestions": chips,
-                "candidates": previous_candidates,
-                "filters": previous_filters or {},
-                "shown_product_ids": previous_product_ids or [],
-            }
+            return _short_circuit(
+                f"{_DISAMBIGUATION_PROMPT} ({'/'.join(chips)} 중에서 골라주세요)",
+                "narrow_down",
+                suggestions=chips,
+                candidates=previous_candidates,
+            )
         target = previous_candidates[ordinal - 1]
         explained = explain_product(message, target, chat=chat)
-        return {
-            "reply": explained["reply"],
-            "intent": "narrow_down",
-            "product_ids": explained["product_ids"],
-            "suggestions": explained["suggestions"],
-            "candidates": previous_candidates,
-            "filters": previous_filters or {},
-            "shown_product_ids": explained["product_ids"],
-        }
+        return _short_circuit(
+            explained["reply"],
+            "narrow_down",
+            product_ids=explained["product_ids"],
+            suggestions=explained["suggestions"],
+            candidates=previous_candidates,
+            shown_product_ids=explained["product_ids"],
+        )
 
     # 대화 맥락이 없는 첫 턴만 캐시 대상이다 — "가격대 확인해줘" 같은 narrow_down 문장은
     # 직전 대화에 따라 의미가 완전히 달라지는데, 문장만 보고 캐시를 맞히면 엉뚱한 이전
@@ -191,15 +274,30 @@ def run(
         # 이미 만들어둔 chat_reply를 그대로 쓴다. 검색도 안 한다: query_text가 빈 문자열
         # 이어도 검색 엔진(임베딩 유사도)은 뭔가는 반환해서(실측: "안녕하십니까?" → 옹기
         # 아닌 나전칠기 상품 3건) 잡담에 엉뚱한 상품이 낄 위험이 있다.
-        return {
-            "reply": contact1["chat_reply"],
-            "intent": "general_chat",
-            "product_ids": [],
-            "suggestions": [],
-            "candidates": previous_candidates or [],
-            "filters": contact1["filters"],
-            "shown_product_ids": previous_product_ids or [],
-        }
+        return _short_circuit(
+            contact1["chat_reply"], "general_chat", filters=contact1["filters"]
+        )
+
+    if contact1["intent"] in ("product_search", "gift_recommendation") and contact1.get(
+        "needs_clarification"
+    ):
+        # "선물", "뭔가 좋은거 없나요"처럼 검색에 쓸 단서가 하나도 없으면 검색을
+        # 건너뛰고 먼저 되묻는다 — 실측 확인: 이런 문장도 임베딩 검색이 유사도 낮은
+        # 상품을 억지로 찾아와서, 근거 없이 자신 있게 추천해버리는 문제가 있었다
+        # (사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화). 열린 질문만 던지지
+        # 않고 후보 답까지 칩으로 같이 준다 — 대화형 검색 clarifying question 연구에
+        # 따르면 이쪽이 사용자 응답 부담을 줄인다(직접 타이핑보다 탭 한 번).
+        clarification_chips = (
+            _CLARIFICATION_CHIPS_GIFT
+            if contact1["intent"] == "gift_recommendation"
+            else _CLARIFICATION_CHIPS_PRODUCT
+        )
+        return _short_circuit(
+            contact1["chat_reply"],
+            contact1["intent"],
+            suggestions=clarification_chips,
+            filters=contact1["filters"],
+        )
 
     if contact1.get("wants_reason"):
         # "왜 추천했어?"류 — 어떤 상품을(순번·"모두") 설명할지는 코드로 확정 판단하지만
@@ -207,25 +305,23 @@ def run(
         # intent 분류 LLM이 이미 판단해 넘겨준 신호를 그대로 쓴다. 순번을 안 짚었으므로
         # explain_products(전체 설명)로 답한다 — is_all_request 분기와 같은 처리.
         if not previous_candidates:
-            return {
-                "reply": "아직 추천해 드린 상품이 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
-                "intent": contact1["intent"],
-                "product_ids": [],
-                "suggestions": [],
-                "candidates": [],
-                "filters": contact1["filters"],
-                "shown_product_ids": [],
-            }
+            return _short_circuit(
+                "아직 추천해 드린 상품이 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
+                contact1["intent"],
+                candidates=[],
+                filters=contact1["filters"],
+                shown_product_ids=[],
+            )
         explained = explain_products(message, previous_candidates, chat=chat)
-        return {
-            "reply": explained["reply"],
-            "intent": contact1["intent"],
-            "product_ids": explained["product_ids"],
-            "suggestions": explained["suggestions"],
-            "candidates": previous_candidates,
-            "filters": contact1["filters"],
-            "shown_product_ids": explained["product_ids"],
-        }
+        return _short_circuit(
+            explained["reply"],
+            contact1["intent"],
+            product_ids=explained["product_ids"],
+            suggestions=explained["suggestions"],
+            candidates=previous_candidates,
+            filters=contact1["filters"],
+            shown_product_ids=explained["product_ids"],
+        )
 
     prev_filters = previous_filters or {}
     new_filters = contact1["filters"]
@@ -240,14 +336,47 @@ def run(
         "color"
     ) != prev_filters.get("color")
     has_new_filter = price_changed or color_changed
+    # "다른 거 추천해줘"·"그거말고 또 없어?" — 새 조건은 없지만 지금 후보 말고 다른
+    # 상품을 원하는 경우다. 실측 확인: 이걸 그냥 속성 질문("가격대 확인해줘")과 똑같이
+    # 취급해 재검색을 안 하면, 카피라이터가 직전과 완전히 같은 상품을 보여주면서도
+    # "다른 걸 찾았다"고 자신 있게 말해버리는 거짓 응답이 나갔다.
+    wants_alternatives = bool(contact1.get("wants_alternatives"))
+    did_search = False
     if (
         contact1["intent"] == "narrow_down"
         and previous_candidates
         and not has_new_filter
+        and not wants_alternatives
     ):
         candidates = previous_candidates
     else:
-        candidates = search_and_rank(contact1)
+        if contact1["intent"] == "narrow_down" and (
+            has_new_filter or wants_alternatives
+        ):
+            # 새 하드필터가 있거나 "다른 거"를 원하는 narrow_down 재검색 — query_text에
+            # 이전 대화 주제어가 빠지면 엉뚱한 종목으로 재검색된다(§ run() 문서 참고).
+            # previous_query_text(직전 턴이 실제로 쓴 누적 문장)를 우선 쓰고, 아직
+            # 그 값이 없는 호출자를 위해 history의 직전 사용자 발화로 대체한다. LLM이
+            # 이미 주제어를 살렸어도 무조건 이어 붙인다 — 단어가 겹쳐 살짝 중복돼도
+            # 임베딩 검색엔 해가 없고(실측 확인), "이미 포함됐는지"를 문자열로 정확히
+            # 판별할 방법이 없어 조건부로 하면 오히려 놓치는 경우가 생긴다.
+            topic_context = previous_query_text or _last_user_message(history)
+            if topic_context:
+                contact1["query_text"] = (
+                    f"{topic_context} {contact1['query_text']}".strip()
+                )
+        if wants_alternatives:
+            # 그냥 재검색만 하면 조건(query_text·필터)이 그대로라 순위도 그대로라
+            # 완전히 같은 상품이 또 나온다 — recommend()는 이미 내부에서 후보를
+            # 10개 뽑아둔 뒤 상위 몇 개만 돌려주는 구조라(app/run_recommend.py),
+            # A담당 코드를 안 건드리고도 top_k만 넉넉히 넘겨 더 받은 뒤, 이미 보여준
+            # 상품만 code에서 빼면 진짜 다른 상품을 보여줄 수 있다.
+            already_shown = set(previous_product_ids or [])
+            fresh = search_and_rank(contact1, top_k=9)
+            candidates = [c for c in fresh if c["product_id"] not in already_shown]
+        else:
+            candidates = search_and_rank(contact1)
+        did_search = True
     generated = build_reply(
         message,
         candidates,
@@ -283,6 +412,12 @@ def run(
         # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
         # 뜨는 역효과가 난다.
         "shown_product_ids": raw_product_ids,
+        # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
+        # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
+        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다.
+        "query_text": (
+            contact1["query_text"] if did_search else (previous_query_text or "")
+        ),
     }
 
 

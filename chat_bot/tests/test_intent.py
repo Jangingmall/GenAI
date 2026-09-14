@@ -43,46 +43,14 @@ def test_price_to_won_plain_digit_string():
 
 
 # ---------------------------------------------------------------------------
-# _restore_adjective_suffix — "-(으)로 [형용사] 명사" 문형에서 LLM이 수식어를
-# 요청 동사와 같이 잘라내는 경우를 코드로 복원(실측: 프롬프트 규칙·예시만으론
-# 문장 표면이 조금만 달라져도 재발)
+# _to_contact1의 query_text 덮어쓰기 — product_search·gift_recommendation은
+# LLM이 뭘 뽑든 원문(message)으로 코드에서 확정한다(검색팀 실측: 축약·수식어
+# 제거 없이 원문 그대로 넘길 때 임베딩 검색이 가장 잘 됨 — 프롬프트 판단에
+# 맡기지 않고 코드로 보장).
 # ---------------------------------------------------------------------------
 
 
-def test_restore_adjective_suffix_recovers_dropped_modifier():
-    """LLM이 "쓸 만한"을 지워 "제사용 그릇"만 남겼어도 원문에서 복원해야 한다."""
-    restored = it._restore_adjective_suffix(
-        "제사용으로 쓸 만한 그릇 찾아줘", "제사용 그릇"
-    )
-    assert restored == "제사용으로 쓸 만한 그릇"
-
-
-def test_restore_adjective_suffix_keeps_leading_words_before_head():
-    """head 앞에 있던 단어(예: "손님")까지 유실 없이 남아야 한다."""
-    restored = it._restore_adjective_suffix(
-        "손님 접대용으로 좋은 다과상 뭐 있을까요", "손님 접대용 다과상"
-    )
-    assert restored == "손님 접대용으로 좋은 다과상"
-
-
-def test_restore_adjective_suffix_noop_when_already_preserved():
-    """query_text가 이미 수식어를 담고 있으면 손대지 않는다."""
-    query_text = "다도용으로 쓸 만한 것"
-    restored = it._restore_adjective_suffix(
-        "다도용으로 쓸 만한 것 추천해줘", query_text
-    )
-    assert restored == query_text
-
-
-def test_restore_adjective_suffix_noop_when_pattern_absent():
-    """ "-(으)로 [형용사]" 문형 자체가 없으면 query_text를 그대로 둔다."""
-    restored = it._restore_adjective_suffix(
-        "밥이나 국 담을 그릇 있나요", "밥이나 국 담을 그릇"
-    )
-    assert restored == "밥이나 국 담을 그릇"
-
-
-def test_to_contact1_applies_adjective_restoration_for_product_search():
+def test_to_contact1_overrides_query_text_with_raw_message_for_product_search():
     raw = {"intent": "product_search", "query_text": "혼수용 반상기"}
     result = it._to_contact1(
         raw,
@@ -90,20 +58,31 @@ def test_to_contact1_applies_adjective_restoration_for_product_search():
         colors=prompts.COLORS,
         message="혼수용으로 쓸 만한 반상기 보여줘",
     )
-    assert result["query_text"] == "혼수용으로 쓸 만한 반상기"
+    assert result["query_text"] == "혼수용으로 쓸 만한 반상기 보여줘"
 
 
-def test_to_contact1_skips_adjective_restoration_for_narrow_down():
-    """narrow_down은 이전 대화 주제어를 이어 붙이는 별도 로직이 있어 여기서
-    건드리면 안 된다 — 패턴이 우연히 매칭돼도 query_text를 그대로 둔다."""
-    raw = {"intent": "narrow_down", "query_text": "3만원으로 낮춰서 좋은 것"}
+def test_to_contact1_overrides_query_text_with_raw_message_for_gift_recommendation():
+    raw = {"intent": "gift_recommendation", "query_text": "환갑 선물"}
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="환갑 맞은 부모님께 드릴 선물 찾아줘",
+    )
+    assert result["query_text"] == "환갑 맞은 부모님께 드릴 선물 찾아줘"
+
+
+def test_to_contact1_skips_query_text_override_for_narrow_down():
+    """narrow_down은 이전 대화 주제어를 이어 붙이는 별도 로직이 LLM에 있어
+    여기서 원문으로 덮어쓰면 그 맥락이 깨진다 — LLM이 뽑은 값을 그대로 둔다."""
+    raw = {"intent": "narrow_down", "query_text": "3만원으로 낮춰서 도자기"}
     result = it._to_contact1(
         raw,
         gift_themes=prompts.GIFT_THEMES,
         colors=prompts.COLORS,
         message="그럼 3만원으로 낮춰서 좋은 것도 있어요?",
     )
-    assert result["query_text"] == "3만원으로 낮춰서 좋은 것"
+    assert result["query_text"] == "3만원으로 낮춰서 도자기"
 
 
 # ---------------------------------------------------------------------------
@@ -150,8 +129,10 @@ def test_to_contact1_assembles_filters():
         message="환갑 맞은 부모님께 드릴 선물 찾아줘",
     )
     assert result == {
-        "query_text": "환갑 선물",
+        "query_text": "환갑 맞은 부모님께 드릴 선물 찾아줘",
         "wants_reason": False,
+        "needs_clarification": False,
+        "wants_alternatives": False,
         "filters": {
             "max_price": 300000,
             "min_price": None,
@@ -161,6 +142,89 @@ def test_to_contact1_assembles_filters():
         "intent": "gift_recommendation",
         "chat_reply": "",
     }
+
+
+def test_to_contact1_corrects_llm_putting_lower_bound_into_max_price():
+    """ "100만원 이상"처럼 하한 표현인데 LLM이 습관적으로 max_price에 넣는 경우
+    (실측 확인: 전용 예시를 추가해도 재현됨) 메시지의 실제 방향에 맞게 min_price로
+    옮긴다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 1000000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "금속공예 100만원 이상 찾아줘",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="금속공예 100만원 이상 찾아줘",
+    )
+    assert result["filters"]["max_price"] is None
+    assert result["filters"]["min_price"] == 1000000
+
+
+def test_to_contact1_keeps_max_price_when_message_says_upper_bound():
+    raw = {
+        "intent": "product_search",
+        "max_price": 30000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 3만원 이하로",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="도자기 3만원 이하로",
+    )
+    assert result["filters"]["max_price"] == 30000
+    assert result["filters"]["min_price"] is None
+
+
+def test_to_contact1_leaves_price_untouched_when_message_has_no_direction_word():
+    """ "5만원으로"처럼 방향 표현이 아예 없으면 코드가 함부로 방향을 정하지 않고
+    LLM 추출을 그대로 둔다."""
+    raw = {
+        "intent": "narrow_down",
+        "max_price": 50000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 그럼 5만원으로 다시",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="그럼 5만원으로 다시",
+    )
+    assert result["filters"]["max_price"] == 50000
+    assert result["filters"]["min_price"] is None
+
+
+def test_to_contact1_leaves_price_untouched_when_both_directions_mentioned():
+    """ "3만원 이상 5만원 이하"처럼 범위 질문은 어느 숫자가 어느 쪽인지 코드로
+    안전하게 갈라낼 근거가 없어 LLM 추출을 그대로 둔다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 50000,
+        "min_price": 30000,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 3만원 이상 5만원 이하로",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="도자기 3만원 이상 5만원 이하로",
+    )
+    assert result["filters"]["max_price"] == 50000
+    assert result["filters"]["min_price"] == 30000
 
 
 def test_to_contact1_passes_through_chat_reply():
@@ -235,6 +299,54 @@ def test_to_contact1_missing_wants_reason_defaults_false():
         raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
     )
     assert result["wants_reason"] is False
+
+
+def test_to_contact1_passes_through_needs_clarification_true():
+    """ "선물"처럼 검색 단서가 하나도 없는 문장인지 판단은 LLM이 하고, _to_contact1은
+    그 신호를 그대로 넘기기만 한다(사용자 시나리오 E23 대응)."""
+    raw = {
+        "intent": "gift_recommendation",
+        "needs_clarification": True,
+        "query_text": "선물",
+        "chat_reply": "어떤 분께 드릴 선물인가요?",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="선물"
+    )
+    assert result["needs_clarification"] is True
+
+
+def test_to_contact1_missing_needs_clarification_defaults_false():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
+    )
+    assert result["needs_clarification"] is False
+
+
+def test_to_contact1_passes_through_wants_alternatives_true():
+    """ "다른 거 추천해줘"처럼 새 조건 없이 그냥 다른 상품을 원하는지 판단은 LLM이
+    하고, _to_contact1은 그 신호를 그대로 넘기기만 한다."""
+    raw = {
+        "intent": "narrow_down",
+        "wants_alternatives": True,
+        "query_text": "도자기 찻잔",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="다른 거 추천해줘",
+    )
+    assert result["wants_alternatives"] is True
+
+
+def test_to_contact1_missing_wants_alternatives_defaults_false():
+    raw = {"intent": "product_search", "query_text": "찻잔"}
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
+    )
+    assert result["wants_alternatives"] is False
 
 
 # ---------------------------------------------------------------------------

@@ -92,6 +92,7 @@ def test_run_assembles_final_contract():
         "candidates",
         "filters",
         "shown_product_ids",
+        "query_text",
     }
     assert result["intent"] == "product_search"
     assert result["product_ids"] == [9]
@@ -122,7 +123,10 @@ def test_run_passes_contact1_to_search_and_rank():
     )
     rr.run("찻잔 있나요", chat=chat, search_and_rank=spy_search_and_rank, **_NO_DB)
 
-    assert seen["contact1"]["query_text"] == "찻잔"
+    # product_search는 intent.py가 query_text를 원문(message)으로 확정 덮어쓴다
+    # (검색팀 실측: 축약 없이 원문 그대로가 임베딩 검색에 가장 잘 맞음) — LLM이
+    # 낸 "찻잔"이 아니라 원문 "찻잔 있나요"가 그대로 전달돼야 한다.
+    assert seen["contact1"]["query_text"] == "찻잔 있나요"
     assert seen["contact1"]["intent"] == "product_search"
 
 
@@ -345,6 +349,188 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
 
     assert seen.get("called") is True
     assert result["candidates"] == fresh
+
+
+def test_run_narrow_down_new_filter_injects_previous_topic_into_query_text():
+    """intent.py가 "이전 대화 주제어 + 현재 문장"을 프롬프트만으로 합치도록 시켜도
+    실측 확인 결과 새 문장이 조금만 바뀌면 주제어가 빠졌다(예: "찻잔"·"옹기"·"목공예"
+    전부 재현) — 여기(orchestrator)에서 직전 사용자 발화를 코드로 확정 이어 붙인다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 30000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            # LLM이 주제어("도자기")를 놓친 것으로 가정 — 실측에서 재현된 실패 형태.
+            "query_text": "그럼 3만원으로 낮춰서 좋은 것도 있어요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    history = [
+        {"role": "user", "content": "선물로 좋은 도자기 찾아줘"},
+        {
+            "role": "assistant",
+            "content": "친구에게 선물로 추천드릴 도자기 작품을 소개합니다...",
+        },
+    ]
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1):
+        seen["query_text"] = contact1["query_text"]
+        return []
+
+    rr.run(
+        "그럼 3만원으로 낮춰서 좋은 것도 있어요?",
+        history,
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert (
+        seen["query_text"]
+        == "선물로 좋은 도자기 찾아줘 그럼 3만원으로 낮춰서 좋은 것도 있어요?"
+    )
+
+
+def test_run_narrow_down_new_filter_without_history_leaves_query_text_untouched():
+    """history가 없으면(직전 발화를 알 길이 없음) 원래 query_text를 그대로 둔다 —
+    없는 값을 억지로 만들어 붙이지 않는다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 30000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "3만원 이하로 낮춰서",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1):
+        seen["query_text"] = contact1["query_text"]
+        return []
+
+    rr.run(
+        "3만원 이하로 낮춰서",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert seen["query_text"] == "3만원 이하로 낮춰서"
+
+
+def test_run_narrow_down_new_filter_prefers_previous_query_text_over_last_message():
+    """narrow_down이 새 하드필터로 두 번 연달아 이어지면("도자기 선물 찾아줘" →
+    "3만원 이하로" → "그럼 5만원으로 다시"), "직전 사용자 발화 1개"만 봐서는 두 번째
+    재검색부터 주제어가 다시 사라진다(실측 확인: 세 번째 턴의 "직전 발화"가 "3만원
+    이하로"라 "도자기"가 이미 없음). previous_query_text(직전 턴이 실제로 검색에 쓴
+    누적 문장)를 넘기면 이 문제가 없어야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 50000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "그럼 5만원으로 다시",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    history = [
+        {"role": "user", "content": "도자기 선물 찾아줘"},
+        {"role": "assistant", "content": "도자기 작품을 소개합니다."},
+        {"role": "user", "content": "3만원 이하로"},
+        {"role": "assistant", "content": "3만 원 이하로 3점을 골랐어요."},
+    ]
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1):
+        seen["query_text"] = contact1["query_text"]
+        return []
+
+    rr.run(
+        "그럼 5만원으로 다시",
+        history,
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        # 2턴이 실제로 검색에 썼던 누적 문장 — history의 마지막 사용자 발화("3만원
+        # 이하로")엔 이미 "도자기"가 없다는 게 이 테스트의 핵심.
+        previous_query_text="도자기 선물 찾아줘 3만원 이하로",
+        **_NO_DB,
+    )
+
+    assert seen["query_text"] == "도자기 선물 찾아줘 3만원 이하로 그럼 5만원으로 다시"
+
+
+def test_run_returns_resolved_query_text_after_fresh_search():
+    """다음 턴 previous_query_text로 이어 붙일 수 있게, 이번 턴이 실제로 검색에 쓴
+    최종 query_text를 결과에 담아 돌려줘야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    result = rr.run(
+        "찻잔 있나요",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        **_NO_DB,
+    )
+    # product_search는 intent.py가 query_text를 원문으로 확정 덮어쓴다.
+    assert result["query_text"] == "찻잔 있나요"
+
+
+def test_run_returns_previous_query_text_unchanged_when_reusing_candidates():
+    """검색을 안 하고 직전 후보를 재사용한 턴(narrow_down, 새 필터 없음)은 이번 턴
+    LLM이 뽑은 query_text가 검색에 안 쓰였으니, 그걸로 previous_query_text를
+    덮어쓰지 않고 원래 값을 그대로 다음 턴에 넘긴다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "가격대 확인",
+        },
+        generate_payload={
+            "reply": "가격 정보는 확인되지 않습니다.",
+            "allowed_ids": [78],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    def search_and_rank_must_not_be_called(contact1):
+        raise AssertionError("새 필터가 없으면 재검색하면 안 된다")
+
+    result = rr.run(
+        "가격대 확인해줘",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        previous_query_text="도자기 선물 찾아줘",
+        **_NO_DB,
+    )
+
+    assert result["query_text"] == "도자기 선물 찾아줘"
 
 
 def test_run_returns_fresh_candidates_when_no_previous_given():
@@ -588,7 +774,7 @@ def test_run_stores_to_cache_on_miss():
     )
 
     assert stored["message"] == "찻잔 있나요"
-    assert stored["contact1"]["query_text"] == "찻잔"
+    assert stored["contact1"]["query_text"] == "찻잔 있나요"
 
 
 def test_run_skips_cache_when_history_present():
@@ -940,3 +1126,204 @@ def test_run_wants_reason_false_does_not_shortcut_to_explain():
     )
 
     assert result["reply"] == "ok"
+
+
+def test_run_needs_clarification_skips_search_and_returns_chat_reply():
+    """ "선물"처럼 검색 단서가 하나도 없으면 검색을 건너뛰고 되묻는 chat_reply를
+    그대로 반환한다(사용자 시나리오 E23: 의도 불명확 → 추가 질문으로 구체화)."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "gift_recommendation",
+            "needs_clarification": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "선물",
+            "chat_reply": "어떤 분께 드릴 선물인가요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+
+    def search_and_rank_must_not_be_called(contact1):
+        raise AssertionError("needs_clarification이 true면 검색하면 안 된다")
+
+    result = rr.run(
+        "선물",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "어떤 분께 드릴 선물인가요?"
+    assert result["product_ids"] == []
+    assert result["intent"] == "gift_recommendation"
+    # 열린 질문만 던지지 않고 후보 답까지 칩으로 같이 준다(clarifying question 연구 —
+    # 답 후보 제시가 사용자 응답 부담을 줄인다).
+    assert result["suggestions"] == rr._CLARIFICATION_CHIPS_GIFT
+
+
+def test_run_needs_clarification_product_search_uses_category_chips():
+    """product_search에서 되물을 땐 선물용 칩이 아니라 실제 카탈로그 카테고리 칩을
+    준다 — intent에 안 맞는 칩(예: 선물 아닌데 "생일 선물")을 내면 안 된다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "needs_clarification": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "아무거나",
+            "chat_reply": "어떤 종류의 공예품을 찾으시나요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+
+    result = rr.run(
+        "아무거나",
+        chat=chat,
+        search_and_rank=lambda contact1: (_ for _ in ()).throw(
+            AssertionError("needs_clarification이 true면 검색하면 안 된다")
+        ),
+        **_NO_DB,
+    )
+
+    assert result["suggestions"] == rr._CLARIFICATION_CHIPS_PRODUCT
+
+
+def test_run_needs_clarification_false_does_not_shortcut():
+    """단서가 하나라도 있으면(needs_clarification=false) 평소처럼 검색한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "needs_clarification": False,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [1], "suggestions": []},
+    )
+
+    result = rr.run(
+        "찻잔 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(_CANDIDATES_3),
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "ok"
+
+
+def test_run_wants_alternatives_excludes_already_shown_products():
+    """ "다른 거 추천해줘"는 새 하드필터가 없어도 재검색해야 한다 — 그냥 속성
+    질문처럼 후보를 재사용하면 직전과 똑같은 상품을 "다른 거"라고 거짓 응답하게
+    된다(실측 확인). 이미 보여준 product_id는 결과에서 빠져야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기 찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh_pool = [
+        {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 816, "name": "분청 찻잔", "score": 0.8, "evidence": {}},
+        {"product_id": 2, "name": "도기토 찻잔", "score": 0.7, "evidence": {}},
+    ]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["top_k"] = top_k
+        return fresh_pool
+
+    rr.run(
+        "다른 거 추천해줘",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        **_NO_DB,
+    )
+
+    # 더 넉넉히 받아오는지(top_k 확장), 이미 보여준 78번은 빠지는지 spy로 확인.
+    assert seen["top_k"] == 9
+
+
+def test_run_wants_alternatives_passes_only_unseen_candidates_to_build_reply():
+    """이미 보여준 product_id(78)는 build_reply에 넘기는 candidates에서 빠져야
+    한다 — 그래야 카피라이터가 그 상품을 다시 "다른 것"이라고 말하지 않는다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기 찻잔",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [816, 2], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh_pool = [
+        {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 816, "name": "분청 찻잔", "score": 0.8, "evidence": {}},
+        {"product_id": 2, "name": "도기토 찻잔", "score": 0.7, "evidence": {}},
+    ]
+
+    result = rr.run(
+        "다른 거 추천해줘",
+        chat=chat,
+        search_and_rank=lambda contact1, top_k=3: fresh_pool,
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        **_NO_DB,
+    )
+
+    candidate_ids = {c["product_id"] for c in result["candidates"]}
+    assert 78 not in candidate_ids
+    assert candidate_ids == {816, 2}
+
+
+def test_run_wants_alternatives_false_reuses_candidates_as_before():
+    """wants_alternatives가 false면 기존 동작(새 필터 없으면 재사용) 그대로다 —
+    이번 변경이 다른 narrow_down 흐름에 영향을 주면 안 된다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_alternatives": False,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "가격대 확인",
+        },
+        generate_payload={
+            "reply": "가격 정보는 확인되지 않습니다.",
+            "allowed_ids": [78],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    def search_and_rank_must_not_be_called(contact1, top_k=3):
+        raise AssertionError("wants_alternatives가 false면 재검색하면 안 된다")
+
+    result = rr.run(
+        "가격대 확인해줘",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == previous

@@ -30,6 +30,18 @@ class _RawIntent(BaseModel):
     # 자연어 뉘앙스 판단이라 LLM에 맡긴다. 새 LLM 호출을 추가하는 대신 이미 매 턴 도는
     # intent 분류 호출의 출력 필드 하나로 얹어서 속도 비용을 없앴다.
     wants_reason: bool
+    # "선물", "뭔가 좋은거" 처럼 검색에 쓸 구체적인 단서(용도·받는사람·예산·재질·색상
+    # 등)가 하나도 없는 product_search·gift_recommendation 요청인지 — 실측 확인:
+    # 이런 문장도 임베딩 검색이 뭔가는 찾아와서(유사도 낮은 억지 매칭) 시스템이
+    # 근거 없이 자신 있게 답해버리는 문제가 있었다. wants_reason과 같은 이유로 새
+    # LLM 호출 없이 이 필드로 판단해 검색 전에 되묻는다.
+    needs_clarification: bool
+    # "다른 거 추천해줘"·"그거말고 또 없어?"처럼 새 종목·조건을 안 밝히고 그냥 다른
+    # 상품을 원하는 narrow_down인지 — 실측 확인: 이런 문장은 새 하드필터가 없어서
+    # 그냥 속성 질문("가격대 확인해줘")과 똑같이 취급돼 재검색을 안 했다. 그 결과
+    # 카피라이터가 "다른 걸 찾았다"면서 직전과 완전히 같은 상품을 또 보여주는
+    # 거짓 응답이 나갔다. wants_reason과 같은 이유로 새 LLM 호출 없이 이 필드로 잡는다.
+    wants_alternatives: bool
     max_price: int | None
     min_price: int | None
     gift_theme: list[str]
@@ -64,42 +76,50 @@ def _price_to_won(text_or_num) -> int | None:
     return int(num_match.group()) if num_match else None
 
 
+_MIN_PRICE_WORDS = ("이상", "부터", "넘는", "넘게", "초과")
+_MAX_PRICE_WORDS = ("이하", "까지", "미만", "아래", "이내", "안으로")
+
+
+def _price_direction(message: str) -> str | None:
+    """메시지에 하한(min)·상한(max) 표현 중 한쪽만 있으면 그 방향을 돌려준다.
+
+    실측 확인: "100만원 이상"처럼 명확한 하한 표현도 LLM이 습관적으로 max_price에
+    넣는 경우가 있었다(프롬프트 규칙·전용 예시를 추가해도 재현 — 19개 기존 예시가
+    전부 "이하"만 다뤄서 생긴 강한 편향으로 추정). 방향이 반대로 뽑히면 정반대
+    가격대 상품을 보여주는 심각한 오류가 되므로, query_text와 같은 이유로 프롬프트
+    신뢰 대신 코드로 확정한다. 두 방향이 같이 있으면(예: "3만원 이상 5만원 이하"
+    범위 질문) 어느 숫자가 어느 쪽인지 코드로 안전하게 갈라낼 근거가 없어 None을
+    반환하고 LLM 추출을 그대로 둔다.
+    """
+    has_min = any(w in message for w in _MIN_PRICE_WORDS)
+    has_max = any(w in message for w in _MAX_PRICE_WORDS)
+    if has_min and not has_max:
+        return "min"
+    if has_max and not has_min:
+        return "max"
+    return None
+
+
+def _resolve_price_filters(
+    max_price: int | None, min_price: int | None, message: str
+) -> tuple[int | None, int | None]:
+    """LLM이 뽑은 max_price/min_price를 메시지의 실제 방향과 맞춰 확정한다."""
+    direction = _price_direction(message)
+    if direction is None:
+        return max_price, min_price
+    value = max_price if max_price is not None else min_price
+    if value is None:
+        return max_price, min_price
+    if direction == "min":
+        return None, value
+    return value, None
+
+
 def _keep_known(values: list[str] | None, allowed: set[str]) -> list[str]:
     """LLM이 뱉은 값 중 allowed 목록에 있는 것만 남긴다(환각 방어)."""
     if not values:
         return []
     return [v for v in values if v in allowed]
-
-
-# "제사용으로 쓸 만한 그릇" 같은 "-(으)로 [형용사 수식어] 명사" 문형에서, 로컬 9B 모델이
-# 수식어(쓸 만한·좋은 등)를 요청 동사("찾아줘" 등)와 같은 부류의 "지워도 되는 말"로
-# 착각해 같이 잘라내는 경우가 있다(실측 확인: 같은 프롬프트 규칙·예시를 줘도 문장
-# 표면이 조금만 달라지면 50% 확률로 재발 — few-shot 예시를 늘려도 다음 변형에서 또
-# 터지는 악순환이라, 프롬프트만으론 안정적으로 못 잡는다). 패턴 자체는 명확하므로
-# extract_ordinal·is_all_request와 같은 이유로 여기서 코드로 확정 복원한다.
-_ADJ_SUFFIX_WORDS = ("쓸 만한", "쓸만한", "좋은", "괜찮은", "무난한", "적당한")
-_ADJ_SUFFIX_PATTERN = re.compile(
-    r"(?P<head>\S+?)(?P<conn>으로|로)\s*(?P<adj>"
-    + "|".join(re.escape(w) for w in _ADJ_SUFFIX_WORDS)
-    + r")\s*(?P<tail>\S+)"
-)
-
-
-def _restore_adjective_suffix(message: str, query_text: str) -> str:
-    """query_text가 원문의 "-(으)로 [형용사] 명사" 수식어를 놓쳤으면 원문에서 복원한다.
-
-    수식어 낱말이 이미 query_text에 남아 있으면(정상 동작) 손대지 않는다. 복원은
-    "head+adj+tail 조각을 새로 조립"하지 않고, 원문에서 tail이 끝나는 지점까지
-    그대로 잘라 쓴다 — 조각을 새로 이어붙이면 head 앞에 있던 다른 단어(예: "손님
-    접대용으로 좋은 다과상"의 "손님")가 유실된다.
-    """
-    m = _ADJ_SUFFIX_PATTERN.search(message)
-    if not m:
-        return query_text
-    adj_normalized = m.group("adj").replace(" ", "")
-    if adj_normalized in query_text.replace(" ", ""):
-        return query_text
-    return message[: m.end("tail")].strip()
 
 
 def _to_contact1(
@@ -113,20 +133,30 @@ def _to_contact1(
     color = _keep_known(raw.get("color"), colors)
     query_text = raw.get("query_text") or ""
     if intent in ("product_search", "gift_recommendation"):
-        # narrow_down은 이전 대화 주제어를 query_text에 이어 붙이는 별도 로직을
-        # LLM이 맡고 있어서(prompts.py 참고) 여기서 건드리면 그 맥락이 깨진다 —
-        # 이 복원은 "이번 문장 자체가 새 주제인" 두 intent에만 적용한다.
-        query_text = _restore_adjective_suffix(message, query_text)
+        # 검색팀 실측: 축약·수식어 제거 없이 원문 그대로 넘길 때 임베딩 검색이 가장
+        # 잘 된다. LLM이 뭘 뽑아내든(축약·수식어 누락 등) 여기서 원문으로 덮어써
+        # 프롬프트 판단에 기대지 않고 코드로 확정한다. narrow_down은 이전 대화
+        # 주제어를 이어 붙이는 별도 합성이 필요해(prompts.py 참고) 예외로 둔다.
+        query_text = message
+
+    max_price, min_price = _resolve_price_filters(
+        _price_to_won(raw.get("max_price")),
+        _price_to_won(raw.get("min_price")),
+        message,
+    )
+
     return {
         "query_text": query_text,
         "filters": {
-            "max_price": _price_to_won(raw.get("max_price")),
-            "min_price": _price_to_won(raw.get("min_price")),
+            "max_price": max_price,
+            "min_price": min_price,
             "gift_theme": gift_theme or None,
             "color": color or None,
         },
         "intent": intent,
         "wants_reason": bool(raw.get("wants_reason")),
+        "needs_clarification": bool(raw.get("needs_clarification")),
+        "wants_alternatives": bool(raw.get("wants_alternatives")),
         "chat_reply": raw.get("chat_reply") or "",
     }
 

@@ -15,10 +15,29 @@ from __future__ import annotations
 import os
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from app.config import settings
 
 _DEFAULT_TIMEOUT_SECONDS = 180
+
+# 연결 실패(Ollama 재시작 중 등)만 짧은 backoff로 자동 재시도하고, 읽기 타임아웃(연결은
+# 됐지만 생성이 느려서 시간 초과)은 재시도하지 않는다 — 이미 느린 생성을 그대로 다시
+# 기다리게 하면 대기 시간만 배로 늘 뿐 성공 확률이 오르지 않는다(read=0). POST는
+# urllib3 기본값상 비멱등으로 보고 재시도 대상에서 빠지지만, 이 호출은 채팅 완성
+# 요청이라 두 번 보내도 부작용(중복 주문 등)이 없어 명시적으로 허용한다.
+_retry = Retry(
+    total=2,
+    connect=2,
+    read=0,
+    backoff_factor=0.5,
+    status_forcelist=[500, 502, 503, 504],
+    allowed_methods=["POST"],
+)
+_session = requests.Session()
+_session.mount("http://", HTTPAdapter(max_retries=_retry))
+_session.mount("https://", HTTPAdapter(max_retries=_retry))
 
 # think 파라미터는 Qwen3 계열 전용이다. exaone3.5·llama3.1·qwen2.5·dna는 지원 안 할 수 있어
 # 모델명이 qwen3로 시작하지 않으면 body에서 "think" 키를 아예 뺀다.
@@ -52,7 +71,7 @@ def chat_json(
     if model_name.startswith(_THINK_SUPPORTED_PREFIX):
         body["think"] = think
 
-    resp = requests.post(
+    resp = _session.post(
         f"{settings.OLLAMA_HOST.rstrip('/')}/api/chat",
         json=body,
         timeout=timeout,
