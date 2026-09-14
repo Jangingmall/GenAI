@@ -75,6 +75,34 @@ def test_verified_label_unknown_value_falls_back_to_no_info():
     assert gen._verified_label({"verified": "SOME_NEW_GRADE"}) == "정보 없음"
 
 
+def test_color_label_translates_known_values():
+    assert gen._color_label("BROWN") == "갈색"
+    assert gen._color_label("GRAY") == "회색"
+
+
+def test_color_label_missing_or_unknown_returns_no_info():
+    assert gen._color_label(None) == "정보 없음"
+    assert gen._color_label("PURPLE") == "정보 없음"
+
+
+def test_format_candidates_includes_material_and_color():
+    """실측 확인: 이 두 필드가 후보 블록에 빠져 있어서 "무슨 색이야?" 질문에 실제
+    DB 색(BROWN)과 다른 색(회색)을 모델이 지어내 답한 사례가 있었다 — 재발 방지."""
+    candidates = [{"product_id": 1, "name": "T", "evidence": {}}]
+    text = gen._format_candidates(
+        candidates, attrs={1: {"material": "옹기토", "color": "BROWN"}}
+    )
+    assert "재질: 옹기토" in text
+    assert "색상: 갈색" in text
+
+
+def test_format_candidates_shows_no_info_when_attrs_missing():
+    candidates = [{"product_id": 1, "name": "T", "evidence": {}}]
+    text = gen._format_candidates(candidates)
+    assert "재질: 정보 없음" in text
+    assert "색상: 정보 없음" in text
+
+
 def test_category_from_name_resolves_when_longer_term_contains_shorter_ones_category():
     """ "전통옻칠"(WOOD) 안에 "옻칠"(NACRE)이 부분 문자열로 들어있어도, 더 긴
     복합어를 우선해 WOOD 하나로만 판정한다(둘 다 매칭돼 중의적으로 무산되면
@@ -302,8 +330,17 @@ def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
     return {}
 
 
+def _no_attrs(product_ids: list[int]) -> dict[int, dict]:
+    """_no_prices와 같은 이유의 가짜 fetch_attrs."""
+    return {}
+
+
 # build_reply 호출마다 반복되는 DB 회피용 키워드 인자 묶음 — **_NO_DB로 한 번에 넘긴다.
-_NO_DB = {"fetch_prices": _no_prices, "fetch_artisans": _no_artisans}
+_NO_DB = {
+    "fetch_prices": _no_prices,
+    "fetch_artisans": _no_artisans,
+    "fetch_attrs": _no_attrs,
+}
 
 
 def test_build_reply_b13_empty_candidates_yields_empty_products():

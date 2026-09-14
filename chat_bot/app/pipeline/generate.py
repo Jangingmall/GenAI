@@ -84,6 +84,24 @@ def _verified_label(evidence: dict) -> str:
     return _VERIFIED_LABELS.get(verified, "정보 없음")
 
 
+# color도 verified와 같은 이유(DB에 영문 enum 그대로 저장)로 코드에서 미리 번역한다 —
+# 대비해서 확정해두지 않으면 verified 때와 같은 새는 사고가 재현될 수 있다.
+_COLOR_LABELS = {
+    "WHITE": "흰색",
+    "BLACK": "검정색",
+    "GRAY": "회색",
+    "RED": "빨간색",
+    "BLUE": "파란색",
+    "GREEN": "초록색",
+    "BROWN": "갈색",
+}
+
+
+def _color_label(color: str | None) -> str:
+    """products.color 영문 enum을 한국어 라벨로 바꾼다. 값이 없거나 목록 밖이면 "정보 없음"."""
+    return _COLOR_LABELS.get(color, "정보 없음")
+
+
 _OVERBROAD_TERMS = {
     # 실데이터상 "항아리"는 POTTERY 세부품목명으로만 쓰인다(옹기 물항아리는
     # "물항아리"로 별도 표기돼 taxonomy.py 생성 로직이 정확히 POTTERY로만
@@ -303,16 +321,52 @@ def _fetch_artisans(product_ids: list[int]) -> dict[int, dict]:
         conn.close()
 
 
+def _fetch_attrs(product_ids: list[int]) -> dict[int, dict]:
+    """product_id → {"material", "color"}. price·artisan과 같은 이유(_fetch_prices
+    참고)로 B가 직접 조회한다.
+
+    실측 확인: _format_candidates에 이 두 필드가 빠져 있던 동안, "무슨 색이야?" 질문에
+    evidence 어디에도 없는 색을 모델이 지어내 답한 사례가 있었다(DB 실제 색은 BROWN인데
+    "회색"이라고 답함) — 재질·색상 둘 다 products 테이블의 실제 컬럼인데 접점2
+    {product_id, name, score, evidence}엔 없어서 후보 블록에 아예 안 실렸던 게 원인이다.
+    """
+    if not product_ids:
+        return {}
+    try:
+        conn = psycopg2.connect(settings.dsn())
+    except psycopg2.Error:
+        logger.exception("재질·색상 조회용 DB 연결 실패")
+        return {}
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT product_id, material, color FROM products WHERE product_id = ANY(%s)",
+                (list(product_ids),),
+            )
+            return {
+                product_id: {"material": material, "color": color}
+                for product_id, material, color in cur.fetchall()
+            }
+    except psycopg2.Error:
+        logger.exception("재질·색상 조회 쿼리 실패")
+        return {}
+    finally:
+        conn.close()
+
+
 def _format_candidates(
     candidates: list[dict],
     prices: dict[int, int] | None = None,
     artisans: dict[int, dict] | None = None,
+    attrs: dict[int, dict] | None = None,
 ) -> str:
-    """프롬프트에 넣을 후보 목록 텍스트 블록. prices·artisans가 없으면(예: DB 접속 실패) 정보 없음으로 표시."""
+    """프롬프트에 넣을 후보 목록 텍스트 블록. prices·artisans·attrs가 없으면(예: DB 접속
+    실패) 정보 없음으로 표시."""
     if not candidates:
         return "(검색 결과 없음)"
     prices = prices or {}
     artisans = artisans or {}
+    attrs = attrs or {}
     blocks = []
     for c in candidates:
         ev = c.get("evidence") or {}
@@ -324,10 +378,13 @@ def _format_candidates(
         )
         price = prices.get(c["product_id"])
         artisan = artisans.get(c["product_id"])
+        attr = attrs.get(c["product_id"]) or {}
         lines = [
             f"- product_id: {c['product_id']}",
             f"  이름: {c['name']}",
             f"  종목: {label}",
+            f"  재질: {attr.get('material') or '정보 없음'}",
+            f"  색상: {_color_label(attr.get('color'))}",
             f"  가격: {price}원" if price is not None else "  가격: 정보 없음",
             (
                 f"  장인: {artisan['business_name']} ({artisan['region']})"
@@ -405,6 +462,7 @@ def build_reply(
     chat=chat_json,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
+    fetch_attrs=_fetch_attrs,
 ) -> dict:
     """접점 2 후보 → {"reply", "product_ids": [int], "suggestions": [str]}.
 
@@ -422,7 +480,7 @@ def build_reply(
     없고 intent.py가 이전 대화에서 이어 붙인 query_text에만 있을 수 있다(실측 확인:
     query_text 없이 message만 보면 종목 대조가 아예 안 걸려 다른 종목이 새어나감).
 
-    fetch_prices·fetch_artisans는 테스트에서 가짜로 갈아끼울 수 있게 인자로 받는다(chat과
+    fetch_prices·fetch_artisans·fetch_attrs는 테스트에서 가짜로 갈아끼울 수 있게 인자로 받는다(chat과
     같은 이유 — 유닛 테스트가 실제 DB 연결 없이 돌아가야 한다). 기본값은 PostgreSQL이
     필요하다.
 
@@ -447,6 +505,7 @@ def build_reply(
     candidate_ids = [c["product_id"] for c in candidates]
     prices = fetch_prices(candidate_ids)
     artisans = fetch_artisans(candidate_ids)
+    attrs = fetch_attrs(candidate_ids)
     # intent.py와 같은 이유(app/pipeline/intent.py:classify_and_extract 참고)로 독립된
     # GENERATE_SYSTEM을 그대로 쓴다 — 프롬프트 병합·부분 공유 둘 다 실측했지만 병합은
     # intent 정확도 회귀, 부분 공유는 속도 이득이 없어 둘 다 되돌렸다.
@@ -454,7 +513,7 @@ def build_reply(
         f"{_format_history(history)}소비자의 마지막 문장: {message}\n"
         f"분류된 intent: {intent}\n"
         f"[추출된 조건]\n{_format_filters(filters)}\n\n"
-        f"[후보 상품]\n{_format_candidates(candidates, prices, artisans)}"
+        f"[후보 상품]\n{_format_candidates(candidates, prices, artisans, attrs)}"
         f"{_ambiguity_warning(category_text)}"
         f"{_purpose_relevance_warning(category_text, candidates, intent) if did_search else ''}"
     )
