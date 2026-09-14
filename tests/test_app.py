@@ -81,6 +81,63 @@ def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
     ] == "mlx-community/flux2-klein-9b-4bit"
 
 
+def test_build_service_wires_sglang_text_and_image_clients(monkeypatch, tmp_path):
+    class FakeChatClient:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    class FakeImageClient:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    class FakeHtmlRenderer:
+        def __init__(self, **kwargs):
+            pass
+
+    settings = SimpleNamespace(
+        detail_page_template_path=None,
+        analysis_provider="local",
+        local_text_provider="sglang",
+        local_text_url="http://sglang-text:30000",
+        local_text_model="Qwen/Qwen3.8-27B",
+        local_text_timeout_seconds=300.0,
+        local_image_provider="sglang",
+        local_image_url="http://sglang-image:30001",
+        local_image_model="black-forest-labs/FLUX.2-klein-4B",
+        local_image_timeout_seconds=300.0,
+        background_provider="sglang",
+        product_photo_generation="source",
+        product_photo_shots="hero,packshot,detail,lifestyle",
+        source_photo_variation_threshold=4,
+        detail_page_renderer="html",
+        backend_product_url=None,
+        backend_auth_token=None,
+        backend_timeout_seconds=60.0,
+        prompt_version="sglang-v1",
+        asset_store_dir=str(tmp_path / "assets"),
+        sqlite_path=str(tmp_path / "state.sqlite3"),
+        response_asset_mode="base64",
+        craft_confidence_threshold=0.65,
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+    monkeypatch.setattr(factory_module, "MlxServeChatClient", FakeChatClient)
+    monkeypatch.setattr(factory_module, "SglangImageClient", FakeImageClient)
+    monkeypatch.setattr(factory_module, "HtmlDetailPageRenderer", FakeHtmlRenderer)
+
+    service = app_module.build_service()
+
+    assert service.pipeline.analyzer.chat_client.kwargs == {
+        "base_url": "http://sglang-text:30000",
+        "model": "Qwen/Qwen3.8-27B",
+        "timeout": 300.0,
+    }
+    assert service.pipeline.photo_generator.background_generator.image_client.kwargs == {
+        "base_url": "http://sglang-image:30001",
+        "model": "black-forest-labs/FLUX.2-klein-4B",
+        "timeout": 300.0,
+    }
+
+
 def test_build_service_rejects_product_pixel_generation_provider(monkeypatch):
     settings = SimpleNamespace(
         detail_page_template_path=None,

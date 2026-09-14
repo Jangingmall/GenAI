@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     analysis_provider: Literal["local"] = Field(
         default="local", alias="ANALYSIS_PROVIDER"
     )
-    local_text_provider: Literal["mlx", "ollama"] = Field(
+    local_text_provider: Literal["mlx", "ollama", "sglang"] = Field(
         default="mlx", alias="LOCAL_TEXT_PROVIDER"
     )
     local_text_url: str = Field(
@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     local_text_timeout_seconds: float = Field(
         default=300.0, alias="LOCAL_TEXT_TIMEOUT", gt=0
     )
-    local_image_provider: Literal["none", "mlx"] = Field(
+    local_image_provider: Literal["none", "mlx", "sglang"] = Field(
         default="mlx", alias="LOCAL_IMAGE_PROVIDER"
     )
     local_image_url: str = Field(
@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     product_photo_generation: Literal["source"] = Field(
         default="source", alias="PRODUCT_PHOTO_GENERATION"
     )
-    background_provider: Literal["none", "mlx"] = Field(
+    background_provider: Literal["none", "mlx", "sglang"] = Field(
         default="mlx", alias="BACKGROUND_PROVIDER"
     )
     product_photo_shots: str = Field(

@@ -46,6 +46,19 @@ def test_local_models_are_the_only_service_defaults():
     assert not hasattr(settings, "gemini_api_key")
 
 
+def test_sglang_text_and_image_providers_are_valid_settings():
+    settings = Settings(
+        _env_file=None,
+        LOCAL_TEXT_PROVIDER="sglang",
+        LOCAL_IMAGE_PROVIDER="sglang",
+        BACKGROUND_PROVIDER="sglang",
+    )
+
+    assert settings.local_text_provider == "sglang"
+    assert settings.local_image_provider == "sglang"
+    assert settings.background_provider == "sglang"
+
+
 def test_cloud_analysis_provider_is_rejected():
     with pytest.raises(ValidationError):
         Settings(_env_file=None, ANALYSIS_PROVIDER="gemini")

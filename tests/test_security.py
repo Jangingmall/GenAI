@@ -16,8 +16,11 @@ def test_env_example_contains_placeholders_not_credentials():
     values = _parse_env(Path(".env.example"))
 
     assert values["ANALYSIS_PROVIDER"] == "local"
-    assert values["LOCAL_TEXT_MODEL"] == "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
-    assert values["LOCAL_IMAGE_MODEL"] == "mlx-community/flux2-klein-9b-4bit"
+    # .env.example is the Ubuntu SGLang deployment template; the models are the
+    # names the SGLang servers register, not local MLX checkpoints.
+    assert values["LOCAL_TEXT_MODEL"] == values["TEXT_SERVED_MODEL_NAME"]
+    assert values["LOCAL_IMAGE_MODEL"] == values["IMAGE_SERVED_MODEL_NAME"]
+    assert values["IMAGE_MODEL_PATH"] == "black-forest-labs/FLUX.2-klein-4B"
     assert "AWS_ACCESS_KEY_ID" not in values
     assert "GEMINI_API_KEY" not in values
 

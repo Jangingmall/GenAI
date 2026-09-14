@@ -21,6 +21,7 @@ from local_detail_page_ai.clients import (
     MlxServeChatClient,
     MlxServeImageClient,
     OllamaChatClient,
+    SglangImageClient,
 )
 from local_detail_page_ai.runner import LocalPreviewBackend, save_pipeline_result
 from local_detail_page_ai.runner import (
@@ -38,6 +39,21 @@ class FakeJsonTransport:
 
     def post(self, url, payload, timeout):
         self.calls.append((url, payload, timeout))
+        return self.response
+
+
+class FakeSglangTransport:
+    def __init__(self, response):
+        self.response = response
+        self.json_calls = []
+        self.multipart_calls = []
+
+    def post(self, url, payload, timeout):
+        self.json_calls.append((url, payload, timeout))
+        return self.response
+
+    def post_multipart(self, url, fields, files, timeout):
+        self.multipart_calls.append((url, fields, files, timeout))
         return self.response
 
 
@@ -203,6 +219,96 @@ def test_mlx_image_client_edit_payload_uses_numeric_controls_on_json_route():
     assert payload["steps"] == 8
     assert payload["strength"] == 0.25
     assert payload["image"] == base64.b64encode(b"source-jpeg").decode("ascii")
+
+
+def test_sglang_image_client_sends_generation_contract_and_decodes_image():
+    transport = FakeSglangTransport(
+        {"created": 0, "data": [{"b64_json": base64.b64encode(b"sglang-png").decode()}]}
+    )
+    client = SglangImageClient(
+        base_url="http://sglang-image.local:30001",
+        model="black-forest-labs/FLUX.2-klein-4B",
+        transport=transport,
+    )
+
+    result = client.generate(
+        "empty product-free background",
+        negative_prompt="product, object, text",
+        width=1200,
+        height=900,
+        guidance_scale=1.0,
+        seed=42,
+    )
+
+    assert result == b"sglang-png"
+    assert transport.json_calls == [
+        (
+            "http://sglang-image.local:30001/v1/images/generations",
+            {
+                "model": "black-forest-labs/FLUX.2-klein-4B",
+                "prompt": "empty product-free background",
+                "negative_prompt": "product, object, text",
+                "n": 1,
+                "size": "1200x900",
+                "response_format": "b64_json",
+                "num_inference_steps": 4,
+                "guidance_scale": 1.0,
+                "seed": 42,
+            },
+            300.0,
+        )
+    ]
+
+
+def test_sglang_image_client_edits_with_the_openai_multipart_contract():
+    transport = FakeSglangTransport(
+        {"created": 0, "data": [{"b64_json": base64.b64encode(b"edited-png").decode()}]}
+    )
+    client = SglangImageClient(
+        base_url="http://sglang-image.local:30001",
+        model="black-forest-labs/FLUX.2-klein-4B",
+        steps=8,
+        transport=transport,
+    )
+
+    result = client.edit(
+        "e-commerce product background, modern layout, soft lighting, minimal design",
+        source_image=b"source-jpeg",
+        source_mime_type="image/jpeg",
+        width=1200,
+        height=900,
+        strength=0.25,
+        guidance_scale=1.0,
+        seed=43,
+    )
+
+    assert result == b"edited-png"
+    assert transport.multipart_calls == [
+        (
+            "http://sglang-image.local:30001/v1/images/edits",
+            {
+                "model": "black-forest-labs/FLUX.2-klein-4B",
+                "prompt": (
+                    "e-commerce product background, modern layout, soft lighting, "
+                    "minimal design"
+                ),
+                "n": 1,
+                "size": "1200x900",
+                "response_format": "b64_json",
+                "num_inference_steps": 8,
+                "guidance_scale": 1.0,
+                "seed": 43,
+            },
+            {
+                "image": {
+                    "filename": "source.jpg",
+                    "content_type": "image/jpeg",
+                    "data": b"source-jpeg",
+                }
+            },
+            300.0,
+        )
+    ]
 
 
 def test_mlx_usage_scene_generator_uses_balanced_strength_for_real_usage_context():

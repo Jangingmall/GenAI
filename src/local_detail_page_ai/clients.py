@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import uuid
 from typing import Any, Protocol
 from urllib import error, request
 
@@ -13,6 +14,17 @@ class LocalModelError(RuntimeError):
 
 class JsonTransport(Protocol):
     def post(self, url: str, payload: dict[str, Any], timeout: float) -> dict[str, Any]:
+        ...
+
+
+class SglangImageTransport(JsonTransport, Protocol):
+    def post_multipart(
+        self,
+        url: str,
+        fields: dict[str, Any],
+        files: dict[str, dict[str, Any]],
+        timeout: float,
+    ) -> dict[str, Any]:
         ...
 
 
@@ -39,6 +51,30 @@ class UrllibJsonTransport:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
+        return self._post_request(http_request, timeout)
+
+    def post_multipart(
+        self,
+        url: str,
+        fields: dict[str, Any],
+        files: dict[str, dict[str, Any]],
+        timeout: float,
+    ) -> dict[str, Any]:
+        boundary = f"----local-detail-page-ai-{uuid.uuid4().hex}"
+        body = _encode_multipart_form(fields, files, boundary)
+        http_request = request.Request(
+            url,
+            data=body,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": f"multipart/form-data; boundary={boundary}",
+            },
+            method="POST",
+        )
+        return self._post_request(http_request, timeout)
+
+    @staticmethod
+    def _post_request(http_request: request.Request, timeout: float) -> dict[str, Any]:
         try:
             with request.urlopen(http_request, timeout=timeout) as response:
                 raw = response.read()
@@ -173,7 +209,7 @@ class MlxServeImageClient:
         self,
         *,
         base_url: str = "http://127.0.0.1:11234",
-        model: str = "mlx-community/flux2-klein-9b-4bit",
+        model: str = "black-forest-labs/FLUX.2-klein-4B",
         timeout: float = 300.0,
         # FLUX.2 Klein is a 4-step distilled model, and all measurements so
         # far used 4 steps. Increase this only after a valid quality A/B test
@@ -257,6 +293,158 @@ class MlxServeImageClient:
             return base64.b64decode(encoded, validate=True)
         except (ValueError, binascii.Error) as exc:
             raise LocalModelError("MLX Serve image output is not valid base64") from exc
+
+
+class SglangImageClient:
+    """SGLang Diffusion image client using its OpenAI-compatible image API."""
+
+    def __init__(
+        self,
+        *,
+        base_url: str = "http://127.0.0.1:30001",
+        model: str = "black-forest-labs/FLUX.2-klein-4B",
+        timeout: float = 300.0,
+        # FLUX.2 Klein is a distilled model; the existing local image contract
+        # uses four inference steps and SGLang names that field explicitly.
+        steps: int = 4,
+        transport: SglangImageTransport | None = None,
+    ):
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.timeout = timeout
+        self.steps = steps
+        self.transport = transport or UrllibJsonTransport()
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        negative_prompt: str = "",
+        width: int = 1024,
+        height: int = 1024,
+        guidance_scale: float | None = None,
+        seed: int | None = None,
+    ) -> bytes:
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "prompt": prompt,
+            "negative_prompt": negative_prompt,
+            "n": 1,
+            "size": f"{width}x{height}",
+            "response_format": "b64_json",
+            "num_inference_steps": self.steps,
+        }
+        if guidance_scale is not None:
+            payload["guidance_scale"] = guidance_scale
+        if seed is not None:
+            payload["seed"] = seed
+        response = self.transport.post(
+            f"{self.base_url}/v1/images/generations",
+            payload,
+            self.timeout,
+        )
+        return self._decode_image_response(response)
+
+    def edit(
+        self,
+        prompt: str,
+        *,
+        source_image: bytes,
+        source_mime_type: str,
+        width: int = 1024,
+        height: int = 1024,
+        strength: float = 0.30,
+        guidance_scale: float | None = None,
+        seed: int | None = None,
+    ) -> bytes:
+        """Edit one source image through SGLang's multipart image edit route."""
+        del strength  # SGLang's edit handler has no strength form field.
+        if not source_image:
+            raise ValueError("source_image must not be empty")
+        if not source_mime_type.startswith("image/"):
+            raise ValueError("source_mime_type must be an image MIME type")
+        fields: dict[str, Any] = {
+            "model": self.model,
+            "prompt": prompt,
+            "n": 1,
+            "size": f"{width}x{height}",
+            "response_format": "b64_json",
+            "num_inference_steps": self.steps,
+        }
+        if guidance_scale is not None:
+            fields["guidance_scale"] = guidance_scale
+        if seed is not None:
+            fields["seed"] = seed
+        response = self.transport.post_multipart(
+            f"{self.base_url}/v1/images/edits",
+            fields,
+            {
+                "image": {
+                    "filename": f"source.{_image_extension(source_mime_type)}",
+                    "content_type": source_mime_type,
+                    "data": source_image,
+                }
+            },
+            self.timeout,
+        )
+        return self._decode_image_response(response)
+
+    @staticmethod
+    def _decode_image_response(response: dict[str, Any]) -> bytes:
+        data = response.get("data")
+        item = data[0] if isinstance(data, list) and data else None
+        encoded = item.get("b64_json") if isinstance(item, dict) else None
+        if not isinstance(encoded, str) or not encoded:
+            raise LocalModelError("SGLang image response has no b64_json image")
+        try:
+            return base64.b64decode(encoded, validate=True)
+        except (ValueError, binascii.Error) as exc:
+            raise LocalModelError("SGLang image output is not valid base64") from exc
+
+
+def _image_extension(mime_type: str) -> str:
+    return {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+    }.get(mime_type, "bin")
+
+
+def _encode_multipart_form(
+    fields: dict[str, Any],
+    files: dict[str, dict[str, Any]],
+    boundary: str,
+) -> bytes:
+    body = bytearray()
+    boundary_bytes = boundary.encode("ascii")
+    for name, value in fields.items():
+        body.extend(b"--")
+        body.extend(boundary_bytes)
+        body.extend(b"\r\n")
+        body.extend(
+            f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(
+                "utf-8"
+            )
+        )
+        body.extend(str(value).encode("utf-8"))
+        body.extend(b"\r\n")
+    for name, file_info in files.items():
+        body.extend(b"--")
+        body.extend(boundary_bytes)
+        body.extend(b"\r\n")
+        body.extend(
+            (
+                f'Content-Disposition: form-data; name="{name}"; '
+                f'filename="{file_info["filename"]}"\r\n'
+                f'Content-Type: {file_info["content_type"]}\r\n\r\n'
+            ).encode("utf-8")
+        )
+        body.extend(file_info["data"])
+        body.extend(b"\r\n")
+    body.extend(b"--")
+    body.extend(boundary_bytes)
+    body.extend(b"--\r\n")
+    return bytes(body)
 
 
 def _message_content_text(content: Any) -> str:

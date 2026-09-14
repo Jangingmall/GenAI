@@ -14,6 +14,7 @@ from .clients import (
     MlxServeChatClient,
     MlxServeImageClient,
     OllamaChatClient,
+    SglangImageClient,
 )
 from .runner import (
     MlxServeBackgroundGenerator,
@@ -30,14 +31,14 @@ class _UnconfiguredBackend:
 
 
 def build_service(settings) -> DetailPageJobService:
-    """Assemble the production service from the local MLX/Ollama adapters."""
+    """Assemble the production service from the local model adapters."""
     template_image = None
     if settings.detail_page_template_path:
         template_image = Path(settings.detail_page_template_path).read_bytes()
 
     if settings.analysis_provider != "local":
         raise ValueError("ANALYSIS_PROVIDER must be local")
-    if settings.local_text_provider == "mlx":
+    if settings.local_text_provider in {"mlx", "sglang"}:
         chat_client = MlxServeChatClient(
             base_url=settings.local_text_url,
             model=settings.local_text_model,
@@ -50,7 +51,7 @@ def build_service(settings) -> DetailPageJobService:
             timeout=settings.local_text_timeout_seconds,
         )
     else:
-        raise ValueError("LOCAL_TEXT_PROVIDER must be 'mlx' or 'ollama'")
+        raise ValueError("LOCAL_TEXT_PROVIDER must be 'mlx', 'ollama', or 'sglang'")
     analyzer = LocalProductAnalyzer(chat_client=chat_client)
     analysis_model = settings.local_text_model
     asset_store = LocalFileAssetStore(
@@ -87,22 +88,30 @@ def build_service(settings) -> DetailPageJobService:
     usage_scene_generator = None
     detail_view_generator = None
     image_model = "source-preserving-pillow-compositor"
-    if settings.background_provider == "mlx":
-        if settings.local_image_provider != "mlx":
+    if settings.background_provider in {"mlx", "sglang"}:
+        if settings.local_image_provider != settings.background_provider:
             raise ValueError(
-                "BACKGROUND_PROVIDER=mlx requires LOCAL_IMAGE_PROVIDER=mlx"
+                "BACKGROUND_PROVIDER must match LOCAL_IMAGE_PROVIDER when image "
+                "generation is enabled"
             )
-        image_client = MlxServeImageClient(
-            base_url=settings.local_image_url,
-            model=settings.local_image_model,
-            timeout=settings.local_image_timeout_seconds,
-        )
+        if settings.local_image_provider == "mlx":
+            image_client = MlxServeImageClient(
+                base_url=settings.local_image_url,
+                model=settings.local_image_model,
+                timeout=settings.local_image_timeout_seconds,
+            )
+        else:
+            image_client = SglangImageClient(
+                base_url=settings.local_image_url,
+                model=settings.local_image_model,
+                timeout=settings.local_image_timeout_seconds,
+            )
         background_generator = MlxServeBackgroundGenerator(image_client)
         usage_scene_generator = MlxServeUsageSceneGenerator(image_client)
         detail_view_generator = MlxServeDetailViewGenerator(image_client)
         image_model = settings.local_image_model
-    elif settings.local_image_provider not in {"none", "mlx"}:
-        raise ValueError("LOCAL_IMAGE_PROVIDER must be 'none' or 'mlx'")
+    elif settings.local_image_provider not in {"none", "mlx", "sglang"}:
+        raise ValueError("LOCAL_IMAGE_PROVIDER must be 'none', 'mlx', or 'sglang'")
     photo_generator = SourcePreservingProductPhotoGenerator(
         asset_store=asset_store,
         background_generator=background_generator,
