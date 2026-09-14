@@ -42,6 +42,7 @@ services:
     command: >
       python3 -m sglang.launch_server
       --model-path ${TEXT_MODEL_PATH:-cyankiwi/Qwen3.8-27B-AWQ-INT4}
+      --revision ${TEXT_MODEL_REVISION:-6e134bae811fb5adac50ee042ae5f029ac6779aa}
       --served-model-name ${TEXT_SERVED_MODEL_NAME:-qwen-text}
       --host 0.0.0.0
       --port 30000
@@ -84,6 +85,7 @@ services:
     command: >
       sglang serve
       --model-path ${IMAGE_MODEL_PATH:-circulus/FLUX.2-klein-9B-bnb-4bit}
+      --revision ${IMAGE_MODEL_REVISION:-58c2804f31af12c8888504b96250010c50b55e44}
       --served-model-name ${IMAGE_SERVED_MODEL_NAME:-flux-klein}
       --host 0.0.0.0
       --port 30001

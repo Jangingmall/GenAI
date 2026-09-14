@@ -279,6 +279,26 @@ docker run --rm \
 
 ---
 
+### 6.4.1 모델 가중치 버전 고정
+
+두 모델은 Hugging Face 저장소 이름만으로 받지 않고 커밋까지 고정해 받습니다. 저장소가 갱신되면 이름이 같아도 다음 다운로드 때 다른 가중치가 들어오기 때문입니다. 텍스트 모델 저장소는 2026-09-11 에 갱신된 이력이 있고, 이미지 모델은 커뮤니티 양자화본이라 특히 필요합니다.
+
+| 모델 | `.env` 변수 | 고정 커밋 (2026-09-14 확인) |
+| --- | --- | --- |
+| `cyankiwi/Qwen3.8-27B-AWQ-INT4` | `TEXT_MODEL_REVISION` | `6e134bae811fb5adac50ee042ae5f029ac6779aa` |
+| `circulus/FLUX.2-klein-9B-bnb-4bit` | `IMAGE_MODEL_REVISION` | `58c2804f31af12c8888504b96250010c50b55e44` |
+
+두 SGLang 서버에 `--revision` 으로 전달됩니다(SGLang 0.5.19 의 텍스트 `ServerArgs.revision`, 확산 `ServerArgs.revision` — 확산 서버는 `runtime/weights/source.py` 에서 다운로드에 이 값을 넘깁니다). `tests/test_security.py` 가 `.env.example` 의 두 값이 40자리 커밋 해시인지 검사해 고정이 풀리지 않게 합니다.
+
+모델 캐시는 이름 있는 볼륨 `huggingface-cache` 에 남으므로 컨테이너를 재시작하거나 이미지를 다시 빌드해도 다시 받지 않습니다.
+
+버전을 올릴 때:
+1. 저장소 커밋 확인: `curl -s https://huggingface.co/api/models/<저장소> | python3 -c "import json,sys;print(json.load(sys.stdin)['sha'])"`
+2. `.env` 의 해당 `*_REVISION` 을 새 커밋으로 바꾸고 `docker compose up -d` — 새 커밋 가중치를 한 번 받습니다.
+3. 6.6 체크리스트로 다시 검증합니다. 문제가 있으면 이전 커밋으로 되돌리면 캐시에 남은 가중치를 그대로 씁니다.
+
+rembg 누끼 모델은 `uv.lock` 이 rembg 버전(2.0.69)을 고정하므로 받는 모델 파일도 그 버전에 묶여 있습니다.
+
 ### 6.5 메모리 계산 및 CPU 오프로드를 제외한 이유
 
 - **VRAM 분할 및 여유분 계산 (L40S 가용 44.70 GiB 기준)**:

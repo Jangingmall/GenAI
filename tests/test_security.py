@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -21,6 +22,10 @@ def test_env_example_contains_placeholders_not_credentials():
     assert values["LOCAL_TEXT_MODEL"] == values["TEXT_SERVED_MODEL_NAME"]
     assert values["LOCAL_IMAGE_MODEL"] == values["IMAGE_SERVED_MODEL_NAME"]
     assert values["IMAGE_MODEL_PATH"] == "circulus/FLUX.2-klein-9B-bnb-4bit"
+    # Model weights are pinned to a Hugging Face commit so a repository update
+    # cannot silently change what the server downloads.
+    for key in ("TEXT_MODEL_REVISION", "IMAGE_MODEL_REVISION"):
+        assert re.fullmatch(r"[0-9a-f]{40}", values[key]), key
     assert "AWS_ACCESS_KEY_ID" not in values
     assert "GEMINI_API_KEY" not in values
 
