@@ -137,6 +137,58 @@ def test_purpose_relevance_warning_skips_when_no_candidates():
     assert gen._purpose_relevance_warning("낚시용", [], "product_search") == ""
 
 
+def test_build_reply_skips_purpose_warning_when_no_search_happened():
+    """narrow_down이 새 조건 없이 직전 후보를 재사용하는 턴(예: "가격 얼마야?")은
+    query_text에 주제어가 안 붙어 종목명이 없는 것처럼 보이는데, 이때 용도 불일치
+    경고가 붙으면 정작 물어본 걸(가격 등) 무시하고 후보 재소개만 반복하는 회귀가
+    실측 확인됐다 — did_search=False면 경고 자체를 안 붙여야 한다."""
+    captured = {}
+
+    def capturing_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps(
+            {
+                "reply": "옹기토 술독은 99,000원입니다.",
+                "allowed_ids": [130],
+                "suggestions": [],
+            }
+        )
+
+    candidates = [{"product_id": 130, "name": "옹기토 술독", "evidence": {}}]
+    gen.build_reply(
+        "가격 얼마야?",
+        candidates,
+        "narrow_down",
+        query_text="가격 얼마야?",
+        did_search=False,
+        chat=capturing_chat,
+        **_NO_DB,
+    )
+    assert "시스템 경고" not in captured["user_content"]
+
+
+def test_build_reply_keeps_purpose_warning_when_search_happened():
+    captured = {}
+
+    def capturing_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps(
+            {"reply": "확인되는 상품이 없어요.", "allowed_ids": [], "suggestions": []}
+        )
+
+    candidates = [{"product_id": 130, "name": "옹기토 술독"}]
+    gen.build_reply(
+        "낚시할 때 쓰기 좋은 것 있나요",
+        candidates,
+        "product_search",
+        query_text="낚시할 때 쓰기 좋은 것 있나요",
+        did_search=True,
+        chat=capturing_chat,
+        **_NO_DB,
+    )
+    assert "시스템 경고" in captured["user_content"]
+
+
 def test_format_candidates_includes_category_and_evidence():
     candidates = [
         {

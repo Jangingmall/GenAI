@@ -397,6 +397,7 @@ def build_reply(
     history: list[dict] | None = None,
     *,
     query_text: str | None = None,
+    did_search: bool = True,
     think: bool = True,
     chat=chat_json,
     fetch_prices=_fetch_prices,
@@ -421,6 +422,15 @@ def build_reply(
     gemma2:9b는 think 파라미터 자체를 지원하지 않아(llm.py:_THINK_SUPPORTED_PREFIX가
     "qwen3"만 허용) 이 값은 현재 아무 효과가 없다 — API 요청에 think 키 자체가 실리지
     않는다.
+
+    did_search 기본값 True: 오케스트레이터가 이번 턴에 실제로 재검색을 했는지 넘긴다.
+    narrow_down이 새 조건 없이 직전 후보를 그대로 재사용하는 턴(예: "가격 얼마야?")은
+    query_text에 주제어가 안 붙어 종목명이 없는 것처럼 보이는데, 이때도 _purpose_
+    relevance_warning이 걸리면 "이번에 검색한 게 용도와 무관할 수 있다"는 엉뚱한 경고가
+    붙어 정작 물어본 가격 질문에 직접 답해야 한다는 규칙3을 밀어내 버린다(실측 확인:
+    "옹기토 술독 얼마야?"류 질문에 가격 대신 또 후보 소개만 반복). 재검색이 실제로
+    없었으면(did_search=False) 이 경고 자체를 붙이지 않는다 — 이번 턴에 검색을 안 했으니
+    "검색이 무관한 걸 가져왔을 수 있다"는 전제 자체가 성립하지 않는다.
     """
     category_text = f"{message} {query_text}" if query_text else message
     candidates = _filter_by_category(candidates, category_text)
@@ -436,7 +446,7 @@ def build_reply(
         f"[추출된 조건]\n{_format_filters(filters)}\n\n"
         f"[후보 상품]\n{_format_candidates(candidates, prices, artisans)}"
         f"{_ambiguity_warning(category_text)}"
-        f"{_purpose_relevance_warning(category_text, candidates, intent)}"
+        f"{_purpose_relevance_warning(category_text, candidates, intent) if did_search else ''}"
     )
 
     raw = chat(

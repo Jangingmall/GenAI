@@ -384,6 +384,7 @@ def run(
         contact1["filters"],
         history,
         query_text=contact1["query_text"],
+        did_search=did_search,
         think=think,
         chat=chat,
         fetch_prices=fetch_prices,
