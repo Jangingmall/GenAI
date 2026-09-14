@@ -375,7 +375,16 @@ def run(
             fresh = search_and_rank(contact1, top_k=9)
             candidates = [c for c in fresh if c["product_id"] not in already_shown]
         else:
-            candidates = search_and_rank(contact1)
+            # top_k=9로 넉넉히 받는다 — wants_alternatives와 같은 이유(recommend()가
+            # 내부에서 이미 후보를 최대 10개까지 뽑아두는 구조라 A담당 코드를 안
+            # 건드리고도 top_k만 넉넉히 넘길 수 있다). 기본 top_k(3)만 받으면 종목
+            # 대조(_filter_by_category)가 그중 진짜 일치하는 것만 남기고 나머지를
+            # 빼는데, 검색 임베딩이 무관한 종목을 섞어 가져오는 경우가 실측상 잦아
+            # 3개 중 1개만 남는 등 과소 노출이 생겼다(실측: "선물로 좋은 도자기
+            # 찾아줘"). 최종 노출 개수는 build_reply의 _filter_by_category 뒤에서
+            # 상위 3개로 다시 자른다 — 여기서 넉넉히 받는 건 "고를 재료"를 늘리는
+            # 것뿐, 실제로 몇 개를 보여줄지는 그쪽 책임이다.
+            candidates = search_and_rank(contact1, top_k=9)
         did_search = True
     generated = build_reply(
         message,

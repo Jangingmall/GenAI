@@ -171,6 +171,9 @@ def _is_material_subcategory_contradiction(message: str) -> bool:
     return len(_mentioned_categories(message)) >= 2
 
 
+_MAX_DISPLAYED_CANDIDATES = 3
+
+
 def _filter_by_category(candidates: list[dict], message: str) -> list[dict]:
     """사용자가 카테고리를 명시했으면, 유효 카테고리가 다른 후보를 뺀다.
 
@@ -409,6 +412,11 @@ def build_reply(
     조건을 다시 묻지 않고, 조건을 하나도 못 뽑았을 땐 조건을 캐묻는 질문을 하도록 넘긴다.
     intent는 최종 응답에서 오케스트레이터(S6)가 부착한다 — 여기서는 안 담는다.
 
+    candidates는 종목 필터(_filter_by_category) 뒤 상위 _MAX_DISPLAYED_CANDIDATES(3)개로
+    자른다 — 오케스트레이터가 검색 임베딩의 종목 혼입을 대비해 top_k=9로 넉넉히 받아오므로
+    (실측: top_k=3만 받으면 종목 필터 후 1개만 남는 과소 노출이 잦았다), 여기서 다시
+    최종 노출 개수를 확정하지 않으면 4개 이상 보여줄 수 있다.
+
     query_text는 종목 대조(_filter_by_category)에 message와 함께 쓴다 — narrow_down
     후속 질문("가격대 확인해줘", "3만원 아래로 보여줘")은 종목 단어가 이번 message엔
     없고 intent.py가 이전 대화에서 이어 붙인 query_text에만 있을 수 있다(실측 확인:
@@ -433,7 +441,9 @@ def build_reply(
     "검색이 무관한 걸 가져왔을 수 있다"는 전제 자체가 성립하지 않는다.
     """
     category_text = f"{message} {query_text}" if query_text else message
-    candidates = _filter_by_category(candidates, category_text)
+    candidates = _filter_by_category(candidates, category_text)[
+        :_MAX_DISPLAYED_CANDIDATES
+    ]
     candidate_ids = [c["product_id"] for c in candidates]
     prices = fetch_prices(candidate_ids)
     artisans = fetch_artisans(candidate_ids)

@@ -102,6 +102,33 @@ def test_filter_by_category_excludes_wood_item_hidden_by_ambiguous_match():
     assert [c["product_id"] for c in filtered] == [78]
 
 
+def test_build_reply_caps_candidates_at_max_displayed_even_with_larger_pool():
+    """오케스트레이터가 검색 임베딩의 종목 혼입에 대비해 top_k=9로 넉넉히 받아오므로
+    (실측: "선물로 좋은 도자기 찾아줘"가 top_k=3만 받으면 종목 필터 후 1개만 남던
+    과소 노출 문제), build_reply가 여기서 다시 최종 3개로 자르지 않으면 9개를
+    전부 노출할 수 있다."""
+    captured = {}
+
+    def capturing_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps(
+            {"reply": "여러 점을 골랐어요.", "allowed_ids": [], "suggestions": []}
+        )
+
+    candidates = [
+        {"product_id": i, "name": f"청자 찻잔{i}", "evidence": {}} for i in range(9)
+    ]
+    gen.build_reply(
+        "도자기 찻잔 있나요",
+        candidates,
+        "product_search",
+        chat=capturing_chat,
+        **_NO_DB,
+    )
+    shown_ids = [f"product_id: {i}" in captured["user_content"] for i in range(9)]
+    assert sum(shown_ids) == gen._MAX_DISPLAYED_CANDIDATES
+
+
 def test_purpose_relevance_warning_fires_for_unnamed_activity_word():
     """ "낚시"처럼 가르친 적 없는 활동 단어라도, 종목명이 아니라 용도로 검색된
     product_search면 경고를 붙인다(특정 단어에 하드코딩하지 않은 일반 조건)."""

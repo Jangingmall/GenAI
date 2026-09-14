@@ -21,7 +21,7 @@ def _sequenced_chat(intent_payload: dict, generate_payload: dict):
 
 
 def _fake_search_and_rank(candidates: list[dict]):
-    def fake(contact1: dict) -> list[dict]:
+    def fake(contact1: dict, top_k: int = 3) -> list[dict]:
         return candidates
 
     return fake
@@ -106,7 +106,7 @@ def test_run_assembles_final_contract():
 def test_run_passes_contact1_to_search_and_rank():
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["contact1"] = contact1
         return []
 
@@ -335,7 +335,7 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
     fresh = [{"product_id": 38, "name": "백자 대접", "score": 0.7, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["called"] = True
         return fresh
 
@@ -377,7 +377,7 @@ def test_run_narrow_down_new_filter_injects_previous_topic_into_query_text():
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -413,7 +413,7 @@ def test_run_narrow_down_new_filter_without_history_leaves_query_text_untouched(
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -454,7 +454,7 @@ def test_run_narrow_down_new_filter_prefers_previous_query_text_over_last_messag
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -856,7 +856,7 @@ def test_warmup_also_warms_search_and_rank():
     남아있었기 때문). search_and_rank도 반드시 호출돼야 한다."""
     seen = {"called": False}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["called"] = True
         return []
 
