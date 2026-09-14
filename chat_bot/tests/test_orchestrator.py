@@ -556,6 +556,47 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
     assert result["candidates"] == fresh
 
 
+def test_run_narrow_down_new_filter_with_zero_results_preserves_previous_context():
+    """새 하드필터로 재검색했는데 결과가 0건이면(예: "3만원 아래로"에 맞는 게 없음),
+    다음 턴이 참조할 candidates·shown_product_ids·query_text는 이전 값을 그대로
+    들고 가야 한다 — 안 그러면 곧바로 이어지는 "그중 가장 저렴한 것 설명해줘"·색상
+    질문 같은 후속 참조가 통째로 끊긴다(실측 확인: 0건 응답 직후 방금 전까지 보여준
+    상품 정보까지 다 사라져서 "아직 없어요"로 잘못 답함). 이번 턴 reply·product_ids는
+    그대로 "못 찾았다"고 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 30000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "3만 원 이하로는 찾지 못했어요.",
+            "allowed_ids": [],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    result = rr.run(
+        "3만원 아래로 보여줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        previous_query_text="찻잔 있나요",
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "3만 원 이하로는 찾지 못했어요."
+    assert result["product_ids"] == []
+    assert result["candidates"] == previous
+    assert result["shown_product_ids"] == [78]
+    assert result["query_text"] == "찻잔 있나요"
+
+
 # ---------------------------------------------------------------------------
 # 카드 중복 노출 억제 — previous_product_ids와 완전히 같은 세트면 카드를 안 띄운다
 # ---------------------------------------------------------------------------

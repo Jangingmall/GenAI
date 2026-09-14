@@ -407,6 +407,15 @@ def run(
     is_repeat = bool(previous_product_ids) and set(raw_product_ids) == set(
         previous_product_ids
     )
+    # 재검색했는데 결과가 0건이면(예: "3만원 아래로"에 맞는 게 없음) 다음 턴이 참조할
+    # candidates·shown_product_ids·query_text는 이전 값을 그대로 들고 간다 — 안 그러면
+    # 곧바로 이어지는 "그중 가장 저렴한 것 설명해줘"·색상 질문 같은 후속 참조가 통째로
+    # 끊긴다(실측 확인: 0건 응답 직후 방금 전까지 보여준 상품 정보까지 다 사라져서
+    # "아직 없어요"로 잘못 답함). 이번 턴 reply·product_ids는 그대로 "못 찾았다"고
+    # 정직하게 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다.
+    search_found_nothing = (
+        did_search and not generated["candidates"] and bool(previous_candidates)
+    )
     return {
         "reply": generated["reply"],
         "intent": contact1["intent"],
@@ -415,18 +424,25 @@ def run(
         # build_reply가 종목 대조까지 마친 뒤 돌려준 candidates를 쓴다 — search_and_rank의
         # 원본(미필터링) 출력을 그대로 넘기면, 이번 턴에 걸러낸 다른 종목 후보가 다음 턴
         # narrow_down 재사용에서 그대로 다시 나타난다(실측 확인).
-        "candidates": generated["candidates"],
+        "candidates": (
+            previous_candidates if search_found_nothing else generated["candidates"]
+        ),
         "filters": contact1["filters"],
         # 카드 억제 여부와 무관하게 "실제로 관련된 상품이 뭔지"는 그대로 넘긴다 — 다음
         # 턴 previous_product_ids 비교 기준이 화면 표시 여부에 따라 계속 바뀌면(억제된
         # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
         # 뜨는 역효과가 난다.
-        "shown_product_ids": raw_product_ids,
+        "shown_product_ids": (
+            previous_product_ids if search_found_nothing else raw_product_ids
+        ),
         # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
         # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
-        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다.
+        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다. 0건으로
+        # 끝난 재검색도 같은 이유로 "안 쓰인 것"과 동일하게 취급한다.
         "query_text": (
-            contact1["query_text"] if did_search else (previous_query_text or "")
+            (previous_query_text or "")
+            if search_found_nothing
+            else (contact1["query_text"] if did_search else (previous_query_text or ""))
         ),
     }
 
