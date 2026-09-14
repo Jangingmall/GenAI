@@ -166,6 +166,38 @@ def test_to_contact1_corrects_llm_putting_lower_bound_into_max_price():
     assert result["filters"]["min_price"] == 1000000
 
 
+def test_to_contact1_corrects_llm_putting_upper_bound_into_min_price_for_andoeneun():
+    """팀원 공유 실사용 리포트: "5만원 안 되는 선물"(상한 표현)이 min_price로
+    뒤집혀 나왔다 — "안 되는"이 방향 판단 키워드 목록에 없어서 코드 보정 자체가
+    아예 안 걸렸던 게 원인이었다. "안 되는"·"안되는" 둘 다 커버해야 한다."""
+    for phrase, message in [
+        (
+            "5만원 안 되는 선물 찾아줘",
+            "5만원 안 되는 선물 찾아줘",
+        ),
+        (
+            "5만원 안되는 선물 찾아줘",
+            "5만원 안되는 선물 찾아줘",
+        ),
+    ]:
+        raw = {
+            "intent": "gift_recommendation",
+            "max_price": None,
+            "min_price": 50000,
+            "gift_theme": [],
+            "color": [],
+            "query_text": phrase,
+        }
+        result = it._to_contact1(
+            raw,
+            gift_themes=prompts.GIFT_THEMES,
+            colors=prompts.COLORS,
+            message=message,
+        )
+        assert result["filters"]["max_price"] == 50000
+        assert result["filters"]["min_price"] is None
+
+
 def test_to_contact1_keeps_max_price_when_message_says_upper_bound():
     raw = {
         "intent": "product_search",

@@ -77,7 +77,16 @@ def _price_to_won(text_or_num) -> int | None:
 
 
 _MIN_PRICE_WORDS = ("이상", "부터", "넘는", "넘게", "초과")
-_MAX_PRICE_WORDS = ("이하", "까지", "미만", "아래", "이내", "안으로")
+_MAX_PRICE_WORDS = (
+    "이하",
+    "까지",
+    "미만",
+    "아래",
+    "이내",
+    "안으로",
+    "안 되는",
+    "안되는",
+)
 
 
 def _price_direction(message: str) -> str | None:
