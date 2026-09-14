@@ -530,9 +530,48 @@ def test_explain_products_calls_llm_once_and_shares_reply_across_products():
             "evidence": {"artisan_input": "유약 흘림"},
         },
     ]
-    result = gen.explain_products("모두 설명해줘", candidates, chat=fake)
+    result = gen.explain_products(
+        "모두 설명해줘", candidates, chat=fake, fetch_attrs=_no_attrs
+    )
 
     assert calls["n"] == 1
     assert result["product_ids"] == [1, 2]
     assert result["reply"] == "두 상품 모두 장인이 직접 만든 작품입니다."
     assert result["suggestions"] == ["다른 색상으로", "포장 여부 확인"]
+
+
+def test_format_explain_block_includes_material_and_color():
+    """실측 확인: explain_product·explain_products엔 재질·색상이 없어서 "무슨
+    색이야?"류 질문에 실제 DB와 다른 색을 지어내 답한 사례가 있었다(build_reply와
+    같은 사고) — 재발 방지."""
+    candidate = {"product_id": 1, "name": "옹기토 장독", "evidence": {}}
+    block = gen._format_explain_block(
+        candidate, {"material": "옹기토", "color": "BROWN"}
+    )
+    assert "재질: 옹기토" in block
+    assert "색상: 갈색" in block
+
+
+def test_format_explain_block_shows_no_info_when_attr_missing():
+    candidate = {"product_id": 1, "name": "T", "evidence": {}}
+    block = gen._format_explain_block(candidate)
+    assert "재질: 정보 없음" in block
+    assert "색상: 정보 없음" in block
+
+
+def test_explain_product_fetches_attrs_by_product_id(monkeypatch):
+    captured = {}
+
+    def fake_chat(messages, schema, *, think, model=None):
+        captured["prompt"] = messages[0]["content"]
+        return json.dumps({"reply": "갈색 옹기예요.", "suggestions": []})
+
+    def fake_fetch_attrs(product_ids):
+        assert product_ids == [1]
+        return {1: {"material": "옹기토", "color": "BROWN"}}
+
+    candidate = {"product_id": 1, "name": "옹기토 장독", "evidence": {}}
+    gen.explain_product(
+        "무슨 색이야?", candidate, chat=fake_chat, fetch_attrs=fake_fetch_attrs
+    )
+    assert "색상: 갈색" in captured["prompt"]
