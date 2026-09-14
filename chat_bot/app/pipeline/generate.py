@@ -458,7 +458,6 @@ def build_reply(
     *,
     query_text: str | None = None,
     did_search: bool = True,
-    think: bool = True,
     chat=chat_json,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
@@ -484,9 +483,15 @@ def build_reply(
     같은 이유 — 유닛 테스트가 실제 DB 연결 없이 돌아가야 한다). 기본값은 PostgreSQL이
     필요하다.
 
-    think 기본값 True: thinking을 지원하는 모델(예: qwen3, gemma4)에서만 실제로 켜진다 —
-    llm.py가 Ollama의 /api/show capabilities로 지원 여부를 판단해 think 키를 붙이거나
-    뺀다. 지금 쓰는 gemma2:9b는 thinking을 지원하지 않아 이 값은 현재 효과가 없다.
+    think은 파라미터로 안 받고 chat 호출부에서 항상 False로 고정한다(intent.py의
+    classify_and_extract와 같은 방식) — thinking을 지원하는 모델(gemma4 등)에서도
+    실측해보니 단순 채팅조차 8배 느려졌고(0.58초→4.67초), 이 GENERATE_SYSTEM
+    프롬프트로는 단독 로드 상태에서도 180초 타임아웃으로 아예 실패했다(think=False는
+    같은 조건에서 25.8초 성공). 구조화 JSON 출력이 목적인 이 파이프라인엔 thinking
+    체인이 그대로 지연 비용일 뿐이고, 실제로 True를 넘기는 호출부도 없었다(qwen3
+    복귀를 대비해 남겨뒀던 파라미터였는데 한 번도 안 쓰였다) — llm.py의 capabilities
+    판단(Ollama의 /api/show)이 thinking 미지원 모델(gemma2:9b)에선 이 값을 어차피
+    무시하니, 나중에 thinking 모델을 실제로 쓰게 되면 그때 다시 파라미터로 노출한다.
 
     did_search 기본값 True: 오케스트레이터가 이번 턴에 실제로 재검색을 했는지 넘긴다.
     narrow_down이 새 조건 없이 직전 후보를 그대로 재사용하는 턴(예: "가격 얼마야?")은
@@ -523,7 +528,7 @@ def build_reply(
             {"role": "user", "content": user_content},
         ],
         _GENERATE_OUTPUT_SCHEMA,
-        think=think,
+        think=False,
     )
     output = _GenerateOutput.model_validate_json(raw)
 

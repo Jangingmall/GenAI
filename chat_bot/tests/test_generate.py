@@ -388,7 +388,10 @@ def test_build_reply_drops_id_not_in_candidates():
     assert result["product_ids"] == [1]
 
 
-def test_build_reply_calls_chat_with_think_true():
+def test_build_reply_calls_chat_with_think_false_by_default():
+    """think 기본값은 False다 — thinking을 지원하는 모델(qwen3·gemma4)이 실제로 쓰이지
+    않는 한, thinking을 켤 이유가 없다(gemma4는 오히려 응답이 8배 느려지고 타임아웃까지
+    난 것을 실측 확인했다)."""
     seen = {}
 
     def fake(messages, schema, *, think, model=None):
@@ -396,7 +399,7 @@ def test_build_reply_calls_chat_with_think_true():
         return json.dumps({"reply": "ok", "allowed_ids": [], "suggestions": []})
 
     gen.build_reply("메시지", [], "general_chat", chat=fake, **_NO_DB)
-    assert seen["think"] is True
+    assert seen["think"] is False
 
 
 def test_build_reply_filters_mismatched_category_by_name():
