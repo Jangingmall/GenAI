@@ -4,6 +4,7 @@ _session.post를 monkeypatch로 갈아끼워 피한다.
 실행: python -m pytest tests/test_llm.py -q
 """
 
+from app.config import settings
 from app.pipeline import llm
 
 
@@ -106,3 +107,54 @@ def test_model_capabilities_caches_per_model(monkeypatch):
     )
 
     assert calls["show"] == 1
+
+
+# ---------------------------------------------------------------------------
+# LLM_BACKEND="mlx-serve" — OpenAI 호환 API로 대신 부른다
+# ---------------------------------------------------------------------------
+
+
+def test_chat_json_posts_to_mlx_serve_when_backend_configured(monkeypatch):
+    """LLM_BACKEND가 mlx-serve면 Ollama 전용 엔드포인트(/api/chat, format 키)가 아니라
+    OpenAI 호환 엔드포인트(/v1/chat/completions, response_format 키)로 보내야 한다 —
+    실측 확인: mlx-serve는 이 형식만 받는다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "mlx-serve")
+    monkeypatch.setattr(settings, "MLX_SERVE_HOST", "http://localhost:11234")
+    sent = {}
+
+    def fake_post(url, json=None, timeout=None):
+        sent["url"] = url
+        sent["body"] = json
+        return _FakeResponse({"choices": [{"message": {"content": '{"ok": true}'}}]})
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    result = llm.chat_json(
+        [{"role": "user", "content": "hi"}],
+        {"type": "object"},
+        think=False,
+        model="lmstudio-community/gemma-4-12B-it-MLX-4bit",
+    )
+
+    assert sent["url"] == "http://localhost:11234/v1/chat/completions"
+    assert sent["body"]["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "output", "schema": {"type": "object"}},
+    }
+    assert "format" not in sent["body"]
+    assert result == '{"ok": true}'
+
+
+def test_chat_json_mlx_serve_does_not_call_ollama_capabilities_endpoint(monkeypatch):
+    """mlx-serve 백엔드는 Ollama의 /api/show(capabilities 조회)를 아예 부르면 안 된다 —
+    실측 확인: mlx-serve는 think 키 없이도 JSON이 안 깨지고 정상 동작해서, Ollama
+    전용 게이팅 로직 자체가 필요 없다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "mlx-serve")
+
+    def fake_post(url, json=None, timeout=None):
+        assert "/api/show" not in url
+        return _FakeResponse({"choices": [{"message": {"content": "{}"}}]})
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    llm.chat_json([{"role": "user", "content": "hi"}], {}, think=False)

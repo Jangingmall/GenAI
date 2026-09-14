@@ -46,6 +46,16 @@ class Settings:
     # 케이스(b27) 1건은 아직 못 잡아 tests/test_generate.py에 xfail로 남겨뒀다(알려진 한계).
     LLM_MODEL = os.environ.get("LLM_MODEL", "gemma2:9b")
 
+    # --- LLM 백엔드 선택 ---
+    # "ollama"(기본) 또는 "mlx-serve". gemma4:12b-mlx를 Ollama의 MLX 프리뷰로 띄워보니
+    # 캐시가 예측 불가하게 축출되고(콜드콜 2번 필요, 이후에도 가끔 900초대까지 튐) 메모리도
+    # 계속 불어났다(10GB→16GB, 최대 32개 컨텍스트 체크포인트를 다 못 비움). 같은 모델을
+    # mlx-serve(OpenAI 호환 API, Apple Silicon 전용 네이티브 서버)로 띄우면 콜드콜 1번
+    # 이후 캐시 히트율 95~99%로 안정적이고 메모리도 6.3GB로 고정됐다(실측 확인) — 그래서
+    # 백엔드를 선택 가능하게 둔다. 기본값은 검증된 "ollama"를 유지한다.
+    LLM_BACKEND = os.environ.get("LLM_BACKEND", "ollama")
+    MLX_SERVE_HOST = os.environ.get("MLX_SERVE_HOST", "http://localhost:11234")
+
     # --- 임베딩 ---
     EMBED_MODEL = os.environ.get("EMBED_MODEL", "BAAI/bge-m3")
     EMBED_DIM = int(os.environ.get("EMBED_DIM", "1024"))

@@ -68,10 +68,22 @@ def chat_json(
     think: bool,
     model: str | None = None,
 ) -> str:
-    """messages를 보내고 schema를 만족하는 JSON 문자열을 받는다."""
+    """messages를 보내고 schema를 만족하는 JSON 문자열을 받는다.
+
+    LLM_BACKEND 설정("ollama" 기본 또는 "mlx-serve")에 따라 실제 호출 방식이 갈린다 —
+    두 서버가 요청·응답 형식이 달라서다(아래 각 헬퍼 함수 참고).
+    """
     model_name = model or settings.LLM_MODEL
     timeout = float(os.environ.get("CHAT_TIMEOUT_SECONDS", _DEFAULT_TIMEOUT_SECONDS))
 
+    if settings.LLM_BACKEND == "mlx-serve":
+        return _chat_mlx_serve(messages, schema, model_name, timeout)
+    return _chat_ollama(messages, schema, think, model_name, timeout)
+
+
+def _chat_ollama(
+    messages: list[dict], schema: dict, think: bool, model_name: str, timeout: float
+) -> str:
     body = {
         "model": model_name,
         "messages": messages,
@@ -95,3 +107,31 @@ def chat_json(
     )
     resp.raise_for_status()
     return resp.json()["message"]["content"]
+
+
+def _chat_mlx_serve(
+    messages: list[dict], schema: dict, model_name: str, timeout: float
+) -> str:
+    """mlx-serve(OpenAI 호환 API, Apple Silicon 전용 네이티브 서버) 호출.
+
+    Ollama의 /api/show(capabilities) 조회·think 게이팅이 여기선 필요 없다 — 실측
+    확인: mlx-serve는 think 키를 아예 안 보내도 JSON이 안 깨지고 정상 동작했다
+    (Ollama의 MLX 프리뷰 백엔드와 달리 reasoning이 JSON 스키마 출력을 방해하지 않음).
+    """
+    body = {
+        "model": model_name,
+        "messages": messages,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "output", "schema": schema},
+        },
+        "temperature": 0.3,
+        "stream": False,
+    }
+    resp = _session.post(
+        f"{settings.MLX_SERVE_HOST.rstrip('/')}/v1/chat/completions",
+        json=body,
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
