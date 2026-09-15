@@ -21,7 +21,7 @@ def _sequenced_chat(intent_payload: dict, generate_payload: dict):
 
 
 def _fake_search_and_rank(candidates: list[dict]):
-    def fake(contact1: dict) -> list[dict]:
+    def fake(contact1: dict, top_k: int = 3) -> list[dict]:
         return candidates
 
     return fake
@@ -106,7 +106,7 @@ def test_run_assembles_final_contract():
 def test_run_passes_contact1_to_search_and_rank():
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["contact1"] = contact1
         return []
 
@@ -335,7 +335,7 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
     fresh = [{"product_id": 38, "name": "백자 대접", "score": 0.7, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["called"] = True
         return fresh
 
@@ -377,7 +377,7 @@ def test_run_narrow_down_new_filter_injects_previous_topic_into_query_text():
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -413,7 +413,7 @@ def test_run_narrow_down_new_filter_without_history_leaves_query_text_untouched(
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -454,7 +454,7 @@ def test_run_narrow_down_new_filter_prefers_previous_query_text_over_last_messag
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     seen = {}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["query_text"] = contact1["query_text"]
         return []
 
@@ -554,6 +554,47 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
     )
 
     assert result["candidates"] == fresh
+
+
+def test_run_narrow_down_new_filter_with_zero_results_preserves_previous_context():
+    """새 하드필터로 재검색했는데 결과가 0건이면(예: "3만원 아래로"에 맞는 게 없음),
+    다음 턴이 참조할 candidates·shown_product_ids·query_text는 이전 값을 그대로
+    들고 가야 한다 — 안 그러면 곧바로 이어지는 "그중 가장 저렴한 것 설명해줘"·색상
+    질문 같은 후속 참조가 통째로 끊긴다(실측 확인: 0건 응답 직후 방금 전까지 보여준
+    상품 정보까지 다 사라져서 "아직 없어요"로 잘못 답함). 이번 턴 reply·product_ids는
+    그대로 "못 찾았다"고 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 30000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "3만 원 이하로는 찾지 못했어요.",
+            "allowed_ids": [],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+
+    result = rr.run(
+        "3만원 아래로 보여줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        previous_query_text="찻잔 있나요",
+        **_NO_DB,
+    )
+
+    assert result["reply"] == "3만 원 이하로는 찾지 못했어요."
+    assert result["product_ids"] == []
+    assert result["candidates"] == previous
+    assert result["shown_product_ids"] == [78]
+    assert result["query_text"] == "찻잔 있나요"
 
 
 # ---------------------------------------------------------------------------
@@ -856,7 +897,7 @@ def test_warmup_also_warms_search_and_rank():
     남아있었기 때문). search_and_rank도 반드시 호출돼야 한다."""
     seen = {"called": False}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         seen["called"] = True
         return []
 
@@ -991,6 +1032,52 @@ def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
 
     assert result["product_ids"] == [1]
     assert result["suggestions"] == ["다른 재질로"]
+
+
+def _prices_for_candidates_3(product_ids: list[int]) -> dict[int, int]:
+    """_CANDIDATES_3 기준 가격 — product_id 1이 최저가, 2가 최고가다."""
+    return {1: 45000, 2: 234000, 6: 167000}
+
+
+def test_run_explain_request_cheapest_resolves_without_asking_which_one():
+    """ "가장 저렴한 것"은 순번이 아니라 가격 표현이라 extract_ordinal은 못 잡지만,
+    직전 턴에 이미 가격을 알려줬으므로 되묻지 않고 바로 최저가 상품(product_id=1)을
+    설명해야 한다(실측 확인된 버그: 매번 "몇 번째예요?"로 되물었었다)."""
+    result = rr.run(
+        "그중 가장 저렴한 것에 대해 더 자세히 알려줘",
+        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [1]
+    assert "몇 번째" not in result["reply"]
+
+
+def test_run_explain_request_most_expensive_resolves_correct_product():
+    result = rr.run(
+        "가장 비싼 것 설명해줘",
+        chat=_explain_chat("도기토 찻잔은 유약을 흘려 무늬를 낸 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [2]
+
+
+def test_run_explain_request_cheapest_falls_back_to_asking_when_prices_unavailable():
+    """가격 조회 자체가 실패하면(빈 딕셔너리) 잘못 추측하지 말고 기존처럼 되물어야
+    안전하다."""
+    result = rr.run(
+        "가장 저렴한 것 설명해줘",
+        chat=lambda *a, **k: (_ for _ in ()).throw(
+            AssertionError("가격을 못 구했으면 LLM을 부르면 안 된다")
+        ),
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,  # fetch_prices=_no_prices → 항상 빈 딕셔너리
+    )
+
+    assert "몇 번째" in result["reply"]
 
 
 def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():

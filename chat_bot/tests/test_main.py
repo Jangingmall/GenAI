@@ -93,7 +93,7 @@ _CANDIDATES = [
 def test_chat_returns_only_external_contract_fields():
     """candidates·filters는 확정 계약(§0)에 없는 내부 전용 필드라 응답에 유출되면 안 된다."""
 
-    def spy(contact1):
+    def spy(contact1, top_k=3):
         return _CANDIDATES
 
     _override(
@@ -120,7 +120,7 @@ def test_chat_returns_friendly_reply_on_llm_timeout():
     def timeout_chat(messages, schema, *, think, model=None):
         raise requests.exceptions.Timeout("연결 시간 초과")
 
-    _override(chat=timeout_chat, search_and_rank=lambda contact1: [])
+    _override(chat=timeout_chat, search_and_rank=lambda contact1, top_k=3: [])
 
     response = client.post(
         "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
@@ -136,7 +136,7 @@ def test_narrow_down_reuses_previous_candidates_via_session_id():
     """같은 session_id로 새 하드필터 없는 narrow_down을 보내면 재검색하지 않는다."""
     calls = {"n": 0}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         calls["n"] += 1
         return _CANDIDATES
 
@@ -172,7 +172,7 @@ def test_repeated_narrow_down_suppresses_duplicate_cards_via_session_id():
     확인한다 — 1턴과 완전히 같은 product_ids가 2턴에도 나오면 카드를 비워야 한다."""
     _override(
         chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
-        search_and_rank=lambda contact1: _CANDIDATES,
+        search_and_rank=lambda contact1, top_k=3: _CANDIDATES,
     )
     first = client.post(
         "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
@@ -182,7 +182,7 @@ def test_repeated_narrow_down_suppresses_duplicate_cards_via_session_id():
     intent_narrow_down = {**_INTENT_PRODUCT_SEARCH, "intent": "narrow_down"}
     _override(
         chat=_sequenced_chat(intent_narrow_down, _GENERATE_OK),  # 같은 allowed_ids=[9]
-        search_and_rank=lambda contact1: _CANDIDATES,
+        search_and_rank=lambda contact1, top_k=3: _CANDIDATES,
     )
     second = client.post(
         "/ai/chat",
@@ -210,7 +210,7 @@ def test_history_sender_field_is_mapped_to_role_for_pipeline():
             return json.dumps(_INTENT_PRODUCT_SEARCH)
         return json.dumps(_GENERATE_OK)
 
-    _override(chat=sequenced, search_and_rank=lambda contact1: _CANDIDATES)
+    _override(chat=sequenced, search_and_rank=lambda contact1, top_k=3: _CANDIDATES)
 
     client.post(
         "/ai/chat",
@@ -248,7 +248,7 @@ def test_different_session_ids_do_not_share_state():
     """session_id가 다르면 narrow_down이어도 이전 후보를 못 물려받아 새로 검색한다."""
     calls = {"n": 0}
 
-    def spy_search_and_rank(contact1):
+    def spy_search_and_rank(contact1, top_k=3):
         calls["n"] += 1
         return _CANDIDATES
 

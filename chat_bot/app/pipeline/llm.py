@@ -13,6 +13,7 @@ temperature=0(그리디 디코딩) 대신 낮은 temperature + 고정 seed를 �
 from __future__ import annotations
 
 import os
+import re
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -39,9 +40,26 @@ _session = requests.Session()
 _session.mount("http://", HTTPAdapter(max_retries=_retry))
 _session.mount("https://", HTTPAdapter(max_retries=_retry))
 
-# think 파라미터는 Qwen3 계열 전용이다. exaone3.5·llama3.1·qwen2.5·dna는 지원 안 할 수 있어
-# 모델명이 qwen3로 시작하지 않으면 body에서 "think" 키를 아예 뺀다.
-_THINK_SUPPORTED_PREFIX = "qwen3"
+# think 지원 여부를 모델명 접두사로 하드코딩(과거 "qwen3"만 허용)했더니 gemma4:12b-mlx
+# 처럼 thinking을 지원하는 다른 모델이 붙는 순간 안 맞았다 — think 키가 아예 안 실려
+# 그 모델의 기본값(thinking 켜짐)으로 동작하면서 JSON 스키마 출력이 깨지고 응답도
+# 8배 느려졌다(실측 확인). 반대로 무조건 think 키를 보내면 thinking 미지원 모델엔 API가
+# 하드 에러를 낸다(실측: gemma2:9b에 think:true를 보내면 '"gemma2:9b" does not support
+# thinking'). 그래서 Ollama가 /api/show로 실제로 알려주는 capabilities로 판단한다 —
+# 모델별로 한 번만 조회하고 캐싱해 매 호출마다 왕복이 늘지 않게 한다.
+_capabilities_cache: dict[str, set[str]] = {}
+
+
+def _model_capabilities(model_name: str) -> set[str]:
+    if model_name not in _capabilities_cache:
+        resp = _session.post(
+            f"{settings.OLLAMA_HOST.rstrip('/')}/api/show",
+            json={"model": model_name},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        _capabilities_cache[model_name] = set(resp.json().get("capabilities", []))
+    return _capabilities_cache[model_name]
 
 
 def chat_json(
@@ -51,10 +69,24 @@ def chat_json(
     think: bool,
     model: str | None = None,
 ) -> str:
-    """messages를 보내고 schema를 만족하는 JSON 문자열을 받는다."""
+    """messages를 보내고 schema를 만족하는 JSON 문자열을 받는다.
+
+    LLM_BACKEND 설정("ollama" 기본 또는 "mlx-serve")에 따라 실제 호출 방식이 갈린다 —
+    두 서버가 요청·응답 형식이 달라서다(아래 각 헬퍼 함수 참고).
+    """
     model_name = model or settings.LLM_MODEL
     timeout = float(os.environ.get("CHAT_TIMEOUT_SECONDS", _DEFAULT_TIMEOUT_SECONDS))
 
+    if settings.LLM_BACKEND == "mlx-serve":
+        return _chat_mlx_serve(messages, schema, model_name, timeout)
+    if settings.LLM_BACKEND == "sglang":
+        return _chat_sglang(messages, schema, model_name, timeout)
+    return _chat_ollama(messages, schema, think, model_name, timeout)
+
+
+def _chat_ollama(
+    messages: list[dict], schema: dict, think: bool, model_name: str, timeout: float
+) -> str:
     body = {
         "model": model_name,
         "messages": messages,
@@ -68,7 +100,7 @@ def chat_json(
         "options": {"temperature": 0.3, "seed": 42, "num_ctx": 8192},
         "stream": False,
     }
-    if model_name.startswith(_THINK_SUPPORTED_PREFIX):
+    if "thinking" in _model_capabilities(model_name):
         body["think"] = think
 
     resp = _session.post(
@@ -78,3 +110,91 @@ def chat_json(
     )
     resp.raise_for_status()
     return resp.json()["message"]["content"]
+
+
+def _chat_mlx_serve(
+    messages: list[dict], schema: dict, model_name: str, timeout: float
+) -> str:
+    """mlx-serve(OpenAI 호환 API, Apple Silicon 전용 네이티브 서버) 호출.
+
+    Ollama의 /api/show(capabilities) 조회·think 게이팅이 여기선 필요 없다 — 실측
+    확인: mlx-serve는 think 키를 아예 안 보내도 JSON이 안 깨지고 정상 동작했다
+    (Ollama의 MLX 프리뷰 백엔드와 달리 reasoning이 JSON 스키마 출력을 방해하지 않음).
+    """
+    body = {
+        "model": model_name,
+        "messages": messages,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "output", "schema": schema},
+        },
+        "temperature": 0.3,
+        "stream": False,
+    }
+    resp = _session.post(
+        f"{settings.MLX_SERVE_HOST.rstrip('/')}/v1/chat/completions",
+        json=body,
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
+
+
+# outlines 그래마 백엔드가 JSON 스키마 출력을 마크다운 코드 펜스로 감싸는 경우가
+# 실측 확인됐다("```json\n{...}\n```") — Ollama·mlx-serve는 이런 감싸기가 없었다.
+_CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", re.DOTALL)
+
+
+def _strip_code_fence(text: str) -> str:
+    """마크다운 코드 펜스로 감싸져 있으면 벗겨내고, 아니면 그대로 반환한다."""
+    match = _CODE_FENCE_RE.match(text.strip())
+    return match.group(1) if match else text
+
+
+def _merge_system_into_user(messages: list[dict]) -> list[dict]:
+    """gemma 계열처럼 채팅 템플릿이 system 롤을 아예 거부하는 모델을 위한 우회.
+
+    실측 확인: google/gemma-2-2b-it을 SGLang에 올리면 system 메시지를 보내는 순간
+    "System role not supported"로 하드 거부한다 — Ollama는 자체 템플릿에서 이걸
+    알아서 user 메시지에 흡수해주지만, SGLang은 HuggingFace 원본 템플릿을 그대로
+    적용해 그런 보정이 없다. system 내용을 첫 user 메시지 앞에 이어 붙여 우회한다.
+    """
+    if not messages or messages[0].get("role") != "system":
+        return messages
+    system_content = messages[0]["content"]
+    rest = messages[1:]
+    if rest and rest[0].get("role") == "user":
+        merged_first = {
+            "role": "user",
+            "content": f"{system_content}\n\n{rest[0]['content']}",
+        }
+        return [merged_first] + rest[1:]
+    return [{"role": "user", "content": system_content}] + rest
+
+
+def _chat_sglang(
+    messages: list[dict], schema: dict, model_name: str, timeout: float
+) -> str:
+    """SGLang(팀이 실제 배포할 CUDA 서버용, OpenAI 호환 API) 호출.
+
+    요청 형식은 mlx-serve와 같다(둘 다 OpenAI 호환 response_format). Ollama의
+    think 게이팅은 여기서도 필요 없다 — SGLang은 think 키 자체를 안 쓴다.
+    """
+    body = {
+        "model": model_name,
+        "messages": _merge_system_into_user(messages),
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "output", "schema": schema},
+        },
+        "temperature": 0.3,
+        "stream": False,
+    }
+    resp = _session.post(
+        f"{settings.SGLANG_HOST.rstrip('/')}/v1/chat/completions",
+        json=body,
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    content = resp.json()["choices"][0]["message"]["content"]
+    return _strip_code_fence(content)

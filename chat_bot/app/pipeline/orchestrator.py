@@ -34,6 +34,7 @@ from app.pipeline.generate import (
     explain_product,
     explain_products,
     extract_ordinal,
+    extract_price_superlative,
     is_all_request,
     is_explain_request,
 )
@@ -93,7 +94,6 @@ def run(
     message: str,
     history: list[dict] | None = None,
     *,
-    think: bool = True,
     chat=chat_json,
     search_and_rank=_recommend,
     previous_candidates: list[dict] | None = None,
@@ -236,6 +236,24 @@ def run(
                 shown_product_ids=explained["product_ids"],
             )
         ordinal = extract_ordinal(message, len(previous_candidates))
+        if ordinal is None:
+            # "가장 저렴한 것"류는 순번이 아니라 가격으로 상품을 가리킨다 — 이미
+            # 직전 턴에 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번
+            # "몇 번째예요?"로 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는
+            # LLM 호출 없이 이미 있는 fetch_prices로 즉시 판단 가능하다.
+            superlative = extract_price_superlative(message)
+            if superlative is not None:
+                prices = fetch_prices([c["product_id"] for c in previous_candidates])
+                priced = [
+                    (i, prices[c["product_id"]])
+                    for i, c in enumerate(previous_candidates)
+                    if c["product_id"] in prices
+                ]
+                # 가격 조회가 하나도 안 되면(DB 실패 등) 기존처럼 되묻는다 — 잘못된
+                # 추측으로 엉뚱한 상품을 설명하는 것보다 안전하다.
+                if priced:
+                    pick = min if superlative == "min" else max
+                    ordinal = pick(priced, key=lambda pair: pair[1])[0] + 1
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
             chips = [f"{i + 1}번" for i in range(len(previous_candidates))] + [
                 "전체 설명"
@@ -375,7 +393,16 @@ def run(
             fresh = search_and_rank(contact1, top_k=9)
             candidates = [c for c in fresh if c["product_id"] not in already_shown]
         else:
-            candidates = search_and_rank(contact1)
+            # top_k=9로 넉넉히 받는다 — wants_alternatives와 같은 이유(recommend()가
+            # 내부에서 이미 후보를 최대 10개까지 뽑아두는 구조라 A담당 코드를 안
+            # 건드리고도 top_k만 넉넉히 넘길 수 있다). 기본 top_k(3)만 받으면 종목
+            # 대조(_filter_by_category)가 그중 진짜 일치하는 것만 남기고 나머지를
+            # 빼는데, 검색 임베딩이 무관한 종목을 섞어 가져오는 경우가 실측상 잦아
+            # 3개 중 1개만 남는 등 과소 노출이 생겼다(실측: "선물로 좋은 도자기
+            # 찾아줘"). 최종 노출 개수는 build_reply의 _filter_by_category 뒤에서
+            # 상위 3개로 다시 자른다 — 여기서 넉넉히 받는 건 "고를 재료"를 늘리는
+            # 것뿐, 실제로 몇 개를 보여줄지는 그쪽 책임이다.
+            candidates = search_and_rank(contact1, top_k=9)
         did_search = True
     generated = build_reply(
         message,
@@ -384,7 +411,7 @@ def run(
         contact1["filters"],
         history,
         query_text=contact1["query_text"],
-        think=think,
+        did_search=did_search,
         chat=chat,
         fetch_prices=fetch_prices,
         fetch_artisans=fetch_artisans,
@@ -393,9 +420,18 @@ def run(
     # 확인해줘"처럼 순수 속성 질문이 이어지면 매번 같은 카드가 또 뜨는 문제가 실측
     # 확인됐다. 부분적으로만 겹치거나(예: 3개→1개로 좁혀짐) 완전히 새 후보면 새
     # 정보이므로 그대로 보여준다 — set 비교라 순서 차이는 무시한다.
-    raw_product_ids = generated["product_ids"]
+    raw_product_ids = generated["product_ids"][:3]
     is_repeat = bool(previous_product_ids) and set(raw_product_ids) == set(
         previous_product_ids
+    )
+    # 재검색했는데 결과가 0건이면(예: "3만원 아래로"에 맞는 게 없음) 다음 턴이 참조할
+    # candidates·shown_product_ids·query_text는 이전 값을 그대로 들고 간다 — 안 그러면
+    # 곧바로 이어지는 "그중 가장 저렴한 것 설명해줘"·색상 질문 같은 후속 참조가 통째로
+    # 끊긴다(실측 확인: 0건 응답 직후 방금 전까지 보여준 상품 정보까지 다 사라져서
+    # "아직 없어요"로 잘못 답함). 이번 턴 reply·product_ids는 그대로 "못 찾았다"고
+    # 정직하게 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다.
+    search_found_nothing = (
+        did_search and not generated["candidates"] and bool(previous_candidates)
     )
     return {
         "reply": generated["reply"],
@@ -405,18 +441,25 @@ def run(
         # build_reply가 종목 대조까지 마친 뒤 돌려준 candidates를 쓴다 — search_and_rank의
         # 원본(미필터링) 출력을 그대로 넘기면, 이번 턴에 걸러낸 다른 종목 후보가 다음 턴
         # narrow_down 재사용에서 그대로 다시 나타난다(실측 확인).
-        "candidates": generated["candidates"],
+        "candidates": (
+            previous_candidates if search_found_nothing else generated["candidates"]
+        ),
         "filters": contact1["filters"],
         # 카드 억제 여부와 무관하게 "실제로 관련된 상품이 뭔지"는 그대로 넘긴다 — 다음
         # 턴 previous_product_ids 비교 기준이 화면 표시 여부에 따라 계속 바뀌면(억제된
         # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
         # 뜨는 역효과가 난다.
-        "shown_product_ids": raw_product_ids,
+        "shown_product_ids": (
+            previous_product_ids if search_found_nothing else raw_product_ids
+        ),
         # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
         # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
-        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다.
+        # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다. 0건으로
+        # 끝난 재검색도 같은 이유로 "안 쓰인 것"과 동일하게 취급한다.
         "query_text": (
-            contact1["query_text"] if did_search else (previous_query_text or "")
+            (previous_query_text or "")
+            if search_found_nothing
+            else (contact1["query_text"] if did_search else (previous_query_text or ""))
         ),
     }
 
