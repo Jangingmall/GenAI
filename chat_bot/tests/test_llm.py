@@ -158,3 +158,124 @@ def test_chat_json_mlx_serve_does_not_call_ollama_capabilities_endpoint(monkeypa
     monkeypatch.setattr(llm._session, "post", fake_post)
 
     llm.chat_json([{"role": "user", "content": "hi"}], {}, think=False)
+
+
+# ---------------------------------------------------------------------------
+# LLM_BACKEND="sglang" — 팀이 실제 배포할 CUDA 서버용, OpenAI 호환 API
+# ---------------------------------------------------------------------------
+
+
+def test_strip_code_fence_removes_json_markdown_wrapper():
+    """SGLang outlines 그래마 백엔드가 JSON을 마크다운 코드 펜스로 감싸는 경우가
+    실측 확인됐다(````json\\n{...}\\n````) — 벗겨내야 pydantic 파싱이 성공한다."""
+    wrapped = '```json\n{"name": "Gemma"}\n```'
+    assert llm._strip_code_fence(wrapped) == '{"name": "Gemma"}'
+
+
+def test_strip_code_fence_leaves_plain_json_untouched():
+    """Ollama·mlx-serve처럼 애초에 안 감싸져 있으면 그대로 둔다."""
+    plain = '{"name": "Gemma"}'
+    assert llm._strip_code_fence(plain) == plain
+
+
+def test_chat_json_posts_to_sglang_when_backend_configured(monkeypatch):
+    """LLM_BACKEND가 sglang이면 mlx-serve와 같은 OpenAI 호환 엔드포인트로 보내되,
+    SGLANG_HOST를 쓴다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "sglang")
+    monkeypatch.setattr(settings, "SGLANG_HOST", "http://localhost:30000")
+    sent = {}
+
+    def fake_post(url, json=None, timeout=None):
+        sent["url"] = url
+        sent["body"] = json
+        return _FakeResponse({"choices": [{"message": {"content": '{"ok": true}'}}]})
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    result = llm.chat_json(
+        [{"role": "user", "content": "hi"}],
+        {"type": "object"},
+        think=False,
+        model="google/gemma-2-2b-it",
+    )
+
+    assert sent["url"] == "http://localhost:30000/v1/chat/completions"
+    assert sent["body"]["response_format"] == {
+        "type": "json_schema",
+        "json_schema": {"name": "output", "schema": {"type": "object"}},
+    }
+    assert result == '{"ok": true}'
+
+
+def test_chat_json_sglang_strips_code_fence_from_response(monkeypatch):
+    """실제로 마크다운 코드 펜스로 감싸서 응답이 와도 chat_json 최종 반환값은 순수
+    JSON이어야 한다 — 안 그러면 호출부의 model_validate_json이 실패한다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "sglang")
+
+    def fake_post(url, json=None, timeout=None):
+        return _FakeResponse(
+            {"choices": [{"message": {"content": '```json\n{"ok": true}\n```'}}]}
+        )
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    result = llm.chat_json([{"role": "user", "content": "hi"}], {}, think=False)
+
+    assert result == '{"ok": true}'
+
+
+def test_merge_system_into_user_prepends_to_first_user_message():
+    """gemma 계열처럼 system 롤을 거부하는 모델(실측 확인: "System role not
+    supported")을 위한 우회 — system 내용을 첫 user 메시지 앞에 이어 붙인다."""
+    merged = llm._merge_system_into_user(
+        [
+            {"role": "system", "content": "너는 친절한 챗봇이다."},
+            {"role": "user", "content": "안녕"},
+        ]
+    )
+
+    assert merged == [{"role": "user", "content": "너는 친절한 챗봇이다.\n\n안녕"}]
+
+
+def test_merge_system_into_user_no_op_without_system_role():
+    messages = [{"role": "user", "content": "안녕"}]
+    assert llm._merge_system_into_user(messages) == messages
+
+
+def test_chat_json_sglang_sends_merged_messages_without_system_role(monkeypatch):
+    """실제 요청 본문에 system 롤이 남아있으면 SGLang이 거부하므로, chat_json이
+    보내는 최종 body에도 system 롤이 없어야 한다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "sglang")
+    sent = {}
+
+    def fake_post(url, json=None, timeout=None):
+        sent["body"] = json
+        return _FakeResponse({"choices": [{"message": {"content": "{}"}}]})
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    llm.chat_json(
+        [
+            {"role": "system", "content": "시스템 지시문"},
+            {"role": "user", "content": "질문"},
+        ],
+        {},
+        think=False,
+    )
+
+    roles = [m["role"] for m in sent["body"]["messages"]]
+    assert "system" not in roles
+    assert sent["body"]["messages"][0]["content"] == "시스템 지시문\n\n질문"
+
+
+def test_chat_json_sglang_does_not_call_ollama_capabilities_endpoint(monkeypatch):
+    """mlx-serve와 같은 이유로 sglang도 Ollama의 /api/show를 부르면 안 된다."""
+    monkeypatch.setattr(settings, "LLM_BACKEND", "sglang")
+
+    def fake_post(url, json=None, timeout=None):
+        assert "/api/show" not in url
+        return _FakeResponse({"choices": [{"message": {"content": "{}"}}]})
+
+    monkeypatch.setattr(llm._session, "post", fake_post)
+
+    llm.chat_json([{"role": "user", "content": "hi"}], {}, think=False)

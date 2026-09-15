@@ -56,6 +56,17 @@ class Settings:
     LLM_BACKEND = os.environ.get("LLM_BACKEND", "ollama")
     MLX_SERVE_HOST = os.environ.get("MLX_SERVE_HOST", "http://localhost:11234")
 
+    # "sglang" — 팀이 실제 배포할 CUDA 서버용 백엔드(RadixAttention으로 intent·generate
+    # 두 시스템 프롬프트를 동시에 캐싱할 수 있어 mutual eviction 문제를 구조적으로
+    # 없앨 후보). 이 Mac(M4, MPS)에선 정식 지원이 아니라 실험적인 경로라 실측으로 확인된
+    # 제약이 있다: 기본 그래마 백엔드(xgrammar)는 JSON 스키마 강제 시 매 토큰을
+    # 거부해(Accepted tokens: []) 아예 응답을 못 만든다 — 서버를 `--grammar-backend
+    # outlines`로 띄워야 한다. outlines도 완벽하진 않아 응답을 마크다운 코드 펜스로
+    # 감싸는 경우가 있다(````json\n{...}\n````) — llm.py가 파싱 전에 벗겨낸다. CUDA
+    # 서버는 xgrammar가 원래 성숙한 플랫폼이라 이 두 제약이 안 나올 가능성이 높지만,
+    # 확인 전까진 마크다운 벗기기 방어는 유지한다.
+    SGLANG_HOST = os.environ.get("SGLANG_HOST", "http://localhost:30000")
+
     # --- 임베딩 ---
     EMBED_MODEL = os.environ.get("EMBED_MODEL", "BAAI/bge-m3")
     EMBED_DIM = int(os.environ.get("EMBED_DIM", "1024"))

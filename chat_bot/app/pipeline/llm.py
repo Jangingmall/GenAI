@@ -13,6 +13,7 @@ temperature=0(그리디 디코딩) 대신 낮은 temperature + 고정 seed를 �
 from __future__ import annotations
 
 import os
+import re
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -78,6 +79,8 @@ def chat_json(
 
     if settings.LLM_BACKEND == "mlx-serve":
         return _chat_mlx_serve(messages, schema, model_name, timeout)
+    if settings.LLM_BACKEND == "sglang":
+        return _chat_sglang(messages, schema, model_name, timeout)
     return _chat_ollama(messages, schema, think, model_name, timeout)
 
 
@@ -135,3 +138,63 @@ def _chat_mlx_serve(
     )
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]["content"]
+
+
+# outlines 그래마 백엔드가 JSON 스키마 출력을 마크다운 코드 펜스로 감싸는 경우가
+# 실측 확인됐다("```json\n{...}\n```") — Ollama·mlx-serve는 이런 감싸기가 없었다.
+_CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*\n?(.*?)\n?```\s*$", re.DOTALL)
+
+
+def _strip_code_fence(text: str) -> str:
+    """마크다운 코드 펜스로 감싸져 있으면 벗겨내고, 아니면 그대로 반환한다."""
+    match = _CODE_FENCE_RE.match(text.strip())
+    return match.group(1) if match else text
+
+
+def _merge_system_into_user(messages: list[dict]) -> list[dict]:
+    """gemma 계열처럼 채팅 템플릿이 system 롤을 아예 거부하는 모델을 위한 우회.
+
+    실측 확인: google/gemma-2-2b-it을 SGLang에 올리면 system 메시지를 보내는 순간
+    "System role not supported"로 하드 거부한다 — Ollama는 자체 템플릿에서 이걸
+    알아서 user 메시지에 흡수해주지만, SGLang은 HuggingFace 원본 템플릿을 그대로
+    적용해 그런 보정이 없다. system 내용을 첫 user 메시지 앞에 이어 붙여 우회한다.
+    """
+    if not messages or messages[0].get("role") != "system":
+        return messages
+    system_content = messages[0]["content"]
+    rest = messages[1:]
+    if rest and rest[0].get("role") == "user":
+        merged_first = {
+            "role": "user",
+            "content": f"{system_content}\n\n{rest[0]['content']}",
+        }
+        return [merged_first] + rest[1:]
+    return [{"role": "user", "content": system_content}] + rest
+
+
+def _chat_sglang(
+    messages: list[dict], schema: dict, model_name: str, timeout: float
+) -> str:
+    """SGLang(팀이 실제 배포할 CUDA 서버용, OpenAI 호환 API) 호출.
+
+    요청 형식은 mlx-serve와 같다(둘 다 OpenAI 호환 response_format). Ollama의
+    think 게이팅은 여기서도 필요 없다 — SGLang은 think 키 자체를 안 쓴다.
+    """
+    body = {
+        "model": model_name,
+        "messages": _merge_system_into_user(messages),
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "output", "schema": schema},
+        },
+        "temperature": 0.3,
+        "stream": False,
+    }
+    resp = _session.post(
+        f"{settings.SGLANG_HOST.rstrip('/')}/v1/chat/completions",
+        json=body,
+        timeout=timeout,
+    )
+    resp.raise_for_status()
+    content = resp.json()["choices"][0]["message"]["content"]
+    return _strip_code_fence(content)
