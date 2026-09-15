@@ -58,13 +58,17 @@ class Settings:
 
     # "sglang" — 팀이 실제 배포할 CUDA 서버용 백엔드(RadixAttention으로 intent·generate
     # 두 시스템 프롬프트를 동시에 캐싱할 수 있어 mutual eviction 문제를 구조적으로
-    # 없앨 후보). 이 Mac(M4, MPS)에선 정식 지원이 아니라 실험적인 경로라 실측으로 확인된
-    # 제약이 있다: 기본 그래마 백엔드(xgrammar)는 JSON 스키마 강제 시 매 토큰을
-    # 거부해(Accepted tokens: []) 아예 응답을 못 만든다 — 서버를 `--grammar-backend
-    # outlines`로 띄워야 한다. outlines도 완벽하진 않아 응답을 마크다운 코드 펜스로
-    # 감싸는 경우가 있다(````json\n{...}\n````) — llm.py가 파싱 전에 벗겨낸다. CUDA
-    # 서버는 xgrammar가 원래 성숙한 플랫폼이라 이 두 제약이 안 나올 가능성이 높지만,
-    # 확인 전까진 마크다운 벗기기 방어는 유지한다.
+    # 없앨 후보). 이 Mac(M4, MPS)에선 정식 지원이 아니라 실험적인 경로라 실측으로 세
+    # 가지 문제를 확인했다(CUDA에선 안 나올 가능성이 높지만 프로덕션 전환 전 재확인
+    # 필수): (1) 기본 그래마 백엔드(xgrammar)는 JSON 스키마 강제 시 매 토큰을
+    # 거부해(Accepted tokens: []) 아예 응답을 못 만든다 — `--grammar-backend outlines`로
+    # 띄워야 한다. (2) outlines도 완벽하진 않아 응답을 마크다운 코드 펜스로 감싸는
+    # 경우가 있다(````json\n{...}\n````) — llm.py가 파싱 전에 벗겨낸다. (3) 가장
+    # 심각한 문제: 프롬프트가 이전 요청과 비슷하면(prefix cache 히트로 추정) 이번
+    # 응답의 앞부분이 통째로 잘려서 온다(실측 재현: 정상 JSON 대신 쉼표로 시작하는
+    # 조각만 반환됨) — 이건 에러 없이 200 OK로 조용히 틀린 데이터를 주므로 코드로
+    # 방어할 수 없다. 그래서 로컬 Mac에서의 sglang 검증은 "연동 배관이 맞는가"까지만
+    # 하고, 실제 신뢰도 검증은 CUDA 서버에서 다시 해야 한다.
     SGLANG_HOST = os.environ.get("SGLANG_HOST", "http://localhost:30000")
 
     # --- 임베딩 ---
