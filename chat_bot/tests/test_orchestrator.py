@@ -1034,6 +1034,52 @@ def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
     assert result["suggestions"] == ["다른 재질로"]
 
 
+def _prices_for_candidates_3(product_ids: list[int]) -> dict[int, int]:
+    """_CANDIDATES_3 기준 가격 — product_id 1이 최저가, 2가 최고가다."""
+    return {1: 45000, 2: 234000, 6: 167000}
+
+
+def test_run_explain_request_cheapest_resolves_without_asking_which_one():
+    """ "가장 저렴한 것"은 순번이 아니라 가격 표현이라 extract_ordinal은 못 잡지만,
+    직전 턴에 이미 가격을 알려줬으므로 되묻지 않고 바로 최저가 상품(product_id=1)을
+    설명해야 한다(실측 확인된 버그: 매번 "몇 번째예요?"로 되물었었다)."""
+    result = rr.run(
+        "그중 가장 저렴한 것에 대해 더 자세히 알려줘",
+        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [1]
+    assert "몇 번째" not in result["reply"]
+
+
+def test_run_explain_request_most_expensive_resolves_correct_product():
+    result = rr.run(
+        "가장 비싼 것 설명해줘",
+        chat=_explain_chat("도기토 찻잔은 유약을 흘려 무늬를 낸 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [2]
+
+
+def test_run_explain_request_cheapest_falls_back_to_asking_when_prices_unavailable():
+    """가격 조회 자체가 실패하면(빈 딕셔너리) 잘못 추측하지 말고 기존처럼 되물어야
+    안전하다."""
+    result = rr.run(
+        "가장 저렴한 것 설명해줘",
+        chat=lambda *a, **k: (_ for _ in ()).throw(
+            AssertionError("가격을 못 구했으면 LLM을 부르면 안 된다")
+        ),
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,  # fetch_prices=_no_prices → 항상 빈 딕셔너리
+    )
+
+    assert "몇 번째" in result["reply"]
+
+
 def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():
     """직전 봇 턴이 되물음이 아니었으면, "모두"류 메시지는 평소처럼 일반 경로로
     가야 한다(오탐 방지) — is_explain_request도 False이므로 explain 경로에 들어가면

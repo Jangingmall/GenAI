@@ -507,6 +507,26 @@ def test_is_all_request_false_for_single_ordinal():
     assert not gen.is_all_request("1번 알려줘")
 
 
+# ---------------------------------------------------------------------------
+# extract_price_superlative — "가장 저렴한 것"류 가격 최상급 표현 판단
+# ---------------------------------------------------------------------------
+
+
+def test_extract_price_superlative_recognizes_cheapest():
+    assert gen.extract_price_superlative("그중 가장 저렴한 것") == "min"
+    assert gen.extract_price_superlative("제일 싼 거 설명해줘") == "min"
+
+
+def test_extract_price_superlative_recognizes_most_expensive():
+    assert gen.extract_price_superlative("가장 비싼 것 알려줘") == "max"
+    assert gen.extract_price_superlative("최고가 상품") == "max"
+
+
+def test_extract_price_superlative_none_for_ordinal_or_unrelated():
+    assert gen.extract_price_superlative("1번 설명해줘") is None
+    assert gen.extract_price_superlative("무슨 색이야?") is None
+
+
 def test_explain_products_calls_llm_once_and_shares_reply_across_products():
     """explain_product를 후보 수만큼 반복 호출하면 응답 시간이 배로 늘어난다 —
     explain_products는 LLM을 정확히 1번만 불러야 한다."""

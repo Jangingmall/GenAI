@@ -34,6 +34,7 @@ from app.pipeline.generate import (
     explain_product,
     explain_products,
     extract_ordinal,
+    extract_price_superlative,
     is_all_request,
     is_explain_request,
 )
@@ -235,6 +236,24 @@ def run(
                 shown_product_ids=explained["product_ids"],
             )
         ordinal = extract_ordinal(message, len(previous_candidates))
+        if ordinal is None:
+            # "가장 저렴한 것"류는 순번이 아니라 가격으로 상품을 가리킨다 — 이미
+            # 직전 턴에 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번
+            # "몇 번째예요?"로 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는
+            # LLM 호출 없이 이미 있는 fetch_prices로 즉시 판단 가능하다.
+            superlative = extract_price_superlative(message)
+            if superlative is not None:
+                prices = fetch_prices([c["product_id"] for c in previous_candidates])
+                priced = [
+                    (i, prices[c["product_id"]])
+                    for i, c in enumerate(previous_candidates)
+                    if c["product_id"] in prices
+                ]
+                # 가격 조회가 하나도 안 되면(DB 실패 등) 기존처럼 되묻는다 — 잘못된
+                # 추측으로 엉뚱한 상품을 설명하는 것보다 안전하다.
+                if priced:
+                    pick = min if superlative == "min" else max
+                    ordinal = pick(priced, key=lambda pair: pair[1])[0] + 1
         if ordinal is None or not (1 <= ordinal <= len(previous_candidates)):
             chips = [f"{i + 1}번" for i in range(len(previous_candidates))] + [
                 "전체 설명"
@@ -401,7 +420,7 @@ def run(
     # 확인해줘"처럼 순수 속성 질문이 이어지면 매번 같은 카드가 또 뜨는 문제가 실측
     # 확인됐다. 부분적으로만 겹치거나(예: 3개→1개로 좁혀짐) 완전히 새 후보면 새
     # 정보이므로 그대로 보여준다 — set 비교라 순서 차이는 무시한다.
-    raw_product_ids = generated["product_ids"]
+    raw_product_ids = generated["product_ids"][:3]
     is_repeat = bool(previous_product_ids) and set(raw_product_ids) == set(
         previous_product_ids
     )

@@ -577,6 +577,12 @@ _ORDINAL_DIGIT_RE = re.compile(r"(\d+)\s*번")
 _LAST_WORDS = ("마지막",)
 # "몇 번째예요?" 되물음에 "모두"류로 답하면 순번 하나가 아니라 후보 전체를 가리킨다.
 _ALL_WORDS = ("모두", "전체", "둘 다", "셋 다")
+# "가장 저렴한 것"·"가장 비싼 것"처럼 순서가 아니라 가격으로 상품 하나를 가리키는
+# 표현 — extract_ordinal이 못 잡아 매번 "몇 번째예요?"로 되묻던 문제(실측 확인)를
+# 고치려고 추가했다. 순서 표현과 같은 이유로 LLM이 아니라 코드로 확정 판단한다 —
+# 이미 조회된 가격끼리 최소/최대만 비교하면 되는 단순 산술이라 LLM이 필요 없다.
+_CHEAPEST_WORDS = ("가장 저렴", "가장 싼", "제일 저렴", "제일 싼", "최저가")
+_MOST_EXPENSIVE_WORDS = ("가장 비싼", "가장 비싸", "제일 비싼", "제일 비싸", "최고가")
 
 
 def is_explain_request(message: str) -> bool:
@@ -603,6 +609,20 @@ def extract_ordinal(message: str, total: int) -> int | None:
     for word, n in _ORDINAL_WORDS.items():
         if word in message:
             return n
+    return None
+
+
+def extract_price_superlative(message: str) -> str | None:
+    """ "가장 저렴한 것"·"가장 비싼 것" 등 가격 최상급 표현이면 "min"/"max"를 반환한다.
+
+    없으면 None. 호출부(orchestrator)가 이 값을 받아 previous_candidates의 가격을
+    조회해 실제 순번으로 바꾼다 — 이 함수는 어떤 표현인지만 판단하고 가격 비교는
+    안 한다(가격 데이터 자체를 안 받으므로).
+    """
+    if any(word in message for word in _CHEAPEST_WORDS):
+        return "min"
+    if any(word in message for word in _MOST_EXPENSIVE_WORDS):
+        return "max"
     return None
 
 
