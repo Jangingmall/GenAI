@@ -56,11 +56,23 @@ class _RawIntent(BaseModel):
 _RAW_INTENT_SCHEMA = _RawIntent.model_json_schema()  # 매 요청마다 재계산할 필요 없다
 
 
+# (단위, 배수) — 배수가 큰 것부터 검사한다. 실측 확인된 버그: "억"·"천"이 아예 없어서
+# "5천원"이 5원으로, "1억원"이 1원으로 파싱됐다("만"만 처리하고 나머지는 맨 숫자만
+# 뽑는 폴백으로 떨어짐). 이 도메인(공예품) 상품가에 "억"이 실제로 나올 일은 거의
+# 없지만, 폴백 함수 자체의 정확성을 위해 갖춰둔다.
+_WON_UNIT_MULTIPLIERS: tuple[tuple[str, int], ...] = (
+    ("억", 100_000_000),
+    ("만", 10_000),
+    ("천", 1_000),
+)
+
+
 def _price_to_won(text_or_num) -> int | None:
     """가격 표현을 원 단위 정수로 정규화한다.
 
     LLM 스키마가 정수를 요구하지만, "5만원"·"3만원대"처럼 원문이 그대로 새어나오는
-    경우까지 방어적으로 처리한다("만" 단위 표기 → ×10000). 숫자를 못 찾으면 None.
+    경우까지 방어적으로 처리한다("만"·"천"·"억" 단위 표기 → 각각 배수 적용). 숫자를
+    못 찾으면 None.
     """
     if text_or_num is None:
         return None
@@ -69,9 +81,10 @@ def _price_to_won(text_or_num) -> int | None:
     text = str(text_or_num).strip()
     if not text:
         return None
-    man_match = re.search(r"(\d+(?:\.\d+)?)\s*만", text)
-    if man_match:
-        return int(float(man_match.group(1)) * 10000)
+    for unit, multiplier in _WON_UNIT_MULTIPLIERS:
+        unit_match = re.search(rf"(\d+(?:\.\d+)?)\s*{unit}", text)
+        if unit_match:
+            return int(float(unit_match.group(1)) * multiplier)
     num_match = re.search(r"\d+", text)
     return int(num_match.group()) if num_match else None
 
@@ -88,6 +101,13 @@ _MAX_PRICE_WORDS = (
     "안되는",
 )
 
+# "넘는"·"넘게"에 부정어 "안"이 붙으면 뜻이 정반대(상한)로 뒤집힌다 — "안 되는"과
+# 같은 부정 패턴이다. 실측 확인된 버그: "5만원 안 넘는 것"에서 "안 넘는" 안에 그대로
+# 들어있는 "넘는"이 _MIN_PRICE_WORDS와 겹쳐 min(하한)으로 잘못 판정됐다(실제로는
+# "넘지 않는다"=상한). _price_direction에서 이 부정형 부분을 먼저 지우고 나머지로
+# min/max를 판정해 이 겹침을 없앤다.
+_NEGATED_MAX_PHRASES = ("안 넘는", "안넘는", "안 넘게", "안넘게")
+
 
 def _price_direction(message: str) -> str | None:
     """메시지에 하한(min)·상한(max) 표현 중 한쪽만 있으면 그 방향을 돌려준다.
@@ -100,13 +120,38 @@ def _price_direction(message: str) -> str | None:
     범위 질문) 어느 숫자가 어느 쪽인지 코드로 안전하게 갈라낼 근거가 없어 None을
     반환하고 LLM 추출을 그대로 둔다.
     """
-    has_min = any(w in message for w in _MIN_PRICE_WORDS)
-    has_max = any(w in message for w in _MAX_PRICE_WORDS)
+    has_negated_max = any(p in message for p in _NEGATED_MAX_PHRASES)
+    stripped = message
+    for p in _NEGATED_MAX_PHRASES:
+        stripped = stripped.replace(p, "")
+    has_min = any(w in stripped for w in _MIN_PRICE_WORDS)
+    has_max = has_negated_max or any(w in stripped for w in _MAX_PRICE_WORDS)
     if has_min and not has_max:
         return "min"
     if has_max and not has_min:
         return "max"
     return None
+
+
+_PRICE_DECADE_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(억|만|천)\s*원?\s*대")
+
+
+def _price_decade_range(message: str) -> tuple[int, int] | None:
+    """ "5만원대"처럼 "-대" 접미사가 붙은 표현을 [50000, 59999] 같은 실제 구간으로
+    바꾼다.
+
+    실측 확인된 문제: 기존엔 INTENT_SYSTEM이 "5만원대"를 그냥 숫자 50000 하나로만
+    바꾸라고 가르쳐서, 사실상 "5만원 이하"와 똑같이 취급됐다 — DB에 실제로
+    51,000~59,999원 사이 상품이 17개 있는데도 전부 빠졌다. "-대"는 십진 자릿수 한
+    칸(만/천/억) 구간을 뜻하므로 그 시작·끝을 코드로 확정한다 — 어느 필드에 넣을지
+    LLM 판단에 기대지 않는다.
+    """
+    match = _PRICE_DECADE_RE.search(message)
+    if not match:
+        return None
+    multiplier = {"억": 100_000_000, "만": 10_000, "천": 1_000}[match.group(2)]
+    base = int(float(match.group(1)) * multiplier)
+    return base, base + multiplier - 1
 
 
 def _resolve_price_filters(
@@ -115,6 +160,14 @@ def _resolve_price_filters(
     """LLM이 뽑은 max_price/min_price를 메시지의 실제 방향과 맞춰 확정한다."""
     direction = _price_direction(message)
     if direction is None:
+        # "5만원대"처럼 명시적 이상/이하 단어가 없어도 "-대" 구간 표현이 있으면
+        # 그 구간으로 확정한다(예: 5만원대 → 50000~59999). "3만원 이상 5만원 이하"
+        # 같은 범위 질문은 이미 이상·이하가 있어 direction이 None이 안 되므로 여기와
+        # 안 겹친다.
+        decade = _price_decade_range(message)
+        if decade is not None:
+            decade_min, decade_max = decade
+            return decade_max, decade_min
         return max_price, min_price
     value = max_price if max_price is not None else min_price
     if value is None:
