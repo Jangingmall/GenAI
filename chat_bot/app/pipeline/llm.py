@@ -93,11 +93,25 @@ def _chat_ollama(
         "format": schema,
         # num_ctx는 반드시 모든 호출에서 같은 값을 써야 한다 — 값이 다르면 시스템 프롬프트
         # 글자가 같아도 Ollama의 프롬프트 캐시가 깨진다(실측 확인). intent.py·generate.py가
-        # 둘 다 이 함수 하나를 거치므로, 여기서 한 번만 고정하면 자동으로 맞는다. 8192는
-        # 시스템 프롬프트+대화 맥락+후보 목록+출력을 합쳐도 여유 있는 크기로 실측 확인했다
-        # (기존 기본값 4096보다 넉넉하게 잡음).
+        # 둘 다 이 함수 하나를 거치므로, 여기서 한 번만 고정하면 자동으로 맞는다.
+        # 실측 확인된 크래시: GENERATE_SYSTEM에 규칙·예시를 추가해 프롬프트가 커졌을 때
+        # "나전칠기 보석함 있어요?"에서 JSON이 suggestions 배열 중간에 잘려 pydantic
+        # ValidationError로 이어졌다. 원인은 num_predict가 아니라 num_ctx(전체 컨텍스트)
+        # 자체가 꽉 찬 것이었다 — prompt_eval_count(8044) + eval_count(148) = 8192로
+        # 정확히 num_ctx 한도와 일치했다. 이후 프롬프트를 다시 줄여서(원래 크기보다도
+        # 작아짐) 지금 당장은 8192로도 여유가 있지만, 대화 이력·후보 블록이 긴 조합에서
+        # 재발할 여지가 있어 16384로 미리 여유를 둔다. 다만 이 값이 실제로 서버 한도를
+        # 늘려주는지는 검증 못 했다 — mlx-serve에서 서버 자체 실행 시점의 용량(`-c`
+        # 플래그)이 요청값보다 우선해 조용히 클램프되는 걸 실측으로 확인한 적이 있어
+        # (app/config.py SGLANG_HOST 주석 참고와 같은 종류의 함정), Ollama도 서버가
+        # 이미 -c 8192로 떠 있으면 이 16384 요청이 무시될 수 있다. 진짜 16384가
+        # 필요한 상황이 오면 서버 실행 옵션(`OLLAMA_CONTEXT_LENGTH` 등)도 같이 확인할 것.
         "keep_alive": -1,  # 모델을 VRAM에서 내리지 않고 상시 유지
-        "options": {"temperature": 0.3, "seed": 42, "num_ctx": 8192},
+        "options": {
+            "temperature": 0.3,
+            "seed": 42,
+            "num_ctx": 16384,
+        },
         "stream": False,
     }
     if "thinking" in _model_capabilities(model_name):
