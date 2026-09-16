@@ -351,6 +351,119 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
     assert result["candidates"] == fresh
 
 
+def test_run_narrow_down_category_change_triggers_fresh_search():
+    """ "아니 그거 말고 목공예로" — 가격·색상 필터는 안 바뀌었지만 종목 자체가 바뀐
+    요청이다. 실측 확인된 버그: 이걸 순수 속성 질문으로 오인해 이전(도자기) 후보를
+    그대로 재사용하면, generate.py의 종목 대조가 전부 걸러내 "카탈로그에 없다"고
+    답해버린다 — 실제로는 새 종목 재검색을 안 해본 것뿐인데 "진짜 없음"과 구별이
+    안 된다. 종목이 바뀌었으면 반드시 재검색해야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "목공예로 보여줘",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh = [{"product_id": 466, "name": "소나무 의자", "score": 0.7, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["called"] = True
+        return fresh
+
+    result = rr.run(
+        "아니 그거 말고 목공예로 보여줘",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert seen.get("called") is True
+    assert result["candidates"] == fresh
+
+
+def test_run_narrow_down_category_change_does_not_prepend_stale_topic():
+    """실측 확인된 버그: 종목이 바뀐 재검색에 옛 주제어("도자기 찻잔 추천해줘")를
+    이어 붙이면 검색 임베딩이 옛 종목과 새 종목 사이에서 오염돼 엉뚱한(옛 종목)
+    상품만 나온다(직접 검색 재현 확인 — "도자기 찻잔 추천해줘 금속 공예품
+    추천해줄래?"는 도자기만 나오는데 "금속 공예품 추천해줄래?"만 검색하면 진짜
+    금속공예 상품이 잘 나옴). 종목이 바뀐 문장은 그 자체로 완결된 새 주제이므로
+    옛 주제를 붙이지 않아야 한다 — 가격만 바뀐 경우(위 테스트)와 다른 점이다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "금속 공예품 추천해줄래?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    history = [
+        {"role": "user", "content": "도자기 찻잔 추천해줘"},
+        {"role": "assistant", "content": "도자기 찻잔 3점을 소개해 드릴게요..."},
+    ]
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["query_text"] = contact1["query_text"]
+        return []
+
+    rr.run(
+        "아니 그거말고 그냥 금속 공예품 추천해줄래?",
+        history,
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        previous_query_text="도자기 찻잔 추천해줘",
+        **_NO_DB,
+    )
+
+    assert seen["query_text"] == "금속 공예품 추천해줄래?"
+
+
+def test_run_narrow_down_same_category_mention_does_not_force_search():
+    """이미 보여준 후보와 같은 종목을 다시 언급한 것뿐이면(예: "이 도자기 얼마예요?")
+    종목이 바뀐 게 아니므로 재검색을 강제하지 않는다 — 과하게 트리거되면 순수 속성
+    질문("가격대 확인해줘"류)까지 불필요하게 재검색하게 된다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "이 도자기 얼마예요?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [78], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["called"] = True
+        return []
+
+    result = rr.run(
+        "이 도자기 얼마예요?",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert seen.get("called") is None
+    assert result["candidates"] == previous
+
+
 def test_run_narrow_down_new_filter_injects_previous_topic_into_query_text():
     """intent.py가 "이전 대화 주제어 + 현재 문장"을 프롬프트만으로 합치도록 시켜도
     실측 확인 결과 새 문장이 조금만 바뀌면 주제어가 빠졌다(예: "찻잔"·"옹기"·"목공예"

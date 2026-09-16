@@ -28,8 +28,10 @@ from __future__ import annotations
 
 from app.pipeline import semantic_cache
 from app.pipeline.generate import (
+    _effective_category,
     _fetch_artisans,
     _fetch_prices,
+    _mentioned_category,
     build_reply,
     explain_product,
     explain_products,
@@ -353,7 +355,19 @@ def run(
     color_changed = bool(new_filters.get("color")) and new_filters.get(
         "color"
     ) != prev_filters.get("color")
-    has_new_filter = price_changed or color_changed
+    # "아니 그거 말고 목공예로" — 가격·색상 필터엔 안 잡히는 종목·재질 전환 요청.
+    # 실측 확인된 버그: 이 신호가 없으면 이전(다른 종목) 후보를 그대로 재사용해
+    # generate.py의 종목 대조(_filter_by_category)가 전부 걸러내고 "카탈로그에 없다"고
+    # 답해버린다 — 실제로는 새 종목으로 재검색을 아예 안 해본 것뿐인데, 결과만 보면
+    # "진짜 그 종목이 카탈로그에 없는 경우"와 구별이 안 된다. taxonomy.CATEGORY_SIGNALS로
+    # 이미 검증된 종목 대조 로직(generate.py)을 그대로 재사용해 새 LLM 판단 없이 코드로
+    # 확정한다.
+    mentioned_category = _mentioned_category(message)
+    category_changed = mentioned_category is not None and not any(
+        _effective_category(c) == mentioned_category
+        for c in (previous_candidates or [])
+    )
+    has_new_filter = price_changed or color_changed or category_changed
     # "다른 거 추천해줘"·"그거말고 또 없어?" — 새 조건은 없지만 지금 후보 말고 다른
     # 상품을 원하는 경우다. 실측 확인: 이걸 그냥 속성 질문("가격대 확인해줘")과 똑같이
     # 취급해 재검색을 안 하면, 카피라이터가 직전과 완전히 같은 상품을 보여주면서도
@@ -368,8 +382,10 @@ def run(
     ):
         candidates = previous_candidates
     else:
-        if contact1["intent"] == "narrow_down" and (
-            has_new_filter or wants_alternatives
+        if (
+            contact1["intent"] == "narrow_down"
+            and (has_new_filter or wants_alternatives)
+            and not category_changed
         ):
             # 새 하드필터가 있거나 "다른 거"를 원하는 narrow_down 재검색 — query_text에
             # 이전 대화 주제어가 빠지면 엉뚱한 종목으로 재검색된다(§ run() 문서 참고).
@@ -378,6 +394,14 @@ def run(
             # 이미 주제어를 살렸어도 무조건 이어 붙인다 — 단어가 겹쳐 살짝 중복돼도
             # 임베딩 검색엔 해가 없고(실측 확인), "이미 포함됐는지"를 문자열로 정확히
             # 판별할 방법이 없어 조건부로 하면 오히려 놓치는 경우가 생긴다.
+            #
+            # category_changed일 땐 예외로 이 이어붙이기를 건너뛴다 — 실측 확인된
+            # 버그: "도자기 찻잔 추천해줘" 다음 "그거 말고 금속 공예품 추천해줄래?"에서
+            # 옛 주제("도자기")를 새 문장 앞에 붙이면 검색 임베딩이 "도자기"와
+            # "금속" 사이에서 오염돼 도자기 상품만 나왔다(직접 검색 재현 확인 —
+            # 옛 주제 없이 "금속 공예품 추천해줄래?"만 검색하면 진짜 금속공예 상품이
+            # 잘 나옴). 종목이 바뀐 문장은 그 자체로 완결된 새 주제라 옛 주제가
+            # 필요 없다 — 가격만 바뀐 문장("3만원 이하로")과 다른 점이다.
             topic_context = previous_query_text or _last_user_message(history)
             if topic_context:
                 contact1["query_text"] = (
