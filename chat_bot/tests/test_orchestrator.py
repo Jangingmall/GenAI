@@ -37,6 +37,11 @@ def _no_artisans(product_ids: list[int]) -> dict[int, dict]:
     return {}
 
 
+def _no_attrs(product_ids: list[int]) -> dict[int, dict]:
+    """_no_prices와 같은 이유의 가짜 fetch_attrs."""
+    return {}
+
+
 def _no_cache_lookup(message: str):
     """의미 기반 캐시 기본값은 실제 임베딩 모델을 부르므로, 단위 테스트에선 항상 미스로 만든다."""
     return
@@ -50,6 +55,7 @@ def _no_cache_store(message: str, contact1: dict) -> None:
 _NO_DB = {
     "fetch_prices": _no_prices,
     "fetch_artisans": _no_artisans,
+    "fetch_attrs": _no_attrs,
     "cache_lookup": _no_cache_lookup,
     "cache_store": _no_cache_store,
 }
@@ -349,6 +355,90 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
 
     assert seen.get("called") is True
     assert result["candidates"] == fresh
+
+
+def test_run_narrow_down_price_filter_keeps_previously_shown_matching_candidate():
+    """실측 확인된 버그: "선물용 도자기 추천해줘"(3개 중 일부가 5만원 이하) → "5만원
+    아래 제품들 뭐뭐있어?"에서 재검색이 카탈로그 전체를 새로 훑다 보니, 방금 보여준
+    5만원 이하 상품이 순위 밖으로 밀려 빠지고 전혀 다른 상품으로 바뀌었다 — 새
+    상품도 조건엔 맞지만 사용자 입장에선 "방금 그거 왜 빠졌지"로 보인다.
+    previous_candidates 중 새 필터에도 맞는 것은 재검색 결과보다 우선 살아남아야
+    한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 50000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [
+        {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 27, "name": "백자 머그", "score": 0.8, "evidence": {}},
+    ]
+    fresh = [
+        {"product_id": 802, "name": "청자 접시", "score": 0.7, "evidence": {}},
+        {"product_id": 68, "name": "도기토 다완", "score": 0.6, "evidence": {}},
+    ]
+
+    def fake_prices(product_ids):
+        return {78: 37000, 27: 72000}  # 78만 5만원 이하
+
+    result = rr.run(
+        "5만원 아래 제품들 뭐뭐있어?",
+        chat=chat,
+        search_and_rank=lambda contact1, top_k=3: fresh,
+        previous_candidates=previous,
+        fetch_prices=fake_prices,
+        fetch_artisans=_no_artisans,
+        fetch_attrs=_no_attrs,
+        cache_lookup=_no_cache_lookup,
+        cache_store=_no_cache_store,
+    )
+
+    ids = [c["product_id"] for c in result["candidates"]]
+    assert 78 in ids  # 여전히 5만원 이하인 이전 후보는 안 빠진다
+    assert 27 not in ids  # 이제 5만원 넘는 이전 후보는 정상적으로 빠진다
+    assert 802 in ids and 68 in ids  # 부족한 자리는 재검색으로 채운다
+
+
+def test_run_narrow_down_color_filter_keeps_previously_shown_matching_candidate():
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": ["WHITE"],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [
+        {"product_id": 78, "name": "백자 찻잔", "score": 0.9, "evidence": {}},
+        {"product_id": 27, "name": "청자 찻잔", "score": 0.8, "evidence": {}},
+    ]
+
+    def fake_attrs(product_ids):
+        return {78: {"color": "WHITE"}, 27: {"color": "BLUE"}}
+
+    result = rr.run(
+        "흰색만 보여줘",
+        chat=chat,
+        search_and_rank=lambda contact1, top_k=3: [],
+        previous_candidates=previous,
+        fetch_prices=_no_prices,
+        fetch_artisans=_no_artisans,
+        fetch_attrs=fake_attrs,
+        cache_lookup=_no_cache_lookup,
+        cache_store=_no_cache_store,
+    )
+
+    ids = [c["product_id"] for c in result["candidates"]]
+    assert ids == [78]
 
 
 def test_run_narrow_down_category_change_triggers_fresh_search():
