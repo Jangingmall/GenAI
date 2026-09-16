@@ -121,6 +121,23 @@ def test_mentioned_category_resolves_water_jar_from_message_too():
     assert gen._mentioned_category("물항아리 있나요") == "ONGGI"
 
 
+def test_mentioned_category_matches_compound_term_with_natural_spacing():
+    """실측 확인된 버그: "금속공예"는 CATEGORY_SIGNALS에 공백 없이 등록돼 있는데,
+    사용자가 자연스럽게 "금속 공예품"처럼 띄어 쓰면 원문 그대로는 매칭이 안 된다.
+    원문에서 아무 종목도 못 찾았을 때만 공백을 없앤 버전으로 재시도해야 한다."""
+    assert gen._mentioned_category("금속 공예품 추천해줄래?") == "METAL"
+
+
+def test_mentioned_category_exact_match_takes_priority_over_spacing_fallback():
+    """원문 그대로 뭔가 찾았으면 공백 제거 재시도 자체를 안 한다 — 안 그러면
+    "이 도자 기울기가 예쁘네요"처럼 우연히 다른 단어가 합쳐져 종목으로 오탐되는
+    사례가 늘어난다. 원문에 이미 명확한 종목("도자기")이 있으면 그것만 쓴다."""
+    assert (
+        gen._mentioned_category("도자기 물항아리 있나요") is None
+    )  # 두 종목 혼재 → 중의적, None이 정상
+    assert gen._mentioned_category("도자기 찻잔 있나요") == "POTTERY"
+
+
 def test_filter_by_category_excludes_wood_item_hidden_by_ambiguous_match():
     candidates = [
         {"product_id": 900, "name": "전통옻칠 도마"},

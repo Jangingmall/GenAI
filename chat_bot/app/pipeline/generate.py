@@ -131,6 +131,21 @@ def _matched_category_codes(
         for term in taxonomy.CATEGORY_SIGNALS
         if term in text and term not in exclude_terms
     ]
+    if not present:
+        # 실측 확인된 버그: "금속공예"처럼 공백 없이 등록된 복합어를 사용자가 자연스럽게
+        # "금속 공예품"으로 띄어 쓰면 이 사전 매칭이 아예 못 찾는다(재검색을 걸어도
+        # 종목 신호를 못 뽑아 엉뚱한 필터링으로 이어짐 — orchestrator.py의 category_changed
+        # 판단도 이 함수를 그대로 쓴다). intent.py의 _spacing_hint와 같은 이유로, 원문에서
+        # 아무것도 못 찾았을 때만 공백을 다 없앤 버전으로 한 번 더 시도한다 — "찾은 게
+        # 있으면 그대로 신뢰"가 우선이라, 이미 뭔가 찾았으면 이 재시도 자체를 안 해서
+        # 오탐 위험(예: "이 도자 기울기가"가 공백 제거 시 "도자기"와 우연히 겹침)을
+        # 줄인다.
+        collapsed = text.replace(" ", "")
+        present = [
+            term
+            for term in taxonomy.CATEGORY_SIGNALS
+            if term in collapsed and term not in exclude_terms
+        ]
     return {
         taxonomy.CATEGORY_SIGNALS[term]
         for term in present
