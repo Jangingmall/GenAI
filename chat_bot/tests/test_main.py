@@ -132,6 +132,27 @@ def test_chat_returns_friendly_reply_on_llm_timeout():
     assert "다시 시도" in body["reply"]
 
 
+def test_chat_returns_friendly_reply_on_malformed_llm_json():
+    """SGLang의 outlines 그래마 백엔드로 실측 확인: response_format(JSON 스키마 강제)을
+    보내도 특정 프롬프트에서 조용히 무시하고 순수 텍스트를 반환하는 경우가 있었다.
+    이러면 intent.py의 json.loads가 json.JSONDecodeError(ValueError의 서브클래스)를
+    던지는데, 이것도 E29와 같은 방식으로 200 안내 문구로 처리해야 한다."""
+
+    def malformed_chat(messages, schema, *, think, model=None):
+        return "죄송해요, 요청을 이해하지 못했어요."  # JSON이 아닌 순수 텍스트
+
+    _override(chat=malformed_chat, search_and_rank=lambda contact1, top_k=3: [])
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["product_ids"] == []
+    assert "다시 시도" in body["reply"]
+
+
 def test_narrow_down_reuses_previous_candidates_via_session_id():
     """같은 session_id로 새 하드필터 없는 narrow_down을 보내면 재검색하지 않는다."""
     calls = {"n": 0}

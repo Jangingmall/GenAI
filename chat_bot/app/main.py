@@ -212,12 +212,18 @@ def chat(
             cache_lookup=cache_lookup,
             cache_store=cache_store,
         )
-    except requests.exceptions.RequestException:
+    except (requests.exceptions.RequestException, ValueError):
         # llm.py의 chat_json은 Ollama에 requests.post(timeout=...)로 붙는다 — 응답
         # 지연·타임아웃·연결 실패가 여기서 그대로 예외로 올라오는데, 잡지 않으면
         # FastAPI 기본 500 에러(안내 문구 없는 서버 오류)로 나가버린다(사용자 시나리오
-        # E29: AI 응답 지연/타임아웃 → Timeout 처리 및 재시도 제공). 세션 상태는 이번
-        # 턴에 확정된 게 없으니 session_store.set()을 안 거치고 바로 안내 문구만
+        # E29: AI 응답 지연/타임아웃 → Timeout 처리 및 재시도 제공).
+        # ValueError도 같이 잡는 이유: LLM이 response_format 스키마를 어기고 JSON이
+        # 아닌 텍스트를 반환하면 intent.py의 json.loads·generate.py의
+        # model_validate_json이 각각 json.JSONDecodeError·pydantic.ValidationError를
+        # 던진다(SGLang의 outlines 그래마 백엔드로 실측 확인 — response_format을
+        # 보내도 특정 프롬프트에서 조용히 무시하고 일반 텍스트를 반환하는 경우가
+        # 있었다). 둘 다 ValueError의 서브클래스라 여기서 같이 잡힌다. 세션 상태는
+        # 이번 턴에 확정된 게 없으니 session_store.set()을 안 거치고 바로 안내 문구만
         # 돌려준다 — 다음 요청은 그대로 이전 상태를 이어서 쓴다.
         logger.exception("AI 응답 지연 또는 실패")
         return ChatResponse(
