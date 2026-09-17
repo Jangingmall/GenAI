@@ -88,7 +88,9 @@ def _is_disambiguation_followup(history: list[dict] | None) -> bool:
     if not history:
         return False
     last = history[-1]
-    return last.get("role") == "assistant" and last.get("content", "").startswith(
+    # content가 키 자체로 없을 수도(get 기본값 "") 있고, 백엔드가 content:null을
+    # 실어 보내서 값이 None일 수도(get 기본값 안 먹음) 있다 — 둘 다 ""로 취급한다.
+    return last.get("role") == "assistant" and (last.get("content") or "").startswith(
         _DISAMBIGUATION_PROMPT
     )
 
@@ -220,6 +222,19 @@ def run(
     run_recommend.py, A담당 코드 안 건드림), top_k를 넉넉히 넘겨 더 받은 뒤 이미
     보여준 product_id만 code에서 제외하면 진짜 다른 상품을 보여줄 수 있다.
     """
+    # 실제 백엔드(ChatService.sendMessage)는 사용자 메시지를 먼저 DB에 저장한 다음
+    # 그 저장분까지 포함해 history를 조회해서 넘긴다(코드로 직접 확인됨) — 그래서
+    # 실전 history의 마지막 줄은 항상 message와 똑같이 중복된다. 이 중복이 있으면
+    # _is_disambiguation_followup·_last_user_message가 "방금 내 발화"를 "직전 턴"으로
+    # 잘못 보게 된다. 백엔드가 순서를 고치든 말든 우리 쪽에서 안전하게 걸러낸다 — 진짜
+    # 사용자가 완전히 같은 말을 두 번 연달아 한 경우만 예외적으로 못 잡지만(드묾), 그
+    # 경우도 걸러내서 생기는 손해는 크지 않다.
+    if (
+        history
+        and history[-1].get("role") == "user"
+        and history[-1].get("content") == message
+    ):
+        history = history[:-1]
 
     def _short_circuit(
         reply: str,
@@ -264,7 +279,22 @@ def run(
     # 먼저 해석한다(clarification subdialogue 원칙 — 명확화 질문 다음 턴을 새 메시지로
     # 재분류하면 안 된다는 실측 확인된 버그: "모두"가 일반 narrow_down으로 새 분류되면서
     # evidence 없는 뭉뚱그린 답이 나갔었다).
-    if is_explain_request(message) or _is_disambiguation_followup(history):
+    disambiguation_followup = _is_disambiguation_followup(history)
+    if disambiguation_followup:
+        # 실측 확인된 버그: 되물음 다음 턴에 순번·"모두"·가격최상급 어느 것도 아닌
+        # 완전히 다른 종목으로 답하면(예: "아 됐고 목공예로 보여줘"), ordinal이 계속
+        # None으로 나와 매번 같은 되물음을 반복해 대화가 갇혔다. classify_and_extract는
+        # 아직 안 돌았지만(아래에서 호출) taxonomy 대조(_mentioned_category)는 추가 LLM
+        # 호출 없이 바로 쓸 수 있어, 이전 후보와 다른 종목이 명확히 언급되면 되물음
+        # 루프에서 빠져나와 새 화제로 취급한다(가격·색상만 바뀐 경우까지는 이 코드
+        # 판단만으로는 못 잡는다 — 종목 전환만 taxonomy로 확정 가능하다).
+        mentioned = _mentioned_category(message)
+        if mentioned is not None and not any(
+            _effective_category(c) == mentioned for c in (previous_candidates or [])
+        ):
+            disambiguation_followup = False
+
+    if is_explain_request(message) or disambiguation_followup:
         if not previous_candidates:
             return _short_circuit(
                 "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
@@ -364,7 +394,20 @@ def run(
             filters=contact1["filters"],
         )
 
-    if contact1.get("wants_reason"):
+    # "아니 그거 말고 목공예로" — 가격·색상 필터엔 안 잡히는 종목·재질 전환 요청.
+    # wants_reason 분기보다 먼저 계산한다 — 실측 확인된 버그: 순서가 반대였을 땐
+    # "금속 공예품이 왜 좋은지 설명해줘"처럼 이유를 물으면서 종목도 바꾼 문장이
+    # previous_candidates(예: 도자기)를 그대로 explain_products에 넘겨 엉뚱한 종목을
+    # 설명해버렸다 — 종목이 바뀌었으면 이유 질문이어도 먼저 재검색해야 한다.
+    # taxonomy.CATEGORY_SIGNALS로 이미 검증된 종목 대조 로직(generate.py)을 그대로
+    # 재사용해 새 LLM 판단 없이 코드로 확정한다.
+    mentioned_category = _mentioned_category(message)
+    category_changed = mentioned_category is not None and not any(
+        _effective_category(c) == mentioned_category
+        for c in (previous_candidates or [])
+    )
+
+    if contact1.get("wants_reason") and not category_changed:
         # "왜 추천했어?"류 — 어떤 상품을(순번·"모두") 설명할지는 코드로 확정 판단하지만
         # (파일 상단 is_explain_request 분기), "이유를 궁금해하는 질문인가" 자체는
         # intent 분류 LLM이 이미 판단해 넘겨준 신호를 그대로 쓴다. 순번을 안 짚었으므로
@@ -397,21 +440,14 @@ def run(
         new_filters.get(k) is not None and new_filters.get(k) != prev_filters.get(k)
         for k in ("max_price", "min_price")
     )
-    color_changed = bool(new_filters.get("color")) and new_filters.get(
-        "color"
-    ) != prev_filters.get("color")
-    # "아니 그거 말고 목공예로" — 가격·색상 필터엔 안 잡히는 종목·재질 전환 요청.
-    # 실측 확인된 버그: 이 신호가 없으면 이전(다른 종목) 후보를 그대로 재사용해
-    # generate.py의 종목 대조(_filter_by_category)가 전부 걸러내고 "카탈로그에 없다"고
-    # 답해버린다 — 실제로는 새 종목으로 재검색을 아예 안 해본 것뿐인데, 결과만 보면
-    # "진짜 그 종목이 카탈로그에 없는 경우"와 구별이 안 된다. taxonomy.CATEGORY_SIGNALS로
-    # 이미 검증된 종목 대조 로직(generate.py)을 그대로 재사용해 새 LLM 판단 없이 코드로
-    # 확정한다.
-    mentioned_category = _mentioned_category(message)
-    category_changed = mentioned_category is not None and not any(
-        _effective_category(c) == mentioned_category
-        for c in (previous_candidates or [])
-    )
+    # color도 gift_theme과 같은 이유로 순서가 턴마다 흔들릴 수 있는 리스트라(실측
+    # 확인) set으로 비교한다 — 리스트 그대로 `!=` 비교하면 값은 같은데 순서만 바뀐
+    # 것도 "새 조건"으로 오판해 불필요한 재검색을 유발한다.
+    color_changed = bool(new_filters.get("color")) and set(
+        new_filters.get("color") or []
+    ) != set(prev_filters.get("color") or [])
+    # mentioned_category·category_changed는 wants_reason 분기보다 앞에서 이미 계산했다
+    # (위 참고).
     has_new_filter = price_changed or color_changed or category_changed
     # "다른 거 추천해줘"·"그거말고 또 없어?" — 새 조건은 없지만 지금 후보 말고 다른
     # 상품을 원하는 경우다. 실측 확인: 이걸 그냥 속성 질문("가격대 확인해줘")과 똑같이
