@@ -1,0 +1,169 @@
+{
+  "dataset_id": "flux2-product-scene-pilot",
+  "dataset_version": "0.1.0",
+  "products": [
+    {
+      "product_id": "textile-scarf-01",
+      "product_type": "patterned textile scarf",
+      "split": "train",
+      "assets": [
+        {
+          "asset_id": "source-detail-01",
+          "path": "assets/samples/product-photos/ad87f32905d240f79455cf9d550341b5_720.jpg",
+          "source_path": "assets/samples/product-photos/ad87f32905d240f79455cf9d550341b5_720.jpg",
+          "role": "preserve_original",
+          "asset_mode": "source",
+          "fidelity_status": "SOURCE",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied patterned textile scarf, a vivid green field with illustrated cranes, deer, flowers, and a navy orange border, shown in a close surface view on a clean light background, preserve the exact printed motif, border colors, fabric texture, and proportions, soft diffused lighting, minimal composition",
+          "negative_prompt": "changed product shape, changed printed motif, missing border, wrong colors, extra textile, invented logo, invented text, duplicate product, distorted fabric, floating fabric, watermark, typography"
+        },
+        {
+          "asset_id": "source-drape-02",
+          "path": "assets/samples/product-photos/689ea8b9216b4723a3cbc4f11477f173_720-2.jpg",
+          "source_path": "assets/samples/product-photos/689ea8b9216b4723a3cbc4f11477f173_720-2.jpg",
+          "role": "preserve_angle",
+          "asset_mode": "source",
+          "fidelity_status": "SOURCE",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied patterned textile scarf draped naturally over a simple black circular stand and a pale display block, preserve the exact green illustrated motif, navy orange border, fabric folds, and proportions, soft studio daylight, refined minimal styling, no extra products",
+          "negative_prompt": "changed product shape, changed printed motif, wrong border colors, stiff fabric, floating fabric, cushion, clothing, extra scarf, extra props, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "source-flatlay-03",
+          "path": "assets/samples/product-photos/9d363c07221a4275a8910124e8fc5bbe_720.jpg",
+          "source_path": "assets/samples/product-photos/9d363c07221a4275a8910124e8fc5bbe_720.jpg",
+          "role": "surface_detail",
+          "asset_mode": "source",
+          "fidelity_status": "SOURCE",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied patterned textile scarf in an airy overlapping flat-lay, show the vivid green illustrated cranes, deer, flowers, navy orange border, and natural fabric surface clearly, preserve the exact motif and colors, clean white background, soft diffused light",
+          "negative_prompt": "changed product shape, changed printed motif, missing border, wrong colors, synthetic pattern, extra textile, cropped-away product, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "source-wall-04",
+          "path": "assets/samples/product-photos/f8bc4f1e861a449ea0b5653e04f53dac_720.jpg",
+          "source_path": "assets/samples/product-photos/f8bc4f1e861a449ea0b5653e04f53dac_720.jpg",
+          "role": "source_composition",
+          "asset_mode": "source",
+          "fidelity_status": "SOURCE",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied patterned textile scarf arranged vertically against a quiet light wall, natural folds reveal the vivid green illustrated motif and navy orange border, preserve the exact print, edges, colors, and fabric behavior, soft side daylight, minimal editorial composition",
+          "negative_prompt": "changed product shape, changed printed motif, wrong border colors, stiff fabric, floating fabric, curtain, clothing, extra textile, invented logo, invented text, watermark, typography"
+        }
+      ]
+    },
+    {
+      "product_id": "najeon-box-01",
+      "product_type": "inlaid lacquer storage box",
+      "split": "train",
+      "assets": [
+        {
+          "asset_id": "source-hero-01",
+          "path": "assets/samples/najeon-box.jpeg",
+          "source_path": "assets/samples/najeon-box.jpeg",
+          "role": "preserve_original",
+          "asset_mode": "source",
+          "fidelity_status": "SOURCE",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied dark rectangular tiered storage box, decorated with dense floral vine inlay across the lid and front panels, three-quarter front view on a neutral light background, preserve the exact box proportions, stacked sections, lid, inlay pattern, and dark brown color, soft diffused lighting, clean minimal composition",
+          "negative_prompt": "changed box proportions, missing tier, open lid, changed floral inlay, wrong colors, extra box, invented logo, invented text, floating object, watermark, typography"
+        }
+      ]
+    },
+    {
+      "product_id": "metal-tea-set-01",
+      "product_type": "multi-piece metal tea service set",
+      "split": "val",
+      "assets": [
+        {
+          "asset_id": "source-hero-01",
+          "path": "assets/samples/images-2.jpeg",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "preserve_original",
+          "asset_mode": "source",
+          "fidelity_status": "VERIFIED",
+          "human_approved": true,
+          "approved_for_training": true,
+          "caption": "e-commerce product photography of the exact supplied multi-piece metal tea service set, including silver, copper, white, and dark vessels with small cups and saucers, arranged on a neutral light-gray background, preserve the exact silhouettes, component count, colors, surface patterns, and spacing, soft diffused lighting, clean minimal composition",
+          "negative_prompt": "changed product shape, missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, floating objects, unstable bases, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "generated-scene-01",
+          "path": "generated/runs/images2_metal_tea_set_detail_page_v1/photos/04-lifestyle.png",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "generated_scene",
+          "asset_mode": "generated_scene",
+          "fidelity_status": "GENERATED",
+          "human_approved": false,
+          "approved_for_training": false,
+          "model": "mlx-community/flux2-klein-9b-4bit",
+          "prompt_version": "generated-usage-scene-v3-premium-editorial",
+          "caption": "e-commerce product photography of the exact supplied multi-piece metal tea service set arranged for a quiet tea moment on a dark wood dining table in a refined real home, warm taupe wall, soft side window light, preserve every original vessel silhouette, cup count, color, surface pattern, and spacing, believable contact shadows, no extra tableware",
+          "negative_prompt": "changed product shape, missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, floating objects, unstable bases, extra tableware, hands, people, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "generated-angle-02",
+          "path": "generated/runs/images2_metal_tea_set_detail_page_v1/photos/05-detail-02.png",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "generated_angle",
+          "asset_mode": "generated_view",
+          "fidelity_status": "GENERATED",
+          "human_approved": false,
+          "approved_for_training": false,
+          "model": "mlx-community/flux2-klein-9b-4bit",
+          "prompt_version": "generated-detail-cut-v1",
+          "caption": "editorial three-quarter product view of the exact supplied multi-piece metal tea service set from a low front-left angle, soft neutral background, controlled metallic highlights, preserve the exact original silhouettes, component count, colors, cup and saucer placement, and ornamental surface details",
+          "negative_prompt": "changed product shape, missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, distorted handles, floating objects, unstable bases, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "generated-detail-03",
+          "path": "generated/runs/images2_metal_tea_set_detail_page_v1/photos/06-detail-03.png",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "generated_macro",
+          "asset_mode": "generated_view",
+          "fidelity_status": "GENERATED",
+          "human_approved": false,
+          "approved_for_training": false,
+          "model": "mlx-community/flux2-klein-9b-4bit",
+          "prompt_version": "generated-detail-cut-v1",
+          "caption": "controlled macro detail of one exact original metal vessel from the supplied tea service set, show only its real visible surface finish, lid, handle, or spout detail at close range, preserve the original metal color, ornament, geometry, and wear, neutral background, no new object",
+          "negative_prompt": "invented teapot, invented vessel, invented ornament, changed handle, changed spout, changed metal color, product-on-product, extra object, melted geometry, duplicate product, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "generated-usage-04",
+          "path": "generated/runs/images2_metal_tea_set_detail_page_v1/photos/07-detail-04.png",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "generated_usage",
+          "asset_mode": "generated_view",
+          "fidelity_status": "GENERATED",
+          "human_approved": false,
+          "approved_for_training": false,
+          "model": "mlx-community/flux2-klein-9b-4bit",
+          "prompt_version": "generated-detail-cut-v1",
+          "caption": "real-home tea table styling using the exact supplied multi-piece metal tea service set, vessels and cups upright on a dark wood table, warm taupe interior, soft morning window light, believable contact shadows, preserve every original product silhouette, color, pattern, and component count, no hands or extra tableware",
+          "negative_prompt": "changed product shape, missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, floating objects, unstable bases, extra tableware, hands, people, invented logo, invented text, watermark, typography"
+        },
+        {
+          "asset_id": "generated-topdown-05",
+          "path": "generated/runs/images2_metal_tea_set_detail_page_v1/photos/08-detail-05.png",
+          "source_path": "assets/samples/images-2.jpeg",
+          "role": "generated_topdown",
+          "asset_mode": "generated_view",
+          "fidelity_status": "GENERATED",
+          "human_approved": false,
+          "approved_for_training": false,
+          "model": "mlx-community/flux2-klein-9b-4bit",
+          "prompt_version": "generated-detail-cut-v1",
+          "caption": "top-down editorial arrangement of the exact supplied multi-piece metal tea service set on a pale neutral surface, show the real vessels, cups, and saucers with their original colors, patterns, count, and spacing, soft directional daylight, restrained composition, no extra objects",
+          "negative_prompt": "changed product shape, missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, turquoise or unrelated objects, floating objects, unstable bases, invented logo, invented text, watermark, typography"
+        }
+      ]
+    }
+  ]
+}

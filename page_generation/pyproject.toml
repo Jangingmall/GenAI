@@ -1,0 +1,26 @@
+[project]
+name = "team3-ecommercesystemai"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115,<1",
+    "httpx>=0.28,<1",
+    "onnxruntime==1.29.0",
+    "pillow>=10.4,<12",
+    "pydantic-settings>=2.7,<3",
+    "python-multipart>=0.0.20,<1",
+    "rembg==2.0.69",
+    "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+]
+
+[project.scripts]
+serve-ai = "detail_page_ai.app:run"
+
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
+testpaths = ["tests"]

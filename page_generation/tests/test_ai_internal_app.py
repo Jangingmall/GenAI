@@ -1,0 +1,184 @@
+import asyncio
+import io
+import json
+from types import SimpleNamespace
+
+import pytest
+from fastapi import HTTPException, UploadFile
+from starlette.datastructures import Headers
+
+import detail_page_ai.app as app_module
+from detail_page_ai.ai_dto import AiToBeStatusResponseDto
+from detail_page_ai.dto import (
+    AiFeResultDto,
+    AiFeProductSummaryDto,
+    FeDetailPageAssetDto,
+    ProductProfileDto,
+)
+
+
+VALID_PNG = b"\x89PNG\r\n\x1a\nimage"
+
+
+def _upload(filename: str = "product.png") -> UploadFile:
+    return UploadFile(
+        file=io.BytesIO(VALID_PNG),
+        filename=filename,
+        headers=Headers({"content-type": "image/png"}),
+    )
+
+
+def _result() -> AiFeResultDto:
+    return AiFeResultDto(
+        generation_id="generation-internal",
+        product=AiFeProductSummaryDto.from_profile(ProductProfileDto.minimal("장식함")),
+        detail_page=FeDetailPageAssetDto(mime_type="image/png"),
+    )
+
+
+class RecordingService:
+    def __init__(self):
+        self.submit_kwargs = None
+        self.pipeline_kwargs = None
+
+    def submit(self, source_image, source_mime_type, **kwargs):
+        self.submit_kwargs = kwargs
+        return {
+            "job_id": "job-internal",
+            "request_id": kwargs.get("request_id") or "request-generated",
+            "status": "QUEUED",
+            "status_url": "/internal/v1/ai/detail-page-jobs/job-internal",
+            "created_at": "2026-08-31T00:00:00Z",
+        }
+
+    def get_backend(self, job_id):
+        return AiToBeStatusResponseDto(
+            product_id="product-42",
+            job_id=job_id,
+            request_id="request-42",
+            status="ANALYZING",
+            progress=15,
+            updated_at="2026-08-31T00:00:00Z",
+        )
+
+    @property
+    def pipeline(self):
+        return self
+
+    def run(self, **kwargs):
+        self.pipeline_kwargs = kwargs
+        return SimpleNamespace(
+            fe_result=_result(),
+            be_ack=None,
+            backend_delivery_pending=False,
+            warning=None,
+        )
+
+
+def test_internal_create_forwards_product_identity_and_source_asset(monkeypatch):
+    service = RecordingService()
+    monkeypatch.setattr(app_module, "get_service", lambda: service)
+    monkeypatch.setattr(
+        app_module, "get_settings", lambda: SimpleNamespace(ai_internal_auth_token="secret")
+    )
+    metadata = json.dumps(
+        {
+            "product_id": "product-42",
+            "source_asset_id": "source-asset-42",
+            "request_id": "request-42",
+            "idempotency_key": "create-42-v1",
+            "user_hints": {"product_name": "나전 보관함"},
+        }
+    )
+
+    response = asyncio.run(
+        app_module.create_internal_detail_page_job(
+            product_image=_upload(),
+            product_images=None,
+            metadata=metadata,
+            x_ai_internal_token="secret",
+        )
+    )
+
+    assert response.product_id == "product-42"
+    assert service.submit_kwargs["product_id"] == "product-42"
+    assert service.submit_kwargs["source_asset_id"] == "source-asset-42"
+    assert service.submit_kwargs["user_hints"].product_name == "나전 보관함"
+
+
+def test_internal_status_returns_backend_shaped_product_identity(monkeypatch):
+    service = RecordingService()
+    monkeypatch.setattr(app_module, "get_service", lambda: service)
+    monkeypatch.setattr(
+        app_module, "get_settings", lambda: SimpleNamespace(ai_internal_auth_token="secret")
+    )
+
+    response = app_module.get_internal_detail_page_job(
+        "job-internal", x_ai_internal_token="secret"
+    )
+
+    assert response.product_id == "product-42"
+    assert response.status == "ANALYZING"
+
+
+def test_internal_approval_forwards_product_identity_without_reanalysis(monkeypatch):
+    service = RecordingService()
+    monkeypatch.setattr(app_module, "get_service", lambda: service)
+    monkeypatch.setattr(
+        app_module, "get_settings", lambda: SimpleNamespace(ai_internal_auth_token="secret")
+    )
+    metadata = json.dumps(
+        {
+            "product_id": "product-42",
+            "source_asset_id": "source-asset-42",
+            "request_id": "approval-42",
+            "idempotency_key": "approve-42-v1",
+            "draft_id": "job-internal",
+            "draft": {
+                "product_name": "승인한 장식함",
+                "summary": "승인된 설명입니다.",
+                "hero_headline": "표면의 문양",
+                "hero_description": "이미지에서 확인되는 특징입니다.",
+            },
+        }
+    )
+
+    response = asyncio.run(
+        app_module.approve_internal_detail_page(
+            product_image=_upload(),
+            product_images=None,
+            metadata=metadata,
+            x_ai_internal_token="secret",
+        )
+    )
+
+    assert response.product_id == "product-42"
+    assert service.pipeline_kwargs["product_id"] == "product-42"
+    assert service.pipeline_kwargs["source_asset_id"] == "source-asset-42"
+    assert service.pipeline_kwargs["profile_override"].display_name == "승인한 장식함"
+
+
+def test_internal_routes_reject_wrong_token(monkeypatch):
+    monkeypatch.setattr(
+        app_module, "get_settings", lambda: SimpleNamespace(ai_internal_auth_token="secret")
+    )
+
+    with pytest.raises(HTTPException) as caught:
+        app_module.get_internal_detail_page_job(
+            "job-internal", x_ai_internal_token="wrong"
+        )
+
+    assert caught.value.status_code == 401
+
+
+def test_internal_routes_fail_closed_when_token_is_not_configured(monkeypatch):
+    monkeypatch.setattr(
+        app_module, "get_settings", lambda: SimpleNamespace(ai_internal_auth_token=None)
+    )
+
+    with pytest.raises(HTTPException) as caught:
+        app_module.get_internal_detail_page_job(
+            "job-internal", x_ai_internal_token="secret"
+        )
+
+    assert caught.value.status_code == 503

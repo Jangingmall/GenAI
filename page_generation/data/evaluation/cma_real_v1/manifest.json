@@ -1,0 +1,1687 @@
+{
+  "version": "cma_real_v1",
+  "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+  "license_policy_sha256": "d72d6fc57608747bc5613211955138c90325025b85702f5efc451424ffaa10bf",
+  "assets": [
+    {
+      "asset_id": "cma-165269",
+      "product_group_id": "cma-165269",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165269.jpg",
+      "sha256": "66f4a98d1252319d2860b24902d4726f722e67a44cb82b5ff1a260f24c199bfa",
+      "width": 688,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.3",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_web.jpg",
+      "source_record": "sources/cma-165269.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 38.7 x 29.3 cm (15 1/4 x 11 9/16 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165270",
+      "product_group_id": "cma-165270",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165270.jpg",
+      "sha256": "ccc5e81addfad92ed6a82a953965d6023e9f08b467cd16843a164cc31d0b7b2f",
+      "width": 670,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.4",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.4/2007.2.4_web.jpg",
+      "source_record": "sources/cma-165270.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 40.6 x 30.5 cm (16 x 12 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165272",
+      "product_group_id": "cma-165272",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165272.jpg",
+      "sha256": "34fad6efe05c017bf6deb666d98cf8c8f8c3b8b6a9207c15798cd81db9b87674",
+      "width": 644,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.6",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.6/2007.2.6_web.jpg",
+      "source_record": "sources/cma-165272.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 40 x 29.3 cm (15 3/4 x 11 9/16 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165267",
+      "product_group_id": "cma-165267",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165267.jpg",
+      "sha256": "6dfbd8304a13d947e79002e9c94a838b4233f7b80461fac24b53c4ca680685c1",
+      "width": 606,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.1",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.1/2007.2.1_web.jpg",
+      "source_record": "sources/cma-165267.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 40 x 25.4 cm (15 3/4 x 10 in.); Mounted: 60.6 x 41.6 cm (23 7/8 x 16 3/8 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165268",
+      "product_group_id": "cma-165268",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165268.jpg",
+      "sha256": "7bacf138eeb562fa3514b90f3e0895d68bd83c662e60bdd4669596ff040ead85",
+      "width": 633,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.2",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.2/2007.2.2_web.jpg",
+      "source_record": "sources/cma-165268.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 39.4 x 27.9 cm (15 1/2 x 11 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165271",
+      "product_group_id": "cma-165271",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165271.jpg",
+      "sha256": "d17e0f5676733899fcf040ae2de654f0ab8658566ff9e70d950eb804e4d015db",
+      "width": 638,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2.5",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2.5/2007.2.5_web.jpg",
+      "source_record": "sources/cma-165271.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragment",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 43.2 x 27.6 cm (17 x 10 7/8 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-102980",
+      "product_group_id": "cma-102980",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-102980.jpg",
+      "sha256": "2a7c735eeabd48bca8759777753dba5fe7204326e62ca4ccd879ad0becb16cc2",
+      "width": 624,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1921.1596",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1921.1596/1921.1596_web.jpg",
+      "source_record": "sources/cma-102980.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile fragment (Binakol)",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "woven cotton; extended tabby weave",
+        "measurements": "Overall: 68.6 x 48.3 cm (27 x 19 in.)",
+        "creation_date": "c. early 1900s(?)",
+        "culture": [
+          "Philippines, Ilokos, Norte Province, Luzon, 20th century(?)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-157123",
+      "product_group_id": "cma-157123",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-157123.jpg",
+      "sha256": "49eb1b891c8d1683accaf0a36ff87c58bff3d55927706c2fc44d844bc292c79a",
+      "width": 372,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1993.253",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1993.253/1993.253_web.jpg",
+      "source_record": "sources/cma-157123.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile with Palmettes",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "Silk and gold thread; tabby with supplementary weft",
+        "measurements": "Overall: 85.5 x 35 cm (33 11/16 x 13 3/4 in.); Mounted: 106.7 x 50.8 cm (42 x 20 in.)",
+        "creation_date": "1200s–1300s",
+        "culture": [
+          "Central Asia, Il-khanid (Mongol) period"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-165266",
+      "product_group_id": "cma-165266",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-165266.jpg",
+      "sha256": "c9db7a0bcef53a510d8eeaea447f819a17c8f1a1912afee33073c1d6c10115e1",
+      "width": 606,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2007.2",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2007.2/2007.2_web.jpg",
+      "source_record": "sources/cma-165266.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile Fragments ",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "cotton and camelid fiber",
+        "measurements": "Overall: 40 x 25.4 cm (15 3/4 x 10 in.)",
+        "creation_date": "c. 50–650 CE",
+        "culture": [
+          "Peru, Moche, north coast"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-156983",
+      "product_group_id": "cma-156983",
+      "category": "textile",
+      "split": "heldout",
+      "image_path": "images/cma-156983.jpg",
+      "sha256": "14930ae3112dc4b768894dd79b1cc62fbccbcd5185351d2a24c3c95c7eefe67f",
+      "width": 551,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1993.139",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_web.jpg",
+      "source_record": "sources/cma-156983.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Textile with Diamonds",
+      "reference_facts": {
+        "type": "Textile",
+        "technique": "silk, cotton, and silver thread: tabby with supplementary weft",
+        "measurements": "Overall: 51.5 x 30.3 cm (20 1/4 x 11 15/16 in.)",
+        "creation_date": "1000s",
+        "culture": [
+          "Central Asia"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-94136",
+      "product_group_id": "cma-94136",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-94136.jpg",
+      "sha256": "ae1039d101c105806bf728e125901f9aa75d32a4676d5f577d13b9305861e251",
+      "width": 707,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1914.680",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1914.680/1914.680_web.jpg",
+      "source_record": "sources/cma-94136.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Paint Box of Vizier Amenemope",
+      "reference_facts": {
+        "type": "Tools and Equipment",
+        "technique": "boxwood with inscription inlaid in Egyptian blue",
+        "measurements": "Overall: 2.2 x 21 x 3.6 cm (7/8 x 8 1/4 x 1 7/16 in.)",
+        "creation_date": "c. 1427–1401 BCE",
+        "culture": [
+          "Egypt, New Kingdom (1540–1069 BCE), Dynasty 18, reign of Amenhotep II (1425–1400 BCE)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-169510",
+      "product_group_id": "cma-169510",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-169510.jpg",
+      "sha256": "6d9ccbc7edd1487edf8ee313b8483a9fb09af2f385c24658c0a757cd3f92ddde",
+      "width": 900,
+      "height": 670,
+      "source_url": "https://clevelandart.org/art/2011.34",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2011.34/2011.34_web.jpg",
+      "source_record": "sources/cma-169510.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Round Box with Bird and Peonies Design",
+      "reference_facts": {
+        "type": "Lacquer",
+        "technique": "carved lacquer",
+        "measurements": "Overall: 21 x 40.6 cm (8 1/4 x 16 in.); Lid: 8.5 x 40.6 cm (3 3/8 x 16 in.); Bottom: 12.5 x 40.6 cm (4 15/16 x 16 in.)",
+        "creation_date": "c. 1300",
+        "culture": [
+          "China, late Southern Song (1127–1279) to early Yuan dynasty (1271–1368)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-148725",
+      "product_group_id": "cma-148725",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-148725.jpg",
+      "sha256": "237421741e1c823ebf9f14264abbde9eebc4502501e3e54211ffb546f1730b4c",
+      "width": 900,
+      "height": 695,
+      "source_url": "https://clevelandart.org/art/1976.17",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1976.17/1976.17_web.jpg",
+      "source_record": "sources/cma-148725.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Box",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver gilt",
+        "measurements": "Overall: 12.4 x 18 x 14.4 cm (4 7/8 x 7 1/16 x 5 11/16 in.)",
+        "creation_date": "1771",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-139742",
+      "product_group_id": "cma-139742",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-139742.jpg",
+      "sha256": "b49ca1973962c1d74a8bdecb247d0c74705bac6d103148491332aebf49097ab2",
+      "width": 900,
+      "height": 648,
+      "source_url": "https://clevelandart.org/art/1963.513",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1963.513/1963.513_web.jpg",
+      "source_record": "sources/cma-139742.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Cosmetics Box with Chrysanthemums",
+      "reference_facts": {
+        "type": "Lacquer",
+        "technique": "lacquer on wood",
+        "measurements": "Overall: 17.6 x 29 x 22.8 cm (6 15/16 x 11 7/16 x 9 in.)",
+        "creation_date": "early 1300s",
+        "culture": [
+          "Japan, Kamakura period (1185–1333)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-144690",
+      "product_group_id": "cma-144690",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-144690.jpg",
+      "sha256": "4d084307f26ee1c50eefbea2a5447fc7dd0f2f977a64f5e86c382ce1b0420c29",
+      "width": 900,
+      "height": 626,
+      "source_url": "https://clevelandart.org/art/1969.32",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1969.32/1969.32_web.jpg",
+      "source_record": "sources/cma-144690.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Carved Lacquer Scroll Box",
+      "reference_facts": {
+        "type": "Lacquer",
+        "technique": "Red carved lacquer on wood",
+        "measurements": "Overall: 14 x 14.7 x 59 cm (5 1/2 x 5 13/16 x 23 1/4 in.)",
+        "creation_date": "1736–95",
+        "culture": [
+          "China, Qing dynasty (1644–1911), Qianlong reign (1736–95)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-142759",
+      "product_group_id": "cma-142759",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-142759.jpg",
+      "sha256": "575e0516e2290c98e1c96332a2e2d91e78f00606630c3baa5455ef05f4500dc6",
+      "width": 1263,
+      "height": 821,
+      "source_url": "https://clevelandart.org/art/1966.464",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1966.464/1966.464_web.jpg",
+      "source_record": "sources/cma-142759.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Lacquer Box",
+      "reference_facts": {
+        "type": "Miscellaneous",
+        "technique": "lacquer, papier-mâché, gold, diamonds",
+        "measurements": "Overall: 1.8 x 14.5 x 5 cm (11/16 x 5 11/16 x 1 15/16 in.)",
+        "creation_date": "c. 1890",
+        "culture": [
+          "Russia, St. Petersburg"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-101636",
+      "product_group_id": "cma-101636",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-101636.jpg",
+      "sha256": "616a5988ffc12a2240a057c911d3b6b39a1ade957bf5524a61251c22a6ee3778",
+      "width": 1263,
+      "height": 892,
+      "source_url": "https://clevelandart.org/art/1920.37",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_web.jpg",
+      "source_record": "sources/cma-101636.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Box with Painted Oxhorn",
+      "reference_facts": {
+        "type": "Miscellaneous",
+        "technique": "painted wood with flattened ox-horn inlay",
+        "measurements": "Overall: 16.5 x 28.6 cm (6 1/2 x 11 1/4 in.)",
+        "creation_date": "1800s",
+        "culture": [
+          "Korea, Joseon dynasty (1392–1910)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-142761",
+      "product_group_id": "cma-142761",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-142761.jpg",
+      "sha256": "943a57403cbefb8125d9d7104d478289069f0a26bbbbd1241b162ea7aa00e8d4",
+      "width": 750,
+      "height": 740,
+      "source_url": "https://clevelandart.org/art/1966.466",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1966.466/1966.466_web.jpg",
+      "source_record": "sources/cma-142761.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Pill or Snuff Box",
+      "reference_facts": {
+        "type": "Miscellaneous",
+        "technique": "silver gilt and enamel",
+        "measurements": "Diameter: 5.8 cm (2 5/16 in.)",
+        "creation_date": "1906–16",
+        "culture": [
+          "Russia, St. Petersburg"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-148828",
+      "product_group_id": "cma-148828",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-148828.jpg",
+      "sha256": "d33cd66e4def20793d5f2a6e14955af1e80e3178d1af8c2674c07a44d9c0f92e",
+      "width": 900,
+      "height": 773,
+      "source_url": "https://clevelandart.org/art/1976.71",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1976.71/1976.71_web.jpg",
+      "source_record": "sources/cma-148828.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Reliquary Box",
+      "reference_facts": {
+        "type": "Metalwork",
+        "technique": "bronze",
+        "measurements": "Diameter: 8.6 cm (3 3/8 in.); Overall: 7 cm (2 3/4 in.)",
+        "creation_date": "200–400 CE",
+        "culture": [
+          "Pakistan, Gandhara, probably Swat, late Kushan period"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-96890",
+      "product_group_id": "cma-96890",
+      "category": "box",
+      "split": "heldout",
+      "image_path": "images/cma-96890.jpg",
+      "sha256": "f852491ace4a5ac74d6e9fb08f32f6b215cd6bf76645f94431260f7bc9cedc1d",
+      "width": 900,
+      "height": 701,
+      "source_url": "https://clevelandart.org/art/1916.588",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1916.588/1916.588_web.jpg",
+      "source_record": "sources/cma-96890.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Box",
+      "reference_facts": {
+        "type": "Enamel",
+        "technique": "silver gilt and enamel",
+        "measurements": "Overall: 6.4 x 8.6 cm (2 1/2 x 3 3/8 in.)",
+        "creation_date": "1749–50",
+        "culture": [
+          "France"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-149146",
+      "product_group_id": "cma-149146",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-149146.jpg",
+      "sha256": "76b14eaa13faea1f661c6e402e2c9676baf80f1013cd55b0a76e59cb01a7b3bb",
+      "width": 900,
+      "height": 871,
+      "source_url": "https://clevelandart.org/art/1977.7",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_web.jpg",
+      "source_record": "sources/cma-149146.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Raft Cup",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "hammered silver soldered together, with chased decoration",
+        "measurements": "Overall: 16 cm (6 5/16 in.)",
+        "creation_date": "1300s–1400s",
+        "culture": [
+          "China, Yuan (1271-1368) or early Ming dynasty (1368-1644)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-154255",
+      "product_group_id": "cma-154255",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-154255.jpg",
+      "sha256": "b2f64da437583348427afeb5e541dc7c409380821502dd492df6d8a594b97181",
+      "width": 900,
+      "height": 564,
+      "source_url": "https://clevelandart.org/art/1988.67",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1988.67/1988.67_web.jpg",
+      "source_record": "sources/cma-154255.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Silver Vessels",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "Silver with gilded foil",
+        "measurements": "Part 1: 22.9 cm (9 in.); Part 2: 10.2 x 10.2 cm (4 x 4 in.); Part 3: 500 g (1.1 lbs.)",
+        "creation_date": "c. late 600s–early 700s",
+        "culture": [
+          "Central Asia (Sogdiana) or Tibet"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-114971",
+      "product_group_id": "cma-114971",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-114971.jpg",
+      "sha256": "454b5c4e32387ce4863a7e04de83ac2d95d8089c5e16e552b58e305e2b4daf93",
+      "width": 900,
+      "height": 754,
+      "source_url": "https://clevelandart.org/art/1935.145",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1935.145/1935.145_web.jpg",
+      "source_record": "sources/cma-114971.json",
+      "acquired_at": "2026-09-06T17:22:49.132460+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Two-Handled Cup and Cover",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver gilt",
+        "measurements": "Overall: 23.9 x 32.4 cm (9 7/16 x 12 3/4 in.)",
+        "creation_date": "1686",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-119326",
+      "product_group_id": "cma-119326",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-119326.jpg",
+      "sha256": "ae4022925dccac60a45ebe80130dae636434d153787dda0f296b35ba4fcf76c1",
+      "width": 1156,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1940.228",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1940.228/1940.228_web.jpg",
+      "source_record": "sources/cma-119326.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Teapot",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "Silver, Wood",
+        "measurements": "with handle: 14.5 x 24.4 cm (5 11/16 x 9 5/8 in.)",
+        "creation_date": "c. 1755–60",
+        "culture": [
+          "America"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-122920",
+      "product_group_id": "cma-122920",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-122920.jpg",
+      "sha256": "97501cf5107700b090c04a89b2c32532b6bf00b0268995c697f98e76d57b2266",
+      "width": 900,
+      "height": 826,
+      "source_url": "https://clevelandart.org/art/1943.179",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1943.179/1943.179_web.jpg",
+      "source_record": "sources/cma-122920.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Tea Caddy",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver gilt",
+        "measurements": "Overall: 13.4 x 9.6 x 5.8 cm (5 1/4 x 3 3/4 x 2 5/16 in.)",
+        "creation_date": "1741–42",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-149041",
+      "product_group_id": "cma-149041",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-149041.jpg",
+      "sha256": "6b128d6a28f5319146451eaa589934f5fad552e6afe325c8ea85192e0dc06951",
+      "width": 900,
+      "height": 646,
+      "source_url": "https://clevelandart.org/art/1977.182",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_web.jpg",
+      "source_record": "sources/cma-149041.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Covered Tureen on Stand (Pot-à-oille)",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver",
+        "measurements": null,
+        "creation_date": "1735–38",
+        "culture": [
+          "France, Paris"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-149950",
+      "product_group_id": "cma-149950",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-149950.jpg",
+      "sha256": "4b856b1823356f7bd8904f01b71614b1c578366aef8e5cd78c3ba49ea036fcd9",
+      "width": 541,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1980.183",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1980.183/1980.183_web.jpg",
+      "source_record": "sources/cma-149950.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Ewer (aiguière)",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver gilt",
+        "measurements": "Overall: 24.6 x 11.6 x 9.9 cm (9 11/16 x 4 9/16 x 3 7/8 in.)",
+        "creation_date": "c. 1817",
+        "culture": [
+          "France, 19th century"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-122925",
+      "product_group_id": "cma-122925",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-122925.jpg",
+      "sha256": "39a0c8a79bcec9558f72209aa892c9da7d4721e5a5703c2a98594bde9918d617",
+      "width": 690,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1943.181",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1943.181/1943.181_web.jpg",
+      "source_record": "sources/cma-122925.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Wine Ewer",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver gilt",
+        "measurements": "Overall: 30.5 x 15.6 cm (12 x 6 1/8 in.)",
+        "creation_date": "1815",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-150698",
+      "product_group_id": "cma-150698",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-150698.jpg",
+      "sha256": "7d871cf86d9c33096eacfb628c415a300f5c4de5fd1824f356f023a7bda41064",
+      "width": 750,
+      "height": 708,
+      "source_url": "https://clevelandart.org/art/1982.129",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1982.129/1982.129_web.jpg",
+      "source_record": "sources/cma-150698.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Dish",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver",
+        "measurements": "Overall: 5.9 x 36.7 cm (2 5/16 x 14 7/16 in.)",
+        "creation_date": "1673",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-143819",
+      "product_group_id": "cma-143819",
+      "category": "metalware",
+      "split": "heldout",
+      "image_path": "images/cma-143819.jpg",
+      "sha256": "474ae2f7886a0872e90545500a3aee9e5875975285ff1ced4d1e131f17b05f84",
+      "width": 900,
+      "height": 700,
+      "source_url": "https://clevelandart.org/art/1968.242",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_web.jpg",
+      "source_record": "sources/cma-143819.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Covered Tureen on Stand",
+      "reference_facts": {
+        "type": "Silver",
+        "technique": "silver",
+        "measurements": "Overall: 35.2 x 43.2 cm (13 7/8 x 17 in.)",
+        "creation_date": "1812",
+        "culture": [
+          "England, London"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-123616",
+      "product_group_id": "cma-123616",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-123616.jpg",
+      "sha256": "b9ab3a9187f2a42c4b9e6f5b1500bf0ad4f830f05b3f8c1e6d2d5964e0a9030e",
+      "width": 599,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1944.190",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_web.jpg",
+      "source_record": "sources/cma-123616.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Amphora Vase",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "porcelain with celadon glaze",
+        "measurements": "Overall: 52.1 cm (20 1/2 in.)",
+        "creation_date": "1723–35",
+        "culture": [
+          "China, Jiangxi Province, Jingdezhen, Qing dynasty (1644–1911), Yongzheng mark and period (1723–35)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-145937",
+      "product_group_id": "cma-145937",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-145937.jpg",
+      "sha256": "2f2cf3882cc6d4f3912ecec35acc5c60db9b5bb1127511b8fe0d2867b1eee007",
+      "width": 595,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1971.145",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1971.145/1971.145_web.jpg",
+      "source_record": "sources/cma-145937.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Vase with Golden Pheasants",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "porcelain painted in polychrome enamels over transparent glaze",
+        "measurements": "Overall: 18.6 x 10.5 cm (7 5/16 x 4 1/8 in.)",
+        "creation_date": "1736–95",
+        "culture": [
+          "China, Jiangxi province, Jingdezhen kilns, Qing dynasty (1644-1911), Qianlong mark and period (1736-95)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-520329",
+      "product_group_id": "cma-520329",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-520329.jpg",
+      "sha256": "36484c51d9192d2b1507a9bd5fa4870ce0abf63426c408af456dd85257c312fa",
+      "width": 580,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2022.224",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_web.jpg",
+      "source_record": "sources/cma-520329.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Gu-Shaped Flower Vase",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "Glazed porcelain with molded and carved designs",
+        "measurements": "height: 31.1 cm (12 1/4 in.); Diameter of mouth: 13.5 cm (5 5/16 in.); Diameter of foot: 11 cm (4 5/16 in.)",
+        "creation_date": "1893–97",
+        "culture": [
+          "Japan, Meiji period (1868–1912)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-99259",
+      "product_group_id": "cma-99259",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-99259.jpg",
+      "sha256": "8428883a82e9144ca3a14c11cb9e70f442ca387128f8215eb8fd0c09401b98fc",
+      "width": 714,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1918.823",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1918.823/1918.823_web.jpg",
+      "source_record": "sources/cma-99259.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Portland Vase",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "jasperware with applied decoration",
+        "measurements": "Overall: 26.4 x 17.8 cm (10 3/8 x 7 in.)",
+        "creation_date": "c.1790",
+        "culture": [
+          "England, Staffordshire"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-300665",
+      "product_group_id": "cma-300665",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-300665.jpg",
+      "sha256": "14b10ede9ec49067c7312062b6c77d306eae5828bc9d2ed92d98e99805b1b9d9",
+      "width": 869,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2017.208",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_web.jpg",
+      "source_record": "sources/cma-300665.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Vase",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "Earthenware",
+        "measurements": "22.4 x 22.7 cm (8 13/16 x 8 15/16 in.)",
+        "creation_date": "1889",
+        "culture": [
+          "Britain"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-142466",
+      "product_group_id": "cma-142466",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-142466.jpg",
+      "sha256": "003bcfd1227206fc74eaca2ae850ccef0993b5fce03c23ee37deeb7595dfaf48",
+      "width": 900,
+      "height": 827,
+      "source_url": "https://clevelandart.org/art/1966.233",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1966.233/1966.233_web.jpg",
+      "source_record": "sources/cma-142466.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Potpourri Vase with Cover",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "soft-paste porcelain",
+        "measurements": "Overall: 17.2 x 15.9 x 10.5 cm (6 3/4 x 6 1/4 x 4 1/8 in.)",
+        "creation_date": "c. 1750",
+        "culture": [
+          "France, Vincennes"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-122443",
+      "product_group_id": "cma-122443",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-122443.jpg",
+      "sha256": "50982830a6cd32b9945747db3926f8fa5329cbd93a9db4d9b8c1d271c9d6eb68",
+      "width": 581,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1942.716",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1942.716/1942.716_web.jpg",
+      "source_record": "sources/cma-122443.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Prunus Vase (Meiping) with Blossoming Lotus",
+      "reference_facts": {
+        "type": "Ceramic",
+        "technique": "Porcelain with polychrome glazes, Fahua ware",
+        "measurements": "Diameter: 19 cm (7 1/2 in.); Overall: 37.5 cm (14 3/4 in.)",
+        "creation_date": "late 1400s",
+        "culture": [
+          "China, Jiangxi Province, Jingdezhen kilns, Ming dynasty (1368–1644)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-93161",
+      "product_group_id": "cma-93161",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-93161.jpg",
+      "sha256": "96fa5f8d8e2dd3eac086cb51656a895cd64c542e0a5d20ebf736d0cab5d00927",
+      "width": 873,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2018.279",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2018.279/2018.279_web.jpg",
+      "source_record": "sources/cma-93161.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Vase",
+      "reference_facts": {
+        "type": "Glass",
+        "technique": "Favrile glass, silver mount",
+        "measurements": "13 x 11.5 cm (5 1/8 x 4 1/2 in.)",
+        "creation_date": "c. 1900",
+        "culture": [
+          "America, New York"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-159994",
+      "product_group_id": "cma-159994",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-159994.jpg",
+      "sha256": "469180dd6fa3cabd4d3c016d7c32ed0064dcd4cefa474ec702a8c1194b815cd2",
+      "width": 703,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1997.260",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1997.260/1997.260_web.jpg",
+      "source_record": "sources/cma-159994.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Vase",
+      "reference_facts": {
+        "type": "Glass",
+        "technique": "Favrile glass",
+        "measurements": "Overall: 19.2 x 9.5 cm (7 9/16 x 3 3/4 in.)",
+        "creation_date": "c. 1905–10",
+        "culture": [
+          "America, New York"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-136303",
+      "product_group_id": "cma-136303",
+      "category": "ceramic",
+      "split": "heldout",
+      "image_path": "images/cma-136303.jpg",
+      "sha256": "c6ae2539e87a298018490afb98837e64105533eb2833c2e526fd2574ab0f00cb",
+      "width": 660,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1960.186",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1960.186/1960.186_web.jpg",
+      "source_record": "sources/cma-136303.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Vase",
+      "reference_facts": {
+        "type": "Glass",
+        "technique": "favrile glass",
+        "measurements": "Overall: 16.5 x 8.3 cm (6 1/2 x 3 1/4 in.)",
+        "creation_date": "c. 1900–1902",
+        "culture": [
+          "America, New York"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-109609",
+      "product_group_id": "cma-109609",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-109609.jpg",
+      "sha256": "68ba1484236f60c0235b52739b75a9088630b64925abd56f01fdf06644d3f46f",
+      "width": 1080,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1928.234",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1928.234/1928.234_web.jpg",
+      "source_record": "sources/cma-109609.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "gold, moonstone, garnet, emerald, cornelian, baroque pearl, and banded agate",
+        "measurements": "Overall: 39.4 cm (15 1/2 in.)",
+        "creation_date": "100s BCE",
+        "culture": [
+          "Greece"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-131719",
+      "product_group_id": "cma-131719",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-131719.jpg",
+      "sha256": "e2b82be46ba3dbda0cf972b9be6c89890bf2a6bc526e33be3db5a6cf2e76e066",
+      "width": 665,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1954.3",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1954.3/1954.3_web.jpg",
+      "source_record": "sources/cma-131719.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace with Pendants",
+      "reference_facts": {
+        "type": "Metalwork",
+        "technique": "gold, garnets",
+        "measurements": "Part 1: 56.5 cm (22 1/4 in.); Part 2: 4.5 x 3.1 x 1.6 cm (1 3/4 x 1 1/4 x 5/8 in.)",
+        "creation_date": "500s",
+        "culture": [
+          "Byzantium, Constantinople?, early Byzantine period, 6th century"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-159023",
+      "product_group_id": "cma-159023",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-159023.jpg",
+      "sha256": "f86578b542a7e9b7031d27af860467711fc6c682d9ed02983d086e4cbfd8ba6f",
+      "width": 750,
+      "height": 730,
+      "source_url": "https://clevelandart.org/art/1995.23",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1995.23/1995.23_web.jpg",
+      "source_record": "sources/cma-159023.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Ifá diviner's necklace (òdìgbà Ifá)",
+      "reference_facts": {
+        "type": "Tools and Equipment",
+        "technique": "Cloth, glass beads, cardboard, cotton, probably wool, and wood",
+        "measurements": "Overall: 49.5 cm (19 1/2 in.); Bag: 21.5 x 19.6 cm (8 7/16 x 7 11/16 in.)",
+        "creation_date": "1900s",
+        "culture": [
+          "Africa, West Africa, Nigeria, Yorùbá-style maker"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-140406",
+      "product_group_id": "cma-140406",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-140406.jpg",
+      "sha256": "9cfa53debe089d158368f2fb60e3cf4fa7df31bcb517a5d1872bcce91943d49a",
+      "width": 589,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1964.35",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1964.35/1964.35_web.jpg",
+      "source_record": "sources/cma-140406.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "gold, silver and brilliants",
+        "measurements": "Part 1: 29.6 cm (11 5/8 in.); Part 2: 12.1 cm (4 3/4 in.)",
+        "creation_date": "c. 1775–95",
+        "culture": [
+          "England or France"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-168479",
+      "product_group_id": "cma-168479",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-168479.jpg",
+      "sha256": "1d2869d3a2225e529d59d2c4b8ece118e16d27c646b45af9a7f3be6bffc8b6c0",
+      "width": 1038,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/2010.231",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2010.231/2010.231_web.jpg",
+      "source_record": "sources/cma-168479.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace (amazipho)",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "Glass beads, bone, and sinew",
+        "measurements": "Overall: 38.1 cm (15 in.)",
+        "creation_date": "1800s",
+        "culture": [
+          "Africa, Southern Africa, South Africa, Southeast Cape Region, Northern Nguni (Zulu)-style maker"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-692273",
+      "product_group_id": "cma-692273",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-692273.jpg",
+      "sha256": "6493086ed47ea51746e8024457be7c01fcfb4dfd59b89fd8b05e5cf1cc5ef170",
+      "width": 653,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2025.155",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2025.155/2025.155_web.jpg",
+      "source_record": "sources/cma-692273.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace (muriya or murriyya)",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "gilt silver, tree resin (possibly copal)",
+        "measurements": null,
+        "creation_date": "late 1800s or early 1900s",
+        "culture": [
+          "Africa, East Africa, probably Harar, Ethiopia, unknown silversmith"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-124415",
+      "product_group_id": "cma-124415",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-124415.jpg",
+      "sha256": "ca41c3cdf2e3f208e025837c3510e68da5bd66421d1f0c949a790b549b2ca9d0",
+      "width": 890,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1945.380",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1945.380/1945.380_web.jpg",
+      "source_record": "sources/cma-124415.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "jade, amethyst, gold, rock crystal",
+        "measurements": null,
+        "creation_date": "700s",
+        "culture": [
+          "Korea, Unified Silla period (676-935)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-161405",
+      "product_group_id": "cma-161405",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-161405.jpg",
+      "sha256": "34863da3d89defbe3231820cfe5eb8da80d02ffaf70bc45d3dcdf1615bacd9c8",
+      "width": 595,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/2000.105",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2000.105/2000.105_web.jpg",
+      "source_record": "sources/cma-161405.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Bronze Necklace with Hanging Pendants",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "bronze",
+        "measurements": "Overall: 40.6 cm (16 in.)",
+        "creation_date": "700s BCE",
+        "culture": [
+          "Northern Greece"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-130076",
+      "product_group_id": "cma-130076",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-130076.jpg",
+      "sha256": "f153043298c616b9fd7f0218fcd8f9657128674d3a097c4a45913bdb4dfe2fc5",
+      "width": 686,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1952.472",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1952.472/1952.472_web.jpg",
+      "source_record": "sources/cma-130076.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Mandarin Necklace",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "jade and coral beads, pendants mounted in gold and enamel",
+        "measurements": "Overall: 137.2 cm (54 in.)",
+        "creation_date": "1700s",
+        "culture": [
+          "China, Qing dynasty (1644-1911)"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-156849",
+      "product_group_id": "cma-156849",
+      "category": "jewelry",
+      "split": "heldout",
+      "image_path": "images/cma-156849.jpg",
+      "sha256": "c6e37ca6dc40ee7ec0731bf13ea79894781ccd69d25689917c4cab2521581687",
+      "width": 900,
+      "height": 554,
+      "source_url": "https://clevelandart.org/art/1992.68",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1992.68/1992.68_web.jpg",
+      "source_record": "sources/cma-156849.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Necklace",
+      "reference_facts": {
+        "type": "Jewelry",
+        "technique": "bronze, cast",
+        "measurements": "Overall: 4.2 x 4.8 x 0.8 cm (1 5/8 x 1 7/8 x 5/16 in.)",
+        "creation_date": "c. 1400–1300 BCE",
+        "culture": [
+          "possibly Hungary, Bronze Age"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-142748",
+      "product_group_id": "cma-142748",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-142748.jpg",
+      "sha256": "04b0ad45f71bd964c58b19cb72cb48a0c226368bf577ad681247f25a92306894",
+      "width": 669,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1966.454",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1966.454/1966.454_web.jpg",
+      "source_record": "sources/cma-142748.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Miniature Chair",
+      "reference_facts": {
+        "type": "Miscellaneous",
+        "technique": "gold, silver gilt, enamel, rubies, diamonds",
+        "measurements": "Overall: 10.5 x 5.3 x 4.8 cm (4 1/8 x 2 1/16 x 1 7/8 in.)",
+        "creation_date": "1896–1906",
+        "culture": [
+          "Russia, St. Petersburg"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-142749",
+      "product_group_id": "cma-142749",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-142749.jpg",
+      "sha256": "929b086ad2a3f1e0177bb0dcaa96eef502bb44223daab41daba2502551c277cf",
+      "width": 742,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1966.455",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1966.455/1966.455_web.jpg",
+      "source_record": "sources/cma-142749.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Miniature Bathroom Chair (Bidet)",
+      "reference_facts": {
+        "type": "Miscellaneous",
+        "technique": "gold, nephrite, enamel, pearls",
+        "measurements": "Overall: 8.3 x 3.5 x 4.5 cm (3 1/4 x 1 3/8 x 1 3/4 in.)",
+        "creation_date": "1908–17",
+        "culture": [
+          "Russia, St. Petersburg"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-151001",
+      "product_group_id": "cma-151001",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-151001.jpg",
+      "sha256": "a7708303c88aea0bd527f877e0d8cd956ccf2dbdf118f717ed57f63389e428ec",
+      "width": 663,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1982.5",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1982.5/1982.5_web.jpg",
+      "source_record": "sources/cma-151001.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "ebonized cherry and other woods",
+        "measurements": "Overall: 84.5 x 40.7 x 46 cm (33 1/4 x 16 x 18 1/8 in.)",
+        "creation_date": "c. 1880",
+        "culture": [
+          "America, New York"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-151452",
+      "product_group_id": "cma-151452",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-151452.jpg",
+      "sha256": "2243d4845d778b079d86c547d5122f1c164d3025cf0b0273745eb9c87dad802d",
+      "width": 686,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1983.33",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1983.33/1983.33_web.jpg",
+      "source_record": "sources/cma-151452.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Prestige Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "Wood and paint",
+        "measurements": "Overall: 80.7 x 53.3 x 44.5 cm (31 3/4 x 21 x 17 1/2 in.)",
+        "creation_date": "1800s",
+        "culture": [
+          "Africa, Central Africa, Cameroon, Babanki-style maker"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-110793",
+      "product_group_id": "cma-110793",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-110793.jpg",
+      "sha256": "daecd7f1bb80b03618d81d60dee8aecff31af28c0b1835067f7f8088b17a1f69",
+      "width": 750,
+      "height": 657,
+      "source_url": "https://clevelandart.org/art/1929.323",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1929.323/1929.323_web.jpg",
+      "source_record": "sources/cma-110793.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Part of a chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "Wood",
+        "measurements": "Overall: 49.9 x 2.6 x 4.6 cm (19 5/8 x 1 x 1 13/16 in.)",
+        "creation_date": "1900s",
+        "culture": [
+          "Africa, Central Africa, Democratic Republic of Congo, Mangbetu style, unknown carver"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-150985",
+      "product_group_id": "cma-150985",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-150985.jpg",
+      "sha256": "47c3fa8f4cc2488ccf81910b324fc5cc62422db9ca13dffc9ca3590f0c121ffa",
+      "width": 555,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1982.4",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1982.4/1982.4_web.jpg",
+      "source_record": "sources/cma-150985.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Side Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "mahogany",
+        "measurements": "Overall: 96.5 x 46.1 x 49.5 cm (38 x 18 1/8 x 19 1/2 in.)",
+        "creation_date": "c. 1900",
+        "culture": [
+          "France, Paris"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-154214",
+      "product_group_id": "cma-154214",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-154214.jpg",
+      "sha256": "a839328c77d1462b0ec9cdcf762ed9a21985d910f4063fe9045cbf2eb9ac77d8",
+      "width": 727,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1988.32",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1988.32/1988.32_web.jpg",
+      "source_record": "sources/cma-154214.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Side Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "mahogany",
+        "measurements": "Overall: 105.4 x 57.2 x 54.3 cm (41 1/2 x 22 1/2 x 21 3/8 in.)",
+        "creation_date": "c. 1760",
+        "culture": [
+          "America, New York"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-678264",
+      "product_group_id": "cma-678264",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-678264.jpg",
+      "sha256": "714138e422a85388953ebe2eb89f3099bc33612bd3e32ea611f09c592e2e038b",
+      "width": 642,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/2024.140",
+      "image_url": "https://openaccess-cdn.clevelandart.org/2024.140/2024.140_web.jpg",
+      "source_record": "sources/cma-678264.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Ceremonial Chair or Throne (citwamo ca mangu)",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "Wood, upholstery studs, leather",
+        "measurements": "Overall: 107 x 55 x 55 cm (42 1/8 x 21 5/8 x 21 5/8 in.)",
+        "creation_date": "1800s",
+        "culture": [
+          "Africa, Central Africa, Angola, Chokwe-style carver"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-152787",
+      "product_group_id": "cma-152787",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-152787.jpg",
+      "sha256": "0774b3597e5d15d90b0714776a4365c82794019e973e6a198c188bd3472aecaf",
+      "width": 738,
+      "height": 893,
+      "source_url": "https://clevelandart.org/art/1985.58",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1985.58/1985.58_web.jpg",
+      "source_record": "sources/cma-152787.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Side Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "mahogany",
+        "measurements": "Overall: 97 x 60 x 56.9 cm (38 3/16 x 23 5/8 x 22 3/8 in.)",
+        "creation_date": "c. 1770",
+        "culture": [
+          "America, Pennsylvania, Philadelphia"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    },
+    {
+      "asset_id": "cma-137166",
+      "product_group_id": "cma-137166",
+      "category": "furniture",
+      "split": "heldout",
+      "image_path": "images/cma-137166.jpg",
+      "sha256": "d76a1c22d97b3261bfb0fbfc79fdf7ce59b5484322e18e041a4d95a1a5f5149d",
+      "width": 729,
+      "height": 900,
+      "source_url": "https://clevelandart.org/art/1962.125",
+      "image_url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_web.jpg",
+      "source_record": "sources/cma-137166.json",
+      "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+      "license": "CC0-1.0",
+      "license_status_evidence": "CC0",
+      "license_policy_url": "https://www.clevelandart.org/open-access",
+      "title": "Chair",
+      "reference_facts": {
+        "type": "Furniture and woodwork",
+        "technique": "mahogany",
+        "measurements": "Overall: 97.2 x 57.2 x 46.4 cm (38 1/4 x 22 1/2 x 18 1/4 in.)",
+        "creation_date": "c. 1800",
+        "culture": [
+          "America, Salem, early 19th Century"
+        ]
+      },
+      "label_status": "source_metadata_not_human_reviewed"
+    }
+  ]
+}

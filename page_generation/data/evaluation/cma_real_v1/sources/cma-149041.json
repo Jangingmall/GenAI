@@ -1,0 +1,975 @@
+{
+  "id": 149041,
+  "accession_number": "1977.182",
+  "share_license_status": "CC0",
+  "tombstone": "Covered Tureen on Stand (Pot-à-oille), 1735–38. Juste-Aurèle Meissonnier (French, 1695–1750), Pierre-François Bonnestrenne (French), Henry Adnet (French, 1745). Silver. The Cleveland Museum of Art, Leonard C. Hanna Jr. Fund, 1977.182",
+  "current_location": null,
+  "title": "Covered Tureen on Stand (Pot-à-oille)",
+  "creation_date": "1735–38",
+  "creation_date_earliest": 1735,
+  "creation_date_latest": 1738,
+  "artists_tags": [
+    "male"
+  ],
+  "culture": [
+    "France, Paris"
+  ],
+  "technique": "silver",
+  "support_materials": [],
+  "department": "Decorative Art and Design",
+  "collection": "Decorative Arts",
+  "type": "Silver",
+  "dimensions": {
+    "No Extent Specified": {
+      "height": 0.371,
+      "height_inch": 14,
+      "height_inch_fraction": 0.625,
+      "width": 0.379,
+      "width_inch": 14,
+      "width_inch_fraction": 0.9375,
+      "length": 0.451,
+      "length_inch": 17,
+      "length_inch_fraction": 0.75
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": "[Maker’s mark of Pierre−François Bonnestrenne, beneath platter; inside tureen (two marks)]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Warden's mark for Paris, 1734−1735, beneath platter; inside tureen; inside cover]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Charge mark of Hubert Louvet, Paris, 1732-1738, on platter border; beneath platter; beneath tureen; inside cover; inside tureen (two marks)]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Discharge mark of Louis Robin mostly used for stamping small work, Paris 1738−1744, on platter border; beneath tureen]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Warden's mark for Paris, 1736−1737, on platter border]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Possibly British import mark, London, 1925, on platter border]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Possibly mark of the British firm Charles & Richard Comyns, on platter border]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Discharge of Louis Robin mostly used for stamping gold and silver between 1738 and 1744, beneath tureen; outside cover]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Maker’s mark of Henry-Guillaume Adnet, inside cover]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Two small undefined marks, inside cover]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Under the surface of the platter the engraved signature]: “FAIT-PAR-I-A-MEISSONIER-ARCHITECTTE”; [and the weight] “673=5\"; “No. [v] I 50 £ b76Sol”; [and the numbers] “A nº 1”; “A nº2”",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[On tureen lip]: \"MEISSONIER\"",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[On tureen lip]: “A nº 3”; “A nº2”  [in order to place the tureen correctly on the stand]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Numbers engraved on the stand, the tureen, and the cover to show how the piece should be assembled]:\n “A nº 1” [on the base of the tureen; beneath the cover; on the platter],\n“A nº 2” [on the platter],\n“A nº 3” [on the exterior rim of the tureen],\n“A nº4”; “A nº 5” [outside the cover],\n“A nº 7” [on the border of the platter]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    },
+    {
+      "inscription": "[Two warden's marks for Paris, 1735-1736, beneath tureen]",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    }
+  ],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 442564,
+        "title": "Tanke och form i rokokon (18th Century: Thought and Form in the Rococo Age)",
+        "description": "<i>Tanke och form i rokokon (18th Century: Thought and Form in the Rococo Age)</i>. Nationalmuseum, 103 24 Stockholm, Sweden (organizer) (October 4, 1979-January 6, 1980).",
+        "opening_date": "1979-10-04T04:00:00"
+      },
+      {
+        "id": 309664,
+        "title": "Consuming Passions: The Art of Food and Drink",
+        "description": "<i>Consuming Passions: The Art of Food and Drink</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (July 26-October 9, 1983).",
+        "opening_date": "1983-07-26T04:00:00"
+      },
+      {
+        "id": 311637,
+        "title": "All That Glitters: Great Silver Vessels in Cleveland's Collection",
+        "description": "<i>All That Glitters: Great Silver Vessels in Cleveland's Collection</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (November 23, 1994-January 8, 1995).",
+        "opening_date": "1994-11-23T05:00:00"
+      },
+      {
+        "id": 220590,
+        "title": "Rococo: The Continuing Curve 1720-2008",
+        "description": "<i>Rococo: The Continuing Curve 1720-2008</i>. Cooper Hewitt, Smithsonian Design Museum, New York, NY (organizer) (March 7-July 6, 2008).",
+        "opening_date": "2008-03-07T00:00:00"
+      },
+      {
+        "id": 282301,
+        "title": "Elegance and Intrigue: French Society in 18th-century Prints and Drawings",
+        "description": "<i>Elegance and Intrigue: French Society in 18th-century Prints and Drawings</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (July 16-November 6, 2016).",
+        "opening_date": "2016-07-16T04:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "Evelyn Pierrepont, 2nd Duke of Kingston [1711–1773], England, by descent to his wife, Elizabeth Chudleigh",
+      "citations": [],
+      "footnotes": null,
+      "date": "1740-1773",
+      "sortorder": 2
+    },
+    {
+      "description": "Elizabeth Chudleigh, sometime Duchess of Kingston [1721–1788], England",
+      "citations": [],
+      "footnotes": null,
+      "date": "1773-1788",
+      "sortorder": 3
+    },
+    {
+      "description": "Prince Alexander Bezborodko [1747–1799], Russia",
+      "citations": [],
+      "footnotes": null,
+      "date": "1788-1799 (?)",
+      "sortorder": 4
+    },
+    {
+      "description": "Count Elie Bezborodko [1756–1815], Russia",
+      "citations": [],
+      "footnotes": null,
+      "date": "1799-1815 (?)",
+      "sortorder": 5
+    },
+    {
+      "description": "Count Alexander Kushelev-Bezborodko [1800-1855], Russia",
+      "citations": [],
+      "footnotes": null,
+      "date": "1815-1855 (?)",
+      "sortorder": 6
+    },
+    {
+      "description": "Alexander Alexandrovich Polovtsoff [1832-1909], Russia, by descent to his heirs",
+      "citations": [],
+      "footnotes": null,
+      "date": "1855-1909 (?)",
+      "sortorder": 7
+    },
+    {
+      "description": "(Jacques Seligmann [1858-1923], Paris, France, 1909, sold to John Pierpont Morgan)",
+      "citations": [],
+      "footnotes": null,
+      "date": null,
+      "sortorder": 8
+    },
+    {
+      "description": "John Pierpont Morgan [1837-1913]",
+      "citations": [],
+      "footnotes": null,
+      "date": "1909-1913 (?)",
+      "sortorder": 9
+    },
+    {
+      "description": "(Charles and Richard Comyns, London, England, 1925-1926, sold to anonymous buyer)",
+      "citations": [],
+      "footnotes": null,
+      "date": "1925-1926",
+      "sortorder": 10
+    },
+    {
+      "description": "(Peter Zervudachi [b.  1921], Galerie du Lac, Vevey, Switzerland, sold to The Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "1977",
+      "sortorder": 11
+    },
+    {
+      "description": "Cleveland Museum of Art, Cleveland, Ohio",
+      "citations": [],
+      "footnotes": null,
+      "date": "1977-",
+      "sortorder": 12
+    }
+  ],
+  "find_spot": null,
+  "related_works": [
+    {
+      "id": 161718,
+      "description": "Works of Juste-Aurele Meissonier (Oeuvre de Juste- AurPle Meissonier), plate 115: Silver Sculptural Project for a Large Centerpiece and Two Tureens Which Have Been Executed for His Lordship the Duke of Kingston, plate 115 from Works of Juste-Aurèle Meissonier (Oeuvre de Juste-Aurèle Meissonier), c. 1735–37. Gabriel Huquier (French, 1695–1772), after Juste-Aurèle Meissonnier (French, 1695–1750). Etching; sheet: 42 x 66.8 cm (16 9/16 x 26 5/16 in.); platemark: 38 x 64 cm (14 15/16 x 25 3/16 in.). The Cleveland Museum of Art, John L. Severance Fund 2000.76",
+      "relationship": "model for"
+    }
+  ],
+  "former_accession_numbers": [],
+  "did_you_know": "The langoustine, pigeon, and vegetables were cast using real examples giving the silver copies lifelike detail and appearance.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This tureen exemplifies the French Rococo style, an artistic movement celebrating naturalistic forms that developed in Paris during the early 1700s. In contrast to classical, controlled symmetry, Rococo forms morph, twist, and spill into the space around them. Meissonnier embellished this tureen in a picturesque arrangement of vegetables and creatures, transforming a utilitarian object into a decadent display of wealth and abundance. This masterpiece comes from a set of two tureens commissioned by the English Duke of Kingston during an extended stay in Paris in the 1730s.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60758901"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1977.182-covered-tureen-on-st"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "The Cleveland Museum of Art. <em>Handbook of the Cleveland Museum of Art/1978</em>. Cleveland, OH: The Cleveland Museum of Art, 1978.",
+      "page_number": "Reproduced: p. 177",
+      "url": "https://archive.org/details/CMAHandbook1978/page/n197"
+    },
+    {
+      "citation": "Cleveland Museum of Art, “Cleveland Museum of Art Has Purchased Jointly with Stichting Collectie Thyssen—Bornemisza the Kingston Tureens,” January 4, 1978, Cleveland Museum of Art Archives.",
+      "page_number": null,
+      "url": "https://archive.org/details/cmapr2515"
+    },
+    {
+      "citation": "Hawley, Henry H. \"Meissonnier's Silver for the Duke of Kingston.\" <em>The Bulletin of the Cleveland Museum of Art </em>65, no. 10 (December 1978): 312-352.",
+      "page_number": "Reproduced: figs. 3, 7, 16",
+      "url": "wwww.jstor.org/stable/25159607"
+    },
+    {
+      "citation": "Landau, Ellen G. “‘A Fairytale Circumstance’ the Influence of Stage Design on the Work of François Boucher.” <em>The Bulletin of the Cleveland Museum of Art</em> 70, no. 9 (November 1983): 360–378.",
+      "page_number": "Mentioned and reproduced: p. 366-367, fig. 10",
+      "url": "http://www.jstor.org/stable/25159834"
+    },
+    {
+      "citation": "Truman, Charles. <em>Sotheby's Concise Encyclopedia of Silver</em>. London: Conran Octopus, 1996.",
+      "page_number": "Mentioned: p. 93",
+      "url": "http://library.clevelandart.org/opac/?func=find-b&find_code=OCL&submit=Search&request=29221527"
+    },
+    {
+      "citation": "Donley, Gregory M, \"A Discerning Eye\", Cleveland Museum of Art. <em>Cleveland Art: The Cleveland Museum of Art Members Magazine</em>. Vol. 39 no. 05, May 1999",
+      "page_number": "Mentioned & reproduced: p. 6",
+      "url": "https://archive.org/details/CMAMM1999-05/page/n5"
+    },
+    {
+      "citation": "May, Sally Ruth.<em> Knockouts: A Pocket Guide</em>. Cleveland: Cleveland Museum of Art, 2001.",
+      "page_number": "Reproduced: no. 40, p. 42",
+      "url": null
+    },
+    {
+      "citation": "Jolly, Anna. <em>Seidengewebe des 18. Jahrhunderts. </em>2. Riggisberg: Abegg-Stiftung, 2002.",
+      "page_number": "Mentioned: p. 34",
+      "url": null
+    },
+    {
+      "citation": "Fuhring, Peter. \"The Silver Inventory from 1741 of Louis, duc d'Orleans.\" <em>Cleveland Studies in the History of Art </em>8 (2003): 130-145.",
+      "page_number": "Mentioned and reproduced: P. 130-131, fig. 1",
+      "url": "https://www.jstor.org/stable/20079735"
+    },
+    {
+      "citation": "Caillaud-de Guido, Laurence. \"La courbe rocaille, lien entre les siècles.\" <em>L'Estampille, l'objet d'art, </em>no. 435 (May 2008).<em><br><br></em> 1989.",
+      "page_number": "Referenced: p. 14",
+      "url": null
+    },
+    {
+      "citation": "Böhmer, Achim, and Sara Hausmann. <em>Retrodesign: stylelab.</em> Mainz: Verlag Hermann Schmidt, 2009.",
+      "page_number": "Mentioned: p. 184",
+      "url": "http://library.clevelandart.org/opac/?func=find-b&find_code=OCL&submit=Search&request=456565304"
+    },
+    {
+      "citation": "Franklin, David, and C. Griffith Mann. <em>Treasures from the Cleveland Museum of Art</em>. Cleveland, OH: Cleveland Museum of Art in association with, New York, NY: Scala Publishers, 2012.",
+      "page_number": "Reproduced & mentioned: pp. 214-215",
+      "url": null
+    },
+    {
+      "citation": "Bailey, Gauvin Alexander. <em>Baroque and Rococo.</em> London: Phaidon Press Limited, 2012.",
+      "page_number": "Mentioned: p. 293, fig. 179",
+      "url": "http://library.clevelandart.org/opac/?func=find-b&find_code=OCL&submit=Search&request=804911527"
+    },
+    {
+      "citation": "Truman, Charles, Seoyoung Kim, and Rebecca Wallis. <em>The Wallace Collection: Catalogue of Gold Boxes</em>. London: The Trustees of the Wallace Colection, 2013.",
+      "page_number": "Mentioned: p. 67, fig. 4.1",
+      "url": "http://library.clevelandart.org/opac/?func=find-b&find_code=OCL&submit=Search&request=746463344"
+    },
+    {
+      "citation": "Bidwell, Frederick E., and Leslie Cade. <em>The CMA Companion: A Guide to the Cleveland Museum of Art</em>. Cleveland, OH: Cleveland Museum of Art in association with New York, NY: Scala Arts Publishers, 2014.",
+      "page_number": "Reproduced & mentioned: p. 135",
+      "url": null
+    },
+    {
+      "citation": "Schroder, Timothy. \"Rococo Silver.\" In <em>Scrolls of Fantasy: The Rococo and Ceramics in England, C. 1735-C. 1775</em>. Charles Dawson, ed., 7-26. London: English Ceramic Circle, 2015.",
+      "page_number": "Reproduced: p. 9, fig. 5",
+      "url": null
+    },
+    {
+      "citation": "Manners, Errol. \"The Rococo Porcelain of Europe and its influence on British Ceramics.\" In <em>Scrolls of Fantasy: The Rococo and Ceramics in England, C. 1735-C. 1775</em>. Charles Dawson, ed., 27-38. London: English Ceramic Circle, 2015.",
+      "page_number": "Reproduced: p. 28, fig. 4",
+      "url": null
+    },
+    {
+      "citation": "\"Welcome, Ada de Wit: The museum's new curator of decorative art.\" <em>Cleveland Art: Cleveland Museum of Art Members Magazine </em>63, no. 3 (2023): 22-23.",
+      "page_number": "Reproduced: P. 23",
+      "url": "https://archive.org/details/CMAMM2023-03/page/22/mode/2up"
+    }
+  ],
+  "url": "https://clevelandart.org/art/1977.182",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_web.jpg",
+      "width": "900",
+      "height": "646",
+      "filesize": "137475",
+      "filename": "1977.182_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_print.jpg",
+      "width": "3400",
+      "height": "2439",
+      "filesize": "1545427",
+      "filename": "1977.182_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_full.tif",
+      "width": "14204",
+      "height": "10189",
+      "filesize": "434201868",
+      "filename": "1977.182_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt0_web.jpg",
+        "width": "900",
+        "height": "653",
+        "filesize": "138691"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt0_print.jpg",
+        "width": "3400",
+        "height": "2465",
+        "filesize": "1530452"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt0_full.tif",
+        "width": "14204",
+        "height": "10299",
+        "filesize": "438889200"
+      },
+      "date_created": "2026-03-03T17:14:26",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt1_web.jpg",
+        "width": "900",
+        "height": "660",
+        "filesize": "136409"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt1_print.jpg",
+        "width": "3400",
+        "height": "2495",
+        "filesize": "1520645"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt1_full.tif",
+        "width": "14204",
+        "height": "10423",
+        "filesize": "444172952"
+      },
+      "date_created": "2026-03-03T17:36:46",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt2_web.jpg",
+        "width": "900",
+        "height": "655",
+        "filesize": "132610"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt2_print.jpg",
+        "width": "3400",
+        "height": "2473",
+        "filesize": "1477091"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt2_full.tif",
+        "width": "14204",
+        "height": "10331",
+        "filesize": "440252520"
+      },
+      "date_created": "2026-03-03T17:48:23",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt3_web.jpg",
+        "width": "900",
+        "height": "650",
+        "filesize": "136452"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt3_print.jpg",
+        "width": "3400",
+        "height": "2457",
+        "filesize": "1509791"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt3_full.tif",
+        "width": "14204",
+        "height": "10266",
+        "filesize": "437482908"
+      },
+      "date_created": "2026-03-03T18:01:17",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt4_web.jpg",
+        "width": "900",
+        "height": "647",
+        "filesize": "133694"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt4_print.jpg",
+        "width": "3400",
+        "height": "2446",
+        "filesize": "1507239"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt4_full.tif",
+        "width": "14204",
+        "height": "10219",
+        "filesize": "435480016"
+      },
+      "date_created": "2026-03-03T18:16:46",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt5_web.jpg",
+        "width": "900",
+        "height": "650",
+        "filesize": "135391"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt5_print.jpg",
+        "width": "3400",
+        "height": "2457",
+        "filesize": "1504962"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt5_full.tif",
+        "width": "14204",
+        "height": "10265",
+        "filesize": "437440268"
+      },
+      "date_created": "2026-03-03T18:33:17",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt6_web.jpg",
+        "width": "900",
+        "height": "643",
+        "filesize": "134268"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt6_print.jpg",
+        "width": "3400",
+        "height": "2429",
+        "filesize": "1501697"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt6_full.tif",
+        "width": "14204",
+        "height": "10149",
+        "filesize": "432499192"
+      },
+      "date_created": "2026-03-02T18:12:43",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt7_web.jpg",
+        "width": "900",
+        "height": "648",
+        "filesize": "125393"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt7_print.jpg",
+        "width": "3400",
+        "height": "2449",
+        "filesize": "1349800"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt7_full.tif",
+        "width": "14204",
+        "height": "10229",
+        "filesize": "435907960"
+      },
+      "date_created": "2026-03-02T18:34:01",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt8_web.jpg",
+        "width": "900",
+        "height": "642",
+        "filesize": "130178"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt8_print.jpg",
+        "width": "3400",
+        "height": "2426",
+        "filesize": "1426682"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt8_full.tif",
+        "width": "14204",
+        "height": "10133",
+        "filesize": "431817356"
+      },
+      "date_created": "2026-03-02T19:16:13",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt9_web.jpg",
+        "width": "900",
+        "height": "649",
+        "filesize": "127417"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt9_print.jpg",
+        "width": "3400",
+        "height": "2450",
+        "filesize": "1399055"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt9_full.tif",
+        "width": "14204",
+        "height": "10236",
+        "filesize": "436206240"
+      },
+      "date_created": "2026-03-02T19:32:48",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt10_web.jpg",
+        "width": "900",
+        "height": "643",
+        "filesize": "129673"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt10_print.jpg",
+        "width": "3400",
+        "height": "2428",
+        "filesize": "1430467"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt10_full.tif",
+        "width": "14204",
+        "height": "10143",
+        "filesize": "432243552"
+      },
+      "date_created": "2026-03-02T20:06:50",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt11_web.jpg",
+        "width": "900",
+        "height": "642",
+        "filesize": "134063"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt11_print.jpg",
+        "width": "3400",
+        "height": "2427",
+        "filesize": "1414336"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt11_full.tif",
+        "width": "14204",
+        "height": "10138",
+        "filesize": "432030656"
+      },
+      "date_created": "2026-03-02T20:25:22",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt12_web.jpg",
+        "width": "900",
+        "height": "645",
+        "filesize": "131099"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt12_print.jpg",
+        "width": "3400",
+        "height": "2438",
+        "filesize": "1447247"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt12_full.tif",
+        "width": "14204",
+        "height": "10187",
+        "filesize": "434118528"
+      },
+      "date_created": "2026-03-02T20:45:32",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt13_web.jpg",
+        "width": "900",
+        "height": "640",
+        "filesize": "128328"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt13_print.jpg",
+        "width": "3400",
+        "height": "2418",
+        "filesize": "1419964"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt13_full.tif",
+        "width": "14204",
+        "height": "10101",
+        "filesize": "430453800"
+      },
+      "date_created": "2026-03-02T21:02:33",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt14_web.jpg",
+        "width": "900",
+        "height": "644",
+        "filesize": "128658"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt14_print.jpg",
+        "width": "3400",
+        "height": "2434",
+        "filesize": "1404114"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt14_full.tif",
+        "width": "14204",
+        "height": "10167",
+        "filesize": "433266132"
+      },
+      "date_created": "2026-03-02T21:19:28",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt15_web.jpg",
+        "width": "900",
+        "height": "650",
+        "filesize": "137390"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt15_print.jpg",
+        "width": "3400",
+        "height": "2457",
+        "filesize": "1509372"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt15_full.tif",
+        "width": "14204",
+        "height": "10265",
+        "filesize": "437442392"
+      },
+      "date_created": "2026-03-02T21:33:47",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt16_web.jpg",
+        "width": "900",
+        "height": "632",
+        "filesize": "139016"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt16_print.jpg",
+        "width": "3400",
+        "height": "2389",
+        "filesize": "1503772"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt16_full.tif",
+        "width": "14204",
+        "height": "9982",
+        "filesize": "425383196"
+      },
+      "date_created": "2026-03-02T22:15:26",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt17_web.jpg",
+        "width": "900",
+        "height": "744",
+        "filesize": "189813"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt17_print.jpg",
+        "width": "3400",
+        "height": "2811",
+        "filesize": "1526714"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt17_full.tif",
+        "width": "5280",
+        "height": "4365",
+        "filesize": "69192388"
+      },
+      "date_created": "2008-01-25T18:38:35",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt18_web.jpg",
+        "width": "900",
+        "height": "792",
+        "filesize": "203505"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt18_print.jpg",
+        "width": "3400",
+        "height": "2993",
+        "filesize": "1797594"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt18_full.tif",
+        "width": "4890",
+        "height": "4304",
+        "filesize": "63197560"
+      },
+      "date_created": "2008-01-25T19:39:54",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt19_web.jpg",
+        "width": "900",
+        "height": "888",
+        "filesize": "203240"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt19_print.jpg",
+        "width": "3400",
+        "height": "3356",
+        "filesize": "1683847"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt19_full.tif",
+        "width": "4447",
+        "height": "4390",
+        "filesize": "58613312"
+      },
+      "date_created": "2008-01-25T19:53:53",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt20_web.jpg",
+        "width": "877",
+        "height": "900",
+        "filesize": "211177"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt20_print.jpg",
+        "width": "3313",
+        "height": "3400",
+        "filesize": "1946675"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt20_full.tif",
+        "width": "4282",
+        "height": "4395",
+        "filesize": "56507500"
+      },
+      "date_created": "2008-01-25T20:07:05",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt21_web.jpg",
+        "width": "900",
+        "height": "737",
+        "filesize": "148951"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt21_print.jpg",
+        "width": "3400",
+        "height": "2783",
+        "filesize": "1293937"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt21_full.tif",
+        "width": "4222",
+        "height": "3456",
+        "filesize": "43780276"
+      },
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt22_web.jpg",
+        "width": "900",
+        "height": "725",
+        "filesize": "138064"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt22_print.jpg",
+        "width": "3400",
+        "height": "2737",
+        "filesize": "1280874"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt22_full.tif",
+        "width": "4278",
+        "height": "3444",
+        "filesize": "44206916"
+      },
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt23_web.jpg",
+        "width": "900",
+        "height": "726",
+        "filesize": "278421"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt23_print.jpg",
+        "width": "3400",
+        "height": "2744",
+        "filesize": "2540820"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.182/1977.182_alt23_full.tif",
+        "width": "4496",
+        "height": "3629",
+        "filesize": "48954544"
+      },
+      "annotation": ""
+    }
+  ],
+  "creditline": "Leonard C. Hanna Jr. Fund",
+  "image_credit": null,
+  "sketchfab_id": "a8255220644f492a992d80986b1da8d2",
+  "sketchfab_url": "https://sketchfab.com/models/a8255220644f492a992d80986b1da8d2",
+  "gallery_donor_text": null,
+  "athena_id": 149041,
+  "creators": [
+    {
+      "id": 13916,
+      "description": "Juste-Aurèle Meissonnier (French, 1695–1750)",
+      "extent": null,
+      "qualifier": null,
+      "role": "designer",
+      "biography": null,
+      "name_in_original_language": null,
+      "birth_year": "1695",
+      "death_year": "1750",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 1
+    },
+    {
+      "id": 13934,
+      "description": "Pierre-François Bonnestrenne (French)",
+      "extent": null,
+      "qualifier": null,
+      "role": "maker",
+      "biography": "Master 1714",
+      "name_in_original_language": null,
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 2
+    },
+    {
+      "id": 13926,
+      "description": "Henry Adnet (French, 1745)",
+      "extent": null,
+      "qualifier": null,
+      "role": "maker",
+      "biography": "Master 1712",
+      "name_in_original_language": null,
+      "death_year": "1745",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 3
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "1977-12-15T00:00:00",
+  "sortable_date": 1735,
+  "date_added_to_oa": null,
+  "date_text": "1735–38",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "cover",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [
+    "Tureen"
+  ],
+  "is_highlight": true,
+  "updated_at": "2026-09-05 18:16:04.412000"
+}

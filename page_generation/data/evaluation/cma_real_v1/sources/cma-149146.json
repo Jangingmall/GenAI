@@ -1,0 +1,756 @@
+{
+  "id": 149146,
+  "accession_number": "1977.7",
+  "share_license_status": "CC0",
+  "tombstone": "Raft Cup (銀槎杯), 1300s–1400s. Attributed to Zhu Bishan (Chinese, c. 1300–after 1362). Hammered silver soldered together, with chased decoration; overall: 16 cm (6 5/16 in.). The Cleveland Museum of Art, John L. Severance Fund, 1977.7",
+  "current_location": "240B Chinese Decorative Arts",
+  "title": "Raft Cup",
+  "title_in_original_language": "銀槎杯",
+  "creation_date": "1300s–1400s",
+  "creation_date_earliest": 1300,
+  "creation_date_latest": 1499,
+  "artists_tags": [
+    "male"
+  ],
+  "culture": [
+    "China, Yuan (1271-1368) or early Ming dynasty (1368-1644)"
+  ],
+  "technique": "hammered silver soldered together, with chased decoration",
+  "support_materials": [],
+  "department": "Chinese Art",
+  "collection": "China - Yuan Dynasty",
+  "type": "Silver",
+  "measurements": "Overall: 16 cm (6 5/16 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.16,
+      "height_inch": 6,
+      "height_inch_fraction": 0.3125,
+      "length": 0.205,
+      "length_inch": 8,
+      "length_inch_fraction": 0.0625
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": "signed 碧山 and dated 乙酉年 (1345)",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": 1
+    },
+    {
+      "inscription": "The inscription in seal script style (zhuanshu) reads:\n\nRaft cup, made in the yiyou year of Zhizheng [1345], Whoso wishes to reach the Milky Way is obstructed by the sky; Once there was a man, restless and valiant, who penetrated into the silver sea. Alas! Why did he not seek for some embroidery from the celestial loom? He only brought back in his arms a slab of stone used to prop up the loom.",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": 2
+    }
+  ],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 302666,
+        "title": "Year in Review: 1977",
+        "description": "<i>Year in Review: 1977</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (December 28, 1977-January 22, 1978).",
+        "opening_date": "1977-12-28T05:00:00"
+      },
+      {
+        "id": 310119,
+        "title": "Realm of the Immortals: Daoism in the Arts of China",
+        "description": "<i>Realm of the Immortals: Daoism in the Arts of China</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (February 10-April 10, 1988).",
+        "opening_date": "1988-02-10T05:00:00"
+      },
+      {
+        "id": 311637,
+        "title": "All That Glitters: Great Silver Vessels in Cleveland's Collection",
+        "description": "<i>All That Glitters: Great Silver Vessels in Cleveland's Collection</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (November 23, 1994-January 8, 1995).",
+        "opening_date": "1994-11-23T05:00:00"
+      },
+      {
+        "id": 196054,
+        "title": "Streams and Mountains Without End: Asian Art and the Legacy of Sherman E. Lee at the Cleveland Museum of Art",
+        "description": "<i>Streams and Mountains Without End: Asian Art and the Legacy of Sherman E. Lee at the Cleveland Museum of Art</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (June 27-August 23, 2009).",
+        "opening_date": "2009-06-27T04:00:00"
+      },
+      {
+        "id": 312307,
+        "title": "Power and Possession: Chinese Calligraphy and Inscribed Objects – Chinese Gallery Rotation 240a, 241c",
+        "description": "<i>Power and Possession: Chinese Calligraphy and Inscribed Objects – Chinese Gallery Rotation 240a, 241c</i>. The Cleveland Museum of Art (organizer) (August 13, 2018-February 3, 2019).",
+        "opening_date": "2018-08-13T04:00:00"
+      },
+      {
+        "id": 395234,
+        "title": "China’s Southern Paradise: Treasures from the Lower Yangzi Delta",
+        "description": "<i>China’s Southern Paradise: Treasures from the Lower Yangzi Delta</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (September 10, 2023-January 7, 2024).",
+        "opening_date": "2023-09-10T04:00:00"
+      }
+    ],
+    "legacy": [
+      {
+        "description": "<em>Exhibition of Chinese Art</em>. Burlington Fine Arts Club, London, UK (1915).",
+        "opening_date": "1915-01-01T05:00:00Z"
+      },
+      {
+        "description": "<em>International Exhibition of Chinese Art</em>. Burlington House, Royal Academy of Arts, London, England (November 28, 1935-March 7, 1936).",
+        "opening_date": "1935-11-28T05:00:00Z"
+      },
+      {
+        "description": "<em>La Decouverte de l'Asie: Hommage a René Grousset</em>. Musée Cernuschi, Paris, France (1954).",
+        "opening_date": "1954-01-01T05:00:00Z"
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "description": "Palace Collection of the Qianlong Emperor, Beijing, China",
+      "citations": [],
+      "footnotes": null,
+      "date": null,
+      "sortorder": 1
+    },
+    {
+      "description": "General Sir Robert Biddulph [1835–1918]",
+      "citations": [],
+      "footnotes": null,
+      "date": "1860 or 1861–at least 1915",
+      "sortorder": 2
+    },
+    {
+      "description": "Sir Percival David [1892–1964], London, England, by descent to his wife Lady David",
+      "citations": [],
+      "footnotes": null,
+      "date": "by 1935–1964",
+      "sortorder": 3
+    },
+    {
+      "description": "Lady Sheila Jane Yorke Hardy David [1914–?], London, England",
+      "citations": [],
+      "footnotes": null,
+      "date": "1964–1976?",
+      "sortorder": 4
+    },
+    {
+      "description": "(Sotheby's, London, England, 14 December, 1976, lot 224, sold to the Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "December 14, 1976",
+      "sortorder": 5
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "1977–",
+      "sortorder": 6
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "The traditional understanding of the silver vessel 's function is that it was supposed to hold wine.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "The figure watching the stars is believed to be the messenger Zhang Qian (died 114 BCE). Legend says he lost his way in the Milky Way, where he met the Weaving Maid who gave him a stone from her loom. Zhang, in fact, holds a slab inscribed <em>loom stone</em>. The vessel is dated, inscribed, and has a seal of the silversmith Zhu Bishan, from Zhejiang province, who ran a workshop in the Lake Tai area near Suzhou. Zhu is one of the few Chinese silversmiths known by name, producing silverware so desirable that his name was used like a trademark by his competitors and followers. Made of pure silver, and shaped like a hollow log, the cup was assembled from several silver pieces that were then soldered together.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60780889"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1977.7-raft-cup"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Hobson, R. L. “A Silver Cup of the Yüan Dynasty.” <em>The Burlington Magazine for Connoisseurs</em>, vol. 22, no. 117 (December 1912), pp. 153–158.",
+      "page_number": "Mentioned: pp. 153–158; Reproduced: plate B",
+      "url": "https://www.jstor.org/stable/859184"
+    },
+    {
+      "citation": "Koop, Albert J. and Burlington Fine Arts Club. <em>Catalogue of a Collection of Objects of Chinese Art</em>. London: Priv. Print. for the Burlington fine arts club, 1915.",
+      "page_number": "Reproduced: cat. no. 55, plate IX",
+      "url": null
+    },
+    {
+      "citation": "Spendlove, F. St. George, ed. C<em>atalogue of the International Exhibition of Chinese Art, 1935-6</em>. London: Royal Academy of Arts, 1935.",
+      "page_number": "Mentioned and Reproduced: cat. no. 1034, pp. 81 and 100",
+      "url": null
+    },
+    {
+      "citation": "<em> La découverte de l'Asie. [Exposition] hommage à René Grousset</em>. Paris: Musée Cernuschi, 1954.",
+      "page_number": "Reproduced: cat. no. 447, plate 28",
+      "url": null
+    },
+    {
+      "citation": "Cheng Chen-to. \"Chu Pi-shang lung-ch'o chi,\" (The Dragon Rafts by Chu Pi-shang). <em>Gu gong bo wu yuan yuan kan</em> 故宮博物院院刊 (Beijing 1960), II, pp.165–169.",
+      "page_number": "II, pp. 165–169",
+      "url": null
+    },
+    {
+      "citation": "Jenyns, Soame, and William Watson. <em>Chinese Art: The Minor Arts</em>. New York: Universe Books, 1963.",
+      "page_number": "Reproduced: no. 35, p. 78",
+      "url": null
+    },
+    {
+      "citation": "Beurdeley, Michel.<em> The Chinese Collector Through the Centuries, from the Han to the 20th Century</em>. Rutland, Vt: C.E. Tuttle Co, 1966.",
+      "page_number": "Reproduced: p. 109, fig. 51",
+      "url": null
+    },
+    {
+      "citation": "Lee, Sherman E., and Wai-kam Ho. <em>Chinese Art Under the Mongols: The Yüan Dynasty, 1279-1368</em>. [Cleveland]: Cleveland Museum of Art; [distributed by the Press of Case Western Reserve University], 1968.",
+      "page_number": "Mentioned and Reproduced: cat. no. 37",
+      "url": null
+    },
+    {
+      "citation": "<em>Bulletin of the Museum of Far Eastern Antiquities</em>, 43, 1971, pl. 3",
+      "page_number": "pl. 3",
+      "url": null
+    },
+    {
+      "citation": "Cao, Zhao, and Percival David. <em>Chinese Connoisseurship: The Ko Ku Yao Lun, the Essential Criteria of Antiquities</em>. London: Faber, 1971.",
+      "page_number": "Reproduced: fig. 19c",
+      "url": null
+    },
+    {
+      "citation": "Sotheby's London.<em> Early Chinese Ceramics; Sung, Ming and Ch'ing Wares; Lacquer; Works of Art</em>. December 14, 1976. Lot 224.",
+      "page_number": null,
+      "url": null
+    },
+    {
+      "citation": "Lee, Sherman E. \"The Year in Review for 1977.\" <em>The Bulletin of the Cleveland Museum of Art</em> 65, no. 1 (1978): 2–42.",
+      "page_number": "Mentioned: cat. no. 128, p. 33",
+      "url": "http://www.jstor.org/stable/25159560."
+    },
+    {
+      "citation": "The Cleveland Museum of Art. <em>Handbook of the Cleveland Museum of Art/1978</em>. Cleveland, OH: The Cleveland Museum of Art, 1978.",
+      "page_number": "Reproduced: p. 344",
+      "url": "https://archive.org/details/CMAHandbook1978/page/n364"
+    },
+    {
+      "citation": "Little, Stephen. <em>Realm of the Immortals: Daoism in the Arts of China : the Cleveland Museum of Art, February 10-April 10, 1988</em>. Cleveland, OH: Cleveland Museum of Art in cooperation with Indiana University Press, 1988.",
+      "page_number": "Mentioned: cat. no. 19",
+      "url": null
+    },
+    {
+      "citation": "Wilson, J. Keith. \"The Fine Art of Drinking: The Chinese Silversmith Zhu Bishan and His Sculptural Cups.\" <em>The Bulletin of the Cleveland Museum of Art</em> 81, no. 10 (1994): 380-401.",
+      "page_number": "Reproduced: cover, pp. 380–381; Mentioned: pp. 380–401",
+      "url": "https://www.jstor.org/stable/25161475"
+    },
+    {
+      "citation": "Christman, Bruce. “Technical Note on the Raft Cup.” <em>The Bulletin of the Cleveland Museum of Art</em> 81, no. 10 (December 1994): 402–407.",
+      "page_number": "",
+      "url": "http://www.jstor.org/stable/25161476"
+    },
+    {
+      "citation": "Cunningham, Michael R., Stanislaw J. Czuma, Anne E. Wardwell, and J. Keith Wilson. <em>Masterworks of Asian Art</em>. Cleveland: Cleveland Museum of Art, 1998.",
+      "page_number": "Reproduced: pp. 74–75",
+      "url": null
+    },
+    {
+      "citation": "Chapman, Jan. <em>The Art of Rhinoceros Horn Carving in China</em> [中囯的犀牛角雕刻兿術 = Chung-Kuo Ti Hsi Niu Chiao Tiao Kʻo I Shu]. London: Christie's Books, 1999.",
+      "page_number": "Reproduced: p. 263, no. 382 (above)",
+      "url": null
+    },
+    {
+      "citation": "Cleveland Museum of Art. <em>The CMA Companion: A Guide to the Cleveland Museum of Art</em>. Cleveland: Cleveland Museum of Art, 2014.",
+      "page_number": "Mentioned and reproduced: pp. 104–105",
+      "url": ""
+    },
+    {
+      "citation": "Griswold, William, Xiaofei Tian, Richard Von Glahn, Feng Zhao, S. J. Vainker, Masaaki Itakura, Jiang Wu, et al. <em>China’s Southern Paradise: Treasures from the Lower Yangzi Delta</em>. Edited by Clarissa von Spee. Cleveland, OH: The Cleveland Museum of Art, 2023",
+      "page_number": "Mentioned and Reproduced: pp. 300–301, no. 142",
+      "url": ""
+    },
+    {
+      "citation": "\"Exhibitions through February 2024.” <em>Cleveland Art: Cleveland Museum of Art Members Magazine </em>63, no. 4 (2023): 16-17.",
+      "page_number": "Reproduced: P. 17; Mentioned: P. 16",
+      "url": "https://archive.org/details/CMAMM2023-04/page/16/mode/2up"
+    }
+  ],
+  "url": "https://clevelandart.org/art/1977.7",
+  "images": {
+    "annotation": "",
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_web.jpg",
+      "width": "900",
+      "height": "871",
+      "filesize": "194523",
+      "filename": "1977.7_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_print.jpg",
+      "width": "3400",
+      "height": "3289",
+      "filesize": "1392802",
+      "filename": "1977.7_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_full.tif",
+      "width": "10712",
+      "height": "10362",
+      "filesize": "333019684",
+      "filename": "1977.7_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt0_web.jpg",
+        "width": "900",
+        "height": "741",
+        "filesize": "196754"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt0_print.jpg",
+        "width": "3400",
+        "height": "2801",
+        "filesize": "1253583"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt0_full.tif",
+        "width": "5594",
+        "height": "4608",
+        "filesize": "77358308"
+      },
+      "date_created": "2023-07-20T16:16:55",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt1_web.jpg",
+        "width": "900",
+        "height": "872",
+        "filesize": "182963"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt1_print.jpg",
+        "width": "3400",
+        "height": "3295",
+        "filesize": "1370386"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt1_full.tif",
+        "width": "10712",
+        "height": "10382",
+        "filesize": "333664164"
+      },
+      "date_created": "2023-07-20T16:52:24",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt2_web.jpg",
+        "width": "900",
+        "height": "772",
+        "filesize": "188657"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt2_print.jpg",
+        "width": "3400",
+        "height": "2915",
+        "filesize": "1390164"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt2_full.tif",
+        "width": "12108",
+        "height": "10380",
+        "filesize": "377071568"
+      },
+      "date_created": "2023-07-20T16:59:06",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt3_web.jpg",
+        "width": "900",
+        "height": "771",
+        "filesize": "187536"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt3_print.jpg",
+        "width": "3400",
+        "height": "2914",
+        "filesize": "1396624"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt3_full.tif",
+        "width": "12108",
+        "height": "10378",
+        "filesize": "376998892"
+      },
+      "date_created": "2023-07-20T17:03:48",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt4_web.jpg",
+        "width": "845",
+        "height": "900",
+        "filesize": "168152"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt4_print.jpg",
+        "width": "3194",
+        "height": "3400",
+        "filesize": "1192553"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt4_full.tif",
+        "width": "9248",
+        "height": "9845",
+        "filesize": "273167496"
+      },
+      "date_created": "2023-07-20T17:10:20",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt5_web.jpg",
+        "width": "687",
+        "height": "900",
+        "filesize": "167314"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt5_print.jpg",
+        "width": "2595",
+        "height": "3400",
+        "filesize": "1129085"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt5_full.tif",
+        "width": "7119",
+        "height": "9327",
+        "filesize": "199224512"
+      },
+      "date_created": "2023-07-20T17:32:14",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt6_web.jpg",
+        "width": "900",
+        "height": "662",
+        "filesize": "173960"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt6_print.jpg",
+        "width": "3400",
+        "height": "2499",
+        "filesize": "1162595"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt6_full.tif",
+        "width": "10712",
+        "height": "7873",
+        "filesize": "253034928"
+      },
+      "date_created": "2023-07-20T17:38:52",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt7_web.jpg",
+        "width": "703",
+        "height": "900",
+        "filesize": "200884"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt7_print.jpg",
+        "width": "2654",
+        "height": "3400",
+        "filesize": "1540340"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt7_full.tif",
+        "width": "8089",
+        "height": "10363",
+        "filesize": "251507548"
+      },
+      "date_created": "2023-07-20T17:49:22",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt8_web.jpg",
+        "width": "900",
+        "height": "717",
+        "filesize": "217831"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt8_print.jpg",
+        "width": "3400",
+        "height": "2710",
+        "filesize": "1693740"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt8_full.tif",
+        "width": "4916",
+        "height": "3918",
+        "filesize": "57808044"
+      },
+      "date_created": "2009-09-01T12:25:07",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt9_web.jpg",
+        "width": "799",
+        "height": "893",
+        "filesize": "360651"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt9_print.jpg",
+        "width": "3044",
+        "height": "3400",
+        "filesize": "5373101"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt9_full.tif",
+        "width": "3719",
+        "height": "4154",
+        "filesize": "46378716"
+      },
+      "date_created": "2009-09-01T12:31:18",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt10_web.jpg",
+        "width": "795",
+        "height": "893",
+        "filesize": "346218"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt10_print.jpg",
+        "width": "3026",
+        "height": "3400",
+        "filesize": "5029881"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt10_full.tif",
+        "width": "3485",
+        "height": "3916",
+        "filesize": "40974332"
+      },
+      "date_created": "2009-09-01T12:45:56",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt11_web.jpg",
+        "width": "737",
+        "height": "893",
+        "filesize": "358048"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt11_print.jpg",
+        "width": "2807",
+        "height": "3400",
+        "filesize": "5236903"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt11_full.tif",
+        "width": "3248",
+        "height": "3934",
+        "filesize": "38365528"
+      },
+      "date_created": "2009-09-01T13:09:22",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt12_web.jpg",
+        "width": "702",
+        "height": "900",
+        "filesize": "151149"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt12_print.jpg",
+        "width": "2651",
+        "height": "3400",
+        "filesize": "1873202"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt12_full.tif",
+        "width": "3176",
+        "height": "4073",
+        "filesize": "38832520"
+      },
+      "date_created": "2009-09-01T13:06:23",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt13_web.jpg",
+        "width": "1038",
+        "height": "893",
+        "filesize": "524261"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt13_print.jpg",
+        "width": "3400",
+        "height": "2926",
+        "filesize": "5726343"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt13_full.tif",
+        "width": "4880",
+        "height": "4199",
+        "filesize": "61507036"
+      },
+      "date_created": "2009-08-31T19:50:10",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt14_web.jpg",
+        "width": "603",
+        "height": "893",
+        "filesize": "305183"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt14_print.jpg",
+        "width": "2295",
+        "height": "3400",
+        "filesize": "3985064"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt14_full.tif",
+        "width": "2900",
+        "height": "4296",
+        "filesize": "37406632"
+      },
+      "date_created": "2009-03-30T12:41:33",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt15_web.jpg",
+        "width": "751",
+        "height": "893",
+        "filesize": "289459"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt15_print.jpg",
+        "width": "2860",
+        "height": "3400",
+        "filesize": "4127696"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt15_full.tif",
+        "width": "3600",
+        "height": "4279",
+        "filesize": "46243540"
+      },
+      "date_created": "2009-03-26T17:40:15",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt16_web.jpg",
+        "width": "783",
+        "height": "893",
+        "filesize": "312014"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt16_print.jpg",
+        "width": "2983",
+        "height": "3400",
+        "filesize": "4473399"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt16_full.tif",
+        "width": "3467",
+        "height": "3952",
+        "filesize": "41135388"
+      },
+      "date_created": "2009-03-26T18:02:30",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt17_web.jpg",
+        "width": "715",
+        "height": "893",
+        "filesize": "378564"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt17_print.jpg",
+        "width": "2723",
+        "height": "3400",
+        "filesize": "5078443"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt17_full.tif",
+        "width": "2961",
+        "height": "3697",
+        "filesize": "32873320"
+      },
+      "date_created": "2009-03-26T18:19:24",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt18_web.jpg",
+        "width": "964",
+        "height": "893",
+        "filesize": "578528"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt18_print.jpg",
+        "width": "1658",
+        "height": "1536",
+        "filesize": "1787722"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1977.7/1977.7_alt18_full.tif",
+        "width": "1658",
+        "height": "1536",
+        "filesize": "7643316"
+      },
+      "annotation": ""
+    }
+  ],
+  "creditline": "John L. Severance Fund",
+  "image_credit": null,
+  "sketchfab_id": "a254ffe2ee5f4512a034e666b5eee4bd",
+  "sketchfab_url": "https://sketchfab.com/models/a254ffe2ee5f4512a034e666b5eee4bd",
+  "gallery_donor_text": null,
+  "athena_id": 149146,
+  "creators": [
+    {
+      "id": 22729,
+      "description": "Zhu Bishan (Chinese, c. 1300–after 1362)",
+      "extent": null,
+      "qualifier": "attributed to",
+      "role": "artist",
+      "biography": null,
+      "name_in_original_language": "朱碧山",
+      "birth_year": "1300",
+      "death_year": "1367",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 1
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "1977-02-23T00:00:00",
+  "sortable_date": 1300,
+  "date_added_to_oa": null,
+  "date_text": "1300s–1400s",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": "This intricately worked cup is largely formed from small pieces of sheet silver, hammered into shape and joined with solder. The surfaces were then chased to create much of the decoration and to disguise the seams. The sash at the figure's waist and the lock of hair were noted in an examination from 1994 to be separately cast pieces attached with small tangs inserted through openings in the silver. X-ray fluorescence analysis of the silver in 1999 showed the composition to be 98.4% silver, 1.1% copper, 0.2% gold, and .04% lead by weight. The silver is protected by a surface coating of cellulose nitrate lacquer to reduce the formation of silver oxidation products.",
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [
+    "Raft-Cup with Taoist Immortal"
+  ],
+  "is_highlight": true,
+  "updated_at": "2026-09-05 18:16:31.199000"
+}

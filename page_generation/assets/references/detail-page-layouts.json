@@ -1,0 +1,759 @@
+[
+  {
+    "id": "silhouette-proof",
+    "name": "실루엣 증명형",
+    "when": "형태·윤곽·비례가 구매 판단의 핵심이고 정면·사선 전체 컷이 확보된 경우",
+    "avoid_when": "표면 질감이나 내부 구성품이 더 중요한 제품, 전체 윤곽을 가리는 배경",
+    "sequence": [
+      "hero",
+      "wide_image",
+      "detail_split",
+      "scale_reference",
+      "feature_grid",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "첫 컷에서 전체 윤곽을 세운 뒤 넓은 형태, 모서리와 비례, 크기, 관찰 가능한 특징 순으로 형태를 검증한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "full-bleed",
+      "image-left",
+      "compact",
+      "image-right",
+      "light",
+      "sand",
+      "paper"
+    ]
+  },
+  {
+    "id": "texture-macro-led",
+    "name": "질감 접사 중심",
+    "when": "표면 질감·직조·양각과 표면 톤이 제품의 핵심이고 원본에 접사가 확보된 경우",
+    "avoid_when": "제품이 작아 접사가 형태를 알아보기 어렵게 만드는 경우",
+    "sequence": [
+      "hero",
+      "palette",
+      "detail_split",
+      "gallery",
+      "feature_grid",
+      "usage_scene",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "형태보다 표면과 표면 톤이 구매 근거이므로 접사를 앞세우고 팔레트와 여러 세부 컷으로 차이를 증명한 뒤 전체 사용 맥락을 준다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "dark",
+      "dark",
+      "dark",
+      "sand",
+      "full-bleed",
+      "compact",
+      "dark",
+      "sand"
+    ]
+  },
+  {
+    "id": "set-lineup-first",
+    "name": "구성품 라인업형",
+    "when": "여러 구성품의 조합·개수가 상품 가치이고 전체 라인업 사진이 선명한 경우",
+    "avoid_when": "단품이거나 구성품 수가 이미지에서 확인되지 않는 경우",
+    "sequence": [
+      "hero",
+      "gallery",
+      "feature_grid",
+      "info_table",
+      "usage_scene",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "완성된 라인업을 먼저 보여주고 구성품의 역할과 확인 가능한 정보를 정리한 다음 공통 사용 장면과 연출 선택지를 연결한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "light",
+      "compact",
+      "light",
+      "image-left",
+      "sand",
+      "paper",
+      "paper"
+    ]
+  },
+  {
+    "id": "maker-process-led",
+    "name": "제작 과정 증거형",
+    "when": "제작자의 과정·도구·손동작에 대한 실제 입력이나 사진이 있고 제작 방식이 구매 근거인 경우",
+    "avoid_when": "과정 자료 없이 소재나 기법을 추정해야 하는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "wide_image",
+      "detail_split",
+      "gallery",
+      "usage_scene",
+      "info_table",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "완성품을 먼저 세운 뒤 실제 과정의 서사와 작업 장면, 결과 표면, 원본 근거, 사용 장면과 기본 정보를 이어 진정성을 확인한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "full-bleed",
+      "image-right",
+      "paper",
+      "light",
+      "compact",
+      "paper"
+    ]
+  },
+  {
+    "id": "color-system-led",
+    "name": "색 조합 중심형",
+    "when": "단품의 색상·배색·표면 톤이 선택 기준이고 팔레트로 비교할 원본이 확보된 경우",
+    "avoid_when": "색 차이가 미세하거나 조명 때문에 색을 신뢰하기 어려운 경우",
+    "sequence": [
+      "hero",
+      "palette",
+      "gallery",
+      "detail_split",
+      "feature_grid",
+      "wide_image",
+      "recommendation",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "색의 체계를 초반에 명확히 하고 색별 원본, 표면 차이, 선택 가능한 특징, 넓은 맥락과 연출 선택지를 차례로 비교한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "sand",
+      "light",
+      "image-left",
+      "light",
+      "full-bleed",
+      "light",
+      "sand"
+    ]
+  },
+  {
+    "id": "scale-decision",
+    "name": "크기 판단 우선형",
+    "when": "실제 크기·손에 잡히는 비례·놓일 면적이 구매 전 불확실성을 크게 줄이는 경우",
+    "avoid_when": "비교 기준이 이미지에 없거나 크기 수치를 제공하지 않는 경우",
+    "sequence": [
+      "hero",
+      "scale_reference",
+      "wide_image",
+      "detail_split",
+      "recommendation",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "첫 증거를 실제 크기 비교에 두고 배치 면적, 가장자리 디테일, 연출 제안, 확인 가능한 사양 순으로 구매 불안을 줄인다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "light",
+      "paper"
+    ]
+  },
+  {
+    "id": "single-source-crop",
+    "name": "단일 원본 재구성형",
+    "when": "원본이 한 장뿐이지만 제품 전체 실루엣과 최소한의 표면 단서가 함께 보이는 경우",
+    "avoid_when": "한 장이 흐리거나 가려져 세부 크롭이 증거를 만들 수 없는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "detail_split",
+      "wide_image",
+      "palette",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "새 사실을 추가하지 않고 한 원본을 전체·세부·여백 있는 배치 크롭과 색 단서로 역할만 나누며, 제안과 주의를 분리한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "dark",
+      "paper",
+      "compact",
+      "light",
+      "dark",
+      "paper"
+    ]
+  },
+  {
+    "id": "multi-angle-form",
+    "name": "다각도 형태 확인형",
+    "when": "앞·뒤·측면 등 여러 각도 원본이 있고 숨은 구조나 입체감이 형태 판단을 좌우하는 경우",
+    "avoid_when": "각도가 거의 같거나 원본 간 제품 식별이 일치하지 않는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "gallery",
+      "detail_split",
+      "wide_image",
+      "scale_reference",
+      "feature_grid",
+      "info_table",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "형태 판단을 짧은 선언으로 열고 여러 각도를 대조해 입체 구조를 보여준 뒤, 연결부 디테일·전체 배치·크기·구조 특징·사양으로 판단을 닫는다.",
+    "source": "관행",
+    "variants": [
+      "full-bleed",
+      "paper",
+      "paper",
+      "image-left",
+      "light",
+      "compact",
+      "paper",
+      "light",
+      "paper"
+    ]
+  },
+  {
+    "id": "surface-to-context",
+    "name": "표면에서 사용으로 이어지는 형",
+    "when": "표면 결·광택·직조가 먼저 신뢰를 만들고 사용 장면에서 촉감과 관리 맥락이 이어지는 경우",
+    "avoid_when": "표면이 거의 단색이거나 사용 장면이 제품 이해에 기여하지 않는 경우",
+    "sequence": [
+      "hero",
+      "detail_split",
+      "statement",
+      "usage_scene",
+      "wide_image",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "접근 가능한 표면 증거를 먼저 제시한 뒤 관찰 가능한 특징을 문장으로 묶고, 사용 장면과 공간 배치로 촉감의 맥락을 확장한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "dark",
+      "sand",
+      "image-right",
+      "full-bleed",
+      "light",
+      "sand",
+      "sand"
+    ]
+  },
+  {
+    "id": "use-scene-led",
+    "name": "사용 장면 선행형",
+    "when": "제품이 놓이는 장소·동작·함께 쓰는 대상이 구매 결정의 핵심이고 실제 맥락 연출이 가능한 경우",
+    "avoid_when": "용도가 이미지에서 확인되지 않거나 장면 소품이 제품보다 앞서는 경우",
+    "sequence": [
+      "hero",
+      "usage_scene",
+      "wide_image",
+      "gallery",
+      "feature_grid",
+      "scale_reference",
+      "recommendation",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "사용 중인 위치와 동작을 먼저 보여주고, 넓은 공간 관계·여러 원본 컷·사용상 특징·크기·어울리는 배치로 맥락을 구매 근거로 바꾼다.",
+    "source": "관행",
+    "variants": [
+      "full-bleed",
+      "full-bleed",
+      "light",
+      "image-left",
+      "sand",
+      "compact",
+      "light",
+      "sand"
+    ]
+  },
+  {
+    "id": "specification-led",
+    "name": "사양 확인형",
+    "when": "치수·구성·호환 여부 등 표로 정리되는 확인 항목이 구매 장벽이고 근거 이미지가 있는 경우",
+    "avoid_when": "정확한 수치나 구성 정보가 제공되지 않은 경우",
+    "sequence": [
+      "hero",
+      "info_table",
+      "scale_reference",
+      "feature_grid",
+      "gallery",
+      "usage_scene",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "초반에 확인 가능한 사양의 범위를 고정하고 크기·특징·여러 근거 이미지·사용 장면을 그 표에 연결해 감성보다 검증을 앞세운다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "compact",
+      "compact",
+      "light",
+      "image-right",
+      "light",
+      "paper"
+    ]
+  },
+  {
+    "id": "palette-and-choice",
+    "name": "색상 선택 비교형",
+    "when": "서로 다른 색상·배색 선택지가 제품의 차별점이고 색별 원본 또는 일관된 컷이 여러 장 있는 경우",
+    "avoid_when": "색상 선택지가 하나뿐이거나 색이 촬영 조건에 따라 크게 변하는 경우",
+    "sequence": [
+      "hero",
+      "palette",
+      "feature_grid",
+      "gallery",
+      "wide_image",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "선택 가능한 색 체계를 먼저 제시하고 색별 특징과 원본, 넓은 공간에서의 색감을 비교한 뒤 공간별 추천을 붙여 선택을 돕는다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "paper",
+      "sand",
+      "sand",
+      "compact",
+      "paper",
+      "paper"
+    ]
+  },
+  {
+    "id": "craft-story-first",
+    "name": "제작 서사 선행형",
+    "when": "완성품보다 제작 배경·손작업의 단계·시간성이 구매 이유이고 실제 과정 서술을 제공받은 경우",
+    "avoid_when": "제작 과정이 추정뿐이거나 구매자가 먼저 확인해야 할 형태·크기 정보가 더 중요한 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "gallery",
+      "detail_split",
+      "usage_scene",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "실제 제작 서사를 짧은 선언으로 열고 과정 관련 원본, 결과 표면, 사용 장면, 정보와 관리 순으로 완성품의 배경을 이해시킨다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "paper",
+      "sand",
+      "sand",
+      "image-left",
+      "light",
+      "dark",
+      "sand"
+    ]
+  },
+  {
+    "id": "material-color-proof",
+    "name": "소재와 색 교차 검증형",
+    "when": "소재 인상과 색감이 함께 구매 근거이고 두 속성을 같은 컷에서 혼동하지 않고 분리해서 보여줄 원본이 있는 경우",
+    "avoid_when": "조명 변화로 색과 표면을 별도로 판단할 수 없는 경우",
+    "sequence": [
+      "hero",
+      "palette",
+      "detail_split",
+      "gallery",
+      "usage_scene",
+      "wide_image",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "색 체계를 먼저 고정한 뒤 표면의 근접 증거와 각도별 원본을 나누어 보여주고, 사용·넓은 배치·주의로 감각적 인상을 검증 가능한 정보로 마무리한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "dark",
+      "light",
+      "image-right",
+      "light",
+      "sand",
+      "paper"
+    ]
+  },
+  {
+    "id": "compact-catalog",
+    "name": "소형 카탈로그 압축형",
+    "when": "작은 단품·소품처럼 핵심 정보가 짧고 명확하며 여러 기능 설명보다 구매 전 확인표가 중요한 경우",
+    "avoid_when": "형태가 복잡하거나 실제 사용 장면이 제품 선택을 좌우하는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "feature_grid",
+      "info_table",
+      "scale_reference",
+      "gallery",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "짧은 선언으로 핵심 특징과 기본 정보를 열어 압축해 전달한 뒤 크기와 원본 묶음으로 확인하고, 간단한 연출 추천과 주의로 구매를 닫는다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "compact",
+      "paper"
+    ]
+  },
+  {
+    "id": "wide-context",
+    "name": "넓은 맥락 장면형",
+    "when": "제품과 공간의 관계·비례·여백이 가치이고 넓은 설치·배치 컷이 핵심 자산인 경우",
+    "avoid_when": "공간을 보여줄 원본이 없거나 배경이 제품보다 강해지는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "wide_image",
+      "usage_scene",
+      "gallery",
+      "scale_reference",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "짧은 공간 선언으로 제품과 여백의 관계를 열고 넓은 화면에서 실제 사용 장면, 각도 묶음, 크기, 배치 제안과 주의 순으로 공간적 가치를 설명한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "full-bleed",
+      "paper",
+      "full-bleed",
+      "full-bleed",
+      "image-right",
+      "paper",
+      "sand",
+      "paper",
+      "sand"
+    ]
+  },
+  {
+    "id": "component-assembly",
+    "name": "구성품 역할 해설형",
+    "when": "세트 안에서 각 구성품의 역할·배치·결합 방식이 구매 근거이고 구성품을 개별 식별할 수 있는 경우",
+    "avoid_when": "구성품 수가 많아 개별 구분이 어렵거나 단품인 경우",
+    "sequence": [
+      "hero",
+      "feature_grid",
+      "detail_split",
+      "gallery",
+      "info_table",
+      "usage_scene",
+      "recommendation",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "구성품별 역할을 먼저 이름 붙이고 결합부와 개별 원본으로 확인한 다음 표·공통 사용 장면·배치 추천을 통해 세트 사용법을 정리한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "image-left",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "paper"
+    ]
+  },
+  {
+    "id": "scale-and-care",
+    "name": "크기와 관리 결합형",
+    "when": "크기 판단과 사용 후 관리·보관법을 함께 이해해야 구매 후 실패를 줄일 수 있는 제품",
+    "avoid_when": "관리 정보가 없거나 실제 크기 비교를 신뢰할 수 없는 원본",
+    "sequence": [
+      "hero",
+      "scale_reference",
+      "usage_scene",
+      "wide_image",
+      "info_table",
+      "notice",
+      "recommendation",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "크기와 사용 장면으로 기대치를 맞춘 뒤 넓은 배치와 기본 정보, 관리와 주의, 보관·배치 제안을 연결해 구매 후 행동까지 안내한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "compact",
+      "image-left",
+      "light",
+      "light",
+      "sand",
+      "sand",
+      "paper"
+    ]
+  },
+  {
+    "id": "single-angle-color",
+    "name": "단일 각도 색상형",
+    "when": "한 시점의 완성 컷만 있어도 색·배색과 기본 형태가 명확하고 색상 연출이 구매 판단을 이끄는 경우",
+    "avoid_when": "단일 이미지의 색이 조명에 치우치거나 뒷면·구성 확인이 필수인 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "palette",
+      "wide_image",
+      "feature_grid",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 6,
+    "rationale": "한 장에서 확인 가능한 색 체계와 여백 있는 전체 컷을 먼저 확장하고, 짧은 선언과 관찰 가능한 특징·연출 제안만 남겨 없는 각도를 꾸미지 않는다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "full-bleed",
+      "light",
+      "sand",
+      "paper",
+      "compact",
+      "sand",
+      "sand"
+    ]
+  },
+  {
+    "id": "tactile-editorial",
+    "name": "촉감 편집형",
+    "when": "표면의 반복 무늬·미세 흔적·테두리 같은 촉각 단서가 형태보다 먼저 신뢰를 만들고 여러 상세 컷이 있는 경우",
+    "avoid_when": "접사가 없어 표면 단서를 확인할 수 없거나 과도한 확대가 형태를 왜곡하는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "detail_split",
+      "palette",
+      "usage_scene",
+      "gallery",
+      "recommendation",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "짧은 편집적 후킹 뒤에 표면과 색의 증거를 놓고, 사용 장면과 여러 원본 컷으로 촉감의 맥락을 확장한 뒤 연출·주의로 정리한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "dark",
+      "sand",
+      "dark",
+      "sand",
+      "paper",
+      "dark",
+      "sand"
+    ]
+  },
+  {
+    "id": "many-angle-archive",
+    "name": "다각도 아카이브 상세형",
+    "when": "앞·뒤·측면·상면 등 서로 다른 각도 원본이 충분하고 숨은 구조·비례·표면 방향·색감을 모두 확인해야 하므로 한두 컷으로는 구매 판단을 닫을 수 없는 경우",
+    "avoid_when": "각도 수가 적거나 같은 시점을 반복해 실제 정보량이 늘지 않는 경우",
+    "sequence": [
+      "hero",
+      "gallery",
+      "palette",
+      "wide_image",
+      "detail_split",
+      "scale_reference",
+      "feature_grid",
+      "info_table",
+      "closing"
+    ],
+    "middle_count": 7,
+    "rationale": "각도 묶음으로 전체 구조와 색 체계를 먼저 대조한 뒤 넓은 배치, 접합부, 크기, 구조 특징과 사양까지 서로 다른 질문을 분리해 답한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "paper",
+      "light",
+      "light",
+      "image-left",
+      "compact",
+      "paper",
+      "compact",
+      "paper"
+    ]
+  },
+  {
+    "id": "component-inventory-detail",
+    "name": "다구성품 인벤토리형",
+    "when": "구성품이 많고 각각의 역할·결합·상대 크기·사용 순서를 설명해야 하므로 전체 라인업 하나만으로는 구매 판단을 닫을 수 없는 경우",
+    "avoid_when": "단품이거나 구성품을 개별 식별할 원본이 부족한 경우",
+    "sequence": [
+      "hero",
+      "gallery",
+      "feature_grid",
+      "detail_split",
+      "scale_reference",
+      "usage_scene",
+      "recommendation",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 8,
+    "rationale": "라인업과 역할을 먼저 펼친 다음 결합부·상대 크기·사용 순서를 각각 검증하고, 배치 추천·기본 정보·주의로 구성품이 많은 상품의 선택 부담을 줄인다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "compact",
+      "image-right",
+      "compact",
+      "full-bleed",
+      "sand",
+      "light",
+      "dark",
+      "sand"
+    ]
+  },
+  {
+    "id": "material-color-scale",
+    "name": "소재·색·크기 종합형",
+    "when": "소재의 표면, 색 조합, 실제 크기가 모두 구매 근거이고 각 축을 판별할 독립적인 원본 자산이 충분한 경우",
+    "avoid_when": "한 조명이나 한 각도에 정보가 몰려 소재·색·크기를 따로 검증할 수 없는 경우",
+    "sequence": [
+      "hero",
+      "palette",
+      "scale_reference",
+      "detail_split",
+      "gallery",
+      "feature_grid",
+      "wide_image",
+      "usage_scene",
+      "info_table",
+      "notice",
+      "closing"
+    ],
+    "middle_count": 9,
+    "rationale": "색과 크기를 먼저 선택 기준으로 고정하고 표면·각도·특징·배치·사용 장면을 분리해 보여준 뒤 사양과 주의로 세 축의 근거를 닫는다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "sand",
+      "compact",
+      "dark",
+      "light",
+      "paper",
+      "full-bleed",
+      "image-left",
+      "compact",
+      "sand",
+      "sand"
+    ]
+  },
+  {
+    "id": "process-evidence-deep",
+    "name": "공정 단계 추적형",
+    "when": "완성품과 함께 실제 제작 단계·도구·손동작·중간 결과가 여러 장 확보되어 공정의 순서와 결과를 각각 설명해야 하는 경우",
+    "avoid_when": "제작 과정이 제공되지 않았거나 공정에 관한 내용을 이미지에서 추정해야 하는 경우",
+    "sequence": [
+      "hero",
+      "statement",
+      "gallery",
+      "wide_image",
+      "detail_split",
+      "feature_grid",
+      "usage_scene",
+      "scale_reference",
+      "info_table",
+      "closing"
+    ],
+    "middle_count": 8,
+    "rationale": "실제 공정 서사를 열고 단계별 원본과 작업 장면, 완성 표면, 특징, 사용, 크기를 분리한 뒤 확인 가능한 정보로 마무리한다.",
+    "source": "프로젝트 가이드",
+    "variants": [
+      "paper",
+      "sand",
+      "paper",
+      "full-bleed",
+      "dark",
+      "compact",
+      "image-right",
+      "compact",
+      "light",
+      "paper"
+    ]
+  },
+  {
+    "id": "complete-comparison",
+    "name": "전면 비교 상세형",
+    "when": "색·크기·질감·구성·사용 맥락이 모두 선택 기준이고 변형이나 원본 컷이 많아 구매자가 여러 질문을 비교해서 결정해야 하는 경우",
+    "avoid_when": "원본이 적거나 단일 속성만으로도 제품을 충분히 판단할 수 있는 경우",
+    "sequence": [
+      "hero",
+      "gallery",
+      "palette",
+      "scale_reference",
+      "wide_image",
+      "detail_split",
+      "feature_grid",
+      "usage_scene",
+      "recommendation",
+      "info_table",
+      "closing"
+    ],
+    "middle_count": 9,
+    "rationale": "많은 원본을 먼저 비교 가능한 묶음으로 열고 색·크기·공간·표면·특징·사용·추천·사양을 각각 한 번씩 답해 정보량이 많은 선택 과정을 정리한다.",
+    "source": "관행",
+    "variants": [
+      "paper",
+      "light",
+      "sand",
+      "compact",
+      "light",
+      "image-left",
+      "paper",
+      "full-bleed",
+      "compact",
+      "compact",
+      "sand"
+    ]
+  }
+]

@@ -1,0 +1,183 @@
+{
+  "id": 156983,
+  "accession_number": "1993.139",
+  "share_license_status": "CC0",
+  "tombstone": "Textile with Diamonds, 1000s. Central Asia. Silk, cotton, and silver thread: tabby with supplementary weft; overall: 51.5 x 30.3 cm (20 1/4 x 11 15/16 in.). The Cleveland Museum of Art, John L. Severance Fund, 1993.139",
+  "current_location": null,
+  "title": "Textile with Diamonds",
+  "creation_date": "1000s",
+  "creation_date_earliest": 1000,
+  "creation_date_latest": 1099,
+  "artists_tags": [],
+  "culture": [
+    "Central Asia"
+  ],
+  "technique": "silk, cotton, and silver thread: tabby with supplementary weft",
+  "support_materials": [],
+  "department": "Textiles",
+  "collection": "Textiles",
+  "type": "Textile",
+  "measurements": "Overall: 51.5 x 30.3 cm (20 1/4 x 11 15/16 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.515,
+      "height_inch": 20,
+      "height_inch_fraction": 0.25,
+      "width": 0.303,
+      "width_inch": 11,
+      "width_inch_fraction": 0.9375
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 211548,
+        "title": "When Silk Was Gold: Central Asian & Chinese Textiles from the Cleveland and Metropolitan Museums of Art",
+        "description": "<i>When Silk Was Gold: Central Asian & Chinese Textiles from the Cleveland and Metropolitan Museums of Art</i>. The Cleveland Museum of Art, Cleveland, OH (October 26, 1997-January 4, 1998); The Metropolitan Museum of Art (organizer) (March 2-May 17, 1998).",
+        "opening_date": "1997-10-19T00:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "(Loewi - Robertson, Inc., Los Angeles, CA, sold to the Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "?–1993",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "1993–",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "A complete selvage is preserved along one side of the fragment.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "Few Central Asian luxury silks dating from the 900s–1000s have survived. Here the cotton wefts, together with thin, widely spaced silk warps, identify this example as Central Asian. Its date has been determined by comparing it with two related textiles that are securely dated. At this time Chinese silks with small-scale diamond patterns were usually reserved for undergarments or linings. The use of silver thread for the tiny diamonds in this example, however, may indicate that in Central Asia the design had greater importance. Over time, this textile made its way to Europe, where it was preserved in a church treasury. Because such textiles were expensive, rare, and sometimes associated with saints, they were highly valued regardless of their condition.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q79947101"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1993.139-textile-with-diamond"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "“1993 Annual Report.” <em>The Bulletin of the Cleveland Museum of Art</em> 81, no. 6 (July 1994): 143–218.",
+      "page_number": "Mentioned: p. 167",
+      "url": "http://www.jstor.org/stable/25161457"
+    },
+    {
+      "citation": "Watt, James C. Y., Anne E. Wardwell, and Morris Rossabi. <em>When silk was gold: Central Asian and Chinese textiles</em>. New York: Metropolitan Museum of Art in cooperation with the Cleveland Museum of Art: Distributed by H.N. Abrams, 1997.",
+      "page_number": "Mentioned and Reproduced: cat. no 12, pp. 50–51, fig. 7, p. 28",
+      "url": null
+    }
+  ],
+  "url": "https://clevelandart.org/art/1993.139",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_web.jpg",
+      "width": "551",
+      "height": "900",
+      "filesize": "219233",
+      "filename": "1993.139_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_print.jpg",
+      "width": "2083",
+      "height": "3400",
+      "filesize": "2959237",
+      "filename": "1993.139_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_full.tif",
+      "width": "3626",
+      "height": "5918",
+      "filesize": "64407712",
+      "filename": "1993.139_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt0_web.jpg",
+        "width": "580",
+        "height": "900",
+        "filesize": "232072"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt0_print.jpg",
+        "width": "2191",
+        "height": "3400",
+        "filesize": "3802769"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt0_full.tif",
+        "width": "5086",
+        "height": "7892",
+        "filesize": "120446904"
+      },
+      "date_created": "2015-10-14T12:57:03",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt1_web.jpg",
+        "width": "1263",
+        "height": "767",
+        "filesize": "769445"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt1_print.jpg",
+        "width": "2048",
+        "height": "1243",
+        "filesize": "2176989"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1993.139/1993.139_alt1_full.tif",
+        "width": "2048",
+        "height": "1243",
+        "filesize": "7639660"
+      },
+      "annotation": ""
+    }
+  ],
+  "creditline": "John L. Severance Fund",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 156983,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1989-11-09T00:00:00",
+  "sortable_date": 1000,
+  "date_added_to_oa": null,
+  "date_text": "1000s",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-05-29 08:10:03.330000"
+}

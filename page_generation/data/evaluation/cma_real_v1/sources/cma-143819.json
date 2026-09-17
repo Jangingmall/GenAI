@@ -1,0 +1,198 @@
+{
+  "id": 143819,
+  "accession_number": "1968.242",
+  "share_license_status": "CC0",
+  "tombstone": "Covered Tureen on Stand, 1812. Paul Storr (British, 1771–1844). Silver; overall: 35.2 x 43.2 cm (13 7/8 x 17 in.). The Cleveland Museum of Art, Gift of Thomas F. Grasselli in memory of Thomas S. and Emilie S. Grasselli, 1968.242",
+  "current_location": "203A British Painting and Decorative Arts",
+  "title": "Covered Tureen on Stand",
+  "creation_date": "1812",
+  "creation_date_earliest": 1812,
+  "creation_date_latest": 1812,
+  "artists_tags": [
+    "male"
+  ],
+  "culture": [
+    "England, London"
+  ],
+  "technique": "silver",
+  "support_materials": [],
+  "department": "Decorative Art and Design",
+  "collection": "Decorative Arts",
+  "type": "Silver",
+  "measurements": "Overall: 35.2 x 43.2 cm (13 7/8 x 17 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.352,
+      "height_inch": 13,
+      "height_inch_fraction": 0.875,
+      "depth": 0.432,
+      "depth_inch": 17,
+      "depth_inch_fraction": 0.0
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": "Coat of arms: Hutton impaling Chaytor; crest: Hutton. (Arms of Timothy Hutton (1779-1863) of Marske and Clifton Castle, Yorkshire, and his wife Elizabeth Chaytor of Spennithorne Hall, who were married in 1804.)",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": null
+    }
+  ],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 301285,
+        "title": "Year in Review for 1968",
+        "description": "<i>Year in Review for 1968</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (January 29-March 9, 1969).",
+        "opening_date": "1969-01-29T05:00:00"
+      },
+      {
+        "id": 311637,
+        "title": "All That Glitters: Great Silver Vessels in Cleveland's Collection",
+        "description": "<i>All That Glitters: Great Silver Vessels in Cleveland's Collection</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (November 23, 1994-January 8, 1995).",
+        "opening_date": "1994-11-23T05:00:00"
+      },
+      {
+        "id": 306699,
+        "title": "British Gallery Reinstallation  (June 2020)",
+        "description": "<i>British Gallery Reinstallation  (June 2020)</i>. The Cleveland Museum of Art (organizer).",
+        "opening_date": "2020-06-30T04:00:00"
+      }
+    ],
+    "legacy": [
+      {
+        "description": "No legacy exhibitions.",
+        "opening_date": null
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "description": "Thomas F. Grasselli [1907-1970], Cleveland, OH, given to the Cleveland Museum of Art",
+      "citations": [],
+      "footnotes": null,
+      "date": "?-1968",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": [],
+      "date": "1968-",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "While the word “tureen” was derived from the Latin word <em>terrine</em>, the name has also long been associated with the Marshal of France, Vicomte de Turenne (1611–1675), who according to legend once drank soup from his helmet.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "Silver fulfilled a prominent role in projecting wealth, status, power, and ritual in British life during the 1600s and 1700s. Elaborate forms such as this tureen, with its lionhead finials, acanthus leaves, and fluted detailing, not only represented wealth in its sheer silver weight but also provided royal and aristocratic owners a surface for displaying engraved coats of arms. The arms of the High Sheriff of Yorkshire, Timothy Hutton and his wife Elizabeth Chaytor of Spennithorne Hall in northern England are engraved on this tureen and stand by Paul Storr, one of the most prominent London silversmiths of the period.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60781092"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1968.242-covered-tureen-on-st"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Lee, Sherman E. “The Year in Review for 1968.” <em>The Bulletin of the Cleveland Museum of Art</em> 56, no. 1 (January 1969)",
+      "page_number": "Reproduced: p. 19, pl. 25",
+      "url": "https://www.jstor.org/stable/25152250"
+    }
+  ],
+  "url": "https://clevelandart.org/art/1968.242",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_web.jpg",
+      "width": "900",
+      "height": "700",
+      "filesize": "182472",
+      "filename": "1968.242_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_print.jpg",
+      "width": "3400",
+      "height": "2646",
+      "filesize": "1295032",
+      "filename": "1968.242_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_full.tif",
+      "width": "10846",
+      "height": "8441",
+      "filesize": "274678516",
+      "filename": "1968.242_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_alt0_web.jpg",
+        "width": "900",
+        "height": "726",
+        "filesize": "155150"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_alt0_print.jpg",
+        "width": "3400",
+        "height": "2741",
+        "filesize": "1257255"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1968.242/1968.242_alt0_full.tif",
+        "width": "4807",
+        "height": "3875",
+        "filesize": "55918604"
+      },
+      "date_created": "2008-01-24T20:34:49",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Gift of Thomas F. Grasselli in memory of Thomas S. and Emilie S. Grasselli",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 143819,
+  "creators": [
+    {
+      "id": 8523,
+      "description": "Paul Storr (British, 1771–1844)",
+      "extent": null,
+      "qualifier": null,
+      "role": "fabricated by",
+      "biography": null,
+      "name_in_original_language": null,
+      "birth_year": "1771",
+      "death_year": "1844",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 1
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "1969-01-22T00:00:00",
+  "sortable_date": 1812,
+  "date_added_to_oa": null,
+  "date_text": "1812",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "cover",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-07-16 11:12:40.712000"
+}

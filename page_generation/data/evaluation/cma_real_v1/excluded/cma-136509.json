@@ -1,0 +1,31 @@
+{
+  "reason": "Painting rather than physical craft object",
+  "record": {
+    "asset_id": "cma-136509",
+    "product_group_id": "cma-136509",
+    "category": "metalware",
+    "split": "heldout",
+    "image_path": "images/cma-136509.jpg",
+    "sha256": "4ed37da34f7a319be581dd61eded010f97b45d710eaefd3c506124d019c67bff",
+    "width": 743,
+    "height": 893,
+    "source_url": "https://clevelandart.org/art/1960.80",
+    "image_url": "https://openaccess-cdn.clevelandart.org/1960.80/1960.80_web.jpg",
+    "source_record": "sources/cma-136509.json",
+    "acquired_at": "2026-09-06T17:20:26.516550+00:00",
+    "license": "CC0-1.0",
+    "license_status_evidence": "CC0",
+    "license_policy_url": "https://www.clevelandart.org/open-access",
+    "title": "Silver Wine Jug, Ham, and Fruit",
+    "reference_facts": {
+      "type": "Painting",
+      "technique": "oil on canvas",
+      "measurements": "Framed: 124.5 x 108 x 8.5 cm (49 x 42 1/2 x 3 3/8 in.); Unframed: 99.7 x 82.6 cm (39 1/4 x 32 1/2 in.)",
+      "creation_date": "c. 1660–66",
+      "culture": [
+        "Netherlands"
+      ]
+    },
+    "label_status": "source_metadata_not_human_reviewed"
+  }
+}

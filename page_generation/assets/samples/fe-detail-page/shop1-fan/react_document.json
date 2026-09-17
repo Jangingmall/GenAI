@@ -1,0 +1,2443 @@
+{
+  "schemaVersion": "2.0",
+  "canvasWidth": 774,
+  "root": [
+    {
+      "id": "section-01-hero-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-01-hero-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-01-hero-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-01-hero-eyebrow-text",
+                  "type": "text",
+                  "value": "TRADITIONAL CRAFT",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-01-hero-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 40.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.25,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-01-hero-title-text",
+                  "type": "text",
+                  "value": "신사임당 초충도, 한복원단 위에 피어나다",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-01-hero-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-01-hero-body-text",
+                  "type": "text",
+                  "value": "조선시대 여류화가 신사임당의 초충도를 자수 느낌으로 재구성하여 한복원단에 나염한 부채와 부채집 세트입니다. 전통의 정수를 담은 문양이 부채의 곡선을 따라 자연스럽게 흐릅니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-01-hero-media",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-01-hero-figure-01",
+              "type": "element",
+              "tag": "figure",
+              "props": {
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-01-hero-image-01",
+                  "type": "element",
+                  "tag": "img",
+                  "props": {
+                    "style": {
+                      "objectFit": "contain",
+                      "objectPosition": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    },
+                    "imageId": "hero",
+                    "alt": "초충도 부채세트 신사임당 초충도, 한복원단 위에 피어나다"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-02-statement-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "light",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F7F7F5",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-02-statement-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-02-statement-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-02-statement-eyebrow-text",
+                  "type": "text",
+                  "value": "ART & CRAFT",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-02-statement-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-02-statement-title-text",
+                  "type": "text",
+                  "value": "그림과 직물의 만남",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-02-statement-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-02-statement-body-text",
+                  "type": "text",
+                  "value": "부채 표면에는 초록의 풀과 붉은 꽃, 그리고 작은 생명들이 섬세하게 표현되어 있습니다. 한복원단의 결을 살린 나염 기법으로, 그림이 직물 위에 살아 숨 쉬는 듯한 질감을 더했습니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-03-detail-fan-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "dark",
+        "layout": {
+          "display": "flex",
+          "direction": "row",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "center"
+        },
+        "style": {
+          "color": "#F7F4EE",
+          "backgroundColor": "#242424",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-03-detail-fan-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-03-detail-fan-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-03-detail-fan-eyebrow-text",
+                  "type": "text",
+                  "value": "DETAIL",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-03-detail-fan-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-03-detail-fan-title-text",
+                  "type": "text",
+                  "value": "부채의 곡선과 문양",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-03-detail-fan-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-03-detail-fan-body-text",
+                  "type": "text",
+                  "value": "부채를 펼치면 나뭇가지 사이로 초충도 문양이 드러납니다. 끝단의 검은색 테두리와 매듭 장식이 전체적인 조화를 이루며, 전통적인 아름다움을 완성합니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-03-detail-fan-media",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-03-detail-fan-figure-01",
+              "type": "element",
+              "tag": "figure",
+              "props": {
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-03-detail-fan-image-01",
+                  "type": "element",
+                  "tag": "img",
+                  "props": {
+                    "style": {
+                      "objectFit": "contain",
+                      "objectPosition": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    },
+                    "imageId": "detail",
+                    "alt": "초충도 부채세트 부채의 곡선과 문양"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-04-detail-case-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "image-right",
+        "layout": {
+          "display": "flex",
+          "direction": "row",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "center"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F7F7F5",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-04-detail-case-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-04-detail-case-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-04-detail-case-eyebrow-text",
+                  "type": "text",
+                  "value": "DETAIL",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-04-detail-case-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-04-detail-case-title-text",
+                  "type": "text",
+                  "value": "부채집의 나염 무늬",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-04-detail-case-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-04-detail-case-body-text",
+                  "type": "text",
+                  "value": "부채를 수납하는 부채집은 노란색 한복원단에 동그라미 무늬가 반복되는 나염으로 제작되었습니다. 부채의 화려한 문양과 대비되는 절제된 디자인이 세트를 완성합니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-04-detail-case-media",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-04-detail-case-figure-01",
+              "type": "element",
+              "tag": "figure",
+              "props": {
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-04-detail-case-image-01",
+                  "type": "element",
+                  "tag": "img",
+                  "props": {
+                    "style": {
+                      "objectFit": "contain",
+                      "objectPosition": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    },
+                    "imageId": "detail-02",
+                    "alt": "초충도 부채세트 부채집의 나염 무늬"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-05-usage-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "full-bleed",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#E8E5DF",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-05-usage-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-05-usage-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-05-usage-eyebrow-text",
+                  "type": "text",
+                  "value": "LIFESTYLE",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-05-usage-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-05-usage-title-text",
+                  "type": "text",
+                  "value": "한복과 함께, 전통의 멋을 더하다",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-05-usage-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-05-usage-body-text",
+                  "type": "text",
+                  "value": "한복 차림에 부채를 들면 조선시대 여인의 자태를 떠올리게 합니다. 부채집에 수납하여 소지하거나, 한복 매장의 소품으로 활용하여 전통적인 분위기를 연출할 수 있습니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-05-usage-media",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-05-usage-figure-01",
+              "type": "element",
+              "tag": "figure",
+              "props": {
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-05-usage-image-01",
+                  "type": "element",
+                  "tag": "img",
+                  "props": {
+                    "style": {
+                      "objectFit": "cover",
+                      "objectPosition": {
+                        "x": 0.5,
+                        "y": 0.5
+                      },
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    },
+                    "imageId": "lifestyle",
+                    "alt": "초충도 부채세트 한복과 함께, 전통의 멋을 더하다"
+                  },
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-06-product-gallery-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-06-product-gallery-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-06-product-gallery-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-06-product-gallery-eyebrow-text",
+                  "type": "text",
+                  "value": "PRODUCT GALLERY",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-06-product-gallery-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-06-product-gallery-title-text",
+                  "type": "text",
+                  "value": "색과 형태를 가까이에서",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-06-product-gallery-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-06-product-gallery-body-text",
+                  "type": "text",
+                  "value": "원본 이미지에서 확인되는 서로 다른 표면과 구성을 살펴보세요.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-06-product-gallery-media",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-06-product-gallery-gallery-row-01",
+              "type": "element",
+              "tag": "div",
+              "props": {
+                "layout": {
+                  "display": "grid",
+                  "columns": 3,
+                  "gap": 16.0,
+                  "wrap": false,
+                  "align": "stretch"
+                },
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-06-product-gallery-figure-01",
+                  "type": "element",
+                  "tag": "figure",
+                  "props": {
+                    "style": {
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-06-product-gallery-image-01",
+                      "type": "element",
+                      "tag": "img",
+                      "props": {
+                        "style": {
+                          "objectFit": "contain",
+                          "objectPosition": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "imageId": "detail",
+                        "alt": "초충도 부채세트 색과 형태를 가까이에서"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "section-06-product-gallery-figure-02",
+                  "type": "element",
+                  "tag": "figure",
+                  "props": {
+                    "style": {
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-06-product-gallery-image-02",
+                      "type": "element",
+                      "tag": "img",
+                      "props": {
+                        "style": {
+                          "objectFit": "contain",
+                          "objectPosition": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "imageId": "detail-02",
+                        "alt": "초충도 부채세트 색과 형태를 가까이에서"
+                      },
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "id": "section-06-product-gallery-figure-03",
+                  "type": "element",
+                  "tag": "figure",
+                  "props": {
+                    "style": {
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-06-product-gallery-image-03",
+                      "type": "element",
+                      "tag": "img",
+                      "props": {
+                        "style": {
+                          "objectFit": "contain",
+                          "objectPosition": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "imageId": "detail-03",
+                        "alt": "초충도 부채세트 색과 형태를 가까이에서"
+                      },
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "section-06-product-gallery-gallery-row-02",
+              "type": "element",
+              "tag": "div",
+              "props": {
+                "layout": {
+                  "display": "grid",
+                  "columns": 2,
+                  "gap": 16.0,
+                  "wrap": false,
+                  "align": "stretch"
+                },
+                "style": {
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-06-product-gallery-figure-04",
+                  "type": "element",
+                  "tag": "figure",
+                  "props": {
+                    "style": {
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-06-product-gallery-image-04",
+                      "type": "element",
+                      "tag": "img",
+                      "props": {
+                        "style": {
+                          "objectFit": "contain",
+                          "objectPosition": {
+                            "x": 0.5,
+                            "y": 0.5
+                          },
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "imageId": "detail-04",
+                        "alt": "초충도 부채세트 색과 형태를 가까이에서"
+                      },
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-07-recommended-scenes-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-07-recommended-scenes-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-07-recommended-scenes-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-eyebrow-text",
+                  "type": "text",
+                  "value": "RECOMMENDED SCENES",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-07-recommended-scenes-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-title-text",
+                  "type": "text",
+                  "value": "이런 자리에서 더 잘 어울립니다.",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-07-recommended-scenes-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-body-text",
+                  "type": "text",
+                  "value": "제품의 색과 실루엣을 기준으로 제안하는 연출 아이디어입니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-07-recommended-scenes-cards",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "grid",
+              "columns": 3,
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-07-recommended-scenes-card-01",
+              "type": "element",
+              "tag": "article",
+              "props": {
+                "layout": {
+                  "display": "stack",
+                  "gap": 12.0,
+                  "wrap": false,
+                  "align": "stretch"
+                },
+                "style": {
+                  "color": "#222222",
+                  "backgroundColor": "#E6EEEF",
+                  "borderRadius": 12.0,
+                  "padding": {
+                    "top": 20.0,
+                    "right": 20.0,
+                    "bottom": 20.0,
+                    "left": 20.0
+                  },
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-card-01-title",
+                  "type": "element",
+                  "tag": "h3",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 19.0,
+                      "fontWeight": 600,
+                      "lineHeight": 1.4,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-01-title-text",
+                      "type": "text",
+                      "value": "01",
+                      "marks": []
+                    }
+                  ]
+                },
+                {
+                  "id": "section-07-recommended-scenes-card-01-body",
+                  "type": "element",
+                  "tag": "p",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 16.0,
+                      "fontWeight": 400,
+                      "lineHeight": 1.7,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-01-body-text",
+                      "type": "text",
+                      "value": "여백 있는 테이블",
+                      "marks": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "section-07-recommended-scenes-card-02",
+              "type": "element",
+              "tag": "article",
+              "props": {
+                "layout": {
+                  "display": "stack",
+                  "gap": 12.0,
+                  "wrap": false,
+                  "align": "stretch"
+                },
+                "style": {
+                  "color": "#222222",
+                  "backgroundColor": "#E6EEEF",
+                  "borderRadius": 12.0,
+                  "padding": {
+                    "top": 20.0,
+                    "right": 20.0,
+                    "bottom": 20.0,
+                    "left": 20.0
+                  },
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-card-02-title",
+                  "type": "element",
+                  "tag": "h3",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 19.0,
+                      "fontWeight": 600,
+                      "lineHeight": 1.4,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-02-title-text",
+                      "type": "text",
+                      "value": "02",
+                      "marks": []
+                    }
+                  ]
+                },
+                {
+                  "id": "section-07-recommended-scenes-card-02-body",
+                  "type": "element",
+                  "tag": "p",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 16.0,
+                      "fontWeight": 400,
+                      "lineHeight": 1.7,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-02-body-text",
+                      "type": "text",
+                      "value": "부드러운 자연광",
+                      "marks": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "section-07-recommended-scenes-card-03",
+              "type": "element",
+              "tag": "article",
+              "props": {
+                "layout": {
+                  "display": "stack",
+                  "gap": 12.0,
+                  "wrap": false,
+                  "align": "stretch"
+                },
+                "style": {
+                  "color": "#222222",
+                  "backgroundColor": "#E6EEEF",
+                  "borderRadius": 12.0,
+                  "padding": {
+                    "top": 20.0,
+                    "right": 20.0,
+                    "bottom": 20.0,
+                    "left": 20.0
+                  },
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-07-recommended-scenes-card-03-title",
+                  "type": "element",
+                  "tag": "h3",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 19.0,
+                      "fontWeight": 600,
+                      "lineHeight": 1.4,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-03-title-text",
+                      "type": "text",
+                      "value": "03",
+                      "marks": []
+                    }
+                  ]
+                },
+                {
+                  "id": "section-07-recommended-scenes-card-03-body",
+                  "type": "element",
+                  "tag": "p",
+                  "props": {
+                    "style": {
+                      "fontFamily": "sans",
+                      "fontSize": 16.0,
+                      "fontWeight": 400,
+                      "lineHeight": 1.7,
+                      "margin": {
+                        "top": 0.0,
+                        "right": 0.0,
+                        "bottom": 0.0,
+                        "left": 0.0
+                      }
+                    }
+                  },
+                  "children": [
+                    {
+                      "id": "section-07-recommended-scenes-card-03-body-text",
+                      "type": "text",
+                      "value": "차분한 배경색",
+                      "marks": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-08-info-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-08-info-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-08-info-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-08-info-eyebrow-text",
+                  "type": "text",
+                  "value": "SPEC",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-08-info-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-08-info-title-text",
+                  "type": "text",
+                  "value": "제품 정보",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-08-info-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-08-info-body-text",
+                  "type": "text",
+                  "value": "제품 구성 및 소재에 대한 상세 정보입니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "section-08-info-table",
+          "type": "element",
+          "tag": "table",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 12.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-08-info-table-caption",
+              "type": "element",
+              "tag": "caption",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-08-info-table-caption-text",
+                  "type": "text",
+                  "value": "제품 정보",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-08-info-table-body",
+              "type": "element",
+              "tag": "tbody",
+              "props": {},
+              "children": [
+                {
+                  "id": "section-08-info-row-01",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-08-info-row-01-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.5,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-01-label-text",
+                          "type": "text",
+                          "value": "제품명",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-08-info-row-01-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.7,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-01-value-text",
+                          "type": "text",
+                          "value": "초충도 부채세트",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "section-08-info-row-02",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-08-info-row-02-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.5,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-02-label-text",
+                          "type": "text",
+                          "value": "구성",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-08-info-row-02-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.7,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-02-value-text",
+                          "type": "text",
+                          "value": "부채, 부채집",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "section-08-info-row-03",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-08-info-row-03-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.5,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-03-label-text",
+                          "type": "text",
+                          "value": "표면 문양",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-08-info-row-03-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.7,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-03-value-text",
+                          "type": "text",
+                          "value": "신사임당 초충도 (자수 느낌 재구성)",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "section-08-info-row-04",
+                  "type": "element",
+                  "tag": "tr",
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "section-08-info-row-04-label",
+                      "type": "element",
+                      "tag": "th",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 600,
+                          "lineHeight": 1.5,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        },
+                        "scope": "row"
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-04-label-text",
+                          "type": "text",
+                          "value": "소재",
+                          "marks": []
+                        }
+                      ]
+                    },
+                    {
+                      "id": "section-08-info-row-04-value",
+                      "type": "element",
+                      "tag": "td",
+                      "props": {
+                        "style": {
+                          "fontFamily": "sans",
+                          "fontSize": 16.0,
+                          "fontWeight": 400,
+                          "lineHeight": 1.7,
+                          "margin": {
+                            "top": 0.0,
+                            "right": 0.0,
+                            "bottom": 0.0,
+                            "left": 0.0
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "id": "section-08-info-row-04-value-text",
+                          "type": "text",
+                          "value": "한복원단 (나염)",
+                          "marks": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-09-notice-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "dark",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#F7F4EE",
+          "backgroundColor": "#242424",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-09-notice-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-09-notice-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-09-notice-eyebrow-text",
+                  "type": "text",
+                  "value": "CARE",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-09-notice-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-09-notice-title-text",
+                  "type": "text",
+                  "value": "관리 방법",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-09-notice-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-09-notice-body-text",
+                  "type": "text",
+                  "value": "나염 제품 특성상 물세탁을 피하고, 오염 시 마른 천으로 가볍게 닦아주세요. 부채는 습기에 약할 수 있으므로 통풍이 잘 되는 곳에 보관하시기 바랍니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-10-closing-root",
+      "type": "element",
+      "tag": "section",
+      "props": {
+        "variant": "paper",
+        "layout": {
+          "display": "stack",
+          "gap": 24.0,
+          "wrap": false,
+          "align": "stretch"
+        },
+        "style": {
+          "color": "#222222",
+          "backgroundColor": "#F6F2EC",
+          "padding": {
+            "top": 40.0,
+            "right": 40.0,
+            "bottom": 40.0,
+            "left": 40.0
+          },
+          "margin": {
+            "top": 0.0,
+            "right": 0.0,
+            "bottom": 0.0,
+            "left": 0.0
+          }
+        }
+      },
+      "children": [
+        {
+          "id": "section-10-closing-copy",
+          "type": "element",
+          "tag": "div",
+          "props": {
+            "layout": {
+              "display": "stack",
+              "gap": 16.0,
+              "wrap": false,
+              "align": "stretch"
+            },
+            "style": {
+              "margin": {
+                "top": 0.0,
+                "right": 0.0,
+                "bottom": 0.0,
+                "left": 0.0
+              }
+            }
+          },
+          "children": [
+            {
+              "id": "section-10-closing-eyebrow",
+              "type": "element",
+              "tag": "span",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 13.0,
+                  "fontWeight": 500,
+                  "lineHeight": 1.5,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-10-closing-eyebrow-text",
+                  "type": "text",
+                  "value": "CLOSING",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-10-closing-title",
+              "type": "element",
+              "tag": "h2",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 30.0,
+                  "fontWeight": 700,
+                  "lineHeight": 1.35,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-10-closing-title-text",
+                  "type": "text",
+                  "value": "손끝으로 전하는 전통의 온기",
+                  "marks": []
+                }
+              ]
+            },
+            {
+              "id": "section-10-closing-body",
+              "type": "element",
+              "tag": "p",
+              "props": {
+                "style": {
+                  "fontFamily": "sans",
+                  "fontSize": 16.0,
+                  "fontWeight": 400,
+                  "lineHeight": 1.7,
+                  "margin": {
+                    "top": 0.0,
+                    "right": 0.0,
+                    "bottom": 0.0,
+                    "left": 0.0
+                  }
+                }
+              },
+              "children": [
+                {
+                  "id": "section-10-closing-body-text",
+                  "type": "text",
+                  "value": "신사임당의 그림과 한복원단의 만남, 초충도 부채세트가 당신의 일상에 전통의 아름다움을 더합니다.",
+                  "marks": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "id": 300665,
+  "accession_number": "2017.208",
+  "share_license_status": "CC0",
+  "tombstone": "Vase, 1889. Walter Crane (British, 1845–1915), Maw & Co. (British (modern), 1850–1969). Earthenware; 22.4 x 22.7 cm (8 13/16 x 8 15/16 in.). The Cleveland Museum of Art, Gift of Katharine Lee Reid, 2017.208",
+  "current_location": "221 19th Century Decorative Arts",
+  "title": "Vase",
+  "creation_date": "1889",
+  "creation_date_earliest": 1889,
+  "creation_date_latest": 1889,
+  "artists_tags": [
+    "male",
+    "gender unknown"
+  ],
+  "culture": [
+    "Britain"
+  ],
+  "technique": "Earthenware",
+  "support_materials": [],
+  "department": "Decorative Art and Design",
+  "collection": "Decorative Arts",
+  "type": "Ceramic",
+  "measurements": "22.4 x 22.7 cm (8 13/16 x 8 15/16 in.)",
+  "dimensions": {
+    "No Extent Specified": {
+      "height": 0.224,
+      "height_inch": 8,
+      "height_inch_fraction": 0.8125,
+      "width": 0.227,
+      "width_inch": 8,
+      "width_inch_fraction": 0.9375
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 299473,
+        "title": "William Morris: Designing an Earthly Paradise",
+        "description": "<i>William Morris: Designing an Earthly Paradise</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (October 24, 2017-January 14, 2019).",
+        "opening_date": "2017-10-24T04:00:00"
+      }
+    ],
+    "legacy": [
+      {
+        "description": "The Cleveland Museum of Art (10/29/2017-1/13/2019): \"William Morris: Designing an Earthly Paradise\"",
+        "opening_date": "2017-10-29T00:00:00"
+      }
+    ]
+  },
+  "provenance": [
+    {
+      "description": "Katherin Lee Reid, Chapel Hill, NC, given to the Cleveland Museum of Art",
+      "citations": [],
+      "footnotes": null,
+      "date": "2017",
+      "sortorder": 2
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "2017–",
+      "sortorder": 3
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "The red glaze on this vase resembles the color of oxblood.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "Walter Crane was one of the leading figures of the British Arts and Crafts movement. His work helped establish a renewed interest in Renaissance ceramics and the importance of illustration in decorative ceramics. He collaborated with several major manufacturers of decorative furnishings including Maw &amp; Co., an important manufacturer of aesthetic period tiles and other decorative ceramics. This vase is one of a series of vases that Crane designed for Maw around 1889 when they first appear listed in the catalogue of the Arts and Crafts Exhibition Society in London of that year, described along with a series of tiles that Crane also designed for Maw. Its brilliant ruby-red luster surface is a hallmark of Maw’s work featuring Crane’s lyrical designs while referencing earlier 15th- and 16th-century Spanish lusterware.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60781263"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-2017.208-vase"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Hepburn, Victoria. \"The Kelmscott Press.\" IN <em>William Morris: Designing an Earthly Paradise.</em> Cory Korkow and Victoria Hepburn, 24-39. Cleveland, Ohio : Cleveland Museum of Art, 2017",
+      "page_number": "Reproduced and mentioned: p. 33, fig. 30.",
+      "url": null
+    }
+  ],
+  "url": "https://clevelandart.org/art/2017.208",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_web.jpg",
+      "width": "869",
+      "height": "900",
+      "filesize": "180418",
+      "filename": "2017.208_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_print.jpg",
+      "width": "3283",
+      "height": "3400",
+      "filesize": "1691834",
+      "filename": "2017.208_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_full.tif",
+      "width": "5912",
+      "height": "6123",
+      "filesize": "108628268",
+      "filename": "2017.208_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt0_web.jpg",
+        "width": "675",
+        "height": "900",
+        "filesize": "224878"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt0_print.jpg",
+        "width": "2550",
+        "height": "3400",
+        "filesize": "1946697"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt0_full.tif",
+        "width": "6000",
+        "height": "8000",
+        "filesize": "144032964"
+      },
+      "date_created": "2017-09-26T08:28:11",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt1_web.jpg",
+        "width": "780",
+        "height": "900",
+        "filesize": "252501"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt1_print.jpg",
+        "width": "2948",
+        "height": "3400",
+        "filesize": "2217865"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt1_full.tif",
+        "width": "5797",
+        "height": "6686",
+        "filesize": "116310084"
+      },
+      "date_created": "2017-09-26T08:52:51",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt2_web.jpg",
+        "width": "888",
+        "height": "900",
+        "filesize": "178814"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt2_print.jpg",
+        "width": "3353",
+        "height": "3400",
+        "filesize": "1642128"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt2_full.tif",
+        "width": "5910",
+        "height": "5993",
+        "filesize": "106286588"
+      },
+      "date_created": "2017-09-25T14:26:11",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt3_web.jpg",
+        "width": "900",
+        "height": "888",
+        "filesize": "187571"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt3_print.jpg",
+        "width": "3400",
+        "height": "3354",
+        "filesize": "1697872"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2017.208/2017.208_alt3_full.tif",
+        "width": "5907",
+        "height": "5827",
+        "filesize": "103291176"
+      },
+      "date_created": "2017-09-25T13:48:49",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Gift of Katharine Lee Reid",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 300665,
+  "creators": [
+    {
+      "id": 50825,
+      "description": "Walter Crane (British, 1845–1915)",
+      "extent": null,
+      "qualifier": null,
+      "role": null,
+      "biography": "Walter Crane was a prolific designer and painter, but he is best known as a muralist and a children’s book illustrator. Examples of his mural designs can be seen in downtown Cleveland inside the former Society for Savings, now KeyBank. While his incorporation of classical elements diverges from the assertive medievalism of Morris, both men found inspiration in the English garden. As passionate Socialists, they shared a fear of industrialized Britain and endeavored to bring art to all classes",
+      "name_in_original_language": null,
+      "birth_year": "1845",
+      "death_year": "1915",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 0
+    },
+    {
+      "id": 300663,
+      "description": "Maw & Co. (British (modern), 1850–1969)",
+      "extent": null,
+      "qualifier": null,
+      "role": null,
+      "biography": "English tile manufacturer, 1850-1969",
+      "name_in_original_language": null,
+      "birth_year": "1850",
+      "death_year": "1969",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 0
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "2017-12-04T00:00:00-05:00",
+  "sortable_date": 1889,
+  "date_added_to_oa": null,
+  "date_text": "1889",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-05-29 08:53:54.315000"
+}

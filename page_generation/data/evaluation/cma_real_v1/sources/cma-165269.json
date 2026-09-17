@@ -1,0 +1,164 @@
+{
+  "id": 165269,
+  "accession_number": "2007.2.3",
+  "share_license_status": "CC0",
+  "tombstone": "Textile Fragment, c. 50–650 CE. Peru, Moche, north coast. Cotton and camelid fiber; overall: 38.7 x 29.3 cm (15 1/4 x 11 9/16 in.). The Cleveland Museum of Art, John L. Severance Fund, 2007.2.3",
+  "current_location": null,
+  "title": "Textile Fragment",
+  "creation_date": "c. 50–650 CE",
+  "creation_date_earliest": 50,
+  "creation_date_latest": 650,
+  "artists_tags": [],
+  "culture": [
+    "Peru, Moche, north coast"
+  ],
+  "technique": "cotton and camelid fiber",
+  "support_materials": [],
+  "department": "Textiles",
+  "collection": "T - Pre-Columbian",
+  "type": "Textile",
+  "measurements": "Overall: 38.7 x 29.3 cm (15 1/4 x 11 9/16 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.387,
+      "height_inch": 15,
+      "height_inch_fraction": 0.25,
+      "width": 0.293,
+      "width_inch": 11,
+      "width_inch_fraction": 0.5625
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 287197,
+        "title": "Gallery 232- Andean Textile Rotation",
+        "description": "<i>Gallery 232- Andean Textile Rotation</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (August 30, 2016-August 21, 2017).",
+        "opening_date": "2016-08-30T04:00:00"
+      },
+      {
+        "id": 446349,
+        "title": "Ancient Andean Textiles",
+        "description": "<i>Ancient Andean Textiles</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (December 4, 2021-December 4, 2022).",
+        "opening_date": "2021-12-04T05:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "This fragment is a rare survivor of floods that destroyed much of the Moche textile record.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This fragment, one of several in the collection, is a rare survivor of catastrophic rains that destroyed much of the Moche textile legacy and may have helped to bring about the decline of Moche culture. It depicts a serpent and a snail beneath a hovering raptorial bird—perhaps a snail kite, a type of hawk named after its favored food. The size of the motifs implies that the original textile was large; a mantle (a shawl-like garment) or a hanging are among the possibilities.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q79993989"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-2007.2.3-textile-fragment"
+    ]
+  },
+  "citations": [],
+  "url": "https://clevelandart.org/art/2007.2.3",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_web.jpg",
+      "width": "688",
+      "height": "900",
+      "filesize": "344321",
+      "filename": "2007.2.3_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_print.jpg",
+      "width": "2599",
+      "height": "3400",
+      "filesize": "5435258",
+      "filename": "2007.2.3_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_full.tif",
+      "width": "5434",
+      "height": "7110",
+      "filesize": "115937964",
+      "filename": "2007.2.3_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt0_web.jpg",
+        "width": "667",
+        "height": "893",
+        "filesize": "525617"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt0_print.jpg",
+        "width": "2538",
+        "height": "3400",
+        "filesize": "7948705"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt0_full.tif",
+        "width": "3732",
+        "height": "5000",
+        "filesize": "55998700"
+      },
+      "date_created": "2008-09-16T14:52:43",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt1_web.jpg",
+        "width": "724",
+        "height": "893",
+        "filesize": "584383"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt1_print.jpg",
+        "width": "2758",
+        "height": "3400",
+        "filesize": "8419800"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2007.2.3/2007.2.3_alt1_full.tif",
+        "width": "2920",
+        "height": "3600",
+        "filesize": "31569164"
+      },
+      "date_created": "2006-12-20T19:12:02",
+      "annotation": ""
+    }
+  ],
+  "creditline": "John L. Severance Fund",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 165269,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "2007-02-26T00:00:00",
+  "sortable_date": 50,
+  "date_added_to_oa": null,
+  "date_text": "c. 50–650 CE",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "component",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": "2007.2",
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-05-29 08:33:49.256000"
+}

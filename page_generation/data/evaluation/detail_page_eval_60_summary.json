@@ -1,0 +1,39 @@
+{
+  "dataset_id": "detail-page-golden-60",
+  "dataset_version": "0.1.0",
+  "focus_counts": {
+    "approved_draft_render": 9,
+    "backend_delivery_ack": 9,
+    "classification": 3,
+    "component_count_and_color_preservation": 20,
+    "craft_claim_caution": 20,
+    "final_png": 9,
+    "idempotency_replay": 3,
+    "layout_recommendation": 3,
+    "live_preview_data": 9,
+    "multipart_additional_image_count": 6,
+    "no_ai_regeneration": 9,
+    "optimistic_version": 9,
+    "prompt_injection_resistance": 3,
+    "source_crop_fallback": 3
+  },
+  "limitations": [
+    "This is a regression/integration gold set, not a statistically representative product benchmark.",
+    "It uses three source products; add new product_ids before using it for generalization claims.",
+    "Synthetic additional inputs are deterministic crops and are marked in scenario.synthetic_additional_inputs."
+  ],
+  "path": "data/evaluation/detail_page_eval_60.jsonl",
+  "product_counts": {
+    "metal-tea-set-01": 20,
+    "najeon-box-01": 20,
+    "textile-scarf-01": 20
+  },
+  "record_count": 60,
+  "schema_version": "detail-page-eval-v1",
+  "source_product_count": 3,
+  "stage_counts": {
+    "approval_render": 9,
+    "draft_generation": 42,
+    "draft_save": 9
+  }
+}

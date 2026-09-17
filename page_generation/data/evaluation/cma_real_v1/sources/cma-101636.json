@@ -1,0 +1,325 @@
+{
+  "id": 101636,
+  "accession_number": "1920.37",
+  "share_license_status": "CC0",
+  "tombstone": "Box with Painted Oxhorn (화각함 [華角函]), 1800s. Korea, Joseon dynasty (1392–1910). Painted wood with flattened ox-horn inlay; overall: 16.5 x 28.6 cm (6 1/2 x 11 1/4 in.). The Cleveland Museum of Art, Sundry Purchase Fund, 1920.37",
+  "current_location": null,
+  "title": "Box with Painted Oxhorn",
+  "title_in_original_language": "화각함 [華角函]",
+  "creation_date": "1800s",
+  "creation_date_earliest": 1800,
+  "creation_date_latest": 1899,
+  "artists_tags": [],
+  "culture": [
+    "Korea, Joseon dynasty (1392–1910)"
+  ],
+  "technique": "painted wood with flattened ox-horn inlay",
+  "support_materials": [],
+  "department": "Korean Art",
+  "collection": "Korean Art",
+  "type": "Miscellaneous",
+  "measurements": "Overall: 16.5 x 28.6 cm (6 1/2 x 11 1/4 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.165,
+      "height_inch": 6,
+      "height_inch_fraction": 0.5,
+      "width": 0.286,
+      "width_inch": 11,
+      "width_inch_fraction": 0.25,
+      "length": 0.162,
+      "length_inch": 6,
+      "length_inch_fraction": 0.375
+    },
+    "No Extent Specified": {}
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 310268,
+        "title": "Scholar's Studio",
+        "description": "<i>Scholar's Studio</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (September 19-December 17, 1989).",
+        "opening_date": "1989-09-19T04:00:00"
+      },
+      {
+        "id": 311490,
+        "title": "Asian Autumn: Later Korean Art",
+        "description": "<i>Asian Autumn: Later Korean Art</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (September 22, 1992-January 3, 1993).",
+        "opening_date": "1992-09-22T04:00:00"
+      },
+      {
+        "id": 295535,
+        "title": "Korean Gallery 236 Rotation",
+        "description": "<i>Korean Gallery 236 Rotation</i>. The Cleveland Museum of Art (organizer) (July 10, 2017-January 8, 2018).",
+        "opening_date": "2017-07-10T04:00:00"
+      },
+      {
+        "id": 373312,
+        "title": "Gold Needles: Embroidery Arts from Korea",
+        "description": "<i>Gold Needles: Embroidery Arts from Korea</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (March 7-October 25, 2020).",
+        "opening_date": "2020-03-07T05:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "(John Soo Ahrn, Columbus, OH, sold to the Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "?–1920",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "1920–",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "This box is made of small flattened pieces of oxhorn. Since oxhorn is usually rather small, possibly dozens of them were used to fully decorate even a small wooden object like this box.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This box is colorfully decorated with the technique of oxhorn plating. The oxhorn was cut, soaked in water, boiled, and then pressed into thin translucent sheets. Since oxhorns are usually rather small, dozens of them were required to fully decorate even a small wooden object. This box is colorfully painted with the imagery of auspicious plants and animals such as dragons amid clouds, a white tiger under the pine tree, a grazing deer, and more. This kind of luxurious box was probably produced as a wedding gift.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q79497274"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1920.37-box-with-painted-oxh"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Ye, Yong-hae. \"Hwagakjang.\" <em>Ye Yong-hae j</em>eonjip<em>. </em>Seoul: Daewonsa, 1997.",
+      "page_number": null,
+      "url": "http://www.dbpia.co.kr/Article/2852677"
+    },
+    {
+      "citation": "Jeong, Myeong-ho. \"Hangukgongye gwahakgisulbaldalsa: hwagakgongyee daehan yeongureul jungsimeuro [韓國工藝 科學技術發達史: 華角工藝에 대한 연구를 중심으로].\" <em>Silhaksasang yeongu </em>15–16 (January 2000): 543–612.",
+      "page_number": null,
+      "url": "http://www.dbpia.co.kr/Article/NODE01150354"
+    },
+    {
+      "citation": "<em>Treasures from Korea: Arts and Culture of the Joseon Dynasty, 1392-1910</em>. Philadelphia: Philadelphia Museum of Art, 2014.",
+      "page_number": null,
+      "url": null
+    },
+    {
+      "citation": "Cleveland Museum of Art. <em>The CMA Companion: A Guide to the Cleveland Museum of Art</em>. Cleveland: Cleveland Museum of Art, 2014.",
+      "page_number": "Mentioned and Reproduced: p. 254",
+      "url": ""
+    },
+    {
+      "citation": "“A Walking Tour: The entire new museum wing by wing, with curators calling out a few favorite works in the collection.” <em>Cleveland Art: Cleveland Museum of Art Members Magazine</em> 54, no. 1 (January/February 2014): 8–33.",
+      "page_number": "Reproduced and Mentioned: p. 29",
+      "url": "https://archive.org/details/CMAMM2014-01/page/n27/mode/2up"
+    },
+    {
+      "citation": "Cleveland Museum of Art. <em>Museum Masters: 2016-17 Companion Guide.</em> [Cleveland, Ohio]: Cleveland Museum of Art, 2016.",
+      "page_number": "Mentioned and Reproduced: p. 31",
+      "url": ""
+    },
+    {
+      "citation": "Hong, Sun-ah. \"A Study on Phoenix Pattern of Hwagak Craft from Late Chosun Period to Early 20th Century [화각공예(華角工藝)의 특성에 관한 연구 : 화각함 중심으로].\" <em>Yeoksaminsokhak </em>50 (June 2016): 277–309.",
+      "page_number": null,
+      "url": "http://www.riss.kr/link?id=A101995759"
+    },
+    {
+      "citation": "Ch'a, Mi-rae, Kwi-suk An, Cleveland Museum of Art, and 국외소재문화재재단. <em>The Korean Collection of the Cleveland Museum of Art</em>. Edited by An Min-hŭi. First edition, English ed. Overseas Korean Cultural Heritage Series, 16. Seoul, Republic of Korea: Overseas Korean Cultural Heritage Foundation, 2021.",
+      "page_number": "Mentioned and Reproduced: pp. 227–229, no. 126",
+      "url": ""
+    }
+  ],
+  "url": "https://clevelandart.org/art/1920.37",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_web.jpg",
+      "width": "1263",
+      "height": "892",
+      "filesize": "188488",
+      "filename": "1920.37_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_print.jpg",
+      "width": "3400",
+      "height": "2402",
+      "filesize": "1070093",
+      "filename": "1920.37_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_full.tif",
+      "width": "5945",
+      "height": "4200",
+      "filesize": "74931920",
+      "filename": "1920.37_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt0_web.jpg",
+        "width": "1242",
+        "height": "893",
+        "filesize": "206063"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt0_print.jpg",
+        "width": "3400",
+        "height": "2445",
+        "filesize": "1252815"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt0_full.tif",
+        "width": "5612",
+        "height": "4037",
+        "filesize": "67993456"
+      },
+      "date_created": "2012-04-17T19:23:01",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt1_web.jpg",
+        "width": "975",
+        "height": "893",
+        "filesize": "129946"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt1_print.jpg",
+        "width": "3400",
+        "height": "3114",
+        "filesize": "1175603"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt1_full.tif",
+        "width": "4714",
+        "height": "4318",
+        "filesize": "61089760"
+      },
+      "date_created": "2012-04-17T19:37:37",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt2_web.jpg",
+        "width": "1263",
+        "height": "888",
+        "filesize": "205902"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt2_print.jpg",
+        "width": "3400",
+        "height": "2391",
+        "filesize": "1246717"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt2_full.tif",
+        "width": "5746",
+        "height": "4041",
+        "filesize": "69684752"
+      },
+      "date_created": "2012-04-17T19:39:47",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt3_web.jpg",
+        "width": "975",
+        "height": "893",
+        "filesize": "137144"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt3_print.jpg",
+        "width": "3400",
+        "height": "3114",
+        "filesize": "1259902"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt3_full.tif",
+        "width": "4456",
+        "height": "4082",
+        "filesize": "54593440"
+      },
+      "date_created": "2012-04-17T19:41:47",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt4_web.jpg",
+        "width": "1241",
+        "height": "893",
+        "filesize": "221138"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt4_print.jpg",
+        "width": "3400",
+        "height": "2447",
+        "filesize": "1389731"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt4_full.tif",
+        "width": "5370",
+        "height": "3865",
+        "filesize": "62290644"
+      },
+      "date_created": "2012-04-17T19:44:05",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt5_web.jpg",
+        "width": "1196",
+        "height": "893",
+        "filesize": "164253"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt5_print.jpg",
+        "width": "3400",
+        "height": "2538",
+        "filesize": "1454751"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1920.37/1920.37_alt5_full.tif",
+        "width": "5672",
+        "height": "4234",
+        "filesize": "72070524"
+      },
+      "date_created": "2012-04-17T19:46:36",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Sundry Purchase Fund",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 101636,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1919-12-11T00:00:00",
+  "sortable_date": 1800,
+  "date_added_to_oa": null,
+  "date_text": "1800s",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-08-21 14:31:00.855000"
+}

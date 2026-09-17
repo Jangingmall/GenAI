@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>상세페이지 초안 확인</title>
+  <link rel="stylesheet" href="./ai_draft_preview.css">
+  <script defer src="./ai_draft_preview.js"></script>
+</head>
+<body
+  data-approval-api-url="http://127.0.0.1:8000/api/v1/ai/detail-page-renders"
+  data-draft-save-api-url="/api/v1/ai/detail-page-jobs"
+>
+  <div class="draft-shell">
+    <header class="topbar">
+      <div class="brand-mark">AI DETAIL</div>
+      <nav class="stepper" aria-label="생성 단계">
+        <span class="stepper__step stepper__step--done"><b>1</b> 입력</span>
+        <i></i>
+        <span class="stepper__step stepper__step--done"><b>2</b> 생성</span>
+        <i></i>
+        <span class="stepper__step stepper__step--active"><b>3</b> 확인·수정</span>
+        <i></i>
+        <span class="stepper__step"><b>4</b> 승인·게시</span>
+      </nav>
+      <div class="draft-state" id="draft-state" aria-live="polite">
+        <span class="draft-state__dot"></span> JSON 초안
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="intro-copy">
+        <p class="eyebrow">DRAFT PREVIEW · NO PNG YET</p>
+        <h1>상세페이지 초안 확인</h1>
+        <p>JSON 데이터를 수정하면 오른쪽 미리보기에 바로 반영됩니다. 승인하기 전에는 PNG를 만들거나 게시하지 않습니다.</p>
+      </section>
+
+      <div class="draft-layout">
+        <aside class="editor-panel" aria-label="상세페이지 문구 편집">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">EDIT CONTENT</p>
+              <h2>내용 수정하기</h2>
+            </div>
+            <span class="version-badge">초안 v03</span>
+          </div>
+
+          <form id="draft-editor" novalidate>
+            <div class="field-group">
+              <label for="product-name">작품 이름</label>
+              <input id="product-name" name="product_name" type="text" maxlength="120">
+            </div>
+            <div class="field-group">
+              <label for="summary">한 줄 소개</label>
+              <textarea id="summary" name="summary" rows="3" maxlength="500"></textarea>
+            </div>
+            <div class="field-group">
+              <label for="hero-headline">핵심 문구</label>
+              <input id="hero-headline" name="hero_headline" type="text" maxlength="80">
+            </div>
+            <div class="field-group">
+              <label for="hero-description">핵심 설명</label>
+              <textarea id="hero-description" name="hero_description" rows="4" maxlength="300"></textarea>
+            </div>
+
+            <div class="subheading">
+              <span>제품 특징</span>
+              <small>카드 3개</small>
+            </div>
+            <div id="feature-fields"></div>
+
+            <div class="field-group">
+              <label for="usage-scene">활용 장면 문구</label>
+              <textarea id="usage-scene" name="usage_scene" rows="3" maxlength="300"></textarea>
+            </div>
+          </form>
+
+          <div class="editor-note">
+            <span class="editor-note__icon">i</span>
+            <p>수정 중에는 AI를 다시 호출하지 않습니다. 최종 승인할 때 현재 문구로 한 번만 PNG를 생성합니다.</p>
+          </div>
+
+          <div class="editor-actions">
+            <button id="save-draft" class="button button--outline" type="button">초안 저장</button>
+            <button id="approve-button" class="button button--primary" type="button">승인하고 PNG 생성</button>
+          </div>
+          <p id="save-status" class="save-status" role="status" aria-live="polite">변경 사항이 없습니다.</p>
+          <div id="approval-result" class="approval-result" hidden>
+            <span>최종 PNG가 준비되었습니다.</span>
+            <a id="png-download" href="#" download>PNG 다운로드</a>
+          </div>
+        </aside>
+
+        <section class="preview-panel" aria-label="JSON 기반 상세페이지 미리보기">
+          <div class="preview-toolbar">
+            <div>
+              <p class="eyebrow">LIVE JSON PREVIEW</p>
+              <h2>상세페이지 미리보기</h2>
+            </div>
+            <div class="preview-toolbar__meta">
+              <span id="layout-recommendation">AI 추천 · 에디토리얼 분할형</span>
+              <span class="meta-divider"></span>
+              <span>PNG 생성 전</span>
+            </div>
+          </div>
+          <div class="preview-frame-wrap">
+            <div class="preview-loading" id="preview-loading">JSON 기반 미리보기를 준비하고 있습니다…</div>
+            <iframe id="preview-frame" class="preview-frame" title="JSON 기반 상세페이지 미리보기"></iframe>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
