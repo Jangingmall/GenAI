@@ -23,7 +23,7 @@ for p in [str(SCRIPTS_DIR), str(SRC_DIR)]:
 
 import audit_cutout_truth
 
-PILOT_DIR = PROJECT_ROOT / "generated/evaluation/full60-20260910-204433"
+PILOT_DIR = PROJECT_ROOT / "tests/fixtures/full60"
 
 
 @pytest.fixture(scope="module")

@@ -1,0 +1,98 @@
+{
+  "product_type": "메탈 티웨어 오브제 세트",
+  "display_name": "메탈 티웨어 오브제 세트",
+  "is_traditional_craft": false,
+  "craft_type": null,
+  "classification_confidence": 0.86,
+  "craft_confidence": 0.0,
+  "classification_reason": "이미지에서 여러 개의 금속 광택 용기, 주전자 형태의 오브제, 잔과 받침이 함께 배치된 구성이 확인됩니다.",
+  "candidate_types": [
+    "티웨어 오브제 세트",
+    "금속 장식용기 세트",
+    "테이블 데코레이션 세트"
+  ],
+  "layout_id": "editorial-split",
+  "summary": "서로 다른 실루엣의 금속 광택 용기와 잔, 주전자 형태의 오브제가 한 장면에 어우러진 티타임 스타일 세트입니다.",
+  "keywords": [
+    "메탈 오브제",
+    "티웨어",
+    "광택 표면",
+    "주전자 형태",
+    "컵과 받침",
+    "테이블 데코"
+  ],
+  "observations": {
+    "visible_colors": [
+      "실버",
+      "브론즈",
+      "구리색",
+      "뉴트럴 그레이"
+    ],
+    "surface": "금속성 반사광과 밝은 하이라이트가 보입니다.",
+    "shape": "둥근 몸체, 좁아지는 목, 뚜껑과 손잡이가 있는 용기 형태가 함께 보입니다.",
+    "visible_components": [
+      "대형 용기 2점",
+      "주전자 형태 오브제 1점",
+      "소형 잔과 받침 여러 점",
+      "뚜껑이 있는 소형 용기"
+    ],
+    "composition": "밝은 무채색 배경 위에 여러 오브제가 좌우로 펼쳐져 있습니다."
+  },
+  "features": [
+    {
+      "title": "서로 다른 실루엣의 구성",
+      "description": "둥근 몸체의 용기와 손잡이가 있는 주전자 형태, 작은 잔과 받침이 한 세트처럼 펼쳐져 있습니다.",
+      "evidence": "image-visible",
+      "confidence": 0.97
+    },
+    {
+      "title": "빛을 반사하는 표면감",
+      "description": "각 오브제 표면에 밝은 하이라이트와 어두운 반사 영역이 교차해 입체적인 금속 질감을 보여 줍니다.",
+      "evidence": "image-visible",
+      "confidence": 0.94
+    },
+    {
+      "title": "티타임을 연상시키는 디테일",
+      "description": "작은 잔과 받침, 주전자 형태의 오브제가 함께 놓여 차를 즐기는 장면을 떠올리게 합니다.",
+      "evidence": "image-visible",
+      "confidence": 0.9
+    }
+  ],
+  "copy_sections": [
+    {
+      "section_type": "hero",
+      "title": "빛을 머금은 티타임 오브제",
+      "description": "서로 다른 금속 표면과 실루엣이 한 장면 안에서 차분한 리듬을 만듭니다."
+    },
+    {
+      "section_type": "benefit",
+      "title": "테이블 위에 펼쳐지는 컬렉션",
+      "description": "용기와 잔, 주전자 형태의 오브제를 함께 배치해 공간에 수집품 같은 인상을 더합니다."
+    },
+    {
+      "section_type": "feature",
+      "title": "표면의 반사와 곡선",
+      "description": "곡선으로 이어지는 몸체와 반사광이 오브제마다 다른 표정을 보여 줍니다."
+    },
+    {
+      "section_type": "usage",
+      "title": "차분한 공간의 포인트",
+      "description": "선반이나 테이블 위에 간격을 두고 배치하면 빛과 그림자가 살아나는 장식 장면을 만들 수 있습니다."
+    },
+    {
+      "section_type": "closing",
+      "title": "장면으로 완성하는 티웨어",
+      "description": "사용 목적과 소재 정보를 확인한 뒤 취향에 맞는 배치와 관리법을 선택해 주세요."
+    }
+  ],
+  "usage_scene": "서재나 거실의 선반, 티테이블 위에 용기와 잔을 간격 있게 배치해 금속 표면의 빛과 그림자를 감상하는 장면",
+  "uncertain_information": [
+    "정확한 소재, 도금 여부, 제조 방식, 브랜드, 제작 지역은 이미지로 확인할 수 없습니다.",
+    "실제 음료 사용 가능 여부와 제품별 규격·용량은 판매자 정보 확인이 필요합니다."
+  ],
+  "safety_notes": [
+    "사진에서 확인되는 형태·색상·배치만 근거로 작성한 샘플 문구입니다.",
+    "식기 사용, 열 사용, 세척 방법은 공식 제품 안내를 확인한 뒤 안내해야 합니다."
+  ],
+  "craft_research": null
+}

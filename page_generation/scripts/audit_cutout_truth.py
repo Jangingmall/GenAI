@@ -55,11 +55,24 @@ def audit_single_case(
     raw_img_path = Path(case_info.get("image_path", ""))
 
     orig_path = raw_img_path
-    if not orig_path.is_absolute():
-        for cand in [pilot_dir / orig_path, PROJECT_ROOT / orig_path]:
-            if cand.exists():
-                orig_path = cand
-                break
+    candidates: list[Path] = []
+    if orig_path.is_absolute():
+        try:
+            candidates.append(PROJECT_ROOT / orig_path.relative_to(PROJECT_ROOT))
+        except ValueError:
+            # Frozen run indexes may retain the absolute path from the source
+            # checkout. Resolve the tracked data subtree in the current clone.
+            if "data" in orig_path.parts:
+                data_index = orig_path.parts.index("data")
+                candidates.append(PROJECT_ROOT / Path(*orig_path.parts[data_index:]))
+        candidates.append(orig_path)
+    else:
+        candidates.extend([pilot_dir / orig_path, PROJECT_ROOT / orig_path])
+
+    for cand in candidates:
+        if cand.exists():
+            orig_path = cand
+            break
 
     case_dir = pilot_dir / case_id
     summary_path = case_dir / "result_summary.json"
