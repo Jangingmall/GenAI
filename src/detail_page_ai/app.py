@@ -4,6 +4,8 @@ import uuid
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import httpx
 
 from .ai_dto import (
     AiToProductBeAcceptedResponseDto,
@@ -140,6 +142,73 @@ async def _read_primary_source_image(upload: UploadFile) -> bytes:
     if len(data) > max_bytes:
         raise HTTPException(status_code=413, detail="Source image is too large")
     return data
+
+
+def _check_http_endpoint(url: str, timeout: float = 2.0) -> tuple[bool, str]:
+    try:
+        response = httpx.get(url, timeout=timeout)
+        if response.status_code == 200:
+            return True, "ok"
+        return False, f"HTTP {response.status_code}"
+    except Exception as exc:
+        detail = str(exc).strip() or exc.__class__.__name__
+        return False, detail
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready() -> JSONResponse:
+    try:
+        settings = get_settings()
+        text_url = getattr(settings, "local_text_url", None) or "http://127.0.0.1:11234"
+        endpoints: dict[str, str] = {
+            "text": f"{text_url.rstrip('/')}/v1/models",
+        }
+
+        image_provider = getattr(settings, "local_image_provider", "mlx")
+        if str(image_provider).lower() != "none":
+            image_url = getattr(settings, "local_image_url", None) or "http://127.0.0.1:11234"
+            endpoints["image"] = f"{image_url.rstrip('/')}/v1/models"
+    except Exception as exc:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "reason": f"settings error: {exc}",
+                "components": {},
+            },
+        )
+
+    components: dict[str, str] = {}
+    failures: list[str] = []
+
+    for component, url in endpoints.items():
+        ok, detail = _check_http_endpoint(url, timeout=2.0)
+        components[component] = detail
+        if not ok:
+            failures.append(f"{component}: {detail}")
+
+    if failures:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "reason": "; ".join(failures),
+                "components": components,
+            },
+        )
+
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "ok",
+            "components": components,
+        },
+    )
 
 
 @app.post(

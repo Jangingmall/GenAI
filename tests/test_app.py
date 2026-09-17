@@ -8,6 +8,7 @@ import detail_page_ai.app as app_module
 import local_detail_page_ai.factory as factory_module
 from fastapi import UploadFile
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 from starlette.datastructures import Headers
 from detail_page_ai.assets import LocalFileAssetStore
 from detail_page_ai.persistence import SQLiteDeliveryOutbox, SQLiteJobRepository
@@ -440,3 +441,137 @@ def test_approve_draft_renders_current_copy_without_another_ai_analysis(monkeypa
     assert response.status == "COMPLETED"
     assert service.pipeline.kwargs["profile_override"].display_name == "수정한 나전함"
     assert service.pipeline.kwargs["profile_override"].layout_id == "catalog-grid"
+
+
+def test_health_returns_200_without_auth_token(monkeypatch):
+    settings = SimpleNamespace(
+        ai_internal_auth_token="strictly-required-for-internal-routes",
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    client = TestClient(app_module.app)
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    assert app_module.health() == {"status": "ok"}
+
+
+def test_health_ready_returns_200_when_all_servers_healthy(monkeypatch):
+    settings = SimpleNamespace(
+        local_text_provider="sglang",
+        local_text_url="http://sglang-text:30000",
+        local_image_provider="sglang",
+        local_image_url="http://sglang-image:30001",
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    called_urls = []
+
+    def fake_get(url, timeout=None):
+        called_urls.append(url)
+        assert timeout == 2.0
+        return SimpleNamespace(status_code=200)
+
+    monkeypatch.setattr(app_module.httpx, "get", fake_get)
+
+    client = TestClient(app_module.app)
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "components": {
+            "text": "ok",
+            "image": "ok",
+        },
+    }
+    assert called_urls == [
+        "http://sglang-text:30000/v1/models",
+        "http://sglang-image:30001/v1/models",
+    ]
+
+
+def test_health_ready_returns_503_when_text_server_fails(monkeypatch):
+    settings = SimpleNamespace(
+        local_text_provider="sglang",
+        local_text_url="http://sglang-text:30000",
+        local_image_provider="sglang",
+        local_image_url="http://sglang-image:30001",
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    def fake_get(url, timeout=None):
+        if "30000" in url:
+            return SimpleNamespace(status_code=500)
+        return SimpleNamespace(status_code=200)
+
+    monkeypatch.setattr(app_module.httpx, "get", fake_get)
+
+    client = TestClient(app_module.app)
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["status"] == "not_ready"
+    assert "text: HTTP 500" in payload["reason"]
+    assert payload["components"]["text"] == "HTTP 500"
+    assert payload["components"]["image"] == "ok"
+
+
+def test_health_ready_returns_503_when_server_raises_network_error(monkeypatch):
+    settings = SimpleNamespace(
+        local_text_provider="sglang",
+        local_text_url="http://sglang-text:30000",
+        local_image_provider="sglang",
+        local_image_url="http://sglang-image:30001",
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    def fake_get(url, timeout=None):
+        if "30001" in url:
+            raise app_module.httpx.ConnectError("Connection refused")
+        return SimpleNamespace(status_code=200)
+
+    monkeypatch.setattr(app_module.httpx, "get", fake_get)
+
+    client = TestClient(app_module.app)
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    payload = response.json()
+    assert payload["status"] == "not_ready"
+    assert "image: Connection refused" in payload["reason"]
+    assert payload["components"]["image"] == "Connection refused"
+    assert payload["components"]["text"] == "ok"
+
+
+def test_health_ready_skips_image_server_when_provider_is_none(monkeypatch):
+    settings = SimpleNamespace(
+        local_text_provider="sglang",
+        local_text_url="http://sglang-text:30000",
+        local_image_provider="none",
+        local_image_url="http://sglang-image:30001",
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    called_urls = []
+
+    def fake_get(url, timeout=None):
+        called_urls.append(url)
+        return SimpleNamespace(status_code=200)
+
+    monkeypatch.setattr(app_module.httpx, "get", fake_get)
+
+    client = TestClient(app_module.app)
+    response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "components": {
+            "text": "ok",
+        },
+    }
+    assert called_urls == ["http://sglang-text:30000/v1/models"]
+    assert "http://sglang-image:30001/v1/models" not in called_urls
