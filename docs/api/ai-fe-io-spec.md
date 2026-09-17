@@ -155,13 +155,15 @@ BE는 AI 응답의 `product_id`, `job_id`, `request_id`, `generation_id`를 연�
 - `FAILED`: 입력 이미지·분석·검증·렌더링 중 실패. 사용자에게 provider credential이나 내부 URL을 노출하지 않음
 
 `fidelity_status=REJECTED` 자산은 FE에 전달하지 않습니다. 생성 자산은 허용된 참고 슬롯만
-전달합니다: `lifestyle/generated_scene`, `detail-02~detail-05/generated_view`.
-`asset_mode=generated_scene`인 `lifestyle`은 원본 이미지를 참조로 넣은 Flux2 프롬프트 편집
+전달합니다: `lifestyle-02/generated_scene`, `detail-02~detail-05/generated_view`.
+`asset_mode=generated_scene`인 `lifestyle-02`는 원본 이미지를 참조로 넣은 Flux2 프롬프트 편집
 결과입니다. 생성 여부는 `product_generated` 플래그로 구분하며, 정확한 제품 근거는
 `source_sha256`가 있는 원본 `hero`·`packshot`·`detail` 자산으로 확인합니다. 프롬프트 편집이
 실패한 경우에만 원본 이미지 또는 `source_composite` fallback이 전달됩니다.
 
-`generated_view`는 업로드 사진이 4장 미만일 때만 생성되는 디테일 참고 자산입니다.
+`generated_view`는 제공 사진 수와 무관하게 붙이는 보조 디테일 참고 자산입니다. 제공 사진은
+기본 역할에 먼저 배정하고, 사진으로 채우지 못한 역할만 생성하며, 추가 보조 생성 컷도 함께
+붙일 수 있습니다.
 `detail-02`는 좌측 사선 각도 보존, `detail-03`은 표면 매크로, `detail-04`는 실제 사용 상황,
 `detail-05`는 탑뷰·에디토리얼 배치입니다. 각 생성이 실패하면 같은 ID의 `source_crop`으로
 대체됩니다. `detail`만 성공 시 항상 검증된 원본 크롭으로 유지합니다.

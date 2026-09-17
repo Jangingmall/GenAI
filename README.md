@@ -61,16 +61,14 @@ FE 구조 출력은 [`src/detail_page_ai/react_document.py`](src/detail_page_ai/
 - `hero`: 촬영 원본 그대로 (`source_original`, `VERIFIED`)
 - `packshot`: rembg 원본 누끼 + 흰 배경 (`source_composite` 또는 실패 시 `source`, `FALLBACK`)
 - `detail`: 원본 이미지 실제 영역 크롭
-- `lifestyle`: 원본 이미지를 참조한 Flux2 프롬프트 기반 활용 장면(`generated_scene`, `product_generated=true`)
+- `lifestyle`: 제공 사진을 우선 배정하는 활용 장면 역할
+- `lifestyle-02`: 원본 이미지를 참조한 Flux2 프롬프트 기반 보조 생성 활용 장면(`generated_scene`, `product_generated=true`)
 
-`scale`은 `PRODUCT_PHOTO_SHOTS`에 명시했을 때만 추가됩니다. `alternate`는 단일 이미지에서 생성하지 않으며, FE가 반복 multipart 필드 `product_images`로 추가 원본 구도를 보냈을 때만 사용합니다.
+`scale`은 `PRODUCT_PHOTO_SHOTS`에 명시했을 때만 추가됩니다. `alternate`는 기본 역할을 넘는 제공 사진을 보존하는 슬롯이며, FE가 반복 multipart 필드 `product_images`로 보낸 원본 구도를 한 장도 버리지 않고 담습니다. 보조 생성 활용 장면은 `lifestyle-02`로, 디테일 뷰는 `generated_view`로 구분합니다.
 
-현재 레이아웃은 `hero`, `packshot`, `detail`, `lifestyle` 네 가지 사진 역할을 사용합니다. 원본이 적을 때는 `detail`, `detail-02`처럼 서로 다른 실제 원본 영역을 deterministic crop으로 뽑아 상세 컷에 배치합니다. 존재하지 않는 뒷면·측면을 생성하지 않습니다.
-원본이 1~3장이면 부족한 역할을 원본 픽셀 보존 방식으로 보완하고, 4장 이상이면 보완
-생성을 건너뛰고 업로드된 원본을 역할에 직접 배치합니다. `scale`을 켜면 5번째 원본부터
-크기 참고 역할에 배치하고, 남는 원본은 `alternate`로 보존합니다.
+현재 기본 레이아웃은 `hero`, `packshot`, `detail`, `lifestyle` 네 가지 사진 역할을 사용합니다. 제공 사진은 역할 목록 앞에서부터 순서대로 먼저 배정하고, 제공 사진으로 채우지 못한 역할만 생성합니다. 제공 사진 수와 무관하게 보조 생성 활용 장면·디테일 뷰를 붙이며, 역할 수를 넘는 제공 사진은 `alternate`로 모두 보존합니다. 존재하지 않는 뒷면·측면을 생성하지 않습니다.
 
-누끼 추출(`src/detail_page_ai/source_photos.py`)은 rembg의 `birefnet-general` 모델(rembg==2.0.69)을 사용합니다. 누끼가 실패하거나 품질 조건을 통과하지 못하면 `hero`는 촬영 원본(`source_original`, `VERIFIED`)을 유지하고 다른 원본 역할은 `source`/`FALLBACK`으로 안전하게 대체합니다. 프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `generated_scene`/`generated_view`는 허용된 생성 자산이며 `product_generated=true`로 구분하고, 화면에는 별도 '참고용' 라벨을 붙이지 않습니다. 최종 상품 근거는 원본 보존 자산으로 확인합니다.
+누끼 추출(`src/detail_page_ai/source_photos.py`)은 rembg의 `birefnet-general` 모델(rembg==2.0.69)을 사용합니다. 누끼가 실패하거나 품질 조건을 통과하지 못하면 `hero`는 촬영 원본(`source_original`, `VERIFIED`)을 유지하고 다른 원본 역할은 `source`/`FALLBACK`으로 안전하게 대체합니다. 프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `lifestyle-02/generated_scene`와 `generated_view`는 허용된 보조 생성 자산이며 `product_generated=true`로 구분하고, 화면에는 별도 '참고용' 라벨을 붙이지 않습니다. 최종 상품 근거는 원본 보존 자산으로 확인합니다.
 
 ## 로컬 실행 (Mac · MLX Serve)
 
@@ -116,13 +114,15 @@ ASSET_STORE_DIR=.local/detail-page-ai/assets
 SQLITE_PATH=.local/detail-page-ai/state.sqlite3
 RESPONSE_ASSET_MODE=base64
 CRAFT_CONFIDENCE_THRESHOLD=0.65
-SOURCE_PHOTO_VARIATION_THRESHOLD=4
+MAX_GENERATED_PHOTOS=5
 MAX_SOURCE_IMAGES=12
 MAX_REQUEST_BYTES=125829120
 MAX_PENDING_GENERATIONS=100
 MAX_DELIVERY_ATTEMPTS=8
 ENABLE_LEGACY_DEMO_API=false
 ```
+
+`MAX_GENERATED_PHOTOS`는 한 세트에 붙이는 보조 생성 컷의 최대 장수이며 범위는 0~12, 기본값은 5입니다. `0`이면 생성을 전혀 하지 않고 제공 사진만 사용합니다.
 
 `PRODUCT_PHOTO_GENERATION`은 `source`만 허용합니다. 제품 전체를 생성형 모델로 다시
 그리는 설정은 제공하지 않습니다.

@@ -119,8 +119,8 @@ def build_service(settings) -> DetailPageJobService:
         detail_view_generator=detail_view_generator,
         include_scale="scale" in configured_shots,
         photo_roles=configured_shots,
-        source_photo_variation_threshold=getattr(
-            settings, "source_photo_variation_threshold", 4
+        max_generated_photos=getattr(
+            settings, "max_generated_photos", 5
         ),
     )
     if settings.detail_page_renderer != "html":

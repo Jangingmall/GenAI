@@ -675,11 +675,11 @@ class SourcePreservingProductPhotoGenerator:
         validator: ProductFidelityValidator | None = None,
         canvas_size: tuple[int, int] = (1200, 1200),
         include_scale: bool = False,
-        source_photo_variation_threshold: int = 4,
+        max_generated_photos: int = 5,
         photo_roles: tuple[str, ...] | None = None,
     ):
-        if source_photo_variation_threshold < 1:
-            raise ValueError("source_photo_variation_threshold must be at least 1")
+        if not 0 <= max_generated_photos <= 12:
+            raise ValueError("max_generated_photos must be between 0 and 12")
         self.asset_store = asset_store or MemoryAssetStore()
         self.extractor = extractor or RembgCutoutExtractor()
         self.background_generator = background_generator
@@ -688,7 +688,7 @@ class SourcePreservingProductPhotoGenerator:
         self.validator = validator or ProductFidelityValidator(extractor=self.extractor)
         self.canvas_size = canvas_size
         self.include_scale = include_scale
-        self.source_photo_variation_threshold = source_photo_variation_threshold
+        self.max_generated_photos = max_generated_photos
         requested_roles = tuple(photo_roles or self._layout_roles)
         allowed_roles = set(self._layout_roles) | {"scale"}
         if not requested_roles or any(role not in allowed_roles for role in requested_roles):
@@ -736,9 +736,18 @@ class SourcePreservingProductPhotoGenerator:
             source_image=source_image,
             source_mime_type=source_mime_type,
         )
+        photos = list(provided_photos)
+        generated_photo_count = 0
+
+        def generation_available() -> bool:
+            return generated_photo_count < self.max_generated_photos
+
+        def background_for(role: str) -> tuple[Image.Image, bool]:
+            if self.max_generated_photos == 0:
+                return self._solid_background("#E9E4DC"), False
+            return self._background_for(profile=profile, role=role)
 
         if cutout is None:
-            photos = list(provided_photos)
             for role in missing_roles:
                 order = len(photos) + 1
                 photos.append(
@@ -767,13 +776,17 @@ class SourcePreservingProductPhotoGenerator:
                     for index, photo in enumerate(photos)
                     if photo.photo_id == "lifestyle"
                 )
-                scene = self._generated_usage_scene(
-                    order=photos[index].order, **reference_args
+                scene = (
+                    self._generated_usage_scene(
+                        order=photos[index].order, **reference_args
+                    )
+                    if generation_available()
+                    else None
                 )
                 if scene is not None:
                     photos[index] = scene
+                    generated_photo_count += 1
         else:
-            photos = list(provided_photos)
             if "hero" in missing_roles:
                 photos.append(
                     self._source_hero(
@@ -819,20 +832,23 @@ class SourcePreservingProductPhotoGenerator:
                 )
                 photos.append(detail_crops[0])
             if "lifestyle" in missing_roles:
-                generated_scene = self._generated_usage_scene(
-                    profile=profile,
-                    order=len(photos) + 1,
-                    source_asset_id=source_record.asset_id,
-                    source_sha256=source_record.sha256,
-                    source_image=source_image,
-                    source_mime_type=source_mime_type,
+                generated_scene = (
+                    self._generated_usage_scene(
+                        profile=profile,
+                        order=len(photos) + 1,
+                        source_asset_id=source_record.asset_id,
+                        source_sha256=source_record.sha256,
+                        source_image=source_image,
+                        source_mime_type=source_mime_type,
+                    )
+                    if generation_available()
+                    else None
                 )
                 if generated_scene is not None:
                     photos.append(generated_scene)
+                    generated_photo_count += 1
                 else:
-                    lifestyle_background, generated = self._background_for(
-                        profile=profile, role="lifestyle"
-                    )
+                    lifestyle_background, generated = background_for("lifestyle")
                     photos.append(
                         self._composite(
                             role="lifestyle",
@@ -857,9 +873,7 @@ class SourcePreservingProductPhotoGenerator:
                         )
                     )
                 else:
-                    scale_background, scale_generated = self._background_for(
-                        profile=profile, role="scale"
-                    )
+                    scale_background, scale_generated = background_for("scale")
                     photos.append(
                         self._composite(
                             role="scale",
@@ -885,16 +899,23 @@ class SourcePreservingProductPhotoGenerator:
             )
 
         if "lifestyle" in provided_roles:
-            generated_scene = self._generated_usage_scene(
-                order=len(photos) + 1,
-                photo_id="lifestyle-02",
-                **reference_args,
+            generated_scene = (
+                self._generated_usage_scene(
+                    order=len(photos) + 1,
+                    photo_id="lifestyle-02",
+                    **reference_args,
+                )
+                if generation_available()
+                else None
             )
             if generated_scene is not None:
                 photos.append(generated_scene)
+                generated_photo_count += 1
 
         if "detail" in provided_roles:
             for role in ("detail-02", "detail-03", "detail-04", "detail-05"):
+                if not generation_available():
+                    break
                 generated_view = self._generated_detail_view(
                     role=role,
                     order=len(photos) + 1,
@@ -902,9 +923,12 @@ class SourcePreservingProductPhotoGenerator:
                 )
                 if generated_view is not None:
                     photos.append(generated_view)
+                    generated_photo_count += 1
         elif "detail" in missing_roles:
             if cutout is None:
                 for role in ("detail-02", "detail-03", "detail-04", "detail-05"):
+                    if not generation_available():
+                        break
                     generated_view = self._generated_detail_view(
                         role=role,
                         order=len(photos) + 1,
@@ -912,15 +936,24 @@ class SourcePreservingProductPhotoGenerator:
                     )
                     if generated_view is not None:
                         photos.append(generated_view)
+                        generated_photo_count += 1
             else:
                 for detail_photo in detail_crops[1:]:
                     order = len(photos) + 1
-                    generated_view = self._generated_detail_view(
-                        role=detail_photo.photo_id,
-                        order=order,
-                        **reference_args,
+                    generated_view = (
+                        self._generated_detail_view(
+                            role=detail_photo.photo_id,
+                            order=order,
+                            **reference_args,
+                        )
+                        if generation_available()
+                        else None
                     )
-                    photos.append(generated_view or replace(detail_photo, order=order))
+                    if generated_view is not None:
+                        photos.append(generated_view)
+                        generated_photo_count += 1
+                    else:
+                        photos.append(replace(detail_photo, order=order))
 
         safe_photos = []
         for photo in photos:

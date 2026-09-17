@@ -795,7 +795,7 @@ def test_four_or_more_sources_keep_all_inputs_and_add_supplementary_generation()
     photos = _generator(
         usage_scene_generator=UsageSceneGenerator(),
         detail_view_generator=DetailViewGenerator(),
-        source_photo_variation_threshold=4,
+        max_generated_photos=5,
     ).generate(
         source_image=primary,
         source_mime_type="image/png",
@@ -977,7 +977,169 @@ def test_photo_ids_are_unique_for_one_through_five_sources():
         assert len(photo_ids) == len(set(photo_ids)), count
 
 
-def test_fewer_than_threshold_keeps_source_preserving_variation_path():
+def test_max_generated_photos_zero_disables_supplemental_generation():
+    usage_roles = []
+    detail_roles = []
+    background_roles = []
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            usage_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    class BackgroundGenerator:
+        def generate(self, **kwargs):
+            background_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#d8c7b8"))
+
+    photos = _generator(
+        usage_scene_generator=UsageSceneGenerator(),
+        detail_view_generator=DetailViewGenerator(),
+        background_generator=BackgroundGenerator(),
+        max_generated_photos=0,
+    ).generate(
+        source_image=_source_fixture(),
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+
+    assert usage_roles == []
+    assert detail_roles == []
+    assert background_roles == []
+    assert all(photo.product_generated is False for photo in photos.photos)
+    assert all(
+        photo.asset_mode not in {"generated_scene", "generated_view"}
+        for photo in photos.photos
+    )
+
+
+def test_max_generated_photos_one_stops_after_the_usage_scene():
+    usage_roles = []
+    detail_roles = []
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            usage_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    photos = _generator(
+        usage_scene_generator=UsageSceneGenerator(),
+        detail_view_generator=DetailViewGenerator(),
+        max_generated_photos=1,
+    ).generate(
+        source_image=_source_fixture(),
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+
+    generated = [photo for photo in photos.photos if photo.product_generated]
+    assert [photo.photo_id for photo in generated] == ["lifestyle"]
+    assert usage_roles == ["lifestyle"]
+    assert detail_roles == []
+
+
+def test_default_max_generated_photos_preserves_one_to_four_source_layouts():
+    sources = (
+        _source_fixture(),
+        _png(Image.new("RGB", (81, 79), "#6d5b46")),
+        _png(Image.new("RGB", (77, 83), "#466d5b")),
+        _png(Image.new("RGB", (73, 87), "#5b466d")),
+    )
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    for count in range(1, 5):
+        photos = _generator(
+            usage_scene_generator=UsageSceneGenerator(),
+            detail_view_generator=DetailViewGenerator(),
+            max_generated_photos=5,
+        ).generate(
+            source_image=sources[0],
+            source_mime_type="image/png",
+            profile=_profile(),
+            options=GenerationOptions(),
+            additional_source_images=tuple(
+                (source, "image/png") for source in sources[1:count]
+            ),
+        )
+
+        expected_ids = ["hero", "packshot", "detail", "lifestyle"]
+        expected_generated_ids = ["lifestyle"]
+        expected_additional_ids = []
+        if count == 4:
+            expected_generated_ids = ["lifestyle-02"]
+            expected_additional_ids.append("lifestyle-02")
+        expected_generated_ids.extend(
+            ["detail-02", "detail-03", "detail-04", "detail-05"]
+        )
+        expected_additional_ids.extend(
+            ["detail-02", "detail-03", "detail-04", "detail-05"]
+        )
+        expected_ids.extend(expected_additional_ids)
+        assert [photo.photo_id for photo in photos.photos] == expected_ids, (
+            count,
+            [photo.photo_id for photo in photos.photos],
+        )
+        assert [
+            photo.photo_id for photo in photos.photos if photo.product_generated
+        ] == expected_generated_ids
+
+
+def test_generation_cap_above_default_keeps_photo_ids_unique():
+    sources = (
+        _source_fixture(),
+        _png(Image.new("RGB", (81, 79), "#6d5b46")),
+        _png(Image.new("RGB", (77, 83), "#466d5b")),
+        _png(Image.new("RGB", (73, 87), "#5b466d")),
+        _png(Image.new("RGB", (89, 71), "#466d6d")),
+    )
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    photos = _generator(
+        usage_scene_generator=UsageSceneGenerator(),
+        detail_view_generator=DetailViewGenerator(),
+        max_generated_photos=12,
+    ).generate(
+        source_image=sources[0],
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+        additional_source_images=tuple(
+            (source, "image/png") for source in sources[1:]
+        ),
+    )
+
+    photo_ids = [photo.photo_id for photo in photos.photos]
+    assert len(photo_ids) == len(set(photo_ids))
+    assert sum(photo.product_generated for photo in photos.photos) <= 12
+
+
+def test_two_sources_keep_source_preserving_variation_path():
     primary = _source_fixture()
     side = _png(Image.new("RGB", (55, 40), "#816f55"))
     calls = []
@@ -989,7 +1151,7 @@ def test_fewer_than_threshold_keeps_source_preserving_variation_path():
 
     photos = _generator(
         background_generator=RecordingBackgroundGenerator(),
-        source_photo_variation_threshold=4,
+        max_generated_photos=5,
     ).generate(
         source_image=primary,
         source_mime_type="image/png",

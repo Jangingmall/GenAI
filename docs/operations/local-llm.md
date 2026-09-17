@@ -82,13 +82,14 @@ generated/samples/local_najeon_box/
 └── result_summary.json
 ```
 
-`photos/`에는 `hero`·`packshot`·`detail` 원본 자산, `lifestyle` 프롬프트 편집
-`generated_scene`, 그리고 사진이 4장 미만일 때 `detail-02`·`detail-05` 디테일
-`generated_view`가 저장될 수 있습니다. `detail-02`는 각도, `detail-03`은 표면 매크로,
-`detail-04`는 실제 사용 상황, `detail-05`는 에디토리얼 배치이며, 생성 실패 시 원본 크롭으로
-대체됩니다.
-`alternate`는 추가 촬영 원본이 있을 때만 허용되며, 생성 여부는 `product_generated` 플래그로
-구분하고 최종 상품 근거가 아닌 연출 이미지로 취급합니다.
+`photos/`에는 `hero`·`packshot`·`detail` 원본 자산, `lifestyle` 제공 사진 또는
+`lifestyle-02` 프롬프트 편집 `generated_scene`, 그리고 제공 사진으로 채우지 못한 역할과
+보조 생성에 쓰이는 `detail-02`·`detail-05` 디테일 `generated_view`가 저장될 수 있습니다.
+제공 사진 수와 무관하게 보조 생성 컷이 붙으며, `detail-02`는 각도, `detail-03`은 표면
+매크로, `detail-04`는 실제 사용 상황, `detail-05`는 에디토리얼 배치입니다. 생성 실패 시
+원본 크롭으로 대체됩니다.
+`alternate`는 기본 역할을 넘는 제공 사진을 한 장도 버리지 않고 보존하는 슬롯이며, 생성 여부는
+`product_generated` 플래그로 구분하고 최종 상품 근거가 아닌 연출 이미지로 취급합니다.
 
 `react_document.json`은 `schemaVersion: "2.0"`, `canvasWidth`, `root[]`를 갖는 JSON AST다.
 문서에는 실제 URL·HTML·JSX·이벤트 핸들러를 넣지 않으며 `img.props.imageId`를 `photos/` 또는

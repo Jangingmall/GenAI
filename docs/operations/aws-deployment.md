@@ -228,7 +228,7 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 | `PRODUCT_PHOTO_GENERATION` | `source` | `source` | `source` | 원본 제품 픽셀 보존 원칙 (`source` 고정) |
 | `BACKGROUND_PROVIDER` | `none`, `mlx`, `sglang` | `mlx` | `sglang` | 배경판 생성 제공자 |
 | `PRODUCT_PHOTO_SHOTS` | 콤마 구분 문자열 | `hero,packshot,detail,lifestyle` | `hero,packshot,detail,lifestyle` | 생성 대상 사진 역할 목록 |
-| `SOURCE_PHOTO_VARIATION_THRESHOLD` | int (1~12) | `4` | `4` | 원본 사진 추가 컷 파생 임계값 |
+| `MAX_GENERATED_PHOTOS` | int (0~12) | `5` | `5` | 한 세트에 붙이는 보조 생성 컷의 최대 장수 (`0`이면 생성하지 않음) |
 | `DETAIL_PAGE_RENDERER` | `html` | `html` | `html` | Playwright HTML 렌더러 (`html` 고정) |
 | `BACKEND_URL` | 문자열 (URL) 또는 None | `None` | **반드시 설정** | BE 내부 수신 URL (예: `http://product-backend:8080/...`) |
 | `BACKEND_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | BE 호출용 Bearer 토큰 (Secret 관리) |

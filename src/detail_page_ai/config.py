@@ -53,8 +53,8 @@ class Settings(BaseSettings):
         default="hero,packshot,detail,lifestyle",
         alias="PRODUCT_PHOTO_SHOTS",
     )
-    source_photo_variation_threshold: int = Field(
-        default=4, alias="SOURCE_PHOTO_VARIATION_THRESHOLD", ge=1, le=12
+    max_generated_photos: int = Field(
+        default=5, alias="MAX_GENERATED_PHOTOS", ge=0, le=12
     )
     detail_page_renderer: Literal["html"] = Field(
         default="html", alias="DETAIL_PAGE_RENDERER"

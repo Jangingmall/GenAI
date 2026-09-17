@@ -49,7 +49,7 @@ def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
         background_provider="mlx",
         product_photo_generation="source",
         product_photo_shots="hero,packshot,detail,lifestyle",
-        source_photo_variation_threshold=4,
+        max_generated_photos=5,
         detail_page_renderer="html",
         backend_url=None,
         backend_auth_token=None,
@@ -80,6 +80,7 @@ def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
     assert service.pipeline.photo_generator.background_generator.image_client.kwargs[
         "model"
     ] == "mlx-community/flux2-klein-9b-4bit"
+    assert service.pipeline.photo_generator.max_generated_photos == 5
 
 
 def test_build_service_wires_sglang_text_and_image_clients(monkeypatch, tmp_path):
@@ -109,7 +110,7 @@ def test_build_service_wires_sglang_text_and_image_clients(monkeypatch, tmp_path
         background_provider="sglang",
         product_photo_generation="source",
         product_photo_shots="hero,packshot,detail,lifestyle",
-        source_photo_variation_threshold=4,
+        max_generated_photos=5,
         detail_page_renderer="html",
         backend_url=None,
         backend_auth_token=None,
@@ -249,7 +250,7 @@ def test_build_service_does_not_construct_local_background_in_none_mode(
         background_provider="none",
         product_photo_generation="source",
         product_photo_shots="hero,packshot,detail,lifestyle",
-        source_photo_variation_threshold=4,
+        max_generated_photos=5,
         detail_page_renderer="html",
         backend_url=None,
         backend_auth_token=None,

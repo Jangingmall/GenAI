@@ -73,4 +73,16 @@ def test_source_safe_local_storage_is_the_default():
     assert settings.craft_confidence_threshold == 0.65
     assert settings.product_photo_shots == "hero,packshot,detail,lifestyle"
     assert settings.prompt_version == "local-mlx-qwen-flux-v1"
-    assert settings.source_photo_variation_threshold == 4
+    assert settings.max_generated_photos == 5
+
+
+def test_max_generated_photos_accepts_zero_and_uses_the_new_environment_alias():
+    settings = Settings(_env_file=None, MAX_GENERATED_PHOTOS=0)
+
+    assert settings.max_generated_photos == 0
+
+
+@pytest.mark.parametrize("value", [-1, 13])
+def test_max_generated_photos_rejects_values_outside_zero_to_twelve(value):
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, MAX_GENERATED_PHOTOS=value)
