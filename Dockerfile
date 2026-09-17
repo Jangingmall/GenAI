@@ -31,7 +31,8 @@ RUN uv sync --locked --no-dev --no-install-project --no-cache \
     && rm -rf /var/lib/apt/lists/* /root/.npm
 
 COPY src ./src
-COPY web ./web
+# Copy only HTML/CSS templates needed by html_renderer; static demo UI files in web/ are test-only.
+COPY web/detail_page.html web/detail_page.css ./web/
 COPY assets/references/detail-page-layouts.json ./assets/references/detail-page-layouts.json
 COPY scripts/runtime/render_detail_page.mjs ./scripts/runtime/render_detail_page.mjs
 
@@ -50,10 +51,10 @@ RUN groupadd --system --gid 10001 appuser \
 VOLUME ["/var/lib/detail-page-ai"]
 EXPOSE 8000
 
-# The public legacy route is present even when disabled and returns 404. This
-# checks that FastAPI is serving without inventing a health endpoint.
+# The health endpoint is also used by the EKS runtime image. Kubernetes ignores
+# Docker HEALTHCHECK, but keeping this probe valid makes local checks useful.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD ["python", "-c", "import http.client,sys; c=http.client.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/api/v1/ai/detail-page-jobs/does-not-exist'); sys.exit(0 if c.getresponse().status == 404 else 1)"]
+    CMD ["python", "-c", "import http.client,sys; c=http.client.HTTPConnection('127.0.0.1',8000,timeout=3); c.request('GET','/health'); sys.exit(0 if c.getresponse().status == 200 else 1)"]
 
 USER appuser
 CMD ["serve-ai"]
