@@ -141,12 +141,13 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 | 항목 | 값 |
 | --- | --- |
-| 저장소 | `https://github.com/sigjm/Team3_EcommerceSystemAI` (**비공개**) |
+| 저장소 | `https://github.com/sigjm/Team3_EcommerceSystemAI` (**비공개**, 현재 위치) |
 | 기본 브랜치 | `main` — 배포 대상 코드가 여기 올라가 있습니다 |
 | 작업 브랜치 | `deploy/ubuntu` (`main` 과 같은 커밋) |
 
-1. **접근 권한이 필요합니다.** 비공개 저장소라 CI 나 인프라팀 계정을 collaborator 로 추가해야 clone 이 됩니다. 필요한 계정을 알려 주시면 권한을 부여하겠습니다.
-2. **빌드 컨텍스트는 저장소 루트**입니다. `docker build -f sglang/Dockerfile .` 형태로 실행해 주세요. Dockerfile 이 있는 디렉터리만 컨텍스트로 잡으면 빌드가 실패합니다.
+1. **이 저장소는 조직 계정으로 옮길 예정입니다.** 지금은 개인 계정에 있습니다. 이전하면 **저장소 URL 이 바뀝니다.** git clone·fetch 는 GitHub 이 리다이렉트해 주지만, **웹훅·GitHub App·Actions 연동은 자동으로 따라오지 않습니다.** 영구 연동을 지금 URL 로 고정하지 마시고, 이전 시점을 함께 정하거나 이전 후에 붙이시길 권합니다. 이전이 끝나면 새 URL 을 바로 알려 드리겠습니다.
+2. **접근 권한이 필요합니다.** 비공개 저장소라 CI 나 인프라팀 계정을 collaborator 로 추가해야 clone 이 됩니다. 필요한 계정을 알려 주시면 권한을 부여하겠습니다. 조직 이전 후에는 조직 권한으로 다시 부여해야 합니다.
+3. **빌드 컨텍스트는 저장소 루트**입니다. `docker build -f sglang/Dockerfile .` 형태로 실행해 주세요. Dockerfile 이 있는 디렉터리만 컨텍스트로 잡으면 빌드가 실패합니다.
 
 변경 런타임 감지는 `sglang/`, `src/`, `pyproject.toml`, `uv.lock`, `web/`, `assets/references/` 경로 변경을 트리거로 잡으시면 됩니다. 이 경로들이 이미지에 들어갑니다.
 
