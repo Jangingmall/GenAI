@@ -4,7 +4,7 @@
 - 대상 저장소: Team3_EcommerceSystemAI (AI Repository)
 - 답변 범위: 인프라팀 요청 1-1 ~ 1-5
 
-> **검증 상태 먼저 말씀드립니다.** 아래는 코드와 이미지 정의가 완성된 상태이고, 애플리케이션 테스트 358개는 Mac 로컬에서 통과했습니다. 다만 **이 Dockerfile 은 아직 빌드하지 않았고, GPU 에서도 한 번도 실행하지 않았습니다.** 이미지 빌드 성공 여부, 두 모델이 L40S 한 장에 실제로 올라가는지, 생성·편집 품질과 처리 시간은 첫 배포에서 확인해야 합니다. 확인 항목은 `docs/operations/ubuntu-deployment.md` 의 검증 체크리스트에 정리돼 있습니다. 아래 자원 수치도 그래서 전부 추정치입니다.
+> **검증 상태 먼저 말씀드립니다.** 아래는 코드와 이미지 정의가 완성된 상태이고, 애플리케이션 테스트 369개는 Mac 로컬에서 통과했습니다. 다만 **`deploy/sglang/Dockerfile`은 아직 빌드하지 않았고, GPU에서도 한 번도 실행하지 않았습니다.** 이미지 빌드 성공 여부, 두 모델이 L40S 한 장에 실제로 올라가는지, 생성·편집 품질과 처리 시간은 첫 배포에서 확인해야 합니다. 확인 항목은 `docs/operations/ubuntu-deployment.md` 의 검증 체크리스트에 정리돼 있습니다. 아래 자원 수치도 그래서 전부 추정치입니다.
 
 ---
 
@@ -24,13 +24,13 @@ L40S (1장)
 - **멀티컨테이너로 나누지 말아 주세요.** 우리 파이프라인은 SGLang 서버가 두 개(텍스트·비전, 이미지 확산)입니다. NVIDIA device plugin 은 GPU 를 컨테이너 단위로 배타 할당하므로, 컨테이너를 나누면 L40S 한 장을 두 컨테이너가 나눠 쓸 수 없습니다(타임슬라이싱/MPS 를 따로 켜지 않는 한). 그래서 **한 컨테이너에서 세 프로세스**를 띄우는 구조로 만들었습니다.
 - 프로세스 관리: `entrypoint.sh` 가 SGLang 두 서버를 백그라운드로 띄우고 FastAPI 를 PID 1 로 실행합니다. 세 프로세스 중 하나라도 죽으면 컨테이너가 종료되어 쿠버네티스가 파드를 재시작합니다.
 
-## 1-2. EKS 배포용 Dockerfile
+## 1-2. EKS 배포용 `deploy/sglang/Dockerfile`
 
 | 항목 | 값 |
 | --- | --- |
-| SGLang Dockerfile | `sglang/Dockerfile` |
-| 진입 스크립트 | `sglang/entrypoint.sh` |
-| 빌드 컨텍스트 | **저장소 루트** (`docker build -f sglang/Dockerfile .`) — `pyproject.toml`, `uv.lock`, `src/`, `web/`, `assets/` 를 복사합니다 |
+| SGLang Dockerfile | `deploy/sglang/Dockerfile` |
+| 진입 스크립트 | `deploy/sglang/entrypoint.sh` |
+| 빌드 컨텍스트 | **저장소 루트** (`docker build -f deploy/sglang/Dockerfile .`) — `pyproject.toml`, `uv.lock`, `src/`, `web/`, `assets/` 를 복사합니다 |
 | Ollama Dockerfile | **작성하지 않았습니다.** 우리는 L40S 한 장만 사용합니다. 필요하시면 추가 작성 가능합니다 |
 
 운영 기준 반영 상태:
@@ -38,7 +38,7 @@ L40S (1장)
 | 요구 | 반영 |
 | --- | --- |
 | 필요한 Dependency 포함 | 베이스 `lmsysorg/sglang:v0.5.19`(CUDA 포함) + `sglang[diffusion]==0.5.19` + `bitsandbytes==0.50.2` + 서비스 의존성(`uv sync --locked`) + Node.js 22 + Playwright Chromium |
-| `CMD`/`ENTRYPOINT` | `ENTRYPOINT ["/usr/local/bin/detail-page-ai-entrypoint"]` (`sglang/entrypoint.sh` 를 설치한 것) |
+| `CMD`/`ENTRYPOINT` | `ENTRYPOINT ["/usr/local/bin/detail-page-ai-entrypoint"]` (`deploy/sglang/entrypoint.sh` 를 설치한 것) |
 | FastAPI `:8000` | `EXPOSE 8000 30000 30001`, uvicorn 이 PID 1. **Service 로 노출할 포트는 8000 뿐**이고 30000/30001 은 컨테이너 내부 통신용입니다 |
 | Secret 미포함 | 이미지에 토큰·키를 넣지 않았습니다. 전부 런타임 주입 |
 | 로그 stdout/stderr | 파일 리다이렉트 없음. 세 프로세스 로그가 모두 표준 출력으로 나갑니다 |
@@ -62,8 +62,8 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 ## 1-4. 공유 정보
 
-### Dockerfile 경로
-- SGLang: `sglang/Dockerfile` (+ `sglang/entrypoint.sh`)
+### `deploy/sglang/Dockerfile` 경로
+- SGLang: `deploy/sglang/Dockerfile` (+ `deploy/sglang/entrypoint.sh`)
 - Ollama: 없음 (사용하지 않음)
 
 ### CPU / Memory 권장값
@@ -147,9 +147,9 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 1. **이 저장소는 조직 계정으로 옮길 예정입니다.** 지금은 개인 계정에 있습니다. 이전하면 **저장소 URL 이 바뀝니다.** git clone·fetch 는 GitHub 이 리다이렉트해 주지만, **웹훅·GitHub App·Actions 연동은 자동으로 따라오지 않습니다.** 영구 연동을 지금 URL 로 고정하지 마시고, 이전 시점을 함께 정하거나 이전 후에 붙이시길 권합니다. 이전이 끝나면 새 URL 을 바로 알려 드리겠습니다.
 2. **접근 권한이 필요합니다.** 비공개 저장소라 CI 나 인프라팀 계정을 collaborator 로 추가해야 clone 이 됩니다. 필요한 계정을 알려 주시면 권한을 부여하겠습니다. 조직 이전 후에는 조직 권한으로 다시 부여해야 합니다.
-3. **빌드 컨텍스트는 저장소 루트**입니다. `docker build -f sglang/Dockerfile .` 형태로 실행해 주세요. Dockerfile 이 있는 디렉터리만 컨텍스트로 잡으면 빌드가 실패합니다.
+3. **빌드 컨텍스트는 저장소 루트**입니다. `docker build -f deploy/sglang/Dockerfile .` 형태로 실행해 주세요. Dockerfile이 있는 디렉터리만 컨텍스트로 잡으면 빌드가 실패합니다.
 
-변경 런타임 감지는 `sglang/`, `src/`, `pyproject.toml`, `uv.lock`, `web/`, `assets/references/` 경로 변경을 트리거로 잡으시면 됩니다. 이 경로들이 이미지에 들어갑니다.
+변경 런타임 감지는 `deploy/sglang/`, `src/`, `pyproject.toml`, `uv.lock`, `web/`, `assets/references/` 경로 변경을 트리거로 잡으시면 됩니다. 이 경로들이 이미지에 들어갑니다.
 
 ---
 

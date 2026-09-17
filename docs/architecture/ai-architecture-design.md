@@ -325,8 +325,8 @@ BE → detail-page-ai :8000 (CPU 전용)
                   Docker Compose
 ```
 
-서버는 AWS EC2 `g6e.xlarge` Ubuntu 단일 호스트에서 `Dockerfile`,
-`docker/sglang-diffusion.Dockerfile`, `docker-compose.yml`로 기동한다. 텍스트·이미지
+서버는 AWS EC2 `g6e.xlarge` Ubuntu 단일 호스트에서 `deploy/Dockerfile`,
+`deploy/docker/sglang-diffusion.Dockerfile`, `deploy/docker-compose.yml`로 기동한다. 텍스트·이미지
 SGLang 서비스는 `GET /v1/models`로 준비 상태를 확인하며, AI 서비스는
 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과
 `qwen-text`/`flux-klein` 공개 모델명을 사용한다. 상세 기동 절차는

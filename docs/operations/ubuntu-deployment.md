@@ -139,10 +139,10 @@ chmod 600 .env  # 비밀값이 포함되므로 권한 제한
 Docker Compose를 통해 이미지를 빌드하고 3개 서비스를 백그라운드(`-d`) 모드로 실행합니다.
 
 ```bash
-docker compose up -d --build
+docker compose -f deploy/docker-compose.yml up -d --build
 ```
 > [!NOTE]
-> `sglang-image` 서비스는 공식 SGLang 이미지에 `sglang[diffusion]==0.5.19` 확산 의존성과 함께 4bit 양자화 로딩에 필수적인 `bitsandbytes==0.50.2`를 사전 설치하기 위해 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성합니다.
+> `sglang-image` 서비스는 공식 SGLang 이미지에 `sglang[diffusion]==0.5.19` 확산 의존성과 함께 4bit 양자화 로딩에 필수적인 `bitsandbytes==0.50.2`를 사전 설치하기 위해 [`deploy/docker/sglang-diffusion.Dockerfile`](../../deploy/docker/sglang-diffusion.Dockerfile)을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성합니다.
 
 ### 4.2 컨테이너 기동 순서 및 헬스체크 의존성
 - `sglang-text`와 `sglang-image` 서비스가 먼저 기동되어 Hugging Face 가중치를 다운로드하고 GPU VRAM에 로드합니다.
@@ -152,7 +152,7 @@ docker compose up -d --build
 
 ### 4.3 서비스 상태 확인
 ```bash
-docker compose ps
+docker compose -f deploy/docker-compose.yml ps
 ```
 
 출력 예시 (모든 서비스가 healthy 상태):
@@ -166,13 +166,13 @@ sglang-text       lmsysorg/sglang:v0.5.19        "python3 -m sglang..."   sglang
 ### 4.4 로그 모니터링
 ```bash
 # 텍스트 서버 로그 확인
-docker compose logs -f sglang-text
+docker compose -f deploy/docker-compose.yml logs -f sglang-text
 
 # 확산 서버 로그 확인
-docker compose logs -f sglang-image
+docker compose -f deploy/docker-compose.yml logs -f sglang-image
 
 # 메인 AI 서비스 로그 확인
-docker compose logs -f detail-page-ai
+docker compose -f deploy/docker-compose.yml logs -f detail-page-ai
 ```
 
 ---
@@ -181,7 +181,7 @@ docker compose logs -f detail-page-ai
 
 ### 5.1 모델 캐시 동작
 상품 사진 누끼(Background Removal) 작업 시 `rembg`는 `birefnet-general.onnx`(약 973MB)를 다운로드합니다.
-Dockerfile 및 compose의 `U2NET_HOME=/var/lib/detail-page-ai/models/u2net` 설정에 따라 영구 볼륨(`detail-page-ai-data`)에 저장되므로 컨테이너를 재시작해도 다시 다운로드하지 않습니다.
+`deploy/Dockerfile` 및 `deploy/docker-compose.yml`의 `U2NET_HOME=/var/lib/detail-page-ai/models/u2net` 설정에 따라 영구 볼륨(`detail-page-ai-data`)에 저장되므로 컨테이너를 재시작해도 다시 다운로드하지 않습니다.
 
 ### 5.2 사설망 사전 적재 절차
 인터넷이 차단된 폐쇄망 환경의 경우 호스트에서 모델 파일을 미리 볼륨에 주입합니다:
@@ -235,13 +235,13 @@ docker run --rm \
 
 ### 6.2 SGLang Compose 검수 결함 3건과 해결 조치 (근거 문서 및 URL)
 
-정적 compose 문법 검사(`docker compose config`)만으로는 드러나지 않는 실제 런타임 기동 결함 3건을 공식 문서 기반으로 진단하고 해결했습니다.
+정적 compose 문법 검사(`docker compose -f deploy/docker-compose.yml config`)만으로는 드러나지 않는 실제 런타임 기동 결함 3건을 공식 문서 기반으로 진단하고 해결했습니다.
 
 #### 1) 공식 SGLang 이미지 내 확산(Diffusion) 기능 및 bitsandbytes 부재
 - **근거**: [SGLang Diffusion 공식 설치 문서](https://docs.sglang.io/docs/sglang-diffusion/installation.md)
   > *"The standard SGLang image does not include diffusion extras by default. Install with `pip install 'sglang[diffusion]'`..."*
 - **결함**: 공식 `lmsysorg/sglang:v0.5.19` 이미지는 LLM 전용이어서 `diffusers` 등 확산 의존성이 누락되어 있습니다. 또한 `bitsandbytes`는 sglang의 `test` extra에만 있어 diffusion 설치에도 포함되지 않으므로, 4bit 양자화 체크포인트(`circulus/FLUX.2-klein-9B-bnb-4bit`) 로딩 시 `ModuleNotFoundError`가 발생합니다.
-- **해결 조치**: 전용 Dockerfile인 [`docker/sglang-diffusion.Dockerfile`](../../docker/sglang-diffusion.Dockerfile)을 작성하여 베이스 이미지 위에 동일 버전의 `sglang[diffusion]==0.5.19`와 `bitsandbytes==0.50.2`를 사전 설치하여 컨테이너 이미지화했습니다.
+- **해결 조치**: 전용 Dockerfile인 [`deploy/docker/sglang-diffusion.Dockerfile`](../../deploy/docker/sglang-diffusion.Dockerfile)을 작성하여 베이스 이미지 위에 동일 버전의 `sglang[diffusion]==0.5.19`와 `bitsandbytes==0.50.2`를 사전 설치하여 컨테이너 이미지화했습니다.
 
 #### 2) 클라이언트 요청의 `model` 파라미터와 서버 모델명 불일치 거부
 - **근거**: [SGLang Diffusion OpenAI API 규약](https://docs.sglang.io/docs/sglang-diffusion/api/openai_api.md)
@@ -301,7 +301,7 @@ docker run --rm \
 
 버전을 올릴 때:
 1. 저장소 커밋 확인: `curl -s https://huggingface.co/api/models/<저장소> | python3 -c "import json,sys;print(json.load(sys.stdin)['sha'])"`
-2. `.env` 의 해당 `*_REVISION` 을 새 커밋으로 바꾸고 `docker compose up -d` — 새 커밋 가중치를 한 번 받습니다.
+2. `.env` 의 해당 `*_REVISION` 을 새 커밋으로 바꾸고 `docker compose -f deploy/docker-compose.yml up -d` — 새 커밋 가중치를 한 번 받습니다.
 3. 6.6 체크리스트로 다시 검증합니다. 문제가 있으면 이전 커밋으로 되돌리면 캐시에 남은 가중치를 그대로 씁니다.
 
 rembg 누끼 모델은 `uv.lock` 이 rembg 버전(2.0.69)을 고정하므로 받는 모델 파일도 그 버전에 묶여 있습니다.
@@ -329,7 +329,7 @@ rembg 누끼 모델은 `uv.lock` 이 rembg 버전(2.0.69)을 고정하므로 받
 
 | 번호 | 점검 및 측정 항목 | 기대 기준 | 실측값 / 상태 | 판정 |
 | :---: | :--- | :--- | :--- | :---: |
-| 1 | `docker/sglang-diffusion.Dockerfile` 빌드 성공 | `sglang[diffusion]` 및 `bitsandbytes` 0.50.2 설치 완료 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
+| 1 | `deploy/docker/sglang-diffusion.Dockerfile` 빌드 성공 | `sglang[diffusion]` 및 `bitsandbytes` 0.50.2 설치 완료 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
 | 2 | bitsandbytes 4bit 파이프라인 SGLang 로딩 성공 | SGLang 로그 상 4bit nf4 해석 정상 로드 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
 | 3 | 텍스트 인코더·트랜스포머 GPU 상주 확인 | `--dit-cpu-offload false --text-encoder-cpu-offload false` 적용 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
 | 4 | `sglang-text` 및 `sglang-image` `GET /v1/models` 헬스체크 통과 | HTTP 200 반환 및 healthy 전환 | [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ] | [ ] Pass / [ ] Fail |
@@ -437,17 +437,17 @@ curl -X GET http://localhost:8000/internal/v1/ai/detail-page-jobs/<발급받은_
 ### 8.1 서비스 중지 및 재기동
 ```bash
 # 전체 서비스 안전 중지 (볼륨 데이터 보존)
-docker compose down
+docker compose -f deploy/docker-compose.yml down
 
 # 서비스 재기동
-docker compose up -d
+docker compose -f deploy/docker-compose.yml up -d
 ```
 
 ### 8.2 서비스 업데이트
 ```bash
 git checkout deploy/ubuntu
 git pull
-docker compose up -d --build
+docker compose -f deploy/docker-compose.yml up -d --build
 ```
 
 ### 8.3 데이터 백업 및 복원
@@ -463,10 +463,10 @@ docker compose up -d --build
   ```
 - **데이터 복원**:
   ```bash
-  docker compose down
+  docker compose -f deploy/docker-compose.yml down
   docker run --rm \
     -v detail-page-ai-data:/data \
     -v $(pwd)/backups:/backup \
     alpine sh -c "cd /data && rm -rf * && tar xzf /backup/<백업파일명>.tar.gz"
-  docker compose up -d
+  docker compose -f deploy/docker-compose.yml up -d
   ```

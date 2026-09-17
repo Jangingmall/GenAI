@@ -10,7 +10,7 @@
 > **확정 운영 경로 및 EKS 현황 명시**:
 > - **확정 운영 경로**: 단일 AWS EC2 `g6e.xlarge` (NVIDIA L40S 48GB 1장, Ubuntu) + `docker compose` 기반 3서비스(`detail-page-ai`, `sglang-text`, `sglang-image`) 공존 구성이다.
 > - **EKS 현황 (미결정 상태)**: 현재 저장소에는 EKS 전용 산출물(Deployment/Service/PVC 매니페스트, Helm 차트 등)이 전무하며, EKS 배포 경로는 미결정 상태이다. 본 체크리스트의 EKS 관련 항목은 "EKS로 갈 경우의 설계안"에 해당한다.
-> - **검증 상태 (과장 금지)**: 로컬 단위 테스트 358개 통과, `docker compose config` 유효성, 컨테이너 빌드 확인 등은 완료되었으나, **GPU 에서는 한 번도 실행되지 않았다.** 두 모델 동시 적재, 4-bit 파이프라인 로딩, 편집 품질, 처리 시간 모두 미검증 상태이며 첫 배포 실측이 필수적이다.
+> - **검증 상태 (과장 금지)**: 로컬 단위 테스트 358개 통과, `docker compose -f deploy/docker-compose.yml config` 유효성, 컨테이너 빌드 확인 등은 완료되었으나, **GPU 에서는 한 번도 실행되지 않았다.** 두 모델 동시 적재, 4-bit 파이프라인 로딩, 편집 품질, 처리 시간 모두 미검증 상태이며 첫 배포 실측이 필수적이다.
 
 ---
 
@@ -84,7 +84,7 @@
 ### 2-2. 이미지 모델 서빙 및 클라이언트 규약 (`sglang-image`)
 - **무엇을 준비하는가**:
   1. 모델: `circulus/FLUX.2-klein-9B-bnb-4bit` (약 10.2 GiB, 트랜스포머 4.36 + 텍스트 인코더 5.66 + VAE 0.16 GiB), 고정 커밋 `58c2804f31af12c8888504b96250010c50b55e44`.
-  2. 커스텀 이미지 빌드: `docker/sglang-diffusion.Dockerfile` (`lmsysorg/sglang:v0.5.19` 베이스에 `sglang[diffusion]==0.5.19` 및 `bitsandbytes==0.50.2` 설치).
+  2. 커스텀 이미지 빌드: `deploy/docker/sglang-diffusion.Dockerfile` (`lmsysorg/sglang:v0.5.19` 베이스에 `sglang[diffusion]==0.5.19` 및 `bitsandbytes==0.50.2` 설치).
   3. 구동: `sglang serve --model-path circulus/FLUX.2-klein-9B-bnb-4bit --revision 58c2804f31af12c8888504b96250010c50b55e44 --served-model-name flux-klein --host 0.0.0.0 --port 30001 --num-gpus 1 --dit-cpu-offload false --text-encoder-cpu-offload false`.
   4. 클라이언트 규약 호환: `src/local_detail_page_ai/clients.py`의 `sglang` provider가 JSON `POST /v1/images/generations` 및 multipart `POST /v1/images/edits`를 직접 호출하므로 별도 프록시 불필요 (해소됨).
 - **없으면 무엇이 막히는가**: 확산 생성 및 in-context 편집 실패로 상품 연출 컷 및 배경 생성 전건 실패.
@@ -99,7 +99,7 @@
 ## Phase 3. 컨테이너 이미지 빌드 및 정적 자산 패키징
 
 ### 3-1. 레이아웃 원형 카탈로그(`detail-page-layouts.json`) 복사 확인 — [해소됨]
-- **무엇을 준비하는가**: `Dockerfile` 빌드 시 `assets/references/detail-page-layouts.json`이 컨테이너 이미지 내부 `/app/assets/references/detail-page-layouts.json`에 정상 복사되도록 레이어가 반영되어 있음.
+- **무엇을 준비하는가**: `deploy/Dockerfile` 빌드 시 `assets/references/detail-page-layouts.json`이 컨테이너 이미지 내부 `/app/assets/references/detail-page-layouts.json`에 정상 복사되도록 레이어가 반영되어 있음.
   ```dockerfile
   COPY assets/references/detail-page-layouts.json ./assets/references/detail-page-layouts.json
   ```
@@ -114,7 +114,7 @@
   ```
 
 ### 3-2. Playwright Chromium 런타임 의존성 패키징
-- **무엇을 준비하는가**: `Dockerfile`에 정의된 대로 `python:3.13-slim` 베이스 위에 Node.js 및 Chromium 브라우저 바이너리가 정상 설치되어야 함.
+- **무엇을 준비하는가**: `deploy/Dockerfile`에 정의된 대로 `python:3.13-slim` 베이스 위에 Node.js 및 Chromium 브라우저 바이너리가 정상 설치되어야 함.
 - **없으면 무엇이 막히는가**: 사용자 승인 후 4단계 최종 상세페이지 PNG 렌더(`render_detail_page.mjs`) 단계에서 Chromium 프로세스 기동 실패로 500 에러 발생.
 - **확인 방법**:
   ```bash
@@ -122,9 +122,9 @@
   ```
 
 ### 3-3. SGLang 확산 서버 커스텀 이미지 빌드
-- **무엇을 준비하는가**: `docker/sglang-diffusion.Dockerfile`을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성.
+- **무엇을 준비하는가**: `deploy/docker/sglang-diffusion.Dockerfile`을 빌드하여 `local/sglang-diffusion:0.5.19` 이미지를 생성.
   ```bash
-  docker build -f docker/sglang-diffusion.Dockerfile -t local/sglang-diffusion:0.5.19 .
+  docker build -f deploy/docker/sglang-diffusion.Dockerfile -t local/sglang-diffusion:0.5.19 .
   ```
 - **없으면 무엇이 막히는가**: 공식 `lmsysorg/sglang:v0.5.19` 이미지에는 diffusion 패키지와 bitsandbytes가 기본 포함되어 있지 않아 `sglang-image` 컨테이너 기동 실패.
 - **확인 방법**:
@@ -173,7 +173,7 @@
 | **3단계** | 이미지 생성 및 합성 | 2단계 완료 후 `photos/` 내 파일 생성 확인 | `hero`, `packshot`, `lifestyle`, `detail` 생성 | 확산 모델 VRAM OOM 또는 호출 규약 오류 |
 | **4단계** | 최종 상세페이지 PNG 렌더 | 승인 API (`POST .../approve`) 호출 | status가 `COMPLETED` 및 `detail_page.png` 생성 | Node.js / Playwright Chromium 라이브러리 누락 |
 | **5단계** | BE outbox 전달 | BE API 및 DB 조회 | BE에 `AiBeProductPersistRequest` 수신 확인 | `BACKEND_URL` 오설정 또는 인증 토큰 오류 |
-| **6단계** | 장애 복구 검증 | `docker compose restart detail-page-ai` | 재기동 후 `state.sqlite3` 유지 및 미완료 작업 복구 | 도커 볼륨 미마운트 (임시 컨테이너 파일시스템 사용) |
+| **6단계** | 장애 복구 검증 | `docker compose -f deploy/docker-compose.yml restart detail-page-ai` | 재기동 후 `state.sqlite3` 유지 및 미완료 작업 복구 | 도커 볼륨 미마운트 (임시 컨테이너 파일시스템 사용) |
 
 ---
 

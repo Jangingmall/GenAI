@@ -24,6 +24,11 @@ def test_project_assets_docs_and_generated_outputs_are_grouped():
         ROOT / "scripts/runtime/demo_fixed_profile_render.py",
         ROOT / "scripts/runtime/render_detail_page.mjs",
         ROOT / "scripts/runtime/run_local_detail_page.py",
+        ROOT / "deploy/Dockerfile",
+        ROOT / "deploy/docker-compose.yml",
+        ROOT / "deploy/sglang/Dockerfile",
+        ROOT / "deploy/sglang/entrypoint.sh",
+        ROOT / "deploy/docker/sglang-diffusion.Dockerfile",
         ROOT / "docs/api/ai-dto-contract.md",
         ROOT / "docs/api/ai-fe-io-spec.md",
         ROOT / "docs/operations/local-llm.md",
@@ -46,6 +51,10 @@ def test_legacy_root_locations_are_removed():
         ROOT / "product-photography.md",
         ROOT / "team3_ecommercesystemai.egg-info",
         ROOT / "src/team3_ecommercesystemai.egg-info",
+        ROOT / "Dockerfile",
+        ROOT / "docker-compose.yml",
+        ROOT / "sglang",
+        ROOT / "docker",
     ]
 
     remaining = [str(path.relative_to(ROOT)) for path in legacy_paths if path.exists()]

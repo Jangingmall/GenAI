@@ -204,9 +204,9 @@ Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준�
 
 ## 서버 배포 (Ubuntu · SGLang)
 
-서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. EKS 배포를 위해 단일 GPU에서 3개 서비스를 통합 실행하는 단일 컨테이너 이미지(`sglang/Dockerfile`, `sglang/entrypoint.sh`) 구성도 함께 제공합니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
+서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. EKS 배포를 위해 단일 GPU에서 3개 서비스를 통합 실행하는 단일 컨테이너 이미지(`deploy/sglang/Dockerfile`, `deploy/sglang/entrypoint.sh`) 구성도 함께 제공합니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
 
-현재 Mac 로컬에서 `docker compose config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, **서버 GPU 에서는 아직 한 번도 실행되지 않았으며**, 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 첫 배포 실측을 통해 확인해야 합니다.
+현재 Mac 로컬에서 `docker compose -f deploy/docker-compose.yml config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, **서버 GPU 에서는 아직 한 번도 실행되지 않았으며**, 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 첫 배포 실측을 통해 확인해야 합니다.
 
 ## 내부 HTML/CSS → PNG 렌더링
 

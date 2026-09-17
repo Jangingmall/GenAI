@@ -87,7 +87,7 @@ COPY src ./src
 COPY web/detail_page.html web/detail_page.css ./web/
 COPY assets/references/detail-page-layouts.json ./assets/references/detail-page-layouts.json
 COPY scripts/runtime/render_detail_page.mjs ./scripts/runtime/render_detail_page.mjs
-COPY sglang/entrypoint.sh /usr/local/bin/detail-page-ai-entrypoint
+COPY deploy/sglang/entrypoint.sh /usr/local/bin/detail-page-ai-entrypoint
 
 # Keep PROJECT_ROOT=/app while running the service directly from /app/src.
 RUN printf '%s\n' '#!/bin/sh' 'exec python -c "from detail_page_ai.app import run; run()"' \

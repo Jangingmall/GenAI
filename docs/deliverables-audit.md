@@ -21,7 +21,7 @@
 | 항목 | 결과 |
 |---|---|
 | Python 회귀 테스트 | 정본 기록은 `353 passed`; 현재 작업 트리 재실행은 `358 passed`(경고 2건) |
-| Docker Compose 정적 검증 | `docker compose config` 통과 |
+| Docker Compose 정적 검증 | `docker compose -f deploy/docker-compose.yml config` 통과 |
 | 로컬 컨테이너 검증 | 서비스 이미지 arm64 빌드·기동·healthy 확인, amd64 빌드 확인 |
 | 서버 GPU 검증 | 미실행. 두 SGLang 프로세스 동시 적재·4bit 파이프라인 로딩·편집 품질·처리 시간은 미검증 |
 | 실제 평가 데이터 | `cma_real_v1`: 60개 실물, 6개 카테고리 각 10개, 분석/렌더링 JSONL 각 60건. 파일·decode·hash·라이선스 표시 검증은 통과했으며 60건 전체 모델 실행과 사람 라벨 검수는 pending |

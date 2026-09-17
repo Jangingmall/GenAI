@@ -1,15 +1,15 @@
 services:
   detail-page-ai:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: deploy/Dockerfile
     platform: linux/amd64
     container_name: detail-page-ai
     restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
-      - path: .env
+      - path: ../.env
         required: false
     environment:
       LOCAL_TEXT_PROVIDER: ${LOCAL_TEXT_PROVIDER:-sglang}
@@ -65,8 +65,8 @@ services:
 
   sglang-image:
     build:
-      context: .
-      dockerfile: docker/sglang-diffusion.Dockerfile
+      context: ..
+      dockerfile: deploy/docker/sglang-diffusion.Dockerfile
       args:
         BASE_IMAGE: ${SGLANG_IMAGE:-lmsysorg/sglang:v0.5.19}
         SGLANG_VERSION: ${SGLANG_VERSION:-0.5.19}

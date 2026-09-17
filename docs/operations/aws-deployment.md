@@ -10,7 +10,7 @@
 > **현재 확정 운영 경로와 EKS 현황 (정본 사실 기록)**:
 > 1. **확정된 운영 경로**: 단일 호스트(AWS EC2 `g6e.xlarge`, 1x NVIDIA L40S 48GB, Ubuntu) + `docker compose` 기반 3개 서비스(`detail-page-ai`, `sglang-text`, `sglang-image`) 공존 구성이다.
 > 2. **EKS 현황 (미결정 상태)**: 현재 저장소에는 EKS 전용 산출물(Deployment/Service/PVC 매니페스트, Helm 차트, ECR 푸시 스크립트 등)이 전무하며, EKS 배포 경로는 아직 확정되지 않은 **미결정 상태**이다. 본 문서의 EKS 관련 서술(단일 파드 + EBS PVC, HPA 제약 등)은 **"EKS로 갈 경우의 설계안"**으로 정리·보존한다.
-> 3. **검증 상태 (과장 금지)**: 로컬 단위 테스트 358개 통과, `docker compose config` 유효성, `detail-page-ai` 서비스 컨테이너 arm64 빌드·기동·healthy 확인 및 amd64 빌드 확인은 완료되었다. 그러나 **GPU 에서는 한 번도 실행되지 않았다.** 두 모델 동시 적재, 4-bit 파이프라인 로딩, 편집 품질, 처리 시간 모두 미검증 상태이며 첫 배포 실측을 통해 확인해야 한다.
+> 3. **검증 상태 (과장 금지)**: 로컬 단위 테스트 358개 통과, `docker compose -f deploy/docker-compose.yml config` 유효성, `detail-page-ai` 서비스 컨테이너 arm64 빌드·기동·healthy 확인 및 amd64 빌드 확인은 완료되었다. 그러나 **GPU 에서는 한 번도 실행되지 않았다.** 두 모델 동시 적재, 4-bit 파이프라인 로딩, 편집 품질, 처리 시간 모두 미검증 상태이며 첫 배포 실측을 통해 확인해야 한다.
 
 > [!NOTE]
 > **성능 수치 기준선 (로컬 베이스라인 vs AWS)**:  
@@ -23,7 +23,7 @@
 
 | 구성 요소 | 포트 | 런타임/기술 스택 | 역할 | 현재 상태 |
 |---|---|---|---|---|
-| **detail-page-ai** | **8000** | Python 3.13, FastAPI, Node.js/Chromium, SQLite | Job 접수, 상태 머신, Draft 생성, React 문서 조립, PNG 렌더, BE outbox 배달 | 컨테이너화 준비 완료 (`Dockerfile`, CPU 전용) |
+| **detail-page-ai** | **8000** | Python 3.13, FastAPI, Node.js/Chromium, SQLite | Job 접수, 상태 머신, Draft 생성, React 문서 조립, PNG 렌더, BE outbox 배달 | 컨테이너화 준비 완료 (`deploy/Dockerfile`, CPU 전용) |
 | **sglang-text** | **30000** | `lmsysorg/sglang:v0.5.19`, Python 3, CUDA | 텍스트·비전 멀티모달 분석 (`cyankiwi/Qwen3.8-27B-AWQ-INT4`, 공개명 `qwen-text`) | SGLang SRT 서버 확정 (GPU 분할: mem-fraction-static 0.50) |
 | **sglang-image** | **30001** | `local/sglang-diffusion:0.5.19` (`sglang[diffusion]` + `bitsandbytes`), CUDA | 이미지 생성 및 in-context 편집 (`circulus/FLUX.2-klein-9B-bnb-4bit`, 공개명 `flux-klein`) | SGLang 확산 서버 확정 (GPU 분할: VRAM 약 10.2 GiB 상주) |
 
@@ -58,8 +58,8 @@
   - SGLang 네이티브 엔드포인트와 규약이 일치하므로 Diffusers 앞단의 별도 프록시 어댑터 배치가 불필요해졌다.
 
 ### 갭 4. 컨테이너 빌드 시 필수 정적 자산 누락 — [해소됨]
-- **초기 현상**: `assets/references/detail-page-layouts.json`(25종 상세페이지 원형 카탈로그)이 `Dockerfile` 복사 대상에서 누락되어 컨테이너 실행 시 레이아웃 카탈로그가 빈 리스트(`[]`)로 초기화될 위험이 있었다.
-- **해소 상태 및 근거**: `Dockerfile`에 `COPY assets/references/detail-page-layouts.json ./assets/references/detail-page-layouts.json` 레이어가 정상 추가되어 컨테이너 빌드 시 25종 레이아웃 원형이 정상 포함됨을 확인했다.
+- **초기 현상**: `assets/references/detail-page-layouts.json`(25종 상세페이지 원형 카탈로그)이 `deploy/Dockerfile` 복사 대상에서 누락되어 컨테이너 실행 시 레이아웃 카탈로그가 빈 리스트(`[]`)로 초기화될 위험이 있었다.
+- **해소 상태 및 근거**: `deploy/Dockerfile`에 `COPY assets/references/detail-page-layouts.json ./assets/references/detail-page-layouts.json` 레이어가 정상 추가되어 컨테이너 빌드 시 25종 레이아웃 원형이 정상 포함됨을 확인했다.
 
 ---
 
@@ -93,7 +93,7 @@
 
 - **동일 호스트 내부 통신**: 텍스트 분석 및 이미지 생성/편집(페이지당 수 회, 대용량 base64 및 multipart 통신)이 빈번하므로 Docker 브릿지 네트워크 내에서 통신하여 네트워크 비용 및 지연을 최소화한다.
 - **GPU 분할 상주**: 단일 L40S(48GB) GPU를 두 SGLang 프로세스가 나눠 쓴다 (`sglang-text`는 `--mem-fraction-static 0.50`, `sglang-image`는 `--dit-cpu-offload false --text-encoder-cpu-offload false`).
-- **서비스 기동 종속성**: `docker-compose.yml`에서 `detail-page-ai`는 `sglang-text`와 `sglang-image`의 `service_healthy`를 `depends_on`으로 대기한 후 기동된다.
+- **서비스 기동 종속성**: `deploy/docker-compose.yml`에서 `detail-page-ai`는 `sglang-text`와 `sglang-image`의 `service_healthy`를 `depends_on`으로 대기한 후 기동된다.
 
 ---
 
@@ -103,7 +103,7 @@
 > **EKS 현황 사실 명시 (4가지 기술 차이)**:  
 > 현재 저장소에는 EKS 전용 산출물(Deployment/Service/PVC 매니페스트, Helm 차트, ECR 푸시 스크립트 등)이 전무하며, EKS 배포 경로는 **미결정 상태**이다.  
 > EKS로 전환하기 위해서는 다음 4가지 핵심 차이점이 반드시 해결되어야 한다:
-> 1. **K8s probe 매핑 (Dockerfile HEALTHCHECK 무시)**: K8s는 Dockerfile의 `HEALTHCHECK` 지시자를 무시하므로 매니페스트에 probe를 직접 정의해야 한다. 현재 FastAPI에는 전용 헬스체크 엔드포인트(`GET /health`, readiness용 `GET /health/ready`, 200 OK)가 이미 구현되어 있으므로 K8s의 `httpGet` probe로 바로 매핑할 수 있다.
+> 1. **K8s probe 매핑 (`deploy/Dockerfile` HEALTHCHECK 무시)**: K8s는 `deploy/Dockerfile`의 `HEALTHCHECK` 지시자를 무시하므로 매니페스트에 probe를 직접 정의해야 한다. 현재 FastAPI에는 전용 헬스체크 엔드포인트(`GET /health`, readiness용 `GET /health/ready`, 200 OK)가 이미 구현되어 있으므로 K8s의 `httpGet` probe로 바로 매핑할 수 있다.
 > 2. **GPU 1장·2파드 분할 불가**: 표준 K8s NVIDIA device plugin은 컨테이너 단위 배타적 GPU 할당을 수행하므로, GPU 1장을 2개 파드가 나눠 쓸 수 없다. 단일 노드에서 구동하려면 GPU 타임슬라이싱/MPS 설정이 필요하거나, 두 SGLang 추론 프로세스를 단일 파드 내 멀티 컨테이너/통합 스크립트로 묶는 파드 설계가 필요하다.
 > 3. **모델 캐시 스토리지 전환**: 도커 볼륨 `huggingface-cache`를 K8s 환경에 맞게 PVC(ReadWriteMany 또는 대용량 EBS)나 S3 동기화 init 컨테이너 방식으로 전환해야 한다.
 > 4. **추론 서빙 규격 최신화**: 초기 설계서에 서술되었던 레거시 서빙 규격(vLLM + Diffusers 프록시) 대신 본 문서의 SGLang 2프로세스 규격으로 매니페스트를 작성해야 한다.
@@ -122,7 +122,7 @@
 
 ## 5. 컨테이너 이미지 규격
 
-### (1) ai-service 컨테이너 (`Dockerfile`)
+### (1) ai-service 컨테이너 (`deploy/Dockerfile`)
 
 | 항목 | 사양 / 설정값 | 비고 |
 |---|---|---|
@@ -133,7 +133,7 @@
 | 실행 계정 | `appuser` (UID 10001, GID 10001) | 비root 보안 계정 |
 | 볼륨 마운트 | `/var/lib/detail-page-ai` | SQLite 작업 DB 및 Asset 저장 디렉터리 |
 | 진입점 | `serve-ai` (포트 8000) | `exec python -c "from detail_page_ai.app import run; run()"` |
-| Dockerfile 헬스체크 | `GET /health` (200 OK, readiness: `GET /health/ready`) | Docker 런타임 및 K8s httpGet probe 호환 |
+| `deploy/Dockerfile` 헬스체크 | `GET /health` (200 OK, readiness: `GET /health/ready`) | Docker 런타임 및 K8s httpGet probe 호환 |
 
 ### (2) 추론 서버 컨테이너 (SGLang 2프로세스 확정 규격)
 
@@ -142,7 +142,7 @@
 | 구분 | 텍스트·비전 추론 서버 (`sglang-text`) | 이미지 생성·편집 확산 서버 (`sglang-image`) |
 |---|---|---|
 | **컨테이너 이미지** | `lmsysorg/sglang:v0.5.19` (공식 허브 이미지) | `local/sglang-diffusion:0.5.19` (커스텀 빌드) |
-| **빌드 파일/방법** | 공식 이미지 직접 pull | `docker/sglang-diffusion.Dockerfile`<br>베이스: `lmsysorg/sglang:v0.5.19`<br>설치: `pip install sglang[diffusion]==0.5.19 bitsandbytes==0.50.2` |
+| **빌드 파일/방법** | 공식 이미지 직접 pull | `deploy/docker/sglang-diffusion.Dockerfile`<br>베이스: `lmsysorg/sglang:v0.5.19`<br>설치: `pip install sglang[diffusion]==0.5.19 bitsandbytes==0.50.2` |
 | **추론 대상 모델** | `cyankiwi/Qwen3.8-27B-AWQ-INT4` | `circulus/FLUX.2-klein-9B-bnb-4bit` |
 | **가중치 크기** | 19.60 GiB | 약 10.2 GiB (트랜스포머 4.36 + 텍스트 인코더 5.66 + VAE 0.16 GiB) |
 | **고정 커밋 (Revision)** | `6e134bae811fb5adac50ee042ae5f029ac6779aa` | `58c2804f31af12c8888504b96250010c50b55e44` |
@@ -317,7 +317,7 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 - **5단계 (BE outbox 전달)**:
   - BE 로그 및 DB에서 `AiBeProductPersistRequest` 수신 확인.
 - **6단계 (장애 복구 검증)**:
-  - `docker compose restart detail-page-ai` 실행 후, 재기동된 서비스가 볼륨 내 `state.sqlite3`를 인식하고 미완료 작업을 정상 재개하는지 확인.
+  - `docker compose -f deploy/docker-compose.yml restart detail-page-ai` 실행 후, 재기동된 서비스가 볼륨 내 `state.sqlite3`를 인식하고 미완료 작업을 정상 재개하는지 확인.
 
 ### (B) 자동화 릴리스 품질 게이트 3종 실행
 
