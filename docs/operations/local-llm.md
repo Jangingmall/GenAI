@@ -1,8 +1,10 @@
 # 로컬 LLM 상세페이지 경로
 
+> 이 문서는 Mac 로컬 개발 구성이며 서버 운영 구성은 [`ubuntu-deployment.md`](ubuntu-deployment.md)입니다.
+
 FastAPI 서비스와 CLI runner 모두 같은 로컬 모델 경로를 사용합니다. 로컬 runner도 운영과 같은 원본 보존 규칙을 사용하며, 제품 전체를 Stable Diffusion·ComfyUI·FLUX로 다시 생성하지 않습니다.
 
-> 2026-09-08 현재 출력 기준: FE에는 `react_document` 제한형 JSON AST를 제공하고, HTML/CSS는 승인 후 PNG를 만드는 내부 renderer에서만 사용합니다. `page_plan`은 AST 조립 전의 모델·편집·하위 호환 DTO입니다.
+> 2026-09-16 현재 출력 기준: FE에는 `react_document` 제한형 JSON AST를 제공하고, HTML/CSS는 승인 후 PNG를 만드는 내부 renderer에서만 사용합니다. `page_plan`은 AST 조립 전의 모델·편집·하위 호환 DTO입니다.
 
 ## 구성
 
@@ -13,13 +15,13 @@ FastAPI 서비스와 CLI runner 모두 같은 로컬 모델 경로를 사용합�
 - 최종 상세페이지 이미지: 내부 HTML/CSS + Playwright
 - 백엔드: 외부 적재 없이 실제 BE DTO 조립 경로만 검증
 
-기본 로컬 경로는 MLX Serve의 `gemma-4-12b-it-4bit` 분석 모델과
-`flux2-klein-9b-4bit` 이미지 모델입니다. 두 모델은 `http://127.0.0.1:11234`에서
+기본 로컬 경로는 MLX Serve의 `ddalcu/Qwen3.8-27B-MLX-Serve-4bit` 분석·비전 모델과
+`mlx-community/flux2-klein-9b-4bit` 이미지 모델입니다. 두 모델은 `http://127.0.0.1:11234`에서
 같은 MLX Serve 인스턴스로 요청합니다.
 
 현재 MLX Serve 모델 저장소에서 확인되는 모델은 다음과 같습니다.
 
-- `mlx-community/gemma-4-12b-it-4bit`
+- `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`
 - `mlx-community/flux2-klein-9b-4bit`
 - `Runpod/FLUX.2-klein-4B-mflux-4bit` (비교 테스트용)
 
@@ -27,7 +29,7 @@ FastAPI 서비스와 CLI runner 모두 같은 로컬 모델 경로를 사용합�
 
 ```bash
 "/Applications/MLX Core.app/Contents/MacOS/mlx-serve" serve \
-  --model ~/.mlx-serve/models/mlx-community/gemma-4-12b-it-4bit \
+  --model ~/.mlx-serve/models/ddalcu/Qwen3.8-27B-MLX-Serve-4bit \
   --host 127.0.0.1 \
   --port 11234
 ```
@@ -37,10 +39,10 @@ MLX Serve가 `http://127.0.0.1:11234`에서 실행 중이면 다음 명령만으
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --image assets/samples/images-2.jpeg \
-  --output-dir generated/runs/images_2_gemma12b_flux2 \
+  --output-dir generated/runs/images_2_qwen27b_flux2 \
   --text-provider mlx \
   --text-url http://127.0.0.1:11234 \
-  --text-model mlx-community/gemma-4-12b-it-4bit \
+  --text-model ddalcu/Qwen3.8-27B-MLX-Serve-4bit \
   --image-provider mlx \
   --image-url http://127.0.0.1:11234 \
   --image-model mlx-community/flux2-klein-9b-4bit
@@ -50,9 +52,12 @@ Ollama를 별도 검증 경로로 사용할 때만 `--text-provider ollama`,
 `--text-url http://127.0.0.1:11434`, `--text-model gemma3:12b`,
 `--image-provider none`을 명시합니다.
 
-원본 `hero`·`packshot`·대표 `detail`은 입력 이미지의 제품 픽셀을 보존합니다. Flux2가 만든
-`lifestyle`·추가 `detail-02`~`detail-05`는 생성 컷으로 메타데이터에 `GENERATED` 및
-`product_generated=true`를 표시하고, 상품 사실의 근거가 아니라 연출 슬롯에서만 사용합니다.
+`hero`는 촬영 원본 그대로(`asset_mode=source_original`, `fidelity_status=VERIFIED`) 유지합니다.
+`packshot`·대표 `detail`은 rembg(`birefnet-general`, `rembg==2.0.69`) 누끼·원본 crop/합성
+경로를 사용하며, 누끼 실패 시 `source`/`FALLBACK`으로 대체합니다. Flux2가 만든
+`lifestyle`·추가 `detail-02`~`detail-05`는 생성 자산으로 메타데이터에 `GENERATED` 및
+`product_generated=true`를 표시하고, 별도 화면 '참고용' 표시는 붙이지 않으며 상품 사실의
+근거가 아닌 연출 슬롯에서만 사용합니다.
 
 ## 실행
 
@@ -98,7 +103,7 @@ PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --no-product-photos
 ```
 
-로컬 Gemma 분석은 외부 검색 API를 호출하지 않습니다. 분석 입력은 원본
+로컬 Qwen 분석은 외부 검색 API를 호출하지 않습니다. 분석 입력은 원본
 이미지와 상품 BE가 전달한 `user_hints`이며, `ProductProfileDto.observations`에는 이미지에서
 확인한 색·형태·구성 정보만 기록합니다. 검색이 필요한 최신 정보는 생성 전에 상품 BE가
 검수해 `user_hints`로 전달해야 합니다.
@@ -116,7 +121,7 @@ PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --port 11235
 ```
 
-그 다음 텍스트는 11234의 Gemma 12B, 이미지는 11235의 4B를 지정한다.
+그 다음 텍스트는 11234의 Qwen3.8 27B, 이미지는 11235의 4B를 지정한다.
 
 ```bash
 PYTHONPATH=.:src .venv/bin/python scripts/runtime/run_local_detail_page.py \
@@ -124,7 +129,7 @@ PYTHONPATH=.:src .venv/bin/python scripts/runtime/run_local_detail_page.py \
   --output-dir generated/runs/flux2_klein_4b_test \
   --text-provider mlx \
   --text-url http://127.0.0.1:11234 \
-  --text-model mlx-community/gemma-4-12b-it-4bit \
+  --text-model ddalcu/Qwen3.8-27B-MLX-Serve-4bit \
   --image-provider mlx \
   --image-url http://127.0.0.1:11235 \
   --image-model Runpod/FLUX.2-klein-4B-mflux-4bit
@@ -132,4 +137,4 @@ PYTHONPATH=.:src .venv/bin/python scripts/runtime/run_local_detail_page.py \
 
 직접 endpoint 점검은 `POST /v1/images/generations` 응답의 `200`과 `data[0].b64_json`을
 확인한다. 테스트 결과는 [로컬 생성 테스트 기록](local-generation-test-report.md)을 따르며,
-4B 생성 컷은 `GENERATED` 참고 자산이므로 원본 상품 근거·대표 상품 사진으로 승인하지 않는다.
+4B 생성 컷은 `GENERATED` 생성 자산이므로 원본 상품 근거·대표 상품 사진으로 승인하지 않는다.

@@ -2,20 +2,22 @@
 
 상품 원본 이미지에서 설명과 특징을 분석하고, 원본 제품 픽셀을 보존한 제품 사진과 FE 렌더링용 제한형 React JSON AST를 만드는 AI 서비스입니다. 입력 직후에는 실행 가능한 HTML/JSX가 아닌 구조화된 draft와 `react_document`를 상품 BE에 반환하고, 상품 BE/FE가 미리보기를 렌더링합니다. 장인 승인 시에만 AI 내부 HTML/CSS 렌더러로 최종 PNG와 섹션 PNG를 생성합니다.
 
-> 2026-09-08 최신 구현 기준: FE가 소비하는 정식 구조 산출물은 `react_document`이며, `page_plan`은 모델·편집·하위 호환용 입력으로 유지합니다. React AST는 서버가 검증된 draft에서 결정적으로 조립하고, 모델이 임의 JSX·HTML·CSS를 반환하지 않습니다.
+> 2026-09-16 현재 구현 기준: FE가 소비하는 정식 구조 산출물은 `react_document`이며, `page_plan`은 모델·편집·하위 호환용 입력으로 유지합니다. React AST는 서버가 검증된 draft에서 결정적으로 조립하고, 모델이 임의 JSX·HTML·CSS를 반환하지 않습니다.
 
-대표·팩샷·디테일은 **생성형 모델이 제품을 다시 그리지 않고 원본 이미지를 그대로 사용**합니다. lifestyle과 추가 detail은 원본을 시각 참고로 넣는 Flux2 프롬프트 편집으로 활용 장면·디테일을 만들 수 있으며, 세부 형태 보존 지시와 낮은 편집 강도를 적용합니다. 이 결과는 `generated_scene`/`generated_view` 참고용 이미지로 표시하고 원본 hash를 연결하지만, 제품 형태·색·구성품의 정확한 근거로 승격하지 않습니다.
+> 추론 경로는 두 가지입니다. Mac 로컬 개발은 MLX Serve(`127.0.0.1:11234`)를 사용하고, 서버 운영은 Ubuntu `g6e.xlarge`에서 SGLang 텍스트·이미지 서버(`30000`/`30001`)를 사용합니다. 서버 GPU 실행과 두 모델 동시 적재는 아직 검증하지 않았습니다.
+
+대표 `hero`는 촬영 원본 그대로(`asset_mode=source_original`, `fidelity_status=VERIFIED`) 사용합니다. `packshot`과 `detail`은 rembg(`birefnet-general`, `rembg==2.0.69`) 누끼·원본 crop/합성 경로를 사용하고, 누끼가 실패하면 원본 자산(`source`, `FALLBACK`)으로 되돌립니다. lifestyle과 추가 detail은 원본을 시각 참고로 넣은 Flux2 편집 결과일 수 있으며, `product_generated=true`와 `asset_mode`로 구분하고 원본 상품 근거로 승격하지 않습니다. 생성 사진에 화면상의 별도 '참고용' 표시는 붙이지 않습니다.
 
 ## 기본 처리 흐름
 
 ```text
 FE 원본 이미지
   → 원본 파일 저장 + SHA-256
-  → 로컬 MLX Serve Qwen 27B 상품 분석
+  → 텍스트·비전 추론 (로컬 개발: MLX Serve / 서버 운영: SGLang)
   → DRAFT_READY: JSON draft + 제한형 react_document 반환·수정 저장
   → 장인 승인
-  → 테두리 연결 기반 알파 마스크 추출 (파편화·신뢰 불가 시 None 반환 후 원본 fallback, RGB 생성 금지)
-  → 로컬 MLX Serve Flux2 제품 없는 배경·참고 컷 생성
+  → rembg 누끼 추출 (파편화·신뢰 불가 시 원본 fallback, RGB 생성 금지)
+  → 배경·연출 추론 (로컬 개발: MLX Serve / 서버 운영: SGLang)
   → 원본 RGB + 배경 결정적 합성
   → 원본 SHA-256·crop·composite 픽셀 fidelity 검증
   → 승인된 draft → React JSON AST 조립·검증 → FE 결과
@@ -56,10 +58,10 @@ FE 구조 출력은 [`src/detail_page_ai/react_document.py`](src/detail_page_ai/
 
 기본 사진 역할은 다음 네 가지입니다.
 
-- `hero`: 원본 컷아웃 + 중립 배경
-- `packshot`: 원본 컷아웃 + 흰 배경
+- `hero`: 촬영 원본 그대로 (`source_original`, `VERIFIED`)
+- `packshot`: rembg 원본 누끼 + 흰 배경 (`source_composite` 또는 실패 시 `source`, `FALLBACK`)
 - `detail`: 원본 이미지 실제 영역 크롭
-- `lifestyle`: 원본 이미지를 참조한 Flux2 프롬프트 기반 활용 장면(`generated_scene`, 참고용)
+- `lifestyle`: 원본 이미지를 참조한 Flux2 프롬프트 기반 활용 장면(`generated_scene`, `product_generated=true`)
 
 `scale`은 `PRODUCT_PHOTO_SHOTS`에 명시했을 때만 추가됩니다. `alternate`는 단일 이미지에서 생성하지 않으며, FE가 반복 multipart 필드 `product_images`로 추가 원본 구도를 보냈을 때만 사용합니다.
 
@@ -68,9 +70,11 @@ FE 구조 출력은 [`src/detail_page_ai/react_document.py`](src/detail_page_ai/
 생성을 건너뛰고 업로드된 원본을 역할에 직접 배치합니다. `scale`을 켜면 5번째 원본부터
 크기 참고 역할에 배치하고, 남는 원본은 `alternate`로 보존합니다.
 
-컷아웃 마스크 추출(`src/detail_page_ai/source_photos.py`)은 이미지 외곽 테두리에 연결된 영역만 배경 후보로 플러딩하여 마스크를 구성합니다. 마스크가 과도하게 파편화되거나 전경 비율이 비정상적이어서 신뢰할 수 없는 경우 `None`을 반환하고 파이프라인이 원본 이미지로 안전하게 fallback합니다. 프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `generated_scene`은 `lifestyle` 슬롯에서만 허용하는 참고용 이미지이며, FE/BE DTO에 생성형 자산임을 표시합니다. 최종 상품 근거는 항상 원본 `hero`, `packshot`, `detail` 자산으로 확인합니다.
+누끼 추출(`src/detail_page_ai/source_photos.py`)은 rembg의 `birefnet-general` 모델(rembg==2.0.69)을 사용합니다. 누끼가 실패하거나 품질 조건을 통과하지 못하면 `hero`는 촬영 원본(`source_original`, `VERIFIED`)을 유지하고 다른 원본 역할은 `source`/`FALLBACK`으로 안전하게 대체합니다. 프롬프트 편집이 실패하면 원본 이미지 또는 중립 배경 합성으로 fallback합니다. `generated_scene`/`generated_view`는 허용된 생성 자산이며 `product_generated=true`로 구분하고, 화면에는 별도 '참고용' 라벨을 붙이지 않습니다. 최종 상품 근거는 원본 보존 자산으로 확인합니다.
 
-## 로컬 실행
+## 로컬 실행 (Mac · MLX Serve)
+
+이 절은 Mac 로컬 개발 구성에만 해당합니다. 서버 운영 구성은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)의 SGLang 경로를 사용합니다.
 
 ```bash
 cp local.env.example .env
@@ -122,9 +126,10 @@ ENABLE_LEGACY_DEMO_API=false
 
 `PRODUCT_PHOTO_GENERATION`은 `source`만 허용합니다. 제품 전체를 생성형 모델로 다시
 그리는 설정은 제공하지 않습니다.
-`BACKGROUND_PROVIDER=mlx`는 제품 없는 배경·활용 장면·추가 디테일 참고 컷에만 Flux를 사용합니다.
-`hero`·`packshot`·대표 `detail` 제품 픽셀은 계속 원본 RGB와 결정적 Pillow 합성으로 보존합니다.
-Flux2가 만든 `lifestyle`·추가 detail은 생성 참고 자산으로만 취급하며 `GENERATED`와 원본 hash를
+`BACKGROUND_PROVIDER=mlx`는 제품 없는 배경·활용 장면·추가 디테일 컷에만 Flux를 사용합니다.
+`hero`는 촬영 원본을 그대로 보존하고, `packshot`·대표 `detail`은 원본 RGB와 결정적 Pillow
+합성으로 제품 픽셀을 보존합니다.
+Flux2가 만든 `lifestyle`·추가 detail은 생성 자산으로만 취급하며 `GENERATED`, `product_generated=true`와 원본 hash를
 표시합니다. GPU/모델 서버를 사용하지 않으려면 `LOCAL_IMAGE_PROVIDER=none`과 `BACKGROUND_PROVIDER=none`을 함께 설정할 수
 있으며, 이 경우 중립 배경 fallback만 사용합니다.
 
@@ -134,7 +139,7 @@ Flux2가 만든 `lifestyle`·추가 detail은 생성 참고 자산으로만 취�
 상품 BE가 `user_hints`로 묶어 AI에 전달하며, AI는 상품 BE의 내부 호출만 받습니다. 상품 BE
 API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 
-제품 분석은 외부 검색엔진을 호출하지 않습니다. 로컬 Qwen은 입력 이미지와 상품 BE가
+제품 분석은 외부 검색엔진을 호출하지 않습니다. 선택한 로컬 MLX 또는 서버 SGLang의 Qwen은 입력 이미지와 상품 BE가
 전달한 `user_hints`만 사용하며, 검색 출처·실시간 가격·제작자·원산지·진품성·정확한
 소재·성능을 자동으로 확정하지 않습니다. 최신성이나 출처가 필요한 내용은 상품 BE가
 검수한 뒤 `user_hints`로 전달해야 합니다.
@@ -191,7 +196,13 @@ FE·상품 BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-d
 - BE 실패 결과는 재시작 후에도 같은 `generation_id`로 재전송
 - URL을 제공하는 운영 자산 저장소에서는 `RESPONSE_ASSET_MODE=url`로 Base64 중복을 제거
 
-현재 코드는 로컬 파일/SQLite와 로컬 MLX Serve 모델 서버를 기준으로 합니다. 상품 BE 적재 URL은 선택적으로 사용할 수 있으며, 클라우드 모델·클라우드 credential·클라우드 인프라는 생성하거나 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/operations/local-generation-test-report.md`](docs/operations/local-generation-test-report.md)에 정리되어 있고, 운영 기본값은 Flux2 Klein 9B입니다.
+Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준으로 하고, 서버 운영은 Ubuntu Docker Compose와 SGLang 모델 서버를 기준으로 합니다. 상품 BE 적재 URL은 선택적으로 사용할 수 있으며, 외부 모델 API·검색 API·클라우드 credential은 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/operations/local-generation-test-report.md`](docs/operations/local-generation-test-report.md)에 정리되어 있고, 이미지 생성 기본값은 두 경로 모두 9B 모델입니다.
+
+## 서버 배포 (Ubuntu · SGLang)
+
+서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
+
+현재 Mac 로컬에서 `docker compose config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, 실제 NVIDIA GPU에서 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 아직 검증하지 않았습니다.
 
 ## 내부 HTML/CSS → PNG 렌더링
 
