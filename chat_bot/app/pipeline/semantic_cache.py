@@ -17,6 +17,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 
 from app.pipeline.embedding import embed_query
@@ -30,6 +31,13 @@ _TTL_SECONDS = 600  # 카탈로그 변경 반영 지연을 짧게 묶어두기 �
 _MAX_ENTRIES = 200  # 무한정 커지지 않게 제한 — 다 차면 오래된 것부터 버림(FIFO)
 
 _cache: list[dict] = []
+# FastAPI는 동기 라우트를 스레드 풀에서 돌려서(app/main.py의 chat()이 plain def),
+# 서로 다른 요청이 동시에 lookup·store를 호출할 수 있다 — session_store.py의 같은
+# 모양 문제(app/session_store.py:27-29)를 이미 락으로 고쳐놓은 것과 동일한 이유로
+# 여기도 락을 건다. 락이 없어도 list라 dict/set처럼 에러로 죽지는 않지만(직접 확인),
+# store()의 append/pop(0)이 lookup()의 reversed(_cache) 순회 도중 끼어들면 있어야
+# 할 캐시 히트를 조용히 놓칠 수 있다.
+_lock = threading.Lock()
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -40,32 +48,36 @@ def _cosine(a: list[float], b: list[float]) -> float:
 def lookup(message: str) -> dict | None:
     """비슷한 질문이 최근에 있었으면 그 의도분류 결과를 돌려주고, 없으면 None."""
     now = time.time()
+    # embed_query는 무거운 모델 추론이라 락 밖에서 한다 — 락은 _cache 읽기·순회
+    # 구간만 감싸서, 다른 요청의 embed_query 호출까지 불필요하게 직렬화하지 않는다.
     vec = embed_query(message)
-    for entry in reversed(_cache):
-        if now - entry["ts"] > _TTL_SECONDS:
-            continue
-        if _cosine(vec, entry["embedding"]) >= _SIMILARITY_THRESHOLD:
-            return {
-                "intent": entry["intent"],
-                "filters": entry["filters"],
-                "query_text": entry["query_text"],
-                "chat_reply": entry["chat_reply"],
-            }
+    with _lock:
+        for entry in reversed(_cache):
+            if now - entry["ts"] > _TTL_SECONDS:
+                continue
+            if _cosine(vec, entry["embedding"]) >= _SIMILARITY_THRESHOLD:
+                return {
+                    "intent": entry["intent"],
+                    "filters": entry["filters"],
+                    "query_text": entry["query_text"],
+                    "chat_reply": entry["chat_reply"],
+                }
     return None
 
 
 def store(message: str, contact1: dict) -> None:
     """의도분류 결과를 캐시에 넣는다. 대화 맥락이 있던 턴은 orchestrator가 애초에 안 부른다."""
-    vec = embed_query(message)
-    _cache.append(
-        {
-            "embedding": vec,
-            "ts": time.time(),
-            "intent": contact1["intent"],
-            "filters": contact1["filters"],
-            "query_text": contact1["query_text"],
-            "chat_reply": contact1["chat_reply"],
-        }
-    )
-    if len(_cache) > _MAX_ENTRIES:
-        _cache.pop(0)
+    vec = embed_query(message)  # lookup()과 같은 이유로 락 밖에서 계산한다.
+    with _lock:
+        _cache.append(
+            {
+                "embedding": vec,
+                "ts": time.time(),
+                "intent": contact1["intent"],
+                "filters": contact1["filters"],
+                "query_text": contact1["query_text"],
+                "chat_reply": contact1["chat_reply"],
+            }
+        )
+        if len(_cache) > _MAX_ENTRIES:
+            _cache.pop(0)
