@@ -37,6 +37,15 @@ def test_price_to_won_parses_eok_unit():
     assert it._price_to_won("1억원") == 100000000
 
 
+def test_price_to_won_parses_cheonman_compound_unit():
+    """실측 확인된 버그: "천만"처럼 만 단위 앞에 "천"이 붙는 복합 단위는 "만" 바로
+    앞에 숫자가 없어서(그 자리엔 "천"이 있음) "만" 매칭이 실패하고 "천" 매칭으로
+    떨어져 1000배 작게 파싱됐다("1천만원" → 1000원). "3백만원"도 같은 이유로
+    "만" 앞이 "백"이라 매칭이 아예 안 되고 맨 숫자 폴백(3)까지 떨어졌다."""
+    assert it._price_to_won("1천만원") == 10000000
+    assert it._price_to_won("3백만원") == 3000000
+
+
 def test_price_to_won_empty_is_none():
     assert it._price_to_won("") is None
 
