@@ -1,0 +1,304 @@
+{
+  "generation_id": "48330956-026b-474e-97f0-6113ffc7586b",
+  "product": {
+    "product_type": "유리병",
+    "display_name": "황금빛 유리병",
+    "is_traditional_craft": false,
+    "craft_type": null,
+    "classification_confidence": 0.9,
+    "craft_confidence": 0.0,
+    "classification_reason": "이미지에서 목이 좁고 몸통이 둥근 형태의 유리병이 확인됩니다. 표면은 황금색과 은색이 섞인 진주광택을 띠며, 반투명한 유리 소재로 보입니다.",
+    "candidate_types": [
+      "유리병",
+      "장식용 병",
+      "유리 공예품"
+    ],
+    "layout_id": "editorial-split",
+    "page_plan": [
+      {
+        "section_id": "hero",
+        "block_type": "hero",
+        "eyebrow": "PRODUCT",
+        "title": "황금빛 유리병",
+        "body": "은은한 진주광택이 흐르는 황금색 유리병입니다. 좁은 목과 둥근 몸통의 균형 잡힌 실루엣이 특징입니다.",
+        "variant": "paper",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "palette",
+        "block_type": "palette",
+        "eyebrow": "COLOR",
+        "title": "색감",
+        "body": "황금색과 은색이 어우러진 표면 색감입니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "주조색",
+            "value": "황금색",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "보조색",
+            "value": "은색",
+            "description": "",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "gallery",
+        "block_type": "gallery",
+        "eyebrow": "GALLERY",
+        "title": "전체 모습",
+        "body": "병의 전체적인 형태와 표면 질감을 확인할 수 있습니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [
+          "hero"
+        ],
+        "items": []
+      },
+      {
+        "section_id": "detail_split",
+        "block_type": "detail_split",
+        "eyebrow": "DETAIL",
+        "title": "표면 질감",
+        "body": "표면에는 은은한 진주광택이 흐르며, 빛에 따라 색이 변하는 듯한 효과를 줍니다.",
+        "variant": "image-left",
+        "photo_id": "detail",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "feature_grid",
+        "block_type": "feature_grid",
+        "eyebrow": "FEATURES",
+        "title": "주요 특징",
+        "body": "이 제품의 세 가지 주요 특징입니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "진주광택",
+            "value": "은은한 광택",
+            "description": "표면에 은은한 진주광택이 흐릅니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "형태",
+            "value": "둥근 몸통",
+            "description": "좁은 목과 둥근 몸통의 균형 잡힌 실루엣입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "색감",
+            "value": "황금색과 은색",
+            "description": "황금색과 은색이 어우러진 색감입니다.",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "wide_image",
+        "block_type": "wide_image",
+        "eyebrow": "VIEW",
+        "title": "전체 뷰",
+        "body": "제품의 전체적인 형태와 색감을 확인할 수 있습니다.",
+        "variant": "full-bleed",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "recommendation",
+        "block_type": "recommendation",
+        "eyebrow": "RECOMMENDATION",
+        "title": "함께 보기",
+        "body": "이 제품과 함께 볼 수 있는 다른 제품들을 추천합니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "closing",
+        "block_type": "closing",
+        "eyebrow": "CLOSING",
+        "title": "마무리",
+        "body": "은은한 진주광택과 균형 잡힌 실루엣이 돋보이는 황금빛 유리병입니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      }
+    ],
+    "observations": {
+      "shape": "목이 좁고 몸통이 둥근 형태",
+      "color": "황금색과 은색이 어우러진 색감",
+      "texture": "은은한 진주광택",
+      "material": "유리 (추정)"
+    },
+    "summary": "은은한 진주광택이 흐르는 황금색 유리병입니다. 좁은 목과 둥근 몸통의 균형 잡힌 실루엣이 특징이며, 표면에는 황금색과 은색이 어우러진 색감이 나타납니다.",
+    "keywords": [
+      "유리병",
+      "진주광택",
+      "황금색",
+      "은색",
+      "장식용"
+    ],
+    "features": [
+      {
+        "title": "진주광택",
+        "description": "표면에 은은한 진주광택이 흐릅니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "형태",
+        "description": "좁은 목과 둥근 몸통의 균형 잡힌 실루엣입니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "색감",
+        "description": "황금색과 은색이 어우러진 색감입니다.",
+        "evidence": "image-visible",
+        "confidence": 0.85
+      }
+    ],
+    "warnings": [
+      "정확한 소재",
+      "제작 기법",
+      "크기",
+      "관리 방법"
+    ],
+    "craft_research": null
+  },
+  "detail_page": {
+    "mime_type": "image/png",
+    "width": 774,
+    "height": 4111,
+    "sections": [
+      {
+        "order": 1,
+        "section_id": "hero",
+        "label": "상품 소개"
+      },
+      {
+        "order": 2,
+        "section_id": "palette",
+        "label": "색과 표면"
+      },
+      {
+        "order": 3,
+        "section_id": "gallery",
+        "label": "상세 컷"
+      },
+      {
+        "order": 4,
+        "section_id": "detail_split",
+        "label": "표면 질감"
+      },
+      {
+        "order": 5,
+        "section_id": "feature_grid",
+        "label": "제품 특징"
+      },
+      {
+        "order": 6,
+        "section_id": "wide_image",
+        "label": "와이드 뷰"
+      },
+      {
+        "order": 7,
+        "section_id": "recommendation",
+        "label": "추천 연출"
+      },
+      {
+        "order": 8,
+        "section_id": "closing",
+        "label": "마무리"
+      }
+    ],
+    "photos": [
+      {
+        "order": 1,
+        "photo_id": "hero",
+        "label": "원본 보존 대표 이미지",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 2,
+        "photo_id": "packshot",
+        "label": "원본 보존 팩샷",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 3,
+        "photo_id": "detail",
+        "label": "원본 디테일 크롭",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 4,
+        "photo_id": "lifestyle",
+        "label": "AI 생성 활용 장면(참고용)",
+        "asset_mode": "generated_scene",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 5,
+        "photo_id": "detail-02",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 6,
+        "photo_id": "detail-03",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 7,
+        "photo_id": "detail-04",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 8,
+        "photo_id": "detail-05",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      }
+    ]
+  }
+}

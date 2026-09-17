@@ -1,0 +1,300 @@
+{
+  "generation_id": "bd57869c-62a2-4ace-9668-741d0e6facce",
+  "product": {
+    "product_type": "도자기",
+    "display_name": "청자 연화문 병",
+    "is_traditional_craft": true,
+    "craft_type": "청자",
+    "classification_confidence": 0.95,
+    "craft_confidence": 0.9,
+    "classification_reason": "이미지에서 확인되는 청색 유약, 백색과 청록색의 음각·양각 문양, 그리고 병의 형태는 한국 전통 도자기, 특히 청자 계열의 특징과 일치한다.",
+    "candidate_types": [
+      "도자기",
+      "청자",
+      "병",
+      "생활도자기"
+    ],
+    "layout_id": "editorial-split",
+    "page_plan": [
+      {
+        "section_id": "hero",
+        "block_type": "hero",
+        "eyebrow": "TRADITIONAL CRAFT",
+        "title": "청자 연화문 병",
+        "body": "짙은 청색 유약 위에 백색과 청록색의 연꽃 문양이 새겨진 전통 도자기 병입니다. 입구가 좁고 몸통이 풍만하며, 하단으로 갈수록 좁아지는 균형 잡힌 형태를 보여줍니다.",
+        "variant": "paper",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "statement",
+        "block_type": "statement",
+        "eyebrow": "MAKING STORY",
+        "title": "유약과 문양의 조화",
+        "body": "표면의 청색 유약은 깊고 고요한 색감을 자아내며, 그 위에 새겨진 연꽃과 잎사귀 문양은 입체감을 더합니다. 전통적인 기법으로 표현된 문양은 단순한 장식을 넘어 공간에 정적인 아름다움을 부여합니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "feature_grid",
+        "block_type": "feature_grid",
+        "eyebrow": "DETAILS",
+        "title": "세부 특징",
+        "body": "이 도자기 병의 주요 시각적 특징을 세 가지로 정리했습니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "청색 유약",
+            "value": "짙은 청색",
+            "description": "표면 전체를 덮는 짙은 청색 유약은 깊고 고요한 색감을 연출합니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "연화 문양",
+            "value": "백색·청록색",
+            "description": "몸통 중앙에 백색과 청록색으로 표현된 연꽃과 잎사귀 문양이 배치되어 있습니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "하단 장식",
+            "value": "기하학적 문양",
+            "description": "병의 하단부에는 직사각형과 곡선으로 이루어진 기하학적 문양 띠가 새겨져 있습니다.",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "detail_split",
+        "block_type": "detail_split",
+        "eyebrow": "FORM",
+        "title": "균형 잡힌 형태",
+        "body": "좁은 입구에서 시작해 몸통으로 넓어졌다가 하단으로 좁아지는 형태는 안정적인 시각적 균형을 제공합니다. 어깨 부분의 곡선과 하단의 직선적 문양 띠가 대비를 이루며 전체적인 조화를 이룹니다.",
+        "variant": "image-left",
+        "photo_id": "detail",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "wide_image",
+        "block_type": "wide_image",
+        "eyebrow": "TEXTURE",
+        "title": "표면의 질감",
+        "body": "유약의 광택과 문양의 입체감이 어우러져 표면의 질감을 살려줍니다. 빛이 닿는 위치에 따라 색의 농담이 달라지며, 전통 도자기 특유의 깊이감을 느낄 수 있습니다.",
+        "variant": "full-bleed",
+        "photo_id": "detail-02",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "usage_scene",
+        "block_type": "usage_scene",
+        "eyebrow": "LIVING SPACE",
+        "title": "공간 연출",
+        "body": "침실, 거실, 또는 서재의 선반이나 테이블 위에 단독으로 배치하여 공간의 중심을 잡아주는 오브제로 활용할 수 있습니다. 고요한 색감은 다양한 인테리어 스타일에 자연스럽게 녹아듭니다.",
+        "variant": "image-right",
+        "photo_id": "lifestyle",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "notice",
+        "block_type": "notice",
+        "eyebrow": "CARE",
+        "title": "관리 안내 확인 필요",
+        "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "closing",
+        "block_type": "closing",
+        "eyebrow": "CLOSING",
+        "title": "전통의 아름다움",
+        "body": "청자 연화문 병은 전통 도자기의 정제된 형태와 색감을 통해 공간에 고요한 아름다움을 더합니다.",
+        "variant": "paper",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      }
+    ],
+    "observations": {
+      "color": "짙은 청색 유약, 백색, 청록색",
+      "shape": "입구가 좁고 몸통이 풍만하며 하단이 좁아지는 병 형태",
+      "pattern": "연꽃, 잎사귀, 기하학적 문양 띠",
+      "texture": "유약 광택, 문양 입체감"
+    },
+    "summary": "짙은 청색 유약과 백색·청록색 연화 문양이 조화를 이룬 전통 도자기 병입니다. 균형 잡힌 형태와 정제된 색감으로 공간에 고요한 아름다움을 더하는 오브제입니다.",
+    "keywords": [
+      "청자",
+      "도자기",
+      "연화문",
+      "병",
+      "전통공예",
+      "생활도자기",
+      "인테리어 오브제"
+    ],
+    "features": [
+      {
+        "title": "청색 유약",
+        "description": "표면 전체를 덮는 짙은 청색 유약은 깊고 고요한 색감을 연출합니다.",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      },
+      {
+        "title": "연화 문양",
+        "description": "몸통 중앙에 백색과 청록색으로 표현된 연꽃과 잎사귀 문양이 배치되어 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      },
+      {
+        "title": "하단 장식",
+        "description": "병의 하단부에는 직사각형과 곡선으로 이루어진 기하학적 문양 띠가 새겨져 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "균형 잡힌 형태",
+        "description": "좁은 입구에서 시작해 몸통으로 넓어졌다가 하단으로 좁아지는 형태는 안정적인 시각적 균형을 제공합니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      }
+    ],
+    "warnings": [
+      "정확한 소재(토종, 유약 성분)",
+      "제작 기법(음각, 양각, 채색 등)",
+      "제작자 또는 원산지",
+      "정확한 치수(높이, 지름)",
+      "관리 방법",
+      "검증되지 않은 AI 추정 문구 제외: 공간 연출"
+    ],
+    "craft_research": null
+  },
+  "detail_page": {
+    "mime_type": "image/png",
+    "width": 774,
+    "height": 3687,
+    "sections": [
+      {
+        "order": 1,
+        "section_id": "hero",
+        "label": "상품 소개"
+      },
+      {
+        "order": 2,
+        "section_id": "statement",
+        "label": "핵심 메시지"
+      },
+      {
+        "order": 3,
+        "section_id": "feature_grid",
+        "label": "제품 특징"
+      },
+      {
+        "order": 4,
+        "section_id": "detail_split",
+        "label": "균형 잡힌 형태"
+      },
+      {
+        "order": 5,
+        "section_id": "wide_image",
+        "label": "와이드 뷰"
+      },
+      {
+        "order": 6,
+        "section_id": "usage_scene",
+        "label": "활용 장면"
+      },
+      {
+        "order": 7,
+        "section_id": "notice",
+        "label": "안내"
+      },
+      {
+        "order": 8,
+        "section_id": "closing",
+        "label": "마무리"
+      }
+    ],
+    "photos": [
+      {
+        "order": 1,
+        "photo_id": "hero",
+        "label": "원본 보존 대표 이미지",
+        "asset_mode": "source_composite",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "VERIFIED"
+      },
+      {
+        "order": 2,
+        "photo_id": "packshot",
+        "label": "원본 보존 팩샷",
+        "asset_mode": "source_composite",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "VERIFIED"
+      },
+      {
+        "order": 3,
+        "photo_id": "detail",
+        "label": "원본 디테일 크롭",
+        "asset_mode": "source_crop",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "VERIFIED"
+      },
+      {
+        "order": 4,
+        "photo_id": "lifestyle",
+        "label": "AI 생성 활용 장면(참고용)",
+        "asset_mode": "generated_scene",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 5,
+        "photo_id": "detail-02",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 6,
+        "photo_id": "detail-03",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 7,
+        "photo_id": "detail-04",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 8,
+        "photo_id": "detail-05",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      }
+    ]
+  }
+}

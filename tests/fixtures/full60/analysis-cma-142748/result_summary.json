@@ -1,0 +1,313 @@
+{
+  "generation_id": "3a9ff3a3-d834-4604-b15a-19fd08d39480",
+  "product": {
+    "product_type": "미니ATURE 의자",
+    "display_name": "꽃무늬 직물 미니 의자",
+    "is_traditional_craft": false,
+    "craft_type": null,
+    "classification_confidence": 0.85,
+    "craft_confidence": 0.0,
+    "classification_reason": "이미지에서 소형 의자의 형태, 금속 프레임, 직물 시트, 그리고 꽃무늬가 명확하게 관찰됩니다. 전통 공예로 단정할 근거는 부족합니다.",
+    "candidate_types": [
+      "미니 의자",
+      "장식용 의자",
+      "인형 의자",
+      "소형 가구"
+    ],
+    "layout_id": "editorial-split",
+    "page_plan": [
+      {
+        "section_id": "hero",
+        "block_type": "hero",
+        "eyebrow": "PRODUCT",
+        "title": "꽃무늬 직물 미니 의자",
+        "body": "은은한 꽃무늬 직물이 감싸진 소형 의자입니다. 금속 프레임의 세밀한 곡선과 직물의 부드러운 질감이 조화를 이룹니다.",
+        "variant": "paper",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "wide-image",
+        "block_type": "wide_image",
+        "eyebrow": "VIEW",
+        "title": "전체 형태",
+        "body": "의자의 전체 윤곽과 비율을 확인할 수 있는 정면 사선 뷰입니다.",
+        "variant": "full-bleed",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "detail-split",
+        "block_type": "detail_split",
+        "eyebrow": "DETAIL",
+        "title": "등받이와 시트",
+        "body": "등받이와 좌석에는 연한 색상의 꽃무늬 직물이 사용되었습니다. 직물의 패턴이 의자의 전체적인 톤을 결정합니다.",
+        "variant": "image-left",
+        "photo_id": "detail",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "scale-reference",
+        "block_type": "scale_reference",
+        "eyebrow": "SCALE",
+        "title": "크기 확인 필요",
+        "body": "이미지 내 기준물이 없어 정확한 크기를 알 수 없습니다. 소형 장식용 의자로 추정됩니다.",
+        "variant": "compact",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "feature-grid",
+        "block_type": "feature_grid",
+        "eyebrow": "FEATURES",
+        "title": "주요 특징",
+        "body": "제품의 세 가지 주요 시각적 특징입니다.",
+        "variant": "image-right",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "꽃무늬 직물",
+            "value": "연한 배경에 꽃과 잎 무늬가 있는 직물",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "금속 프레임",
+            "value": "황금색 금속으로 된 세밀한 구조",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "곡선 등받이",
+            "value": "상단에 장식이 있는 타원형 등받이",
+            "description": "",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "info-table",
+        "block_type": "info_table",
+        "eyebrow": "INFO",
+        "title": "기본 정보",
+        "body": "제품의 기본 사양입니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "제품명",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          },
+          {
+            "label": "소재",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          },
+          {
+            "label": "크기",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          }
+        ]
+      },
+      {
+        "section_id": "notice",
+        "block_type": "notice",
+        "eyebrow": "NOTICE",
+        "title": "관리 안내 확인 필요",
+        "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "closing",
+        "block_type": "closing",
+        "eyebrow": "CLOSING",
+        "title": "조용한 공간의 장식",
+        "body": "세밀한 직물과 금속의 조화가 돋보이는 소형 의자입니다.",
+        "variant": "paper",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      }
+    ],
+    "observations": {
+      "color": "연한 회색과 흰색을 기반으로 한 직물에 보라색과 초록색 꽃무늬, 황금색 금속 프레임",
+      "material": "직물, 금속 (구체적 소재 확인 필요)",
+      "shape": "타원형 등받이, 직사각형 좌석, 세 개의 다리로 구성된 소형 의자",
+      "texture": "직물의 부드러운 질감, 금속의 광택"
+    },
+    "summary": "은은한 꽃무늬 직물이 감싸진 소형 의자입니다. 황금색 금속 프레임의 세밀한 곡선과 직물의 부드러운 질감이 조화를 이루며, 조용한 공간의 장식물로 적합해 보입니다.",
+    "keywords": [
+      "미니 의자",
+      "꽃무늬",
+      "직물",
+      "금속 프레임",
+      "장식용",
+      "소형 가구"
+    ],
+    "features": [
+      {
+        "title": "꽃무늬 직물 시트",
+        "description": "등받이와 좌석에는 연한 배경에 꽃과 잎 무늬가 있는 직물이 사용되었습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      },
+      {
+        "title": "세밀한 금속 프레임",
+        "description": "황금색 금속으로 된 프레임은 세밀한 곡선과 장식을 포함하고 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "타원형 등받이",
+        "description": "등받이는 타원형이며 상단에 작은 장식이 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      }
+    ],
+    "warnings": [
+      "정확한 제품명",
+      "구체적인 소재 (직물 종류, 금속 종류)",
+      "정확한 크기 (높이, 폭, 깊이)",
+      "제작자 또는 브랜드",
+      "원산지",
+      "관리 방법",
+      "검증되지 않은 AI 추정 문구 제외: 조용한 공간의 장식"
+    ],
+    "craft_research": null
+  },
+  "detail_page": {
+    "mime_type": "image/png",
+    "width": 774,
+    "height": 4004,
+    "sections": [
+      {
+        "order": 1,
+        "section_id": "hero",
+        "label": "상품 소개"
+      },
+      {
+        "order": 2,
+        "section_id": "wide-image",
+        "label": "와이드 뷰"
+      },
+      {
+        "order": 3,
+        "section_id": "detail-split",
+        "label": "등받이와 시트"
+      },
+      {
+        "order": 4,
+        "section_id": "scale-reference",
+        "label": "크기 참고"
+      },
+      {
+        "order": 5,
+        "section_id": "feature-grid",
+        "label": "제품 특징"
+      },
+      {
+        "order": 6,
+        "section_id": "info-table",
+        "label": "기본 정보"
+      },
+      {
+        "order": 7,
+        "section_id": "notice",
+        "label": "안내"
+      },
+      {
+        "order": 8,
+        "section_id": "closing",
+        "label": "마무리"
+      }
+    ],
+    "photos": [
+      {
+        "order": 1,
+        "photo_id": "hero",
+        "label": "원본 보존 대표 이미지",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 2,
+        "photo_id": "packshot",
+        "label": "원본 보존 팩샷",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 3,
+        "photo_id": "detail",
+        "label": "원본 디테일 크롭",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 4,
+        "photo_id": "lifestyle",
+        "label": "AI 생성 활용 장면(참고용)",
+        "asset_mode": "generated_scene",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 5,
+        "photo_id": "detail-02",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 6,
+        "photo_id": "detail-03",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 7,
+        "photo_id": "detail-04",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 8,
+        "photo_id": "detail-05",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      }
+    ]
+  }
+}

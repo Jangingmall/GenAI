@@ -1,0 +1,372 @@
+{
+  "generation_id": "173d85dc-427c-4722-ac04-bd1ee1f8b80d",
+  "product": {
+    "product_type": "금속 장식 용기",
+    "display_name": "금색 양각 꽃무늬 장식 용기",
+    "is_traditional_craft": false,
+    "craft_type": null,
+    "classification_confidence": 0.85,
+    "craft_confidence": 0.0,
+    "classification_reason": "이미지에서 금색 금속 표면, 사각형 몸체, 뚜껑, 꽃잎과 잎사귀 양각 문양, 그리고 발형 다리가 관찰된다. 전통 공예로 단정할 근거는 부족하다.",
+    "candidate_types": [
+      "금속 장식 용기",
+      "양각 금속 공예품",
+      "장식 상자",
+      "금속 오브제"
+    ],
+    "layout_id": "editorial-split",
+    "page_plan": [
+      {
+        "section_id": "hero",
+        "block_type": "hero",
+        "eyebrow": "PRODUCT",
+        "title": "금색 양각 꽃무늬 장식 용기",
+        "body": "사각형 몸체 위에 꽃잎과 잎사귀를 입체적으로 새긴 금색 금속 용기입니다. 뚜껑과 몸체, 발형 다리가 하나의 형태를 이루며, 표면의 양각이 빛을 받아 입체감을 드러냅니다.",
+        "variant": "paper",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "palette",
+        "block_type": "palette",
+        "eyebrow": "COLOR",
+        "title": "금색 톤",
+        "body": "전체적으로 따뜻한 금색 톤을 유지하며, 양각 부위와 평면 부위에서 반사되는 빛의 차이가 표면의 질감을 강조합니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "주조색",
+            "value": "금색",
+            "description": "전체 표면의 기본 색감",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "고광택 부위",
+            "value": "밝은 금색",
+            "description": "양각의 돌출부와 평면에서 빛이 반사되는 부분",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "그림자 부위",
+            "value": "어두운 금색",
+            "description": "양각의 음각부와 곡면의 그림자",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "detail-split",
+        "block_type": "detail_split",
+        "eyebrow": "DETAIL",
+        "title": "꽃잎과 잎사귀 양각",
+        "body": "몸체 측면에는 꽃과 잎사귀가 입체적으로 새겨져 있습니다. 양각의 깊이가 빛과 그림자를 만들어 표면의 질감을 살립니다.",
+        "variant": "dark",
+        "photo_id": "detail",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "gallery",
+        "block_type": "gallery",
+        "eyebrow": "GALLERY",
+        "title": "형태와 구조",
+        "body": "사각형 몸체, 뚜껑, 그리고 발형 다리의 구조를 확인할 수 있습니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [
+          "hero",
+          "detail"
+        ],
+        "items": []
+      },
+      {
+        "section_id": "feature-grid",
+        "block_type": "feature_grid",
+        "eyebrow": "FEATURES",
+        "title": "주요 특징",
+        "body": "이미지에서 관찰되는 세 가지 주요 특징입니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "사각형 몸체",
+            "value": "정방형 기반의 안정적인 형태",
+            "description": "몸체가 사각형으로 구성되어 있으며, 모서리가 부드럽게 처리되어 있습니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "꽃잎 양각",
+            "value": "입체적인 꽃과 잎사귀 문양",
+            "description": "몸체 측면과 뚜껑 가장자리에 꽃잎과 잎사귀가 양각으로 새겨져 있습니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "발형 다리",
+            "value": "곡선형 지지 구조",
+            "description": "네 모서리에 곡선형 다리가 있어 용기를 지탱합니다.",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "usage-scene",
+        "block_type": "usage_scene",
+        "eyebrow": "USAGE",
+        "title": "공간 장식",
+        "body": "책상, 선반, 또는 진열 공간에 올려두어 장식 오브제로 활용할 수 있습니다. 금색 표면과 양각 문양이 공간에 시각적 포인트를 줍니다.",
+        "variant": "full-bleed",
+        "photo_id": "lifestyle",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "info-table",
+        "block_type": "info_table",
+        "eyebrow": "INFO",
+        "title": "기본 정보",
+        "body": "이미지에서 확인 가능한 정보입니다.",
+        "variant": "compact",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "형태",
+            "value": "사각형 몸체, 뚜껑, 발형 다리",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "색상",
+            "value": "금색",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "문양",
+            "value": "꽃잎과 잎사귀 양각",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "소재",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          },
+          {
+            "label": "크기",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          }
+        ]
+      },
+      {
+        "section_id": "notice",
+        "block_type": "notice",
+        "eyebrow": "NOTICE",
+        "title": "관리 안내 확인 필요",
+        "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+        "variant": "dark",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "closing",
+        "block_type": "closing",
+        "eyebrow": "CLOSING",
+        "title": "금색 양각의 조형미",
+        "body": "사각형 몸체와 꽃잎 양각, 발형 다리가 어우러진 금색 장식 용기입니다. 표면의 빛 반사와 입체적인 문양이 공간에 시각적 깊이를 더합니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      }
+    ],
+    "observations": {
+      "shape": "사각형 몸체, 뚜껑, 발형 다리",
+      "color": "금색",
+      "texture": "양각 꽃잎과 잎사귀, 평면과 곡면의 반사차",
+      "structure": "뚜껑, 몸체, 다리",
+      "pattern": "꽃잎과 잎사귀 양각"
+    },
+    "summary": "사각형 몸체 위에 꽃잎과 잎사귀를 입체적으로 새긴 금색 금속 장식 용기입니다. 뚜껑과 몸체, 발형 다리가 하나의 형태를 이루며, 표면의 양각이 빛을 받아 입체감을 드러냅니다. 소재와 정확한 크기는 확인이 필요합니다.",
+    "keywords": [
+      "금색",
+      "양각",
+      "꽃무늬",
+      "장식 용기",
+      "사각형",
+      "금속",
+      "오브제"
+    ],
+    "features": [
+      {
+        "title": "사각형 몸체",
+        "description": "정방형 기반의 안정적인 형태를 갖추고 있으며, 모서리가 부드럽게 처리되어 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      },
+      {
+        "title": "꽃잎 양각 문양",
+        "description": "몸체 측면과 뚜껑 가장자리에 꽃잎과 잎사귀가 입체적으로 새겨져 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "발형 다리",
+        "description": "네 모서리에 곡선형 다리가 있어 용기를 지탱하는 구조를 갖추고 있습니다.",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "금색 표면",
+        "description": "전체적으로 따뜻한 금색 톤을 유지하며, 양각 부위에서 빛이 반사되어 입체감을 강조합니다.",
+        "evidence": "image-visible",
+        "confidence": 0.85
+      }
+    ],
+    "warnings": [
+      "정확한 소재 (금, 은, 도금 등)",
+      "정확한 크기 (가로, 세로, 높이)",
+      "무게",
+      "제작 기법 (주조, 양각, 손조각 등)",
+      "제작자 또는 브랜드",
+      "원산지",
+      "관리 방법",
+      "검증되지 않은 AI 추정 문구 제외: 공간 장식 오브제"
+    ],
+    "craft_research": null
+  },
+  "detail_page": {
+    "mime_type": "image/png",
+    "width": 774,
+    "height": 4319,
+    "sections": [
+      {
+        "order": 1,
+        "section_id": "hero",
+        "label": "상품 소개"
+      },
+      {
+        "order": 2,
+        "section_id": "palette",
+        "label": "색과 표면"
+      },
+      {
+        "order": 3,
+        "section_id": "detail-split",
+        "label": "꽃잎과 잎사귀 양각"
+      },
+      {
+        "order": 4,
+        "section_id": "gallery",
+        "label": "상세 컷"
+      },
+      {
+        "order": 5,
+        "section_id": "feature-grid",
+        "label": "제품 특징"
+      },
+      {
+        "order": 6,
+        "section_id": "usage-scene",
+        "label": "활용 장면"
+      },
+      {
+        "order": 7,
+        "section_id": "info-table",
+        "label": "기본 정보"
+      },
+      {
+        "order": 8,
+        "section_id": "notice",
+        "label": "안내"
+      },
+      {
+        "order": 9,
+        "section_id": "closing",
+        "label": "마무리"
+      }
+    ],
+    "photos": [
+      {
+        "order": 1,
+        "photo_id": "hero",
+        "label": "원본 보존 대표 이미지",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 2,
+        "photo_id": "packshot",
+        "label": "원본 보존 팩샷",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 3,
+        "photo_id": "detail",
+        "label": "원본 디테일 크롭",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 4,
+        "photo_id": "lifestyle",
+        "label": "AI 생성 활용 장면(참고용)",
+        "asset_mode": "generated_scene",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 5,
+        "photo_id": "detail-02",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 6,
+        "photo_id": "detail-03",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 7,
+        "photo_id": "detail-04",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 8,
+        "photo_id": "detail-05",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      }
+    ]
+  }
+}
