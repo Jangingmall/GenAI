@@ -3,6 +3,7 @@
 - 보내는 곳: 생성형 AI 팀 (상세페이지 생성)
 - 근거: `docs/evaluation/three-service-integration-test-2026-09-17.md` — 세 서비스를 모두 로컬에 띄워 측정한 기록
 - 로그: `docs/evaluation/logs/` — BE 원본 상태(패치 없음)로 재실행한 2026-09-17 로그 묶음
+- 컨테이너 테스트: `docs/evaluation/container-integration-test-2026-09-17.md`
 - 함께 보실 것: `docs/api/be-ai-integration-negotiation.md` — 항목별 연동 협의
 
 ## 요청 일람
@@ -19,6 +20,9 @@
 | R-8 | 양방향 내부 호출 인증 합의 | 높음 | 코드 대조 |
 | **R-9** | **AWS 배포 시 주소·포트·인증·타임아웃 설정** | 높음 | 아래 전용 절 |
 | **R-10** | **`AI_SGLANG_URL`·`AI_OLLAMA_URL` 이름이 실제 엔진과 반대** | 중간 | 코드 대조 |
+| **R-11** | **`@Async` 자기 호출로 비동기가 동작하지 않음** | **차단** | 실측 · 원인 규명 |
+| **R-12** | **`/ai/products` 응답을 무엇으로 줄지 확정 필요** | **차단** | 코드 대조 |
+| R-13 | 챗봇에 Dockerfile 이 없음 | 중간 | 저장소 확인 |
 
 **R-1 이 먼저입니다.** 이것이 막혀 있으면 나머지를 고쳐도 BE 는 어떤 AI 서비스와도 통신하지 못합니다.
 
@@ -157,13 +161,73 @@ BE 가 받은 id 로 자기 카탈로그에서 카드를 조립하는데, 두 �
 
 | # | 내용 | 근거 |
 | --- | --- | --- |
-| 3-1 | **202 안에 이미 `FAILED` 가 들어옵니다.** `POST /api/content/products/{id}/generations` 가 `202 Accepted` 를 주는데 본문 `status` 가 `FAILED` 였습니다. AI 호출이 동기로 일어나 즉시 실패한 뒤 202 로 감싸집니다. 계약서 5-1 의 비동기가 의도라면 호출을 분리해 주세요 | 실측 |
+| 3-1 | **202 안에 이미 `FAILED` 가 들어옵니다.** 원인은 아래 **R-11** 입니다. `POST /api/content/products/{id}/generations` 가 `202 Accepted` 를 주는데 본문 `status` 가 `FAILED` 였습니다. AI 호출이 동기로 일어나 즉시 실패한 뒤 202 로 감싸집니다. 계약서 5-1 의 비동기가 의도라면 호출을 분리해 주세요 | 실측 |
 | 3-2 | **콘텐츠 생성 실패 시 재시도가 없습니다.** 계약서 3-6 은 "최대 2회 재시도"인데 로그에는 1회 호출 후 즉시 실패로 남았습니다. (챗봇 쪽 `RestAiChatClient` 에는 재시도가 있습니다) | 실측 |
 | 3-3 | **문서와 코드가 다릅니다.** 계약서 5-3 은 출력이 블록 배열(`{order, tag, text, imageUrl}`)인데 `AiCallbackController` 는 `reactDocument` 를 받습니다. 저희는 **코드 기준**으로 맞추겠습니다 | `AiCallbackRequest.java:10` |
 | 3-4 | **`.env` 가 동작하지 않습니다.** `AI_로컬_연동_가이드` 1장이 루트 `.env` 로 `AI_OLLAMA_URL` 을 설정하라고 하는데, `build.gradle` 에 dotenv 의존성이 없어 Spring 이 읽지 않고 기본값으로 호출합니다. AI 팀이 로컬 재현할 때 처음 걸리는 지점입니다 | 실측 |
 | 3-5 | **양방향 인증을 정해야 합니다.** 저희 `/internal/v1/ai/*` 는 `X-AI-Internal-Token` 을 요구하는데 BE 클라이언트는 인증 헤더를 보내지 않습니다. 반대로 BE 의 `/internal/generations/{id}/complete` 도 인증 없이 열려 있습니다. 토큰 발급 주체도 함께 정해 주세요 | 코드 |
 
 ---
+
+## R-11. `@Async` 가 동작하지 않습니다 — 자기 호출이라 프록시를 우회합니다
+
+`GenerationService.java:45` 가 같은 클래스의 `executeAsync`(`:73`)를 직접 호출합니다.
+
+```java
+ContentGeneration saved = generationRepository.save(generation);
+executeAsync(saved.getId(), command);   // ← 같은 클래스 내부 호출
+
+@Async
+public void executeAsync(Long generationId, GenerationCommand.Request command) { ... }
+```
+
+Spring 의 `@Async` 는 프록시로 동작하므로 **같은 빈 안에서 자기 메서드를 부르면 애노테이션이 무효**가 됩니다. `@EnableAsync` 는 `global/config/AsyncConfig.java:6` 에 정상 선언돼 있어 설정 문제가 아닙니다.
+
+이것이 앞서 보고드린 **R-4(202 안에 `FAILED`)의 원인**입니다. AI 호출이 응답 직렬화 전에 끝나 버립니다.
+
+**실패했을 때만의 문제가 아닙니다.** AI 가 정상 동작하면 이 호출은 성공할 때까지 **요청 스레드를 붙잡습니다.** 상세페이지 1건은 초안까지만 저희 측정에서 **160초**였습니다. 그동안 FE 와 BE 가 함께 대기합니다.
+
+> 해결은 호출을 다른 빈으로 빼거나 `ApplicationEventPublisher` 를 쓰는 등 **프록시를 거치게** 만드는 것입니다. R-4 와 같은 항목이므로 함께 처리하시면 됩니다.
+
+## R-12. `POST /ai/products` 가 무엇을 반환해야 합니까 — 정해 주셔야 구현을 시작합니다
+
+`GenerationService.java:77-89` 는 `/ai/products` 의 **동기 응답 본문을 완성된 react_document 로 간주**하고 검증 없이 저장합니다.
+
+```java
+String reactDocumentJson = aiContentClient.requestGeneration(...);
+generation.complete(reactDocumentJson);
+contentService.storeReactDocument(new ContentCommand.StoreReactDocument(..., reactDocumentJson, ...));
+```
+
+그런데 같은 BE 에 **콜백 경로도 있습니다**(`AiCallbackRequest.java:10`). 완료 처리 경로가 둘이고 실제로 도는 것은 동기 경로입니다.
+
+**어느 쪽으로 갈지 정해 주세요.**
+
+| 안 | BE 가 할 일 | AI 가 할 일 |
+| --- | --- | --- |
+| **가. 동기 유지** | 없음 | `/ai/products` 응답으로 **react_document 를 직접 반환**. 수 분간 블로킹됩니다 |
+| **나. 비동기 + 콜백** (권장) | R-11 수정 후 콜백 경로 사용 | 즉시 202 반환, 완료 시 `POST /internal/generations/{id}/complete` 호출 |
+
+> **지금 상태에서는 위험합니다.** 저희가 접수 응답(`{"job_id":...}`)을 반환하면 BE 는 그것을 **react_document 로 저장**합니다. 오류 없이 잘못된 데이터가 들어갑니다.
+>
+> 처리 시간(초안까지 160초, 이미지 생성 포함 시 더 김)과 BE 의 `AI_TIMEOUT_SECONDS` 기본 300초를 함께 고려하면 **나 안을 권합니다.**
+
+## R-13. 챗봇에 Dockerfile 이 없습니다 (챗봇 팀 확인)
+
+`Jangingmall/GenAI` 의 `chat_bot/` 과 저장소 어디에도 Dockerfile 이 없습니다(`page_generation/` 제외). 인프라팀이 요청한 "런타임별 Dockerfile" 기준으로 챗봇은 아직 배포 가능한 형태가 아닙니다. 저희 쪽 이미지는 빌드·기동을 확인했습니다(아래).
+
+## 참고 — 컨테이너로도 확인했습니다
+
+두 서비스를 컨테이너로 올려 도커 네트워크로 붙여 봤습니다. **결과는 프로세스로 돌렸을 때와 같습니다**(404). 실행 방식이 아니라 계약 문제라는 뜻입니다.
+
+| 확인 | 결과 |
+| --- | --- |
+| 상세페이지 이미지 빌드 | 성공 (4.99GB) · `appuser` 비 root · HEALTHCHECK 동작 |
+| BE 이미지 빌드 | 성공 (619MB, `--target local`) |
+| 컨테이너 이름 해석 | `AI_OLLAMA_URL=http://dp-ai:8000` 동작 |
+| 내부 포트 | **8000** (로컬의 8002 는 호스트 매핑일 뿐) |
+
+자세한 기록은 `docs/evaluation/container-integration-test-2026-09-17.md` 에 있습니다.
 
 ## R-9. AWS 배포 기준 — 로컬과 달라지는 것
 
