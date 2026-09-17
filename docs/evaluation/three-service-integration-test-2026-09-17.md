@@ -69,8 +69,8 @@ Content-Type: application/json
 
 원인은 `HttpClient.newBuilder()` 가 **기본값 HTTP/2** 라는 점이다. 평문 HTTP 에서는 h2c 업그레이드를 시도하는데 uvicorn 은 HTTP/1.1 만 말한다.
 
-- `RestAiChatClient.java:31-34`
-- `RestAiContentClient.java:31-34` — **같은 패턴이라 상세페이지 연동도 동일하게 깨진다**
+- `RestAiChatClient.java:33`
+- `RestAiContentClient.java:33` — **같은 패턴이라 상세페이지 연동도 동일하게 깨진다**
 
 ### 수정과 검증
 BE 를 로컬에서 한 줄 고쳐 다시 빌드·기동했다.
@@ -115,7 +115,7 @@ BE 는 `AI_OLLAMA_URL`(기본 `:8002`)로 `POST /ai/products` 를 호출하는�
 - 챗봇 색인: 자체 CSV 에서 적재한 **832건**
 - BE 로컬 DB: `/dev/setup` 이 만든 **1건**
 
-BE 는 받은 id 로 자기 DB 에서 상품 카드를 조립하므로, 두 쪽 상품 집합이 다르면 추천이 화면에 뜨지 않는다. 이 테스트 환경의 데이터 차이이기도 하지만, **운영에서도 BE 의 상품 동기화가 챗봇에 도달해야만 해소된다.** 현재 BE 는 상품 동기화를 상세페이지 서버(`AI_OLLAMA_URL`)로 보내고 있어 챗봇 색인은 채워지지 않는다(`RestAiContentClient.java:64,76,87`). 협의 문서 결정 2-1 항목이다.
+BE 는 받은 id 로 자기 DB 에서 상품 카드를 조립하므로, 두 쪽 상품 집합이 다르면 추천이 화면에 뜨지 않는다. 이 테스트 환경의 데이터 차이이기도 하지만, **운영에서도 BE 의 상품 동기화가 챗봇에 도달해야만 해소된다.** 현재 BE 는 상품 동기화를 상세페이지 서버(`AI_OLLAMA_URL`)로 보내고 있어 챗봇 색인은 채워지지 않는다(`RestAiContentClient.java:64,78,92`). 협의 문서 결정 2-1 항목이다.
 
 ---
 

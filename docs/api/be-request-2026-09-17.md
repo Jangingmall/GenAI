@@ -75,8 +75,8 @@ Content-Type: application/json
 
 | 파일 | 행 |
 | --- | --- |
-| `chatbot/infrastructure/RestAiChatClient.java` | 31-34 |
-| `content/infrastructure/RestAiContentClient.java` | 31-34 |
+| `chatbot/infrastructure/RestAiChatClient.java` | 33 |
+| `content/infrastructure/RestAiContentClient.java` | 33 |
 
 ```java
 // 현재
@@ -105,11 +105,16 @@ suggestions ["분청 재질 상품","흰색 상품","여주 지역 장인"]
 
 ## 요청 2 — 상품 동기화를 챗봇 쪽으로 보내 주세요
 
-챗봇이 `product_ids: [42, 105, 427]` 을 돌려줬는데 BE 응답의 `products` 는 **빈 배열**이었습니다. BE 가 그 id 로 자기 카탈로그에서 카드를 조립하는데, 두 쪽의 상품 집합이 다르기 때문입니다.
+실측 두 가지를 나란히 놓습니다.
+
+- 같은 질의를 **챗봇에 직접** 보내면 `product_ids: [42, 105, 427]` 을 돌려줍니다
+- 같은 질의를 **BE 를 통해** 보내면(요청 1 패치 후) `reply`·`intent`·`suggestions` 는 정상인데 `products` 는 **빈 배열**입니다
+
+BE 가 받은 id 로 자기 카탈로그에서 카드를 조립하는데, 두 쪽의 상품 집합이 다르기 때문입니다. 이 테스트에서는 챗봇 색인이 샘플 CSV 기준 **832건**, BE 로컬 DB 는 `/dev/setup` 이 만든 **1건**이었습니다.
 
 근본 원인은 **상품 동기화가 도착하는 곳이 잘못돼 있다**는 점입니다.
 
-- `RestAiContentClient.java:64,76,87` — `syncProduct`, `updateProduct`, `deleteProduct` 가 모두 `ollamaUrl`(= **상세페이지 서버**)로 갑니다
+- `RestAiContentClient.java:64,78,92` — `syncProduct`, `updateProduct`, `deleteProduct` 가 모두 `ollamaUrl`(= **상세페이지 서버**)로 갑니다
 - 그런데 그 데이터가 필요한 곳은 **추천 색인을 가진 챗봇**입니다
 
 이대로면 챗봇 색인은 영영 채워지지 않고, 추천 결과가 화면에 뜨지 않습니다.
@@ -120,7 +125,7 @@ suggestions ["분청 재질 상품","흰색 상품","여주 지역 장인"]
 
 | 주체 | 의미 | 본문 |
 | --- | --- | --- |
-| `RestAiContentClient.java:53` | 상세페이지 **생성 요청** | `{generationId, productId, images[], productName, howMade, careTips}` |
+| `RestAiContentClient.java:54` | 상세페이지 **생성 요청** | `{generationId, productId, images[], productName, howMade, careTips}` |
 | `GenAI/chat_bot` `app/main.py:112` | 추천 색인 **상품 upsert** | `{artisan, product}` |
 | 계약서 5-3 | 게시 시점 **동기화** | `{artisan, product}` |
 
@@ -134,7 +139,7 @@ suggestions ["분청 재질 상품","흰색 상품","여주 지역 장인"]
 | --- | --- | --- |
 | 3-1 | **202 안에 이미 `FAILED` 가 들어옵니다.** `POST /api/content/products/{id}/generations` 가 `202 Accepted` 를 주는데 본문 `status` 가 `FAILED` 였습니다. AI 호출이 동기로 일어나 즉시 실패한 뒤 202 로 감싸집니다. 계약서 5-1 의 비동기가 의도라면 호출을 분리해 주세요 | 실측 |
 | 3-2 | **콘텐츠 생성 실패 시 재시도가 없습니다.** 계약서 3-6 은 "최대 2회 재시도"인데 로그에는 1회 호출 후 즉시 실패로 남았습니다. (챗봇 쪽 `RestAiChatClient` 에는 재시도가 있습니다) | 실측 |
-| 3-3 | **문서와 코드가 다릅니다.** 계약서 5-3 은 출력이 블록 배열(`{order, tag, text, imageUrl}`)인데 `AiCallbackController` 는 `reactDocument` 를 받습니다. 저희는 **코드 기준**으로 맞추겠습니다 | `AiCallbackRequest.java:8-11` |
+| 3-3 | **문서와 코드가 다릅니다.** 계약서 5-3 은 출력이 블록 배열(`{order, tag, text, imageUrl}`)인데 `AiCallbackController` 는 `reactDocument` 를 받습니다. 저희는 **코드 기준**으로 맞추겠습니다 | `AiCallbackRequest.java:10` |
 | 3-4 | **`.env` 가 동작하지 않습니다.** `AI_로컬_연동_가이드` 1장이 루트 `.env` 로 `AI_OLLAMA_URL` 을 설정하라고 하는데, `build.gradle` 에 dotenv 의존성이 없어 Spring 이 읽지 않고 기본값으로 호출합니다. AI 팀이 로컬 재현할 때 처음 걸리는 지점입니다 | 실측 |
 | 3-5 | **양방향 인증을 정해야 합니다.** 저희 `/internal/v1/ai/*` 는 `X-AI-Internal-Token` 을 요구하는데 BE 클라이언트는 인증 헤더를 보내지 않습니다. 반대로 BE 의 `/internal/generations/{id}/complete` 도 인증 없이 열려 있습니다. 토큰 발급 주체도 함께 정해 주세요 | 코드 |
 
