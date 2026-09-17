@@ -2,6 +2,7 @@
 
 - 보내는 곳: 생성형 AI 팀 (상세페이지 생성)
 - 근거: `docs/evaluation/three-service-integration-test-2026-09-17.md` — 세 서비스를 모두 로컬에 띄워 측정한 기록
+- 로그: `docs/evaluation/logs/` — BE 원본 상태(패치 없음)로 재실행한 2026-09-17 로그 묶음
 - 함께 보실 것: `docs/api/be-ai-integration-negotiation.md` — 항목별 연동 협의
 
 ## 요청 일람
