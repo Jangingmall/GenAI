@@ -51,12 +51,15 @@
   ```
 
 ### 1-2. 모델 가중치 보관 및 다운로드 캐시
-- **무엇을 준비하는가**: Docker Compose 환경에서는 이름 있는 도커 볼륨 `huggingface-cache` (`/root/.cache/huggingface`)를 통해 1회 다운로드 캐싱. (EKS/폐쇄망 클러스터 설계 시 S3 버킷 `s3://jangin-{env}-s3-models/detail-page/` 및 VPC 내 S3 Gateway Endpoint).
-- **없으면 무엇이 막히는가**: 볼륨 캐시 미적재 시 매 기동 시 다운로드로 시간 지연 및 NAT 게이트웨이 데이터 처리 비용(GB당 약 $0.059 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 발생.
+- **무엇을 준비하는가**:
+  - **단일 EC2 Compose 경로**: 이름 있는 도커 볼륨 `huggingface-cache` (`/root/.cache/huggingface`)를 사용해 Hugging Face에서 모델을 1회 다운로드하고 캐싱합니다. 이 경로는 기존처럼 저장소 ID와 고정 `--revision`을 사용합니다.
+  - **EKS 경로**: 인프라팀이 S3 버킷 `jangin-{env}-s3-models`에서 PVC로 모델을 사전 동기화하고, VPC 내 S3 Gateway Endpoint를 사용합니다. 애플리케이션 컨테이너에는 AWS CLI·boto3·IAM 권한을 넣지 않습니다. `TEXT_MODEL_PATH`와 `IMAGE_MODEL_PATH`에 PVC의 펼쳐진 모델 디렉터리 절대 경로를 주입합니다.
+- **없으면 무엇이 막히는가**: EC2 Compose에서 볼륨 캐시가 비어 있으면 HF 다운로드가 다시 발생합니다. EKS에서 S3→PVC 동기화가 끝나지 않아 모델 디렉터리가 생성된 채 `config.json`이 없으면 로컬 모드가 명확한 오류를 남기고 종료합니다. 모델 디렉터리 자체가 없으면 HF 모드로 fallback하지만, EKS에서는 네트워크 다운로드를 전제로 하지 않으므로 initContainer 또는 선행 Job으로 동기화를 완료해야 합니다. 두 경로 모두 첫 GPU 실측 전까지 정확한 기동 시간은 확정하지 않습니다.
 - **확인 방법**:
   ```bash
   docker volume inspect huggingface-cache
   ```
+  EKS에서는 `TEXT_MODEL_PATH`·`IMAGE_MODEL_PATH` 각각에 `config.json`과 `*.safetensors`가 직접 존재하는지, 압축이 풀린 별도 디렉터리인지 확인합니다.
 
 ### 1-3. 호스트 GPU 런타임 및 이미지 빌드 환경
 - **무엇을 준비하는가**: Ubuntu 22.04/24.04 LTS 호스트, NVIDIA 공식 드라이버 (550 권장), Docker Engine 및 NVIDIA Container Toolkit.
@@ -74,7 +77,8 @@
 - **무엇을 준비하는가**:
   - 모델: `cyankiwi/Qwen3.8-27B-AWQ-INT4` (19.60 GiB), 고정 커밋 `6e134bae811fb5adac50ee042ae5f029ac6779aa`.
   - 이미지: `lmsysorg/sglang:v0.5.19`.
-  - 구동: `python3 -m sglang.launch_server --model-path cyankiwi/Qwen3.8-27B-AWQ-INT4 --revision 6e134bae811fb5adac50ee042ae5f029ac6779aa --served-model-name qwen-text --host 0.0.0.0 --port 30000 --mem-fraction-static 0.50 --context-length 8192 --trust-remote-code`.
+  - **단일 EC2 Compose(HF 모드) 구동**: `python3 -m sglang.launch_server --model-path cyankiwi/Qwen3.8-27B-AWQ-INT4 --revision 6e134bae811fb5adac50ee042ae5f029ac6779aa --served-model-name qwen-text --host 0.0.0.0 --port 30000 --mem-fraction-static 0.50 --context-length 8192 --trust-remote-code`.
+  - **EKS(S3→PVC 로컬 모드) 구동**: `TEXT_MODEL_PATH=/var/lib/detail-page-ai/models/text/qwen3.8-27b-awq-int4` 같은 PVC 디렉터리를 `--model-path`로 사용하고 `--revision`은 전달하지 않습니다. `HF_HUB_OFFLINE=1`로 네트워크 접근을 차단하며, 디렉터리 안의 `config.json`과 `*.safetensors`를 먼저 확인합니다.
 - **없으면 무엇이 막히는가**: 비전 및 텍스트 멀티모달 분석 서비스 기동 실패 또는 VRAM OOM 발생.
 - **확인 방법**:
   ```bash
@@ -85,8 +89,9 @@
 - **무엇을 준비하는가**:
   1. 모델: `circulus/FLUX.2-klein-9B-bnb-4bit` (약 10.2 GiB, 트랜스포머 4.36 + 텍스트 인코더 5.66 + VAE 0.16 GiB), 고정 커밋 `58c2804f31af12c8888504b96250010c50b55e44`.
   2. 커스텀 이미지 빌드: `deploy/docker/sglang-diffusion.Dockerfile` (`lmsysorg/sglang:v0.5.19` 베이스에 `sglang[diffusion]==0.5.19` 및 `bitsandbytes==0.50.2` 설치).
-  3. 구동: `sglang serve --model-path circulus/FLUX.2-klein-9B-bnb-4bit --revision 58c2804f31af12c8888504b96250010c50b55e44 --served-model-name flux-klein --host 0.0.0.0 --port 30001 --num-gpus 1 --dit-cpu-offload false --text-encoder-cpu-offload false`.
-  4. 클라이언트 규약 호환: `src/local_detail_page_ai/clients.py`의 `sglang` provider가 JSON `POST /v1/images/generations` 및 multipart `POST /v1/images/edits`를 직접 호출하므로 별도 프록시 불필요 (해소됨).
+  3. **단일 EC2 Compose(HF 모드) 구동**: `sglang serve --model-path circulus/FLUX.2-klein-9B-bnb-4bit --revision 58c2804f31af12c8888504b96250010c50b55e44 --served-model-name flux-klein --host 0.0.0.0 --port 30001 --num-gpus 1 --dit-cpu-offload false --text-encoder-cpu-offload false`.
+  4. **EKS(S3→PVC 로컬 모드) 구동**: `IMAGE_MODEL_PATH=/var/lib/detail-page-ai/models/image/flux2-klein-9b-bnb-4bit` 같은 PVC 디렉터리를 `--model-path`로 사용하고 `--revision`은 전달하지 않습니다. `HF_HUB_OFFLINE=1`로 실행하며, `config.json`이 없으면 명확한 오류 후 기동을 중단합니다. 텍스트 서버와 이미지 서버는 이 판정을 각각 독립적으로 수행합니다.
+  5. 클라이언트 규약 호환: `src/local_detail_page_ai/clients.py`의 `sglang` provider가 JSON `POST /v1/images/generations` 및 multipart `POST /v1/images/edits`를 직접 호출하므로 별도 프록시 불필요 (해소됨).
 - **없으면 무엇이 막히는가**: 확산 생성 및 in-context 편집 실패로 상품 연출 컷 및 배경 생성 전건 실패.
 - **라이선스 사실 기록**: 원본 `black-forest-labs/FLUX.2-klein-9B`는 FLUX Non-Commercial License이다. 채택된 `circulus/FLUX.2-klein-9B-bnb-4bit`는 커뮤니티 양자화본이며 관리자 결정으로 채택되었다. 상업 운영 전 BFL 라이선스 범위 확인이 필요하다(사실만 기록). 대안은 Apache 2.0 라이선스의 `black-forest-labs/FLUX.2-klein-4B`이다.
 - **확인 방법**:
@@ -147,7 +152,8 @@
 ### 4-2. 환경변수 정본 매핑 (`.env` 파일 / EKS 전환 시 ConfigMap & Secret)
 - **무엇을 준비하는가**: `src/detail_page_ai/config.py`의 `Settings` 및 `.env.example` 정본에 부합하는 환경변수 등록.
   - SGLang 연동: `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`, `LOCAL_TEXT_URL=http://sglang-text:30000`, `LOCAL_IMAGE_URL=http://sglang-image:30001`, `LOCAL_TEXT_MODEL=qwen-text`, `LOCAL_IMAGE_MODEL=flux-klein`.
-  - 모델 버전 고정: `TEXT_MODEL_REVISION=6e134bae811fb5adac50ee042ae5f029ac6779aa`, `IMAGE_MODEL_REVISION=58c2804f31af12c8888504b96250010c50b55e44`.
+  - **단일 EC2 Compose(HF 모드)** 모델 버전 고정: `TEXT_MODEL_REVISION=6e134bae811fb5adac50ee042ae5f029ac6779aa`, `IMAGE_MODEL_REVISION=58c2804f31af12c8888504b96250010c50b55e44`.
+  - **EKS(S3→PVC 로컬 모드)** 모델 경로: `TEXT_MODEL_PATH=/var/lib/detail-page-ai/models/text/qwen3.8-27b-awq-int4`, `IMAGE_MODEL_PATH=/var/lib/detail-page-ai/models/image/flux2-klein-9b-bnb-4bit`. 이 모드에서는 `--revision`을 적용하지 않으며, 어떤 커밋의 가중치를 올렸는지는 S3 동기화 산출물과 위 고정 SHA를 기준으로 인프라팀이 관리합니다.
   - 인증/보안: `AI_INTERNAL_AUTH_TOKEN`, `BACKEND_URL`, `BACKEND_AUTH_TOKEN`, `AI_CORS_ORIGINS`.
 - **없으면 무엇이 막히는가**:
   - `AI_INTERNAL_AUTH_TOKEN` 누락 시: 모든 `/internal/v1/ai/*` 호출이 401 Unauthorized로 차단.
