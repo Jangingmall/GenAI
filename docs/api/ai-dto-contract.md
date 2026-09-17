@@ -10,12 +10,12 @@
 운영 호출 방향은 다음과 같습니다.
 
 ```text
-FE → 상품 BE → AI API/Worker → 상품 BE → FE
+FE → BE → AI API/Worker → BE → FE
                     │              │
                     └─ 생성 결과 ───┘
 ```
 
-상품 BE 자체의 FE API·상품 DB·게시 로직은 이 저장소의 범위가 아닙니다. AI 팀은 로컬 MLX
+BE 자체의 FE API·상품 DB·게시 로직은 이 저장소의 범위가 아닙니다. AI 팀은 로컬 MLX
 Serve 또는 서버 SGLang의 Qwen/FLUX 기반 이미지 분석, 사실 기반 문구, `react_document` 제한 AST를 포함한 JSON 초안,
 원본 보존형 사진 연출, HTML/CSS 기반 최종 PNG, 그리고 BE 연동 DTO를 제공합니다. AI는 외부 검색·클라우드 모델을
 호출하지 않습니다.
@@ -24,14 +24,14 @@ Serve 또는 서버 SGLang의 Qwen/FLUX 기반 이미지 분석, 사실 기반 �
 
 | 방향 | Python DTO | 책임 |
 |---|---|---|
-| 상품 BE → AI 작업 생성 | `ProductBeToAiCreateJobRequestDto` | 상품 식별자·원본 자산·힌트·생성 옵션 |
-| 상품 BE → AI 최종 렌더링 | `ProductBeToAiApproveDraftRequestDto` | 장인이 수정·승인한 draft와 원본 식별자 |
-| 상품 BE → AI 초안 저장 | `ProductBeToAiSaveDraftRequestDto` | React JSON 미리보기 문구 저장 |
-| AI → 상품 BE 접수 응답 | `AiToProductBeAcceptedResponseDto` | 비동기 작업 접수와 polling URL |
-| AI → 상품 BE 상태 응답 | `AiToProductBeStatusResponseDto` | 상품 식별자를 포함한 작업 상태·결과 |
-| AI → 상품 BE 승인 결과 | `AiToProductBeApprovedResponseDto` | 최종 PNG 결과와 저장 ACK |
-| AI → 상품 BE 적재 요청 | `AiToProductBePersistRequestDto` | 분석 전체 결과·해시·PNG 자산 메타데이터 |
-| 상품 BE → AI 적재 ACK | `ProductBeToAiPersistAckDto` | `SAVED`/`ALREADY_SAVED` 멱등 결과 |
+| BE → AI 작업 생성 | `ProductBeToAiCreateJobRequestDto` | 상품 식별자·원본 자산·힌트·생성 옵션 |
+| BE → AI 최종 렌더링 | `ProductBeToAiApproveDraftRequestDto` | 장인이 수정·승인한 draft와 원본 식별자 |
+| BE → AI 초안 저장 | `ProductBeToAiSaveDraftRequestDto` | React JSON 미리보기 문구 저장 |
+| AI → BE 접수 응답 | `AiToProductBeAcceptedResponseDto` | 비동기 작업 접수와 polling URL |
+| AI → BE 상태 응답 | `AiToProductBeStatusResponseDto` | 상품 식별자를 포함한 작업 상태·결과 |
+| AI → BE 승인 결과 | `AiToProductBeApprovedResponseDto` | 최종 PNG 결과와 저장 ACK |
+| AI → BE 적재 요청 | `AiToProductBePersistRequestDto` | 분석 전체 결과·해시·PNG 자산 메타데이터 |
+| BE → AI 적재 ACK | `ProductBeToAiPersistAckDto` | `SAVED`/`ALREADY_SAVED` 멱등 결과 |
 
 구현 위치:
 
@@ -53,19 +53,19 @@ S3·SQS·IAM 인프라를 생성하거나 배포하는 범위는 포함하지 �
 
 ### 1-1. AI-FE DTO
 
-AI-FE DTO는 AI가 분석·생성한 결과를 상품 BE가 FE에 노출할 때 사용하는 JSON projection입니다.
+AI-FE DTO는 AI가 분석·생성한 결과를 BE가 FE에 노출할 때 사용하는 JSON projection입니다.
 FE는 AI 서버를 직접 호출하지 않습니다.
 
 | DTO | 방향 | 역할 |
 |---|---|---|
-| `AiFeCreateJobRequestDto` | FE → 상품 BE | 작품명·제작과정·관리법·생성 옵션 |
-| `AiFeApprovalRequestDto` | FE → 상품 BE | 장인이 수정한 승인 draft JSON |
-| `AiFeDraftDto` | AI → 상품 BE → FE | 실행 가능한 HTML/CSS가 없는 편집 데이터 |
-| `AiFeDraftResponseDto` | AI → 상품 BE → FE | draft·원본 미리보기·제품 분석 |
-| `AiFeResultResponseDto` | AI → 상품 BE → FE | 최종 PNG·섹션·제품 사진 |
-| `AiFeJobStatusResponseDto` | AI → 상품 BE → FE | 작업 상태·진행률·draft/result/error |
-| `AiFeJobAcceptedResponseDto` | AI → 상품 BE → FE | 작업 접수 및 상태 URL |
-| `AiFeApprovedResponseDto` | AI → 상품 BE → FE | 승인 렌더링 결과 |
+| `AiFeCreateJobRequestDto` | FE → BE | 작품명·제작과정·관리법·생성 옵션 |
+| `AiFeApprovalRequestDto` | FE → BE | 장인이 수정한 승인 draft JSON |
+| `AiFeDraftDto` | AI → BE → FE | 실행 가능한 HTML/CSS가 없는 편집 데이터 |
+| `AiFeDraftResponseDto` | AI → BE → FE | draft·원본 미리보기·제품 분석 |
+| `AiFeResultResponseDto` | AI → BE → FE | 최종 PNG·섹션·제품 사진 |
+| `AiFeJobStatusResponseDto` | AI → BE → FE | 작업 상태·진행률·draft/result/error |
+| `AiFeJobAcceptedResponseDto` | AI → BE → FE | 작업 접수 및 상태 URL |
+| `AiFeApprovedResponseDto` | AI → BE → FE | 승인 렌더링 결과 |
 
 AI-FE draft에는 `html`, `css`, `<script>` 같은 실행 가능한 markup을 넣지 않습니다. draft의
 `page_plan`은 편집·하위 호환용 데이터로 유지하고, FE가 바로 렌더링할 수 있는 정식 산출물은
@@ -133,7 +133,7 @@ canonical 문서로 따른다.
 |---|---|---|
 | 초안 응답 | `draft.react_document` | FE가 초안 미리보기를 렌더링하고 편집 기준으로 사용 |
 | 최종 FE 응답 | `result.detail_page.react_document` | FE가 최종 상세 구성 데이터를 렌더링 |
-| AI→상품 BE 적재 | `detail_page.react_document` | 상품 BE가 저장·게시 JSON으로 보존 |
+| AI→BE 적재 | `detail_page.react_document` | BE가 저장·게시 JSON으로 보존 |
 
 문서의 직렬화 키는 FE 계약에 맞춰 camelCase를 사용한다.
 
@@ -184,12 +184,12 @@ canonical 문서로 따른다.
 자체를 React 컴포넌트 allowlist로 렌더링하며, `dangerouslySetInnerHTML`, 이벤트 핸들러,
 raw CSS를 사용하지 않는다.
 
-## 2. 상품 BE → AI: 작업 생성
+## 2. BE → AI: 작업 생성
 
 ```http
 POST /internal/v1/ai/detail-page-jobs
 Content-Type: multipart/form-data
-X-AI-Internal-Token: <상품 BE와 AI만 공유하는 내부 토큰>
+X-AI-Internal-Token: <BE와 AI만 공유하는 내부 토큰>
 ```
 
 Multipart 필드:
@@ -224,7 +224,7 @@ Multipart 필드:
 ```
 
 `product_id`는 필수이며 AI 작업·상태 응답·AI→BE 적재 메타데이터에 동일하게 보존됩니다.
-`source_asset_id`는 상품 BE가 관리하는 원본 자산 ID이고, AI가 생성한 내부 asset ID와 별도로
+`source_asset_id`는 BE가 관리하는 원본 자산 ID이고, AI가 생성한 내부 asset ID와 별도로
 전달됩니다. `user_hints`는 장인이 제공한 상품별 데이터이며 제품명·제작 과정·관리 방법
 카피에 우선 반영됩니다. 이미지는 시각 정보 보완에 사용하고, 입력에 없는 상품 고유 주장만
 생성하지 않습니다.
@@ -242,11 +242,11 @@ Multipart 필드:
 }
 ```
 
-## 3. 상품 BE → AI: 상태 조회
+## 3. BE → AI: 상태 조회
 
 ```http
 GET /internal/v1/ai/detail-page-jobs/{job_id}
-X-AI-Internal-Token: <상품 BE와 AI만 공유하는 내부 토큰>
+X-AI-Internal-Token: <BE와 AI만 공유하는 내부 토큰>
 ```
 
 상태값:
@@ -273,22 +273,22 @@ QUEUED | ANALYZING | EXTRACTING | DRAFT_READY | GENERATING_BACKGROUNDS
 ```
 
 완료 시 `result.detail_page`에 전체 상세페이지 PNG와 섹션 PNG가 포함됩니다. `generation_id`는
-상품 BE의 멱등 저장 키로 사용하며, `product_id`는 결과 객체 안에 섞지 않고 응답 최상위에서
+BE의 멱등 저장 키로 사용하며, `product_id`는 결과 객체 안에 섞지 않고 응답 최상위에서
 관리합니다.
 
-## 4. 상품 BE → AI: 승인 draft 최종 렌더링
+## 4. BE → AI: 승인 draft 최종 렌더링
 
 초안 문구와 FE용 React JSON을 갱신할 때는 다음 endpoint를 사용합니다.
 
 ```http
 PUT /internal/v1/ai/detail-page-jobs/{job_id}/draft
 Content-Type: application/json
-X-AI-Internal-Token: <상품 BE와 AI만 공유하는 내부 토큰>
+X-AI-Internal-Token: <BE와 AI만 공유하는 내부 토큰>
 ```
 
 본문은 `{ "draft_id": "job-42", "version": 1, "draft": { ...ApprovedDraftDto... } }`이며
 응답은 최신 `version`, `draft_id`, `preview`, `product`, `draft`를 포함합니다. `draft`는
-장인이 수정할 수 있는 구조화된 JSON이고, `preview`는 상품 BE/FE가 고정된 템플릿으로
+장인이 수정할 수 있는 구조화된 JSON이고, `preview`는 BE/FE가 고정된 템플릿으로
 미리보기를 렌더링할 때 사용하는 원본 이미지 참조입니다. AI는 실행 가능한 HTML 문서를
 전달하지 않고 `react_document`를 함께 반환합니다. 저장된 버전과
 다르면 `409`를 반환합니다. 이 호출에서는 모델·사진 생성기·PNG renderer를 호출하지 않습니다.
@@ -349,7 +349,7 @@ X-AI-Internal-Token: <상품 BE와 AI만 공유하는 내부 토큰>
 ```http
 POST /internal/v1/ai/detail-page-renders
 Content-Type: multipart/form-data
-X-AI-Internal-Token: <상품 BE와 AI만 공유하는 내부 토큰>
+X-AI-Internal-Token: <BE와 AI만 공유하는 내부 토큰>
 ```
 
 Multipart 필드:
@@ -425,10 +425,10 @@ Multipart 필드:
 }
 ```
 
-## 5. AI → 상품 BE: 생성 결과 적재
+## 5. AI → BE: 생성 결과 적재
 
-AI는 `BACKEND_PRODUCT_URL`로 설정된 상품 BE 적재 API에 multipart 요청을 보냅니다. 적재 API의
-구체적인 상품 BE URL과 DB 구현은 상품 BE 팀의 범위입니다.
+AI는 `BACKEND_PRODUCT_URL`로 설정된 BE 적재 API에 multipart 요청을 보냅니다. 적재 API의
+구체적인 BE URL과 DB 구현은 BE 팀의 범위입니다.
 
 FE/상태 응답의 자산 모드는 `RESPONSE_ASSET_MODE`로 결정합니다. `base64`는 로컬 데모용,
 `url`은 URL을 발급하는 자산 저장소용이며 이 모드에서는 URL이 없다고 Base64로 조용히
@@ -498,7 +498,7 @@ FE/상태 응답의 자산 모드는 `RESPONSE_ASSET_MODE`로 결정합니다. `
 ```
 
 로컬 경로의 `product.observations`에는 이미지에서 확인한 색·형태·구성 정보만 포함합니다.
-상품명·제작 과정·관리법처럼 상품별 사실은 상품 BE가 검수한 `user_hints`를 통해 전달하며,
+상품명·제작 과정·관리법처럼 상품별 사실은 BE가 검수한 `user_hints`를 통해 전달하며,
 외부 검색 출처나 검색 결과를 생성 결과에 붙이지 않습니다.
 
 AI는 Product DB에 직접 접근하지 않습니다. 전송 실패 시 SQLite outbox에 전체 요청과 파일을
@@ -508,10 +508,10 @@ AI는 Product DB에 직접 접근하지 않습니다. 전송 실패 시 SQLite o
 ## 6. FE DTO와의 관계
 
 `AiFeProductSummaryDto.observations`는 이미지 관찰값을 표시하는 검토용 필드입니다. FE는
-상품 BE가 검수한 `user_hints`와 이미지 관찰값을 구분해 표시하고, 모델이 생성한 미확인
+BE가 검수한 `user_hints`와 이미지 관찰값을 구분해 표시하고, 모델이 생성한 미확인
 소재·제작자·원산지·성능을 확정 사실처럼 표시하지 않습니다.
 
-상품 BE가 FE에 노출할 이름은 다음 alias를 사용할 수 있습니다.
+BE가 FE에 노출할 이름은 다음 alias를 사용할 수 있습니다.
 
 ```python
 from detail_page_ai.fe_dto import (
@@ -523,8 +523,8 @@ from detail_page_ai.fe_dto import (
 )
 ```
 
-FE는 AI 내부 토큰이나 AI 내부 URL을 알지 않습니다. FE에서 수정 가능한 초안은 상품 BE가
-관리하고, 상품 BE가 승인된 draft를 AI 내부 렌더링 API로 전달합니다.
+FE는 AI 내부 토큰이나 AI 내부 URL을 알지 않습니다. FE에서 수정 가능한 초안은 BE가
+관리하고, BE가 승인된 draft를 AI 내부 렌더링 API로 전달합니다.
 
 ## 7. 호환 경로
 

@@ -1,14 +1,14 @@
 # 산출물 점검 결과
 
 점검일: 2026-09-16. 코드·문서 정적 대조, 정본(`sglang-final-facts.md`), 로컬 테스트·Docker Compose 검증 결과 기준.
-실제 상품 BE 공개 배포, 권리 담당자 승인, 정량 평가와 사람 2인 검수까지 완료했다는 의미는 아니다.
+실제 BE 공개 배포, 권리 담당자 승인, 정량 평가와 사람 2인 검수까지 완료했다는 의미는 아니다.
 
 | 산출물 | 최신 판정 | 조치 / 남은 조건 |
 |---|---|---|
 | BE/FE 통합 인터페이스 | 부분 충족 | 내부 구현 경로와 공개 계약 제안을 구분했고, draft·최종 결과·BE 적재에 제한형 `react_document`를 구현했다. 공개 URL·인증·실제 BE 흐름 합의가 남아 있다. |
 | 추론 서빙 경로 | 구성 확정(실행 미검증) | Mac 로컬 개발은 MLX Serve(`127.0.0.1:11234`), Ubuntu 서버 운영은 SGLang 텍스트·이미지 2프로세스(`30000`/`30001`)로 구분했다. 서버 GPU에서 두 모델 동시 적재·4bit 로딩·처리 시간은 미검증이다. |
 | 사진 정책 | 구현 기준 확정 | `hero`는 촬영 원본 그대로 `source_original`/`VERIFIED`, 누끼는 rembg `birefnet-general`(`rembg==2.0.69`)을 사용하며 실패 시 `source`/`FALLBACK`이다. 생성 자산은 `product_generated`로 구분하고 화면상의 '참고용' 표시 요구는 제거됐다. |
-| React JSON FE 출력 | 구현 충족(연동 대기) | `schemaVersion: 2.0`, 허용 태그·props·트리 검증, `imageId` 자산 참조, camelCase 직렬화, FE/BE 전달·로컬 `react_document.json` 저장을 구현했다. FE 컴포넌트 renderer와 상품 BE 저장 schema 연동 검증이 남아 있다. |
+| React JSON FE 출력 | 구현 충족(연동 대기) | `schemaVersion: 2.0`, 허용 태그·props·트리 검증, `imageId` 자산 참조, camelCase 직렬화, FE/BE 전달·로컬 `react_document.json` 저장을 구현했다. FE 컴포넌트 renderer와 BE 저장 schema 연동 검증이 남아 있다. |
 | 수집 계획·라이선스 점검 | 부분 충족 | CMA Open Access 실물 60점 snapshot과 CC0 표시·hash를 확보했다. 직접 제공 자산의 권리 증빙과 사람 검수는 미완료다. |
 | 정제 전략 | 부분 충족 | 원본 보존·중복·split·provenance·격리 전략과 dataset validation을 반영했다. 라벨 gold 승인은 남아 있다. |
 | 영역별 평가셋 50~200건 | 부분 충족 | `cma_real_v1`은 분석 60·렌더링 준비 60건이다. 이 중 6건 파일럿의 실제 모델 실행은 완료했지만 60건 전체 실행과 API·상태·안전 전용 50건 이상 평가는 아직 없다. |
@@ -41,10 +41,10 @@
 
 - `src/detail_page_ai/app.py`: 로컬 MLX/Ollama와 서버 SGLang adapter를 구성하며 외부 클라우드 provider를 import하지 않는다.
 - `src/detail_page_ai/react_document.py`·`react_document_builder.py`: 승인 draft에서 제한형 React JSON AST를 조립·검증한다. 모델 출력이 임의 HTML/JSX/CSS로 직접 전달되지 않는다.
-- `src/detail_page_ai/backend_client.py`: AI→상품 BE metadata를 camelCase alias로 JSON 직렬화한다.
+- `src/detail_page_ai/backend_client.py`: AI→BE metadata를 camelCase alias로 JSON 직렬화한다.
 - `src/local_detail_page_ai/runner.py`: 로컬 실행 결과에 `react_document.json`을 저장한다.
 - `src/detail_page_ai/source_photos.py`: `hero`는 `source_original`/`VERIFIED` 촬영 원본을 사용하고, rembg `birefnet-general` 누끼 실패 시 다른 원본 역할은 `source`/`FALLBACK`으로 대체한다. `GENERATED` 생성 자산은 `product_generated`로 구분하며 원본 hash 연결은 제품 형태 동일의 증명이 아니다.
-- `src/local_detail_page_ai/adapters.py`: 이미지와 상품 BE `user_hints`만으로 `ProductProfileDto`를 생성한다.
+- `src/local_detail_page_ai/adapters.py`: 이미지와 BE `user_hints`만으로 `ProductProfileDto`를 생성한다.
 - `data/evaluation/cma_real_v1/validation-report.json`: 60개 원본의 파일·hash·decode·license 표시 검증 결과.
 - `data/evaluation/detail_page_eval_60.jsonl`: 3상품 기반 기존 통합 fixture(초안 42/저장 9/승인 9)이며 독립 성능셋이 아니다.
 
@@ -61,7 +61,7 @@
 6. FE/BE: `react_document` schema v2.0 renderer·자산 manifest·저장/조회 호환성 검증과 `page_plan` 하위 호환 종료 시점을 합의.
 7. 배포 gate: `generated_scene`/`generated_view`가 `product_generated=true` 메타데이터로 올바르게 구분되어 전달되는지 검증한다. 화면상의 '참고용' 표시 gate는 삭제됐다.
 
-문서 수정으로 위 조건이 자동 충족되지는 않는다. 외부 상품 BE 배포와 사람 평가는 별도 실행이 필요하다.
+문서 수정으로 위 조건이 자동 충족되지는 않는다. 외부 BE 배포와 사람 평가는 별도 실행이 필요하다.
 
 ## 문서
 

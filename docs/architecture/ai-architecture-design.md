@@ -19,7 +19,7 @@
 - 승인 API는 저장된 원본을 재사용한다. 업로드 파트는 현재 주 서비스에서 원본 교체에 사용되지 않는다.
 - 순차 완료 후 승인 재전송은 결과를 재사용한다. 동시 요청의 승인 claim/원자적 잠금 보장은 별도 검증·구현이 필요하다.
 - 생성 완료와 BE 적재 ACK, 상품 게시 상태를 구분한다. GET의 COMPLETED만으로 게시를 허용하지 않는다.
-- 승인 결과는 사진 생성 후 달라질 수 있으므로 최종 PNG 확인·게시 승인은 상품 BE 정책으로 별도 적용한다.
+- 승인 결과는 사진 생성 후 달라질 수 있으므로 최종 PNG 확인·게시 승인은 BE 정책으로 별도 적용한다.
 - FE 구조 출력은 `react_document` 제한형 JSON AST를 canonical 결과로 사용한다. 모델은 `page_plan`과
   카피를 반환하고, 서버의 `react_document_builder`가 검증된 draft에서 AST를 결정적으로 조립한다.
 
@@ -37,10 +37,10 @@
 운영 호출 경계는 다음과 같다.
 
 ```text
-FE → 상품 BE → AI API / Worker → 상품 BE → FE
+FE → BE → AI API / Worker → BE → FE
 ```
 
-FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·게시·저장을 소유하고, AI는 분석·초안·렌더링·
+FE는 AI를 직접 호출하지 않는다. BE는 인증·상품 식별·게시·저장을 소유하고, AI는 분석·초안·렌더링·
 생성 결과 metadata를 제공한다.
 
 ## 2. 설계 원칙
@@ -59,15 +59,15 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 
 - 원본 이미지 1장 이상으로 제품 프로필과 한국어 상세페이지 draft를 생성한다.
 - 제품 특성에 맞는 `layout_id`와 adaptive `page_plan`을 구성한다.
-- 초안 단계에서 상품 BE/FE가 `react_document` 제한 AST를 안전한 React 컴포넌트 allowlist로 미리보기한다.
+- 초안 단계에서 BE/FE가 `react_document` 제한 AST를 안전한 React 컴포넌트 allowlist로 미리보기한다.
 - 승인 후 전체 상세페이지 PNG와 순서가 있는 섹션 PNG를 생성한다.
-- 생성 결과를 상품 BE에 멱등적으로 적재하고 재시작·재시도 시 이어서 처리한다.
+- 생성 결과를 BE에 멱등적으로 적재하고 재시작·재시도 시 이어서 처리한다.
 - 모델·프롬프트·원본·결과 hash와 검증 결과를 추적한다.
 
 ### 3.2 비목표
 
 - 상품 전체를 image-to-image로 다시 그리는 기능
-- 상품 BE의 공개 FE API와 상품 DB 구현
+- BE의 공개 FE API와 상품 DB 구현
 - 이미지에서 확인되지 않는 브랜드·제작자·원산지·진품성·성능의 자동 확정
 - 승인 전 최종 PNG 또는 생성형 제품 사진 게시
 
@@ -75,7 +75,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 
 ```text
 ┌──────────────┐       ┌─────────────────────┐
-│ FE 입력/편집  │──────▶│ 상품 BE              │
+│ FE 입력/편집  │──────▶│ BE                  │
 │ 이미지·힌트   │       │ 인증·상품·게시 소유  │
 └──────────────┘       └──────────┬──────────┘
                                   │ private multipart + JSON metadata
@@ -106,7 +106,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
                  │ HTML/CSS + Playwright → PNG │
                  └─────────────┬──────────────┘
                                ▼
-                         상품 BE 적재
+                             BE 적재
 ```
 
 ### 4.1 책임별 컴포넌트
@@ -119,7 +119,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 | AI worker | 로컬 분석, 검증, outbox 생성 | background executor | 별도 로컬 worker 프로세스 |
 | Renderer | HTML/CSS 및 섹션 PNG 생성 | `HtmlDetailPageRenderer` | 별도 Playwright worker pool |
 | React document builder | 승인 draft → 제한 AST 조립·스키마/보안 검증 | `react_document.py`, `react_document_builder.py` | 공통 FE schema/package로 공유 |
-| Backend client | 상품 BE multipart 적재 | `BackendProductClient` | private network/mTLS 또는 내부 auth |
+| Backend client | BE multipart 적재 | `BackendProductClient` | private network/mTLS 또는 내부 auth |
 | Model gateway | timeout/retry/version | MLX Serve/Ollama local adapter, SGLang OpenAI-compatible adapter | 서버 SGLang 텍스트·이미지 프로세스와 로컬 MLX endpoint 분리 |
 
 ## 5. 모델 구성
@@ -129,7 +129,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 | 단계 | 기본 후보 | 입력 | 출력 | 실패 시 |
 |---|---|---|---|---|
 | 이미지 분석 | 로컬 개발: `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`; 서버: `cyankiwi/Qwen3.8-27B-AWQ-INT4` (SGLang `qwen-text`) | 원본 이미지, `user_hints` | `ProductProfileDto` | 제한 재시도 후 `FAILED` |
-| 공예·제품 조사 | 자동 외부 조사 없음 | 상품 BE가 검수한 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown`/보수적 문구 |
+| 공예·제품 조사 | 자동 외부 조사 없음 | BE가 검수한 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown`/보수적 문구 |
 | 배경·참고 컷 생성 | 로컬 개발: `mlx-community/flux2-klein-9b-4bit`; 서버: `circulus/FLUX.2-klein-9B-bnb-4bit` (SGLang `flux-klein`) | 역할·배경 프롬프트, 선택적 원본 참고 | 제품 없는 배경판 또는 `GENERATED` 자산 | 중립 단색 배경 또는 해당 슬롯 원본 fallback |
 | 제품 사진 합성 | 생성 모델 미사용, Pillow | 원본 RGB·mask·배경 | provenance 포함 `ProductPhoto` | 원본 컷 또는 해당 역할 제외 |
 | React JSON 조립 | 생성 모델 미사용, deterministic builder | 검증된 `ApprovedDraftDto`·`page_plan` | `ReactDetailPageDocumentDto` | schema/tree 검증 실패 시 결과 차단 |
@@ -142,9 +142,9 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 - `classification_confidence`, `craft_confidence`는 라우팅 신호이지 사실의 증명이 아니다.
 - 장인 입력의 제품명·제작 과정·관리법은 상품별 기준 데이터로 보존하고 카피에 우선 반영한다.
 - 이미지에서 보이는 형태·색·문양·질감은 입력을 보완할 뿐, 미입력 상품 고유 사실을 만들지 않는다.
-- 외부 검색은 호출하지 않는다. `ProductProfileDto`는 원본 이미지와 상품 BE가 전달한
+- 외부 검색은 호출하지 않는다. `ProductProfileDto`는 원본 이미지와 BE가 전달한
   `user_hints`만 근거로 생성한다.
-- 최신성·출처가 필요한 내용은 상품 BE가 사전 검수해 입력해야 하며, 추론 모델이 임의 URL이나
+- 최신성·출처가 필요한 내용은 BE가 사전 검수해 입력해야 하며, 추론 모델이 임의 URL이나
   상품 고유 사실을 만들어내지 않도록 한다.
 
 ### 5.2 조사 데이터 정책
@@ -152,7 +152,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 - 이 서비스는 생성 중 외부 웹 검색이나 원격 조사 모델을 호출하지 않는다.
 - 제작자·원산지·진품성·인증·정확한 소재·성능·최신 가격은 `user_hints`로 명시되지 않으면
   확정하지 않는다.
-- 상품 BE가 전달한 검수 정보가 없거나 충돌하면 해당 문구를 제거하고 `unknown` 또는
+- BE가 전달한 검수 정보가 없거나 충돌하면 해당 문구를 제거하고 `unknown` 또는
   보수적인 표현으로 낮춘다.
 
 ### 5.3 이미지 생성 모델
@@ -212,7 +212,7 @@ Ubuntu `g6e.xlarge`에서는 Docker Compose로 두 SGLang 프로세스를 구동
 
 ### 6.1 입력과 원본 저장
 
-1. 상품 BE가 대표 원본 `product_image`와 반복 `product_images`를 전달한다.
+1. BE가 대표 원본 `product_image`와 반복 `product_images`를 전달한다.
 2. AI API가 MIME, signature, 크기, decode 가능 여부를 검증한다.
 3. 변환 전 원본을 content-addressed store에 저장하고 SHA-256을 계산한다.
 4. `product_id`, `source_asset_id`, `request_id`, `idempotency_key`를 작업에 기록한다.
@@ -227,7 +227,7 @@ QUEUED → ANALYZING → EXTRACTING → DRAFT_READY
 
 분석 결과는 `ProductProfileDto`로 저장하고, `ApprovedDraftDto`와 원본 preview reference를 구성한다.
 AI는 실행 가능한 HTML/CSS/JSX를 전달하지 않는다. 서버가 검증된 `page_plan`과 draft에서
-`react_document`를 조립·검증하고, 상품 BE/FE는 이 AST를 React 컴포넌트 allowlist로 미리보기한다.
+`react_document`를 조립·검증하고, BE/FE는 이 AST를 React 컴포넌트 allowlist로 미리보기한다.
 
 ### 6.3 승인 렌더링
 
@@ -248,7 +248,7 @@ DRAFT_READY
 
 ### 6.4 결과 적재
 
-AI는 `AiToProductBePersistRequestDto` metadata와 다음 multipart 파일을 상품 BE 적재 endpoint로 보낸다.
+AI는 `AiToProductBePersistRequestDto` metadata와 다음 multipart 파일을 BE 적재 endpoint로 보낸다.
 
 - `detail_page_image`: 전체 PNG
 - `detail_page_section_NN`: 섹션 PNG
@@ -259,7 +259,7 @@ AI는 `AiToProductBePersistRequestDto` metadata와 다음 multipart 파일을 �
 
 ## 7. API와 DTO 경계
 
-### 7.1 상품 BE → AI
+### 7.1 BE → AI
 
 ```http
 POST /internal/v1/ai/detail-page-jobs
@@ -280,7 +280,7 @@ POST /internal/v1/ai/detail-page-renders
 
 ### 7.2 FE projection
 
-상품 BE가 FE에 노출하는 projection은 `AiFeDraftDto`, `AiFeResultDto`, `AiFeJobStatusResponseDto`를
+BE가 FE에 노출하는 projection은 `AiFeDraftDto`, `AiFeResultDto`, `AiFeJobStatusResponseDto`를
 기준으로 한다. 초안은 `draft.react_document`, 최종 결과는
 `result.detail_page.react_document`에 위치한다. FE는 `schemaVersion: "2.0"`의 AST를
 컴포넌트 allowlist로 렌더링하고, `img.props.imageId`를 photos/asset manifest와 연결한다.
@@ -312,7 +312,7 @@ Browser :4173
 FE
  │
  ▼
-상품 BE → detail-page-ai :8000 (CPU 전용)
+BE → detail-page-ai :8000 (CPU 전용)
                          │
               ┌──────────┴──────────┐
               ▼                     ▼
@@ -341,7 +341,7 @@ SGLang 서비스는 `GET /v1/models`로 준비 상태를 확인하며, AI 서비
 FE
  │
  ▼
-상품 BE → AI API :8000 → 로컬 Job Worker
+BE → AI API :8000 → 로컬 Job Worker
                          │
               ┌──────────┼──────────┐
               ▼          ▼          ▼
@@ -353,7 +353,7 @@ FE
                    Playwright renderer
                          │
                          ▼
-                   상품 BE 적재 API(선택)
+                     BE 적재 API(선택)
 ```
 
 로컬 개발에서는 API·worker와 MLX Serve를 같은 Mac 또는 로컬 장비에서 실행한다. `MLX`
@@ -367,11 +367,11 @@ provider와 `127.0.0.1:11234`는 서버 운영 provider가 아니며, 서버 SGL
 - Renderer: 브라우저 프로세스와 로컬 모델 메모리를 분리한다.
 - 로컬 MLX Serve: Qwen/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
 - SQLite/파일 저장소: job, idempotency, generation metadata, outbox, 원본·결과를 보관한다.
-- 상품 BE 적재: `BACKEND_PRODUCT_URL`이 설정된 경우에만 선택적으로 호출한다.
+- BE 적재: `BACKEND_PRODUCT_URL`이 설정된 경우에만 선택적으로 호출한다.
 
 ## 9. 동시성·재시도·멱등성
 
-- 동일 `generation_id`는 상품 BE에 한 번만 적재한다.
+- 동일 `generation_id`는 BE에 한 번만 적재한다.
 - worker는 lease·heartbeat·owner fencing으로 stale worker의 덮어쓰기를 차단한다.
 - 모델 endpoint 호출은 경로(로컬 MLX 또는 서버 SGLang)에 맞는 단계별 timeout과 제한된 exponential backoff를 사용한다.
 - 입력·스키마·정책 위반은 무조건 재시도하지 않고 원인별로 실패 처리한다.
@@ -382,7 +382,7 @@ provider와 `127.0.0.1:11234`는 서버 운영 provider가 아니며, 서버 SGL
 
 ### 10.1 보안
 
-- AI 내부 토큰은 상품 BE와 AI만 보유하며 FE에 전달하지 않는다.
+- AI 내부 토큰은 BE와 AI만 보유하며 FE에 전달하지 않는다.
 - 모델 API key와 raw prompt, raw model response를 로그·DTO·이미지 metadata에 넣지 않는다.
 - 업로드 경로는 project/object-store 경계를 벗어나지 않게 검증한다.
 - FE 미리보기는 JSON allowlist와 HTML escape를 사용하며 임의 HTML/CSS/script를 수용하지 않는다.

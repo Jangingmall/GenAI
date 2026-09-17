@@ -8,10 +8,10 @@
 
 ## API
 
-- [`api/ai-dto-contract.md`](api/ai-dto-contract.md): 상품 BE↔AI 방향별 DTO와 이미지 provenance·메타데이터 전달 계약
-- [`api/ai-fe-io-spec.md`](api/ai-fe-io-spec.md): 상품 BE·FE·AI 사이의 운영 및 로컬 직접 API 입출력 명세
+- [`api/ai-dto-contract.md`](api/ai-dto-contract.md): BE↔AI 방향별 DTO와 이미지 provenance·메타데이터 전달 계약
+- [`api/ai-fe-io-spec.md`](api/ai-fe-io-spec.md): BE·FE·AI 사이의 운영 및 로컬 직접 API 입출력 명세
 - [`api/ai-product-content-generation-agreement.md`](api/ai-product-content-generation-agreement.md): 현재 활성 계약으로 사용하지 않는 이전 `/ai/products`·HTML block 계약 폐기 안내
-- [`api/be-fe-ai-integration-spec.md`](api/be-fe-ai-integration-spec.md): 상품 BE 공개 제안과 AI 내부/직접 API의 BE·FE 연동 계약
+- [`api/be-fe-ai-integration-spec.md`](api/be-fe-ai-integration-spec.md): BE 공개 제안과 AI 내부/직접 API의 BE·FE 연동 계약
 - [`api/react-json-output-contract.md`](api/react-json-output-contract.md): FE용 `react_document` schema v2.0의 구조·렌더링·보안 계약
 - [`../src/detail_page_ai/react_document.py`](../src/detail_page_ai/react_document.py): FE가 소비하는 제한형 React JSON AST DTO 구현
 - [`../src/detail_page_ai/react_document_builder.py`](../src/detail_page_ai/react_document_builder.py): 승인 draft에서 React JSON AST를 결정적으로 조립하는 builder

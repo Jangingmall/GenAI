@@ -23,7 +23,7 @@
 
 | 구성 요소 | 포트 | 런타임/기술 스택 | 역할 | 현재 상태 |
 |---|---|---|---|---|
-| **detail-page-ai** | **8000** | Python 3.13, FastAPI, Node.js/Chromium, SQLite | Job 접수, 상태 머신, Draft 생성, React 문서 조립, PNG 렌더, 상품 BE outbox 배달 | 컨테이너화 준비 완료 (`Dockerfile`, CPU 전용) |
+| **detail-page-ai** | **8000** | Python 3.13, FastAPI, Node.js/Chromium, SQLite | Job 접수, 상태 머신, Draft 생성, React 문서 조립, PNG 렌더, BE outbox 배달 | 컨테이너화 준비 완료 (`Dockerfile`, CPU 전용) |
 | **sglang-text** | **30000** | `lmsysorg/sglang:v0.5.19`, Python 3, CUDA | 텍스트·비전 멀티모달 분석 (`cyankiwi/Qwen3.8-27B-AWQ-INT4`, 공개명 `qwen-text`) | SGLang SRT 서버 확정 (GPU 분할: mem-fraction-static 0.50) |
 | **sglang-image** | **30001** | `local/sglang-diffusion:0.5.19` (`sglang[diffusion]` + `bitsandbytes`), CUDA | 이미지 생성 및 in-context 편집 (`circulus/FLUX.2-klein-9B-bnb-4bit`, 공개명 `flux-klein`) | SGLang 확산 서버 확정 (GPU 분할: VRAM 약 10.2 GiB 상주) |
 
@@ -111,7 +111,7 @@
 #### EKS 설계안: 단일 파드 + EBS PVC 구성 (EKS 전환 시 검토안)
 - EKS GPU 노드 그룹에 단일 파드 형태로 배치 (위 제약 2에 따라 GPU 1장을 공유하기 위해 단일 파드 내 멀티 컨테이너 또는 통합 런처 배치).
 - 영속성: `gp3` EBS PVC (`ReadWriteOnce`)를 `/var/lib/detail-page-ai`에 마운트하여 `state.sqlite3`와 생성 에셋을 영속화.
-- 장애 복구: 파드 크래시 시 새 파드가 동일 EBS 볼륨을 마운트하고, `recover_interrupted()`가 미완료 작업을 `QUEUED`로 리셋하며, `SQLiteDeliveryOutbox` 루프가 미전송 이벤트를 상품 BE로 자동 재전송.
+- 장애 복구: 파드 크래시 시 새 파드가 동일 EBS 볼륨을 마운트하고, `recover_interrupted()`가 미완료 작업을 `QUEUED`로 리셋하며, `SQLiteDeliveryOutbox` 루프가 미전송 이벤트를 BE로 자동 재전송.
 
 #### EKS 다중 파드(HPA) 수평 확장 시 제약 사항 및 해결 로드맵
 - **EBS 한계**: EBS 볼륨은 `ReadWriteOnce`이므로 여러 노드의 파드 레플리카가 동시에 마운트할 수 없다.
@@ -204,7 +204,7 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 - **장애 복구 흐름**:
   1. 서비스 크래시 또는 컨테이너 재시작 시 기동 단계에서 `recover_interrupted()`가 호출된다.
   2. 만료된 임대(lease)를 가진 작업(`QUEUED`, `ANALYZING`, `COMPOSING` 등)을 감지하여 상태를 `QUEUED`로 안전하게 리셋하고 재실행한다.
-  3. 백그라운드 태스크 `SQLiteDeliveryOutbox` 루프가 미전송(`PENDING`, `RETRYING`) 상태인 outbox 이벤트를 상품 BE로 자동 재전송한다.
+  3. 백그라운드 태스크 `SQLiteDeliveryOutbox` 루프가 미전송(`PENDING`, `RETRYING`) 상태인 outbox 이벤트를 BE로 자동 재전송한다.
 
 ---
 
@@ -230,9 +230,9 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 | `PRODUCT_PHOTO_SHOTS` | 콤마 구분 문자열 | `hero,packshot,detail,lifestyle` | `hero,packshot,detail,lifestyle` | 생성 대상 사진 역할 목록 |
 | `SOURCE_PHOTO_VARIATION_THRESHOLD` | int (1~12) | `4` | `4` | 원본 사진 추가 컷 파생 임계값 |
 | `DETAIL_PAGE_RENDERER` | `html` | `html` | `html` | Playwright HTML 렌더러 (`html` 고정) |
-| `BACKEND_PRODUCT_URL` | 문자열 (URL) 또는 None | `None` | **반드시 설정** | 상품 BE 내부 수신 URL (예: `http://product-backend:8080/...`) |
-| `BACKEND_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | 상품 BE 호출용 Bearer 토큰 (Secret 관리) |
-| `BACKEND_TIMEOUT_SECONDS` | float (초) | `60.0` | `60.0` | 상품 BE 호출 타임아웃 |
+| `BACKEND_PRODUCT_URL` | 문자열 (URL) 또는 None | `None` | **반드시 설정** | BE 내부 수신 URL (예: `http://product-backend:8080/...`) |
+| `BACKEND_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | BE 호출용 Bearer 토큰 (Secret 관리) |
+| `BACKEND_TIMEOUT_SECONDS` | float (초) | `60.0` | `60.0` | BE 호출 타임아웃 |
 | `AI_INTERNAL_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | BE가 AI 호출 시 검증하는 `X-AI-Internal-Token` |
 | `DETAIL_PAGE_TEMPLATE_PATH` | 문자열 또는 None | `None` | `None` | 커스텀 템플릿 경로 (미지정 시 내장 템플릿 사용) |
 | `MAX_IMAGE_BYTES` | int (바이트) | `10485760` (10MB) | `10485760` | 단일 입력 이미지 최대 크기 |
@@ -272,10 +272,10 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 
 | 트래픽 방향 | 포트 | 출발지/목적지 | 프로토콜 | 용도 |
 |---|---|---|---|---|
-| **Inbound** | **8000** | ALB / API Gateway / 웹 프런트엔드 | HTTP | `detail-page-ai` API (판매자 웹 FE 및 상품 BE 요청 수신) |
+| **Inbound** | **8000** | ALB / API Gateway / 웹 프런트엔드 | HTTP | `detail-page-ai` API (판매자 웹 FE 및 BE 요청 수신) |
 | **Internal** | **30000** | `127.0.0.1` (Host) 또는 Compose 네트워크 (`sglang-text`) | HTTP | `detail-page-ai` → `sglang-text` 텍스트·비전 분석 호출 (외부 노출 불필요) |
 | **Internal** | **30001** | `127.0.0.1` (Host) 또는 Compose 네트워크 (`sglang-image`) | HTTP | `detail-page-ai` → `sglang-image` 확산 생성·편집 호출 (외부 노출 불필요) |
-| **Outbound** | **443** | 상품 BE 서비스 엔드포인트 | HTTPS | 승인 완료 산출물 outbox 배달 |
+| **Outbound** | **443** | BE 서비스 엔드포인트 | HTTPS | 승인 완료 산출물 outbox 배달 |
 | **Outbound** | **443** | Hugging Face 허브 (`huggingface.co`) | HTTPS | 초기 기동 시 모델 가중치 1회 다운로드 |
 
 ---
@@ -314,8 +314,8 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
     -H "Authorization: Bearer <AI_INTERNAL_AUTH_TOKEN>"
   # status: COMPLETED 및 detail_page.png 생성 확인
   ```
-- **5단계 (상품 BE outbox 전달)**:
-  - 상품 BE 로그 및 DB에서 `AiBeProductPersistRequest` 수신 확인.
+- **5단계 (BE outbox 전달)**:
+  - BE 로그 및 DB에서 `AiBeProductPersistRequest` 수신 확인.
 - **6단계 (장애 복구 검증)**:
   - `docker compose restart detail-page-ai` 실행 후, 재기동된 서비스가 볼륨 내 `state.sqlite3`를 인식하고 미완료 작업을 정상 재개하는지 확인.
 
@@ -364,7 +364,7 @@ python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluatio
 | **GPU 인스턴스 승인** | EC2 `g6e.xlarge` (L40S 48GB; 온디맨드 기준 시간당 약 $1.8 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 예산 및 온디맨드 쿼터 할당 | **인프라 / FinOps 팀** | 결정 필요 (미승인 시 T4/A10G로 강제되어 OOM 발생; 실제 단가 검증이 승인 조건에 포함됨) |
 | **EKS 전환 여부 및 매니페스트 구축** | 현재 확정된 Docker Compose 운영 대비 EKS 전환 필요성 검토 및 K8s 매니페스트/GPU 분할 아키텍처 수립 | **인프라 / DevOps 팀** | 미결정 상태 (현재 EKS 전용 매니페스트 전무) |
 | **FLUX 모델 상업 라이선스 확인** | 원본 FLUX.2-klein-9B의 Non-Commercial 라이선스 조건과 채택된 커뮤니티 4bit 양자화본의 상업 서비스 허용 범위 확인 | **관리자 / 법무팀** | 확인 필요 (필요 시 Apache 2.0 라이선스의 FLUX.2-klein-4B 대안 전환 검토) |
-| **상품 BE 엔드포인트** | 운영/스테이징 `BACKEND_PRODUCT_URL` 주소 및 인증 시크릿 발급 | **상품 백엔드(BE) 팀** | 미확정 시 outbox 배달 불가 |
+| **BE 엔드포인트** | 운영/스테이징 `BACKEND_PRODUCT_URL` 주소 및 인증 시크릿 발급 | **상품 백엔드(BE) 팀** | 미확정 시 outbox 배달 불가 |
 | **프런트엔드 오리진** | `AI_CORS_ORIGINS`에 등록할 정식 웹 서비스 도메인 목록 | **프런트엔드(FE) 팀** | 미확정 시 브라우저 CORS 차단 |
 | **다중 호스트/파드 확장 시점** | 1단계(단일 호스트 Docker Compose / 단일 파드) 운영 후 RDS(PostgreSQL) + S3 이관 시점 | **프로젝트 PM / 아키텍트** | 트래픽 목표치에 따라 로드맵 수립 필요 |
 

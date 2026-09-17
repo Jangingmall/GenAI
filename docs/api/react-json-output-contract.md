@@ -1,12 +1,12 @@
 # React JSON 상세페이지 출력 계약
 
 상태: 구현 기준 / 2026-09-08  
-소유 경계: AI 서버가 문서 생성·검증, 상품 BE가 공개 API·저장, 상품 FE가 React 컴포넌트·CSS·자산 URL을 구현
+소유 경계: AI 서버가 문서 생성·검증, BE가 공개 API·저장, 상품 FE가 React 컴포넌트·CSS·자산 URL을 구현
 
 ## 1. 한 줄 요약
 
 AI는 JSX/HTML/CSS 문자열을 보내지 않는다. 검증된 `ApprovedDraftDto`에서 서버가 `tag + props + children`
-형태의 제한형 JSON AST인 `react_document`를 결정적으로 조립해 상품 BE에 전달하고, FE는 이를 자체
+형태의 제한형 JSON AST인 `react_document`를 결정적으로 조립해 BE에 전달하고, FE는 이를 자체
 컴포넌트 allowlist로 렌더링한다.
 
 `page_plan`은 모델이 만드는 편집·하위 호환용 계획이다. FE의 정식 구조 렌더 입력은 `react_document`이며,
@@ -19,7 +19,7 @@ HTML/CSS는 승인 후 PNG를 만드는 AI 내부 renderer에서만 사용한다
 | 초안 상태 응답 | `draft.react_document` | 초안 미리보기 |
 | 초안 저장 응답 | `react_document` | AiFeDraftResponseDto 최상위의 수정된 draft 미리보기 |
 | 최종 FE 결과 | `result.detail_page.react_document` | 최종 구조 렌더링·게시 전 검토 |
-| AI→상품 BE 적재 metadata | `detail_page.react_document` | 상품 BE 저장·감사·재조회 |
+| AI→BE 적재 metadata | `detail_page.react_document` | BE 저장·감사·재조회 |
 | 로컬 CLI 산출물 | `react_document.json` | PNG/sections/photos와 함께 보관하는 디버깅·검증 파일 |
 
 최종 PNG와 React JSON은 서로 대체하지 않는다. PNG는 게시용 이미지 산출물이고, React JSON은 FE가
@@ -108,7 +108,7 @@ table, caption, thead, tbody, tr, th, td
 | 그리드 | `scope`, `colSpan`, `rowSpan` | 허용 enum/범위만 사용 |
 
 `img.props.imageId`는 `hero`, `packshot`, `detail`, `lifestyle` 같은 asset manifest 키다. AI는 실제 CDN URL,
-Base64, 파일 경로를 AST에 넣지 않는다. FE가 `photos[]`와 상품 BE asset manifest를 이용해 URL을 해석한다.
+Base64, 파일 경로를 AST에 넣지 않는다. FE가 `photos[]`와 BE asset manifest를 이용해 URL을 해석한다.
 해석되지 않는 image ID가 있으면 게시 전 검증을 실패시킨다.
 
 ### 4.3 구조화 layout/style
@@ -142,7 +142,7 @@ Qwen3.8 27B 분석 (Mac 로컬 MLX Serve 또는 서버 SGLang)
   → ProductProfileDto / page_plan / 카피 검증
   → ApprovedDraftDto
   → React JSON builder + Pydantic tree validation
-  → draft.react_document를 상품 BE/FE에 전달
+  → draft.react_document를 BE/FE에 전달
   → 장인 편집·저장(문자열/구조화 draft만)
   → 승인
   → react_document 재조립·검증
@@ -165,7 +165,7 @@ FE는 다음 순서로 처리한다.
 6. 생성 여부는 `product_generated` 플래그로 구분한다 (`asset_mode=generated_scene/generated_view`).
 7. `fidelity_status=REJECTED` 자산은 표시·저장·게시하지 않는다.
 
-AI 서버는 FE component, design token, 공개 asset URL, 공개 인증을 제공하지 않는다. 상품 BE가 이를 공개
+AI 서버는 FE component, design token, 공개 asset URL, 공개 인증을 제공하지 않는다. BE가 이를 공개
 API 모델로 변환한다.
 
 ## 8. 버전·호환 정책

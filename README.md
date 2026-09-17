@@ -1,6 +1,6 @@
 # Image Detail Page AI
 
-상품 원본 이미지에서 설명과 특징을 분석하고, 원본 제품 픽셀을 보존한 제품 사진과 FE 렌더링용 제한형 React JSON AST를 만드는 AI 서비스입니다. 입력 직후에는 실행 가능한 HTML/JSX가 아닌 구조화된 draft와 `react_document`를 상품 BE에 반환하고, 상품 BE/FE가 미리보기를 렌더링합니다. 장인 승인 시에만 AI 내부 HTML/CSS 렌더러로 최종 PNG와 섹션 PNG를 생성합니다.
+상품 원본 이미지에서 설명과 특징을 분석하고, 원본 제품 픽셀을 보존한 제품 사진과 FE 렌더링용 제한형 React JSON AST를 만드는 AI 서비스입니다. 입력 직후에는 실행 가능한 HTML/JSX가 아닌 구조화된 draft와 `react_document`를 BE에 반환하고, BE/FE가 미리보기를 렌더링합니다. 장인 승인 시에만 AI 내부 HTML/CSS 렌더러로 최종 PNG와 섹션 PNG를 생성합니다.
 
 > 2026-09-16 현재 구현 기준: FE가 소비하는 정식 구조 산출물은 `react_document`이며, `page_plan`은 모델·편집·하위 호환용 입력으로 유지합니다. React AST는 서버가 검증된 draft에서 결정적으로 조립하고, 모델이 임의 JSX·HTML·CSS를 반환하지 않습니다.
 
@@ -135,13 +135,13 @@ Flux2가 만든 `lifestyle`·추가 detail은 생성 자산으로만 취급하�
 
 ## API
 
-운영 구조는 `FE → 상품 BE → AI → 상품 BE → FE`입니다. FE 화면의 작품 이름·제작 과정·관리법은
-상품 BE가 `user_hints`로 묶어 AI에 전달하며, AI는 상품 BE의 내부 호출만 받습니다. 상품 BE
+운영 구조는 `FE → BE → AI → BE → FE`입니다. FE 화면의 작품 이름·제작 과정·관리법은
+BE가 `user_hints`로 묶어 AI에 전달하며, AI는 BE의 내부 호출만 받습니다. BE
 API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 
-제품 분석은 외부 검색엔진을 호출하지 않습니다. 선택한 로컬 MLX 또는 서버 SGLang의 Qwen은 입력 이미지와 상품 BE가
+제품 분석은 외부 검색엔진을 호출하지 않습니다. 선택한 로컬 MLX 또는 서버 SGLang의 Qwen은 입력 이미지와 BE가
 전달한 `user_hints`만 사용하며, 검색 출처·실시간 가격·제작자·원산지·진품성·정확한
-소재·성능을 자동으로 확정하지 않습니다. 최신성이나 출처가 필요한 내용은 상품 BE가
+소재·성능을 자동으로 확정하지 않습니다. 최신성이나 출처가 필요한 내용은 BE가
 검수한 뒤 `user_hints`로 전달해야 합니다.
 
 - `GET /health`
@@ -149,20 +149,20 @@ API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 - `GET /health/ready`
   - readiness 헬스체크. 무인증 HTTP 200(`{"status": "ok", "components": {...}}`) 또는 서비스 불능 시 503(`{"status": "not_ready", "reason": ..., "components": ...}`) 반환
 - `POST /internal/v1/ai/detail-page-jobs`
-  - 상품 BE 전용. `product_image`, 반복 `product_images`, `metadata` JSON
+  - BE 전용. `product_image`, 반복 `product_images`, `metadata` JSON
   - `metadata.product_id`와 `source_asset_id`를 작업·결과·적재 요청에 보존
 - `GET /internal/v1/ai/detail-page-jobs/{job_id}`
-  - 상품 BE 전용 상태·결과 polling
+  - BE 전용 상태·결과 polling
 - `PUT /internal/v1/ai/detail-page-jobs/{job_id}/draft`
   - 장인 문구 수정 저장. `draft`와 재조립 가능한 `react_document` 기준만 갱신하고 AI/PNG 생성을 호출하지 않음
 - `POST /internal/v1/ai/detail-page-renders`
-  - 상품 BE 전용. 장인이 수정한 `draft` JSON과 원본 이미지로 최종 PNG 생성
+  - BE 전용. 장인이 수정한 `draft` JSON과 원본 이미지로 최종 PNG 생성
   - 분석 AI를 다시 호출하지 않고 승인 draft에서 `react_document`를 재조립·검증한 뒤 HTML/CSS + Playwright로 전체·섹션 PNG 생성
 - `BACKEND_PRODUCT_URL`
-  - AI가 상품 BE로 생성 메타데이터·전체 PNG·섹션·제품 사진을 전달하는 적재 endpoint
+  - AI가 BE로 생성 메타데이터·전체 PNG·섹션·제품 사진을 전달하는 적재 endpoint
 
 내부 API는 `AI_INTERNAL_AUTH_TOKEN`과 `X-AI-Internal-Token`을 사용합니다. 로컬 데모 페이지는
-상품 BE가 없으므로 기존 `/api/v1/ai/*` direct 경로를 호환용으로 사용합니다. 자세한 DTO는
+BE가 없으므로 기존 `/api/v1/ai/*` direct 경로를 호환용으로 사용합니다. 자세한 DTO는
 [`docs/api/ai-dto-contract.md`](docs/api/ai-dto-contract.md)를, FE React JSON 상세 계약은
 [`docs/api/react-json-output-contract.md`](docs/api/react-json-output-contract.md)를 참고합니다.
 
@@ -170,7 +170,7 @@ API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 
 `react_document`는 FE가 자체 React 컴포넌트 allowlist로 렌더링하는 제한형 JSON AST입니다.
 초안 응답은 `draft.react_document`, 최종 결과는 `result.detail_page.react_document`,
-AI→상품 BE 적재 metadata는 `detail_page.react_document`에 같은 문서를 담습니다. 허용 태그,
+AI→BE 적재 metadata는 `detail_page.react_document`에 같은 문서를 담습니다. 허용 태그,
 부모·자식 관계, 링크·이미지 참조, 구조화 style/layout, 노드 수·깊이는 서버 Pydantic DTO가
 검증합니다. FE는 `dangerouslySetInnerHTML`, 이벤트 핸들러, raw CSS/JSX 문자열을 사용하지
 않으며, `imageId`를 자산 manifest의 URL 또는 로컬 경로로 해석합니다.
@@ -187,7 +187,7 @@ QUEUED → ANALYZING → EXTRACTING → DRAFT_READY
 → RENDERING → DELIVERING → COMPLETED | FAILED
 ```
 
-FE·상품 BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-dto-contract.md), FE 화면 명세는 [`docs/api/ai-fe-io-spec.md`](docs/api/ai-fe-io-spec.md), 로컬 모델 실행은 [`docs/operations/local-llm.md`](docs/operations/local-llm.md), 전체 설계·평가·안전성 기준은 [`docs/architecture/ai-architecture-and-safety.md`](docs/architecture/ai-architecture-and-safety.md)를 참고합니다.
+FE·BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-dto-contract.md), FE 화면 명세는 [`docs/api/ai-fe-io-spec.md`](docs/api/ai-fe-io-spec.md), 로컬 모델 실행은 [`docs/operations/local-llm.md`](docs/operations/local-llm.md), 전체 설계·평가·안전성 기준은 [`docs/architecture/ai-architecture-and-safety.md`](docs/architecture/ai-architecture-and-safety.md)를 참고합니다.
 
 ## 로컬 영속성
 
@@ -200,7 +200,7 @@ FE·상품 BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-d
 - BE 실패 결과는 재시작 후에도 같은 `generation_id`로 재전송
 - URL을 제공하는 운영 자산 저장소에서는 `RESPONSE_ASSET_MODE=url`로 Base64 중복을 제거
 
-Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준으로 하고, 서버 운영은 Ubuntu Docker Compose와 SGLang 모델 서버를 기준으로 합니다. 상품 BE 적재 URL은 선택적으로 사용할 수 있으며, 외부 모델 API·검색 API·클라우드 credential은 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/operations/local-generation-test-report.md`](docs/operations/local-generation-test-report.md)에 정리되어 있고, 이미지 생성 기본값은 두 경로 모두 9B 모델입니다.
+Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준으로 하고, 서버 운영은 Ubuntu Docker Compose와 SGLang 모델 서버를 기준으로 합니다. BE 적재 URL은 선택적으로 사용할 수 있으며, 외부 모델 API·검색 API·클라우드 credential은 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/operations/local-generation-test-report.md`](docs/operations/local-generation-test-report.md)에 정리되어 있고, 이미지 생성 기본값은 두 경로 모두 9B 모델입니다.
 
 ## 서버 배포 (Ubuntu · SGLang)
 

@@ -17,8 +17,8 @@
 
 1. **제품 원본 픽셀은 변경하지 않는다.** 제품 영역을 생성형 모델이 다시 그리거나, 색·무늬·형태를 임의로 바꾸지 않는다.
 2. **이미지에서 확인한 사실과 장인 입력을 분리한다.** 두 종류의 근거를 `ProductProfile`의 관찰·힌트 필드에 각각 남긴다.
-3. **초안과 게시 결과를 분리한다.** AI는 구조화된 `draft`와 검증된 `react_document`를 상품 BE에 반환하고, 상품 BE/FE가 React 컴포넌트 allowlist로 미리보기를 렌더링한다. 승인 시점에만 AI 내부에서 최종 PNG를 렌더링한다.
-4. **상품 BE와 AI의 책임을 분리한다.** FE는 상품 BE를 통해 AI를 사용하고, AI는 작업 결과와 저장용 메타데이터만 상품 BE에 전달한다.
+3. **초안과 게시 결과를 분리한다.** AI는 구조화된 `draft`와 검증된 `react_document`를 BE에 반환하고, BE/FE가 React 컴포넌트 allowlist로 미리보기를 렌더링한다. 승인 시점에만 AI 내부에서 최종 PNG를 렌더링한다.
+4. **BE와 AI의 책임을 분리한다.** FE는 BE를 통해 AI를 사용하고, AI는 작업 결과와 저장용 메타데이터만 BE에 전달한다.
 5. **모델 실패는 안전한 fallback으로 끝낸다.** 분석 실패, 배경 생성 실패, fidelity 검증 실패가 제품 픽셀 변경으로 이어지지 않게 한다.
 6. **모델 교체는 어댑터 뒤에서 한다.** Mac 로컬 개발의 MLX Serve·Ollama와 서버 운영의 SGLang은 동일한 내부 DTO와 OpenAI 호환 클라이언트 계약으로 연결한다.
 
@@ -30,7 +30,7 @@
 - 제품 유형에 맞는 상세페이지 레이아웃과 한국어 카피 초안을 생성한다.
 - 입력 이미지가 부족할 때 원본 기반의 역할별 컷을 보완한다.
 - FE가 렌더링하는 제한형 React JSON 미리보기와 승인 후 PNG를 제공한다. HTML/CSS는 AI 내부 PNG renderer에서만 사용한다.
-- 상품 BE→AI 작업과 AI→상품 BE 적재 요청을 같은 `product_id`, `request_id`, `generation_id`로 연결한다.
+- BE→AI 작업과 AI→BE 적재 요청을 같은 `product_id`, `request_id`, `generation_id`로 연결한다.
 - 모델 버전, 프롬프트 버전, 원본 해시, 변환 이력을 추적한다.
 
 ### 2.2 범위 밖
@@ -43,7 +43,7 @@
 
 ```text
 ┌──────────────┐       ┌─────────────────────┐
-│   FE 입력     │──────▶│ 상품 BE              │
+│   FE 입력     │──────▶│ BE                   │
 │ 이미지·힌트   │       │ FE 계약·상품 소유    │
 └──────────────┘       └──────────┬──────────┘
                                   │ multipart + metadata
@@ -81,8 +81,8 @@
           │
           └── HTML/CSS + Playwright 렌더링 ────▶ 전체 PNG + 섹션 PNG
           │
-          ├───────────────────────────────────▶ 상품 BE 상태/결과 응답 ──▶ FE
-          └── outbox + multipart client ───────▶ 상품 BE 적재 API
+          ├───────────────────────────────────▶ BE 상태/결과 응답 ──▶ FE
+          └── outbox + multipart client ───────▶ BE 적재 API
 ```
 
 ### 3.1 현재 코드와 운영 확장 매핑
@@ -96,11 +96,11 @@
 | 전달 재시도 | SQLite delivery outbox | 동일 SQLite 정책 또는 로컬 큐 |
 | 분석 | `LocalProductAnalyzer` + 로컬 MLX Qwen / 서버 SGLang Qwen | MLX Serve 또는 SGLang worker pool |
 | React 구조 출력 | `react_document_builder` + Pydantic AST validator | 공통 FE schema/package |
-| 조사 | 자동 외부 조사 없음 | 상품 BE 검수 `user_hints` |
+| 조사 | 자동 외부 조사 없음 | BE 검수 `user_hints` |
 | 사진 보완 | `SourcePreservingProductPhotoGenerator` | CPU compositor, Flux는 로컬 MLX 또는 서버 SGLang |
 | 렌더링 | `HtmlDetailPageRenderer` | renderer worker pool |
 | Product BE→AI 계약 | `ai_dto.py` + `/internal/v1/ai/*` | private network 또는 mTLS/API auth |
-| AI→Product BE 전달 | `BackendProductClient` + outbox | 상품 BE 적재 API와 멱등 재시도 |
+| AI→Product BE 전달 | `BackendProductClient` + outbox | BE 적재 API와 멱등 재시도 |
 
 ## 4. 모델 구성과 역할
 
@@ -111,7 +111,7 @@
 | 단계 | 기본 후보 | 입력 | 출력 | 실패 시 동작 |
 |---|---|---|---|---|
 | 이미지 분석 | 로컬 개발: MLX Serve `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`; 서버 운영: SGLang `cyankiwi/Qwen3.8-27B-AWQ-INT4` (`qwen-text`) | 원본 이미지, 장인 제공 상품 데이터 | `ProductProfileDto` | 재시도 후 작업 실패, 원본은 보존 |
-| 공예·제품 조사 | 자동 외부 조사 없음 | 상품 BE 검수 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown` |
+| 공예·제품 조사 | 자동 외부 조사 없음 | BE 검수 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown` |
 | 배경·참고 컷 생성 | 로컬 개발: MLX Serve `mlx-community/flux2-klein-9b-4bit`; 서버 운영: SGLang `circulus/FLUX.2-klein-9B-bnb-4bit` (`flux-klein`) | 역할·제품 유형·빈 배경 프롬프트, 선택적 원본 참고 | 제품 없는 배경 또는 `GENERATED` 자산 | 중립 단색 배경 또는 원본 슬롯 fallback |
 | 제품 근거 컷 합성 | source 역할은 생성 모델 미사용, Pillow | 원본 RGB, 알파 마스크, 배경 | `ProductPhoto` + provenance | 원본 전체 컷 또는 해당 컷 제외 |
 | React JSON 조립 | 생성 모델 미사용, deterministic builder | 검증된 draft·`page_plan` | `ReactDetailPageDocumentDto` | schema/tree 실패 시 결과 차단 |
@@ -131,7 +131,7 @@
 ### 4.3 조사 데이터 정책
 
 - 생성 중 외부 웹 검색·원격 조사 모델을 호출하지 않는다.
-- 제작자·원산지·진품성·인증·정확한 소재·성능·최신 가격은 상품 BE가 검수해
+- 제작자·원산지·진품성·인증·정확한 소재·성능·최신 가격은 BE가 검수해
   `user_hints`로 전달하지 않으면 확정하지 않는다.
 - 근거가 없거나 입력이 충돌하면 문구를 제거하고 `unknown` 또는 보수적 표현으로 낮춘다.
 
@@ -146,7 +146,7 @@
 - 배경 프롬프트에는 제품, 제품과 유사한 주 피사체, 로고, 글자, 추가 상품을 금지한다.
 - 응답 이미지는 객체·문자·로고 안전성 검사를 거친다.
 - 원본 `hero`는 촬영 원본 그대로 `asset_mode=source_original`, `fidelity_status=VERIFIED`를 사용한다. `packshot`·대표 `detail`은 rembg(`birefnet-general`, `rembg==2.0.69`) 누끼와 원본 RGB/crop을 사용하고, 누끼 실패 시 `source`/`FALLBACK`으로 대체한다. 생성 `lifestyle`·추가 `detail`은 허용된 생성 자산 슬롯에만 배치하고 `product_generated=true`, `asset_mode`, `source_sha256`, `fidelity_status=GENERATED`를 표시한다.
-- 생성 참고 자산은 현재 렌더링·상품 BE 전달 경로에 포함될 수 있지만 대표 상품 사진·상품 사실성 증거로는 사용하지 않는다. `REJECTED` 자산은 모든 출력 경계에서 제거한다.
+- 생성 참고 자산은 현재 렌더링·BE 전달 경로에 포함될 수 있지만 대표 상품 사진·상품 사실성 증거로는 사용하지 않는다. `REJECTED` 자산은 모든 출력 경계에서 제거한다.
 - 배경 생성 실패, 안전성 검사 실패, 모델 timeout은 중립 배경으로 fallback한다.
 
 ### 4.5 모델 서빙 정책
@@ -176,17 +176,17 @@ SGLang의 고정 revision, Docker Compose 기동 명령과 GPU 메모리 예산�
 
 ### 5.1 입력
 
-운영 FE는 상품 BE에 이미지를 보내고, 상품 BE가 다음 multipart와 JSON metadata로 AI를 호출한다.
+운영 FE는 BE에 이미지를 보내고, BE가 다음 multipart와 JSON metadata로 AI를 호출한다.
 
 - `product_image`: 대표 원본 1장
 - `product_images`: 사용자가 직접 촬영한 추가 구도 0장 이상
-- `metadata.product_id`: 상품 BE가 소유하는 필수 상품 식별자
-- `metadata.source_asset_id`: 상품 BE가 소유하는 원본 자산 식별자
+- `metadata.product_id`: BE가 소유하는 필수 상품 식별자
+- `metadata.source_asset_id`: BE가 소유하는 원본 자산 식별자
 - `metadata.user_hints`: 작품명·제작 과정·관리 방법 기준 데이터(기존 필드명 유지)
 - `metadata.request_id`, `template_id`, `locale`, `options`: 추적·렌더링 옵션
 
 AI 내부 경로는 `/internal/v1/ai/detail-page-jobs`(생성·상태 조회·초안 저장)와
-`/internal/v1/ai/detail-page-renders`(승인 렌더링)이며 모두 `X-AI-Internal-Token`을 요구한다. AI 팀은 상품 BE의
+`/internal/v1/ai/detail-page-renders`(승인 렌더링)이며 모두 `X-AI-Internal-Token`을 요구한다. AI 팀은 BE의
 FE API나 Product DB를 구현하지 않는다. 로컬 브라우저 샘플만 legacy `/api/v1/ai/*` 경로를
 사용한다.
 
@@ -198,7 +198,7 @@ FE API나 Product DB를 구현하지 않는다. 로컬 브라우저 샘플만 le
 QUEUED
   → ANALYZING
   → EXTRACTING
-  → DRAFT_READY (draft JSON + `react_document`, 상품 BE/FE 미리보기)
+  → DRAFT_READY (draft JSON + `react_document`, BE/FE 미리보기)
   → 승인
   → GENERATING_BACKGROUNDS
   → COMPOSING
@@ -210,10 +210,10 @@ QUEUED
 
 각 단계는 `job_id`, `request_id`, `generation_id`를 유지한다.
 
-- `product_id`: 상품 BE가 소유하는 상품 식별자
+- `product_id`: BE가 소유하는 상품 식별자
 - `job_id`: AI 내부 작업 조회 키
 - `request_id`: 요청 단위 추적 키
-- `generation_id`: 하나의 생성 결과와 상품 BE 적재 멱등성 키
+- `generation_id`: 하나의 생성 결과와 BE 적재 멱등성 키
 - `prompt_version`: 프롬프트 변경에 따른 결과 비교 키
 - `model/provider`: 실제 호출 모델과 공급자 기록
 
@@ -235,34 +235,34 @@ QUEUED
 검증에서 `REJECTED`인 자산은 다음 경계 모두에서 제거한다.
 
 1. HTML/CSS 렌더러
-2. 상품 BE 상태/결과 응답
-3. AI→상품 BE multipart payload
+2. BE 상태/결과 응답
+3. AI→BE multipart payload
 4. outbox 재전송 payload
 
 ### 5.4 FE와 BE 전달
 
-운영에서는 상품 BE가 AI 결과를 FE 응답으로 변환한다. AI 경계의 canonical DTO는
+운영에서는 BE가 AI 결과를 FE 응답으로 변환한다. AI 경계의 canonical DTO는
 `src/detail_page_ai/ai_dto.py`에 있으며, 방향이 섞이지 않도록 다음처럼 나눈다.
 
-- 상품 BE→AI: `ProductBeToAiCreateJobRequestDto`, `ProductBeToAiApproveDraftRequestDto`
-- AI→상품 BE: `AiToProductBeAcceptedResponseDto`, `AiToProductBeStatusResponseDto`,
+- BE→AI: `ProductBeToAiCreateJobRequestDto`, `ProductBeToAiApproveDraftRequestDto`
+- AI→BE: `AiToProductBeAcceptedResponseDto`, `AiToProductBeStatusResponseDto`,
   `AiToProductBeApprovedResponseDto`
-- AI→상품 BE 적재: `AiToProductBePersistRequestDto`
+- AI→BE 적재: `AiToProductBePersistRequestDto`
 
-초안 단계에서는 AI가 상품 BE에 실행 가능한 HTML/JSX가 아닌 구조화된 `draft` JSON과
-`draft.react_document`를 전달한다. 상품 BE/FE가 `react_document`를 React 컴포넌트 allowlist로
+초안 단계에서는 AI가 BE에 실행 가능한 HTML/JSX가 아닌 구조화된 `draft` JSON과
+`draft.react_document`를 전달한다. BE/FE가 `react_document`를 React 컴포넌트 allowlist로
 미리보기하고, 승인 단계에서 수정된 `draft`와 원본을 AI에 전달하면 AI는 분석 없이 AST를 재조립·검증한
 뒤 내부 HTML/CSS로 PNG를 렌더링한다. 완료 단계 결과에는 전체 `image/png`, 섹션 PNG,
 provenance가 있는 제품 사진, `detail_page.react_document`가 함께 포함된다.
 
-AI→상품 BE 요청은 `AiToProductBePersistRequestDto`를 사용한다.
+AI→BE 요청은 `AiToProductBePersistRequestDto`를 사용한다.
 
 - 상품 분류·특징·관찰·불확실성
 - 원본·최종 PNG·섹션·사진의 hash 및 asset id
 - 생성 모델·프롬프트·레이아웃·조사 사용 여부
 - `generation_id` 기반 idempotency key
 
-AI→상품 BE 저장 실패는 FE 최종 결과와 분리한다. PNG를 생성했더라도 AI outbox에 저장해
+AI→BE 저장 실패는 FE 최종 결과와 분리한다. PNG를 생성했더라도 AI outbox에 저장해
 같은 `generation_id`로 재시도하고, 실패 상태에는 `COMPLETED_WITH_BACKEND_PENDING`을 사용한다.
 
 ## 6. 서빙 구조
@@ -289,7 +289,7 @@ Browser :4173
 FE
  │
  ▼
-상품 BE → detail-page-ai :8000 (CPU 전용)
+BE → detail-page-ai :8000 (CPU 전용)
                          │
               ┌──────────┴──────────┐
               ▼                     ▼
@@ -323,17 +323,17 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 
 권장 분리:
 
-- **AI API**: 상품 BE 내부 인증, 업로드 검증, 작업 생성, 상태 조회. 긴 모델 호출은 worker에서 수행한다.
+- **AI API**: BE 내부 인증, 업로드 검증, 작업 생성, 상태 조회. 긴 모델 호출은 worker에서 수행한다.
 - **AI Worker**: 로컬 분석·사진 합성·검증·outbox 생성.
 - **Renderer Worker**: Playwright와 PNG 변환. 브라우저 프로세스와 모델 메모리를 분리한다.
 - **Local File Store**: 원본과 결과를 `.local/detail-page-ai/assets`에 보관한다.
 - **SQLite**: job 상태, idempotency, generation metadata, outbox, lease를 보관한다.
 - **MLX Serve**: loopback endpoint에서 Qwen/Flux를 제공하고 timeout을 적용한다.
-- **상품 BE 연동**: `BACKEND_PRODUCT_URL`이 설정된 경우에만 생성 metadata와 PNG를 전달한다.
+- **BE 연동**: `BACKEND_PRODUCT_URL`이 설정된 경우에만 생성 metadata와 PNG를 전달한다.
 
 ### 6.4 동시성·재시도
 
-- 동일 `generation_id`는 한 번만 상품 BE에 적재한다.
+- 동일 `generation_id`는 한 번만 BE에 적재한다.
 - worker는 lease/heartbeat를 사용하고 lease 만료 시 작업을 재획득한다.
 - 모델 endpoint 호출은 로컬 MLX 또는 서버 SGLang 경로별로 단계별 timeout과 제한된 exponential backoff를 사용한다.
 - validation 실패는 무조건 재시도하지 않는다. 입력 오류·정책 위반·스키마 오류는 원인별로 분류한다.
@@ -393,7 +393,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 | 분류 | craft precision | 전통 공예로 분류한 항목 중 적합 비율 | ≥ 95% |
 | 사실성 | image-grounded claim precision | 카피 주장 중 이미지/자료로 입증된 비율 | ≥ 95% |
 | 사실성 | unsupported claim rate | 미확인 소재·브랜드·원산지·효능 주장 비율 | ≤ 2% |
-| 입력 근거 | creator-hint coverage | 상품 BE 검수 힌트가 필요한 카피에 반영된 비율 | ≥ 95% |
+| 입력 근거 | creator-hint coverage | BE 검수 힌트가 필요한 카피에 반영된 비율 | ≥ 95% |
 | 카피 | human copy score | 사실성·명료성·판매 적합성 5점 평가 | 평균 ≥ 4.0 |
 | 레이아웃 | section completeness | 필수 섹션·순서·자산 링크 충족률 | 100% |
 | 레이아웃 | broken asset rate | 열리지 않는 image URL 비율 | 0% |
@@ -422,7 +422,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 - 제품 픽셀 보존 검증 실패
 - 필수 JSON 필드 또는 섹션 누락
 - 이미지에 없는 핵심 상품 속성 주장
-- 상품 BE 검수 입력 없이 생성된 공예 역사·소재·인증 문구
+- BE 검수 입력 없이 생성된 공예 역사·소재·인증 문구
 - 배경판에 제품 유사 객체, 로고, 텍스트가 검출됨
 - 악성 입력이 시스템 지시를 덮어쓴 흔적
 - 원본·생성 자산·generation metadata 연결이 끊김
@@ -447,7 +447,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 허용:
 
 - 사진에서 직접 확인되는 색상, 형태, 배치, 표면 반사, 구성품 수의 보수적 표현
-- 상품 BE가 검수해 `user_hints`에 전달한 공예·재료·기법 설명
+- BE가 검수해 `user_hints`에 전달한 공예·재료·기법 설명
 - 사용자가 제공한 제품명·제작 과정·관리 방법을 상품별 카피의 기준 데이터로 우선 반영한 표현
 
 금지 또는 검토 필요:
@@ -456,7 +456,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 - 브랜드, 장인, 제작자, 원산지, 시대, 진품성
 - 내구성, 안전성, 기능, 효능, 용량, 성능 수치
 - 실제 사용 가능 여부가 확인되지 않은 식기·식품 접촉·열 사용 문구
-- 상품 BE 검수 없이 외부 지식이나 검색 결과를 근거로 가장하는 문구
+- BE 검수 없이 외부 지식이나 검색 결과를 근거로 가장하는 문구
 
 모든 카피는 `image-visible`, `inferred`, `unknown` evidence를 근거로 생성하고, `unknown`은 상품 소개 문구가 아닌 주의사항으로 내린다.
 
@@ -464,7 +464,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 
 - 전통 공예 후보 판정은 confidence와 이미지 근거를 함께 요구한다.
 - 생성 중 외부 검색·원격 조사 모델을 호출하지 않는다.
-- 상품 BE가 검수한 상품별 정보만 카피에 사용하고, 입력에 없는 고유 사실을 추가하지 않는다.
+- BE가 검수한 상품별 정보만 카피에 사용하고, 입력에 없는 고유 사실을 추가하지 않는다.
 - 사람이 확인하지 않은 진품성·문화재·저작권·장인 이력 문구는 게시하지 않는다.
 
 ### 8.5 프롬프트 인젝션·입력 안전
@@ -477,7 +477,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 - URL fetch, 파일 경로, HTML/CSS 삽입은 allowlist·escape·sandbox로 제한한다.
 - `react_document`는 모델이 직접 만들지 않고 서버 builder가 조립한다. 허용 tag·props·부모/자식
   관계·고유 ID·깊이/노드 수를 Pydantic으로 검증하며, `img`는 `props.imageId`만 사용한다.
-- raw prompt와 raw model response를 FE나 상품 BE에 전달하지 않는다.
+- raw prompt와 raw model response를 FE나 BE에 전달하지 않는다.
 
 ### 8.6 생성 배경 안전
 

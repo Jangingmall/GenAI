@@ -2,16 +2,16 @@
 
 ## 2026-09-10 구현 대조 갱신 및 계약 통합 (최신)
 
-이 절은 본문과 충돌할 때 우선한다. 공개 상품 BE API는 이 저장소에 구현되지 않았으며, 다음 경로는 팀 합의용 제안이다.
-실제 AI 서버의 구현은 상품 BE 연동용 내부 API(`/internal/v1/ai/...`)와 로컬 개발·검증용 직접 API(`/api/v1/ai/...`)로 구성된다.
+이 절은 본문과 충돌할 때 우선한다. 공개 BE API는 이 저장소에 구현되지 않았으며, 다음 경로는 팀 합의용 제안이다.
+실제 AI 서버의 구현은 BE 연동용 내부 API(`/internal/v1/ai/...`)와 로컬 개발·검증용 직접 API(`/api/v1/ai/...`)로 구성된다.
 
 ### 엔드포인트 계층 비교
 
 | 역할 및 계층 | 경로 패턴 | 인증 및 헤더 | 설명 |
 |---|---|---|---|
-| **상품 BE 공개 제안** | `POST/GET/PUT /api/v1/products/{product_id}/...` | 사용자 세션/쿠키 | 사용자 및 상품 소유권 검증 후 내부 AI 호출 |
-| **AI 내부 API (운영)** | `POST/GET/PUT /internal/v1/ai/...` | `X-AI-Internal-Token` (필수)<br>`Idempotency-Key` (선택) | 상품 BE ↔ AI 서버 간 통신 전용 엔드포인트 |
-| **AI 직접 데모 (로컬)** | `POST/GET/PUT /api/v1/ai/...` | 없음 (`ENABLE_LEGACY_DEMO_API=true` 필요) | 상품 BE가 없는 단독 로컬 브라우저 개발·테스트 전용 |
+| **BE 공개 제안** | `POST/GET/PUT /api/v1/products/{product_id}/...` | 사용자 세션/쿠키 | 사용자 및 상품 소유권 검증 후 내부 AI 호출 |
+| **AI 내부 API (운영)** | `POST/GET/PUT /internal/v1/ai/...` | `X-AI-Internal-Token` (필수)<br>`Idempotency-Key` (선택) | BE ↔ AI 서버 간 통신 전용 엔드포인트 |
+| **AI 직접 데모 (로컬)** | `POST/GET/PUT /api/v1/ai/...` | 없음 (`ENABLE_LEGACY_DEMO_API=true` 필요) | BE가 없는 단독 로컬 브라우저 개발·테스트 전용 |
 
 | 공개 경로 제안 | 요청 | 응답 |
 |---|---|---|
@@ -20,9 +20,9 @@
 | PUT /api/v1/products/{product_id}/detail-page-jobs/{job_id}/draft | version + 완전한 draft JSON | 200, 최신 draft/version |
 | POST /api/v1/products/{product_id}/detail-page-jobs/{job_id}/approve | 승인 draft + request_id | 200, result/backend_delivery_pending |
 
-상품 BE는 사용자 인증과 상품/job 소유권을 검증하고 내부 status_url을 공개 경로로 바꾼다.
-FE는 공개 job 식별자를 유지할 수 있다. source_asset_id와 내부 토큰은 상품 BE에서 관리한다.
-인증 방식·공개 오류 envelope·승인 장시간 timeout 처리는 상품 BE 팀 합의가 필요하다.
+BE는 사용자 인증과 상품/job 소유권을 검증하고 내부 status_url을 공개 경로로 바꾼다.
+FE는 공개 job 식별자를 유지할 수 있다. source_asset_id와 내부 토큰은 BE에서 관리한다.
+인증 방식·공개 오류 envelope·승인 장시간 timeout 처리는 BE 팀 합의가 필요하다.
 
 - 작품명·제작 과정은 현재 샘플 UI에서 필수지만 AI DTO에서는 선택이다.
 - 내부 metadata.idempotency_key는 필수다. 헤더만 보내는 방식은 현재 허용되지 않으며 헤더를 추가하면 본문과 일치해야 한다.
@@ -45,33 +45,33 @@ FE는 공개 job 식별자를 유지할 수 있다. source_asset_id와 내부 �
 데모 승인 코드는 고정 샘플 이미지를 전송하므로 운영 원본 연동의 검증 근거로 사용할 수 없다.
 저장 409 시 로컬 편집을 보존하고 최신 서버 버전과 비교하며 자동 덮어쓰지 않는다.
 승인 중 편집/중복 승인 제한, 새로고침 후 job 복원, polling 중단·timeout 안내는 운영 FE에서 검증한다.
-최종 PNG 생성 후에도 상품 BE 적재 확인과 게시 승인을 별도로 거쳐야 한다.
+최종 PNG 생성 후에도 BE 적재 확인과 게시 승인을 별도로 거쳐야 한다.
 
 ### AI → BE 적재
 
 BACKEND_PRODUCT_URL로 metadata, detail_page_image, detail_page_section_NN,
 product_photo_NN을 보낸다. Idempotency-Key는 generation_id이며 설정 시 Bearer 내부 토큰을 사용한다.
-상품 BE는 generation_id에 유일 제약을 두고 파일·metadata 저장 완료 후
+BE는 generation_id에 유일 제약을 두고 파일·metadata 저장 완료 후
 generation_id/product_id/status(SAVED 또는 ALREADY_SAVED)/saved_at을 ACK로 반환한다.
-응답 유실 재시도는 같은 결과로 처리한다. 상품 BE의 실제 트랜잭션 구현은 별도 범위다.
+응답 유실 재시도는 같은 결과로 처리한다. BE의 실제 트랜잭션 구현은 별도 범위다.
 
 ## 1. 문서 목적
 
-본 문서는 AI 상세페이지 생성 기능의 상품 FE, 상품 BE, AI 서버 간 연동 계약을 정의한다.
-현재 구현과 DTO를 기준으로 작성했으며, 실제 상품 BE의 공개 URL·인증·DB 스키마는 상품 BE 팀의 책임 범위다.
+본 문서는 AI 상세페이지 생성 기능의 상품 FE, BE, AI 서버 간 연동 계약을 정의한다.
+현재 구현과 DTO를 기준으로 작성했으며, 실제 BE의 공개 URL·인증·DB 스키마는 BE 팀의 책임 범위다.
 
 ## 2. 시스템 경계와 책임
 
 ```text
-FE → 상품 BE → AI API
-FE ← 상품 BE ← AI API
+FE → BE → AI API
+FE ← BE ← AI API
              └─ 생성 결과 적재
 ```
 
 | 영역 | 책임 |
 |---|---|
 | 상품 FE | 이미지·상품 정보 입력, 작업 상태 표시, draft 편집, 미리보기, 승인 요청 |
-| 상품 BE | 사용자 인증, 상품·원본 자산 식별, 공개 API 제공, AI 내부 API 호출, 결과 저장·게시 |
+| BE | 사용자 인증, 상품·원본 자산 식별, 공개 API 제공, AI 내부 API 호출, 결과 저장·게시 |
 | AI 서버 | 이미지 분석, 구조화된 draft 생성, 승인 후 PNG 렌더링, 생성 결과 및 메타데이터 전달 |
 
 FE는 AI 서버를 직접 호출하지 않는다. `X-AI-Internal-Token`, AI provider 정보, AI 내부 URL은 FE에 노출하지 않는다.
@@ -79,15 +79,15 @@ FE는 AI 서버를 직접 호출하지 않는다. `X-AI-Internal-Token`, AI prov
 ## 3. 처리 흐름
 
 ```text
-1. FE가 이미지·작품 정보를 상품 BE에 전달
-2. 상품 BE가 product_id/source_asset_id를 추가해 AI에 초안 생성 요청
+1. FE가 이미지·작품 정보를 BE에 전달
+2. BE가 product_id/source_asset_id를 추가해 AI에 초안 생성 요청
 3. AI가 202 응답으로 job_id를 반환하고 비동기 처리
-4. 상품 BE가 상태를 polling하고 DRAFT_READY draft와 `react_document`를 FE에 전달
-5. FE가 JSON draft를 편집하고 상품 BE에 저장하며, 상품 BE는 최신 `react_document`를 함께 반환
-6. 사용자가 승인하면 상품 BE가 승인 draft를 AI에 전달
+4. BE가 상태를 polling하고 DRAFT_READY draft와 `react_document`를 FE에 전달
+5. FE가 JSON draft를 편집하고 BE에 저장하며, BE는 최신 `react_document`를 함께 반환
+6. 사용자가 승인하면 BE가 승인 draft를 AI에 전달
 7. AI가 승인 draft에서 `react_document`를 조립·검증하고, HTML/CSS + Playwright로 전체 PNG·섹션 PNG를 생성
-8. AI가 생성 결과와 `react_document`를 상품 BE에 multipart metadata로 적재
-9. 상품 BE가 PNG·JSON 결과를 상품 상세페이지와 게시 대기 화면에 반영
+8. AI가 생성 결과와 `react_document`를 BE에 multipart metadata로 적재
+9. BE가 PNG·JSON 결과를 상품 상세페이지와 게시 대기 화면에 반영
 ```
 
 초안 생성 단계에서는 최종 PNG나 배경·제품 사진 생성을 수행하지 않는다. 승인 이후에만 최종 렌더링을 수행한다.
@@ -102,7 +102,7 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 - `schemaVersion`: `"2.0"` (고정 버전)
 - `canvasWidth`: `774` (고정 캔버스 가로 너비 px)
 - `root[]`: 제한된 시맨틱 태그(`section`, `article`, `div`, `h2`, `h3`, `h4`, `p`, `span`, `img` 등), 구조화 props, 재귀 children으로 구성된 AST 노드 배열
-- **자산 참조 (`props.imageId`)**: 문서 내의 모든 이미지 노드는 실제 외부 URL이나 거대 Base64 문자열 대신 `props.imageId`로 사진 자산(`photos[]`의 `photo_id`)을 논리적으로 참조한다. 실제 이미지 URL 매핑 및 CDN 해석은 상품 BE 및 FE의 책임이다.
+- **자산 참조 (`props.imageId`)**: 문서 내의 모든 이미지 노드는 실제 외부 URL이나 거대 Base64 문자열 대신 `props.imageId`로 사진 자산(`photos[]`의 `photo_id`)을 논리적으로 참조한다. 실제 이미지 URL 매핑 및 CDN 해석은 BE 및 FE의 책임이다.
 - **실행 보안**: HTML/CSS 문자열, 임의 JSX, JavaScript 함수, 이벤트 핸들러, `dangerouslySetInnerHTML` 등 실행 가능 필드는 전면 차단된다.
 
 `draft.page_plan`은 LLM의 카피·블록 기획 추론 유도, 크리에이터의 블록 단위 텍스트 편집, 기존 레거시 소비자 하위 호환을 위해 보조적으로 함께 전달될 뿐이며, **FE 화면 렌더링의 정본은 항상 `react_document`**다.
@@ -111,9 +111,9 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 
 세부 schema·허용 태그·트리 검증·FE 순회 규칙은 [React JSON 상세페이지 출력 계약](react-json-output-contract.md)을 따른다.
 
-## 4. FE → 상품 BE 입력 계약
+## 4. FE → BE 입력 계약
 
-상품 BE 공개 API의 경로는 상품 BE 팀이 정한다. 다만 FE가 전달하는 의미와 필드는 다음과 같다.
+BE 공개 API의 경로는 BE 팀이 정한다. 다만 FE가 전달하는 의미와 필드는 다음과 같다.
 
 ### 4.1 초안 생성 요청
 
@@ -145,7 +145,7 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 
 ### 4.2 초안 저장 요청
 
-상품 BE 공개 API는 다음 의미의 JSON을 받는다.
+BE 공개 API는 다음 의미의 JSON을 받는다.
 
 ```json
 {
@@ -168,16 +168,16 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 
 ### 4.3 승인 요청
 
-상품 BE 공개 API는 FE로부터 승인된 draft와 승인 요청 ID를 받은 뒤 AI 내부 승인 API를 호출한다.
+BE 공개 API는 FE로부터 승인된 draft와 승인 요청 ID를 받은 뒤 AI 내부 승인 API를 호출한다.
 FE가 AI 내부 API의 `draft_id`, `product_id`, `source_asset_id`를 직접 관리하지 않도록 한다.
 
-## 5. 상품 BE → AI 내부 API
+## 5. BE → AI 내부 API
 
 모든 내부 API는 다음 공통 헤더를 사용한다. `Idempotency-Key`는 작업 생성·승인 요청에서만
 선택적으로 보낼 수 있으며, 상태 조회·초안 저장에는 사용하지 않는다.
 
 ```http
-X-AI-Internal-Token: <상품 BE와 AI만 공유하는 토큰>
+X-AI-Internal-Token: <BE와 AI만 공유하는 토큰>
 Accept: application/json
 ```
 
@@ -281,8 +281,8 @@ QUEUED (0%) → ANALYZING (15%) → EXTRACTING (60%) → DRAFT_READY (100%)
 | `COMPOSING` | 55% | 제품 누끼와 생성 배경의 기하학적 합성 |
 | `VERIFYING` | 65% | 원본 컷아웃 보존율 및 씬 분기 적합성 자동 품질 게이트 검증 |
 | `RENDERING` | 75% | React AST 기반 HTML 조립 및 Node Puppeteer 최종 PNG 렌더링 |
-| `DELIVERING` | 90% | 생성 자산 및 메타데이터를 상품 BE(`BACKEND_PRODUCT_URL`)로 전달 |
-| `COMPLETED` | 100% | 최종 완료 및 상품 BE 적재 성공 |
+| `DELIVERING` | 90% | 생성 자산 및 메타데이터를 BE(`BACKEND_PRODUCT_URL`)로 전달 |
+| `COMPLETED` | 100% | 최종 완료 및 BE 적재 성공 |
 | `FAILED` | - | 처리 도중 복구 불가능한 에러 발생 |
 
 처리 중에는 `draft`와 `result`가 없을 수 있다. `DRAFT_READY`에서는 `draft`가 제공되고, 최종 완료 시 `result`가 제공된다.
@@ -398,7 +398,7 @@ info_table, notice, closing
 
 예시의 `variant`는 허용값 중 하나를 보여주는 예이며, 블록 타입에 따라 고정되는 값이 아니다. 실제 값은 선택된 layout 원형과 모델의 제품별 구성에 따른다.
 
-FE와 상품 BE는 허용된 블록 타입만 렌더링하고 모든 텍스트를 HTML escape한다. `html`, `css`, `script` 필드는 허용하지 않는다.
+FE와 BE는 허용된 블록 타입만 렌더링하고 모든 텍스트를 HTML escape한다. `html`, `css`, `script` 필드는 허용하지 않는다.
 
 ## 7. AI 결과 계약
 
@@ -532,12 +532,12 @@ source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 �
 
 - 같은 `Idempotency-Key`와 같은 payload는 기존 작업·결과를 재사용한다.
 - 같은 키에 다른 payload를 보내면 `409`다.
-- 상품 BE 저장 중복은 `ALREADY_SAVED`로 처리한다.
+- BE 저장 중복은 `ALREADY_SAVED`로 처리한다.
 - 결과 매칭 키는 `product_id`, `job_id`, `generation_id`다.
 
 ## 10. 로컬 데모 직접 API (`src/detail_page_ai/app.py`)
 
-상품 BE가 없는 로컬 단독 개발 및 프로토타입 브라우저 테스트 환경에서는 다음 직접 API를 사용한다.
+BE가 없는 로컬 단독 개발 및 프로토타입 브라우저 테스트 환경에서는 다음 직접 API를 사용한다.
 이 경로는 환경 변수 `ENABLE_LEGACY_DEMO_API=true`일 때만 활성화되며, 운영 상품 FE가 직접 호출해서는 안 된다.
 
 | 메서드 및 경로 | 요청 형식 | 주요 파라미터 / 본문 | 반환 DTO 및 상태 코드 |
@@ -551,7 +551,7 @@ source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 �
 
 ### 핵심 구현 코드
 - AI 진입점 및 라우터: [`src/detail_page_ai/app.py`](../../src/detail_page_ai/app.py)
-- 상품 BE ↔ AI 통신 DTO: [`src/detail_page_ai/ai_dto.py`](../../src/detail_page_ai/ai_dto.py)
+- BE ↔ AI 통신 DTO: [`src/detail_page_ai/ai_dto.py`](../../src/detail_page_ai/ai_dto.py)
 - 공통 데이터 모델 및 스키마: [`src/detail_page_ai/dto.py`](../../src/detail_page_ai/dto.py)
 - FE 투영 DTO: [`src/detail_page_ai/fe_dto.py`](../../src/detail_page_ai/fe_dto.py)
 - 설정 및 환경 변수 정의: [`src/detail_page_ai/config.py`](../../src/detail_page_ai/config.py)
@@ -579,13 +579,13 @@ source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 �
 
 ## 12. 설정 및 환경 변수 계약 (Settings Contract)
 
-AI 시스템 구동 및 상품 BE 연동 시 사용되는 환경 변수 계약은 [`src/detail_page_ai/config.py`](../../src/detail_page_ai/config.py)에 정의되어 있다.
+AI 시스템 구동 및 BE 연동 시 사용되는 환경 변수 계약은 [`src/detail_page_ai/config.py`](../../src/detail_page_ai/config.py)에 정의되어 있다.
 
 | 환경 변수명 | 타입 / 허용값 | 기본값 | 설명 |
 |---|---|---|---|
 | `AI_CORS_ORIGINS` | string (쉼표 구분) | `http://127.0.0.1:4173,http://localhost:4173` | CORS 허용 오리진 목록 |
-| `AI_INTERNAL_AUTH_TOKEN` | string / null | `None` | 상품 BE가 `X-AI-Internal-Token` 헤더로 전송하는 공유 시크릿 토큰 |
-| `BACKEND_PRODUCT_URL` | string / null | `None` | AI 서버가 최종 PNG 및 메타데이터를 적재할 상품 BE 엔드포인트 URL |
+| `AI_INTERNAL_AUTH_TOKEN` | string / null | `None` | BE가 `X-AI-Internal-Token` 헤더로 전송하는 공유 시크릿 토큰 |
+| `BACKEND_PRODUCT_URL` | string / null | `None` | AI 서버가 최종 PNG 및 메타데이터를 적재할 BE 엔드포인트 URL |
 | `MAX_IMAGE_BYTES` | integer | `10485760` (10MB) | 단일 원본 이미지의 최대 허용 바이트 크기 (초과 시 413) |
 | `MAX_SOURCE_IMAGES` | integer | `12` | 업로드 가능한 원본 이미지 최대 개수 (대표 1장 + 추가 11장) |
 | `MAX_REQUEST_BYTES` | integer | `125829120` (120MB) | 전체 multipart 요청 본문의 최대 허용 바이트 크기 |

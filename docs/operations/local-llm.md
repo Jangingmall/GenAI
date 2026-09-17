@@ -92,7 +92,7 @@ generated/samples/local_najeon_box/
 
 `react_document.json`은 `schemaVersion: "2.0"`, `canvasWidth`, `root[]`를 갖는 JSON AST다.
 문서에는 실제 URL·HTML·JSX·이벤트 핸들러를 넣지 않으며 `img.props.imageId`를 `photos/` 또는
-상품 BE asset manifest와 연결한다. 서버가 허용 tag·부모/자식 관계·고유 ID·깊이/노드 수를
+BE asset manifest와 연결한다. 서버가 허용 tag·부모/자식 관계·고유 ID·깊이/노드 수를
 검증한 뒤 저장한다.
 
 상품 분석만 확인하고 역할별 원본 보존 컷도 만들지 않으려면 다음 옵션을 사용합니다.
@@ -104,8 +104,8 @@ PYTHONPATH=src .venv/bin/python scripts/runtime/run_local_detail_page.py \
 ```
 
 로컬 Qwen 분석은 외부 검색 API를 호출하지 않습니다. 분석 입력은 원본
-이미지와 상품 BE가 전달한 `user_hints`이며, `ProductProfileDto.observations`에는 이미지에서
-확인한 색·형태·구성 정보만 기록합니다. 검색이 필요한 최신 정보는 생성 전에 상품 BE가
+이미지와 BE가 전달한 `user_hints`이며, `ProductProfileDto.observations`에는 이미지에서
+확인한 색·형태·구성 정보만 기록합니다. 검색이 필요한 최신 정보는 생성 전에 BE가
 검수해 `user_hints`로 전달해야 합니다.
 
 ## Flux2 Klein 4B 임시 테스트
