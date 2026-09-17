@@ -44,6 +44,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
+import psycopg2
 import requests
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -212,11 +213,19 @@ def chat(
             cache_lookup=cache_lookup,
             cache_store=cache_store,
         )
-    except (requests.exceptions.RequestException, ValueError):
+    except (
+        requests.exceptions.RequestException,
+        ValueError,
+        psycopg2.OperationalError,
+    ):
         # llm.py의 chat_json은 Ollama에 requests.post(timeout=...)로 붙는다 — 응답
         # 지연·타임아웃·연결 실패가 여기서 그대로 예외로 올라오는데, 잡지 않으면
         # FastAPI 기본 500 에러(안내 문구 없는 서버 오류)로 나가버린다(사용자 시나리오
         # E29: AI 응답 지연/타임아웃 → Timeout 처리 및 재시도 제공).
+        # psycopg2.OperationalError도 같이 잡는 이유: search.py의 psycopg2.connect()가
+        # try 밖에 있어(A담당 파일이라 거기는 안 건드림), Postgres 접속 실패가 여기까지
+        # 그대로 올라온다 — LLM 문제와 동급의 "AI쪽 일시 장애"이니 같은 fallback으로
+        # 처리한다.
         # ValueError도 같이 잡는 이유: LLM이 response_format 스키마를 어기고 JSON이
         # 아닌 텍스트를 반환하면 intent.py의 json.loads·generate.py의
         # model_validate_json이 각각 json.JSONDecodeError·pydantic.ValidationError를
