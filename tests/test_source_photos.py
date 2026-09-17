@@ -568,6 +568,13 @@ def test_generated_scene_is_allowed_only_for_lifestyle_with_source_traceability(
     assert validator.validate(scene, source_images=sources) == "GENERATED"
     assert (
         validator.validate(
+            replace(scene, photo_id="lifestyle-02"),
+            source_images=sources,
+        )
+        == "GENERATED"
+    )
+    assert (
+        validator.validate(
             replace(scene, photo_id="hero"),
             source_images=sources,
         )
@@ -663,38 +670,131 @@ def test_single_product_usage_context_uses_a_generated_background_with_exact_sou
     assert lifestyle.fidelity_status == "VERIFIED"
 
 
-def test_additional_original_is_the_only_source_of_alternate():
+def test_two_sources_assign_roles_before_generation():
     primary = _source_fixture()
     side = _png(Image.new("RGB", (55, 40), "#816f55"))
 
-    photos = _generator().generate(
+    usage_roles = []
+    detail_roles = []
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            usage_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    usage = UsageSceneGenerator()
+    detail = DetailViewGenerator()
+    photos = _generator(
+        usage_scene_generator=usage,
+        detail_view_generator=detail,
+    ).generate(
         source_image=primary,
         source_mime_type="image/png",
         profile=_profile(),
         options=GenerationOptions(),
         additional_source_images=((side, "image/png"),),
     )
-    alternate = next(photo for photo in photos.photos if photo.photo_id == "alternate")
 
-    assert alternate.data == side
-    assert alternate.source_sha256 == hashlib.sha256(side).hexdigest()
-    assert alternate.product_generated is False
-    assert alternate.asset_mode == "source"
+    assert [photo.photo_id for photo in photos.photos[:2]] == ["hero", "packshot"]
+    assert [photo.data for photo in photos.photos[:2]] == [primary, side]
+    assert all(photo.product_generated is False for photo in photos.photos[:2])
+    assert not any(photo.photo_id == "alternate" for photo in photos.photos)
+    assert usage_roles == ["lifestyle"]
+    assert detail_roles == ["detail-02", "detail-03", "detail-04", "detail-05"]
+    assert any(photo.product_generated for photo in photos.photos[2:])
 
 
-def test_four_or_more_sources_skip_variation_generation_and_fill_layout_roles():
+def test_three_sources_assign_hero_packshot_detail_before_generating_lifestyle():
+    sources = (
+        _source_fixture(),
+        _png(Image.new("RGB", (80, 80), "#6d5b46")),
+        _png(Image.new("RGB", (80, 80), "#466d5b")),
+    )
+    usage_roles = []
+    detail_roles = []
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            usage_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    photos = _generator(
+        usage_scene_generator=UsageSceneGenerator(),
+        detail_view_generator=DetailViewGenerator(),
+    ).generate(
+        source_image=sources[0],
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+        additional_source_images=tuple(
+            (source, "image/png") for source in sources[1:]
+        ),
+    )
+
+    assert [photo.photo_id for photo in photos.photos[:3]] == [
+        "hero",
+        "packshot",
+        "detail",
+    ]
+    assert [photo.data for photo in photos.photos[:3]] == list(sources)
+    assert all(photo.product_generated is False for photo in photos.photos[:3])
+    assert usage_roles == ["lifestyle"]
+    assert detail_roles == ["detail-02", "detail-03", "detail-04", "detail-05"]
+
+
+def test_assigned_source_bytes_are_preserved_without_reencoding():
+    sources = (
+        _source_fixture(),
+        _png(Image.new("RGB", (81, 79), "#6d5b46")),
+        _png(Image.new("RGB", (77, 83), "#466d5b")),
+    )
+
+    photos = _generator().generate(
+        source_image=sources[0],
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+        additional_source_images=tuple(
+            (source, "image/png") for source in sources[1:]
+        ),
+    )
+
+    assert [photo.data for photo in photos.photos[:3]] == list(sources)
+
+
+def test_four_or_more_sources_keep_all_inputs_and_add_supplementary_generation():
     primary = _source_fixture()
     additional = tuple(
         (_png(Image.new("RGB", (80 + index, 80), (80 + index, 90, 100))), "image/png")
         for index in range(1, 4)
     )
 
-    class FailingBackgroundGenerator:
+    usage_roles = []
+    detail_roles = []
+
+    class UsageSceneGenerator:
         def generate(self, **kwargs):
-            raise AssertionError("background generation must be skipped")
+            usage_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
 
     photos = _generator(
-        background_generator=FailingBackgroundGenerator(),
+        usage_scene_generator=UsageSceneGenerator(),
+        detail_view_generator=DetailViewGenerator(),
         source_photo_variation_threshold=4,
     ).generate(
         source_image=primary,
@@ -704,17 +804,24 @@ def test_four_or_more_sources_skip_variation_generation_and_fill_layout_roles():
         additional_source_images=additional,
     )
 
-    assert [photo.photo_id for photo in photos.photos] == [
+    assert [photo.photo_id for photo in photos.photos[:4]] == [
         "hero",
         "packshot",
         "detail",
         "lifestyle",
     ]
-    assert [photo.data for photo in photos.photos] == [primary, *[data for data, _ in additional]]
+    assert [photo.data for photo in photos.photos[:4]] == [
+        primary,
+        *[data for data, _ in additional],
+    ]
     assert photos.photos[0].photo_id == "hero"
     assert photos.photos[0].asset_mode == "source_original"
-    assert all(photo.asset_mode == "source" for photo in photos.photos[1:])
-    assert all(photo.fidelity_status == "VERIFIED" for photo in photos.photos)
+    assert all(photo.asset_mode == "source" for photo in photos.photos[1:4])
+    assert all(photo.fidelity_status == "VERIFIED" for photo in photos.photos[:4])
+    assert usage_roles == ["lifestyle"]
+    assert detail_roles == ["detail-02", "detail-03", "detail-04", "detail-05"]
+    assert "lifestyle-02" in [photo.photo_id for photo in photos.photos]
+    assert any(photo.product_generated for photo in photos.photos)
 
 
 def test_fewer_sources_keep_one_source_detail_and_generate_three_detail_jobs():
@@ -772,10 +879,13 @@ def test_failed_detail_generation_falls_back_to_verified_source_crops():
     assert all(by_id[role].fidelity_status == "VERIFIED" for role in ("detail-02", "detail-03", "detail-04", "detail-05"))
 
 
-def test_four_sources_skip_all_generated_detail_jobs():
-    class FailingDetailViewGenerator:
+def test_four_sources_run_supplementary_detail_jobs_even_with_all_roles_provided():
+    detail_roles = []
+
+    class RecordingDetailViewGenerator:
         def generate(self, **kwargs):
-            raise AssertionError("generated detail jobs must be skipped")
+            detail_roles.append(kwargs["role"])
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
 
     primary = _source_fixture()
     additional = tuple(
@@ -783,7 +893,7 @@ def test_four_sources_skip_all_generated_detail_jobs():
         for index in range(1, 4)
     )
 
-    photos = _generator(detail_view_generator=FailingDetailViewGenerator()).generate(
+    photos = _generator(detail_view_generator=RecordingDetailViewGenerator()).generate(
         source_image=primary,
         source_mime_type="image/png",
         profile=_profile(),
@@ -793,7 +903,78 @@ def test_four_sources_skip_all_generated_detail_jobs():
 
     assert photos.photos[0].photo_id == "hero"
     assert photos.photos[0].asset_mode == "source_original"
-    assert all(photo.asset_mode == "source" for photo in photos.photos[1:])
+    assert all(photo.asset_mode == "source" for photo in photos.photos[1:4])
+    assert all(photo.product_generated is False for photo in photos.photos[:4])
+    assert detail_roles == ["detail-02", "detail-03", "detail-04", "detail-05"]
+    assert any(
+        photo.photo_id in {"detail-02", "detail-03", "detail-04", "detail-05"}
+        and photo.product_generated
+        for photo in photos.photos
+    )
+
+
+def test_more_sources_are_preserved_as_alternates_after_role_assignments():
+    primary = _source_fixture()
+    additional = tuple(
+        (_png(Image.new("RGB", (80 + index, 80), (80 + index, 90, 100))), "image/png")
+        for index in range(1, 5)
+    )
+
+    photos = _generator().generate(
+        source_image=primary,
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+        additional_source_images=additional,
+    )
+
+    assert [photo.photo_id for photo in photos.photos[:5]] == [
+        "hero",
+        "packshot",
+        "detail",
+        "lifestyle",
+        "alternate",
+    ]
+    assert [photo.data for photo in photos.photos[:5]] == [
+        primary,
+        *[data for data, _ in additional],
+    ]
+    assert all(photo.product_generated is False for photo in photos.photos[:5])
+
+
+def test_photo_ids_are_unique_for_one_through_five_sources():
+    sources = (
+        _source_fixture(),
+        _png(Image.new("RGB", (81, 79), "#6d5b46")),
+        _png(Image.new("RGB", (77, 83), "#466d5b")),
+        _png(Image.new("RGB", (73, 87), "#5b466d")),
+        _png(Image.new("RGB", (89, 71), "#466d6d")),
+    )
+
+    class UsageSceneGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#cbb8a2"))
+
+    class DetailViewGenerator:
+        def generate(self, **kwargs):
+            return _png(Image.new("RGB", (320, 320), "#8c7965"))
+
+    for count in range(1, 6):
+        photos = _generator(
+            usage_scene_generator=UsageSceneGenerator(),
+            detail_view_generator=DetailViewGenerator(),
+        ).generate(
+            source_image=sources[0],
+            source_mime_type="image/png",
+            profile=_profile(),
+            options=GenerationOptions(),
+            additional_source_images=tuple(
+                (source, "image/png") for source in sources[1:count]
+            ),
+        )
+
+        photo_ids = [photo.photo_id for photo in photos.photos]
+        assert len(photo_ids) == len(set(photo_ids)), count
 
 
 def test_fewer_than_threshold_keeps_source_preserving_variation_path():
@@ -824,7 +1005,8 @@ def test_fewer_than_threshold_keeps_source_preserving_variation_path():
         "lifestyle",
     ]
     assert "lifestyle" in calls
-    assert any(photo.photo_id == "alternate" for photo in photos.photos)
+    assert photos.photos[1].data == side
+    assert not any(photo.photo_id == "alternate" for photo in photos.photos)
 
 
 def test_composition_is_deterministic_and_detail_crop_stays_in_source_bounds():

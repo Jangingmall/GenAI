@@ -519,7 +519,8 @@ class ProductFidelityValidator:
     ) -> FidelityStatus:
         if photo.asset_mode in {"generated_scene", "generated_view"}:
             role_is_allowed = (
-                photo.asset_mode == "generated_scene" and photo.photo_id == "lifestyle"
+                photo.asset_mode == "generated_scene"
+                and photo.photo_id in {"lifestyle", "lifestyle-02"}
             ) or (
                 photo.asset_mode == "generated_view"
                 and photo.photo_id in {"detail-02", "detail-03", "detail-04", "detail-05"}
@@ -658,6 +659,7 @@ class SourcePreservingProductPhotoGenerator:
         "packshot": "원본 보존 팩샷",
         "detail": "원본 디테일 크롭",
         "lifestyle": "원본 제품 활용 장면",
+        "lifestyle-02": "AI 생성 활용 장면 추가",
         "scale": "원본 제품 크기 비교",
         "alternate": "추가 원본 구도",
     }
@@ -708,21 +710,40 @@ class SourcePreservingProductPhotoGenerator:
         if self.include_scale and "scale" not in roles:
             roles.append("scale")
         preserve_arrangement = self._preserve_arrangement(profile)
-
-        # Four source photos cover the current layout roles. In that case, do not
-        # extract a mask, request a background, or derive any additional view.
-        if len(source_images) >= max(self.source_photo_variation_threshold, len(roles)):
-            return self._validated_source_set(source_images, roles)
+        provided_count = min(len(source_images), len(roles))
+        provided_roles = tuple(roles[:provided_count])
+        missing_roles = tuple(roles[provided_count:])
+        provided_photos = [
+            self._source_original(
+                photo_id=role,
+                order=index,
+                data=data,
+                mime_type=mime_type,
+                label=self._labels[role],
+            )
+            for index, (role, (data, mime_type)) in enumerate(
+                zip(roles, source_images), start=1
+            )
+        ]
 
         source_record = self.asset_store.put(source_image, source_mime_type, "source")
         source_rgb = _decode_rgb(source_image)
         cutout = self.extractor.extract(source_image, source_mime_type)
+        reference_args = dict(
+            profile=profile,
+            source_asset_id=source_record.asset_id,
+            source_sha256=source_record.sha256,
+            source_image=source_image,
+            source_mime_type=source_mime_type,
+        )
 
         if cutout is None:
-            photos = [
-                (
+            photos = list(provided_photos)
+            for role in missing_roles:
+                order = len(photos) + 1
+                photos.append(
                     self._source_hero(
-                        order=index,
+                        order=order,
                         source_image=source_image,
                         source_mime_type=source_mime_type,
                         source_asset_id=source_record.asset_id,
@@ -732,7 +753,7 @@ class SourcePreservingProductPhotoGenerator:
                     if role == "hero"
                     else self._source_fallback(
                         role=role,
-                        order=index,
+                        order=order,
                         source_image=source_image,
                         source_mime_type=source_mime_type,
                         source_asset_id=source_record.asset_id,
@@ -740,31 +761,20 @@ class SourcePreservingProductPhotoGenerator:
                         size=source_rgb.size,
                     )
                 )
-                for index, role in enumerate(roles, start=1)
-            ]
-            # Reference-image editing does not require a foreground mask.
-            reference_args = dict(
-                profile=profile,
-                source_asset_id=source_record.asset_id,
-                source_sha256=source_record.sha256,
-                source_image=source_image,
-                source_mime_type=source_mime_type,
-            )
-            if "lifestyle" in roles:
-                index = roles.index("lifestyle")
-                scene = self._generated_usage_scene(order=index + 1, **reference_args)
+            if "lifestyle" in missing_roles:
+                index = next(
+                    index
+                    for index, photo in enumerate(photos)
+                    if photo.photo_id == "lifestyle"
+                )
+                scene = self._generated_usage_scene(
+                    order=photos[index].order, **reference_args
+                )
                 if scene is not None:
                     photos[index] = scene
-            if "detail" in roles:
-                for role in ("detail-02", "detail-03", "detail-04", "detail-05"):
-                    view = self._generated_detail_view(
-                        role=role, order=len(photos) + 1, **reference_args
-                    )
-                    if view is not None:
-                        photos.append(view)
         else:
-            photos = []
-            if "hero" in roles:
+            photos = list(provided_photos)
+            if "hero" in missing_roles:
                 photos.append(
                     self._source_hero(
                         order=len(photos) + 1,
@@ -775,7 +785,7 @@ class SourcePreservingProductPhotoGenerator:
                         size=source_rgb.size,
                     )
                 )
-            if "packshot" in roles:
+            if "packshot" in missing_roles:
                 if preserve_arrangement:
                     photos.append(
                         self._source_fallback(
@@ -799,15 +809,16 @@ class SourcePreservingProductPhotoGenerator:
                             background_generated=False,
                         )
                     )
-            detail_crops = self._detail_crops(
-                order=len(photos) + 1,
-                source=source_rgb,
-                cutout=cutout,
-                source_asset_id=source_record.asset_id,
-            )
-            if "detail" in roles:
+            detail_crops = []
+            if "detail" in missing_roles:
+                detail_crops = self._detail_crops(
+                    order=len(photos) + 1,
+                    source=source_rgb,
+                    cutout=cutout,
+                    source_asset_id=source_record.asset_id,
+                )
                 photos.append(detail_crops[0])
-            if "lifestyle" in roles:
+            if "lifestyle" in missing_roles:
                 generated_scene = self._generated_usage_scene(
                     profile=profile,
                     order=len(photos) + 1,
@@ -832,7 +843,7 @@ class SourcePreservingProductPhotoGenerator:
                             background_generated=generated,
                         )
                     )
-            if "scale" in roles:
+            if "scale" in missing_roles:
                 if preserve_arrangement:
                     photos.append(
                         self._source_fallback(
@@ -859,29 +870,9 @@ class SourcePreservingProductPhotoGenerator:
                             background_generated=scale_generated,
                         )
                     )
-            if "detail" in roles:
-                for detail_photo in detail_crops[1:]:
-                    order = len(photos) + 1
-                    generated_view = None
-                    if detail_photo.photo_id in {
-                        "detail-02",
-                        "detail-03",
-                        "detail-04",
-                        "detail-05",
-                    }:
-                        generated_view = self._generated_detail_view(
-                            profile=profile,
-                            role=detail_photo.photo_id,
-                            order=order,
-                            source_asset_id=source_record.asset_id,
-                            source_sha256=source_record.sha256,
-                            source_image=source_image,
-                            source_mime_type=source_mime_type,
-                        )
-                    photos.append(generated_view or replace(detail_photo, order=order))
 
         for index, (alternate_data, alternate_mime) in enumerate(
-            additional_source_images, start=1
+            source_images[len(roles) :], start=1
         ):
             photos.append(
                 self._source_original(
@@ -892,6 +883,44 @@ class SourcePreservingProductPhotoGenerator:
                     label=self._labels["alternate"],
                 )
             )
+
+        if "lifestyle" in provided_roles:
+            generated_scene = self._generated_usage_scene(
+                order=len(photos) + 1,
+                photo_id="lifestyle-02",
+                **reference_args,
+            )
+            if generated_scene is not None:
+                photos.append(generated_scene)
+
+        if "detail" in provided_roles:
+            for role in ("detail-02", "detail-03", "detail-04", "detail-05"):
+                generated_view = self._generated_detail_view(
+                    role=role,
+                    order=len(photos) + 1,
+                    **reference_args,
+                )
+                if generated_view is not None:
+                    photos.append(generated_view)
+        elif "detail" in missing_roles:
+            if cutout is None:
+                for role in ("detail-02", "detail-03", "detail-04", "detail-05"):
+                    generated_view = self._generated_detail_view(
+                        role=role,
+                        order=len(photos) + 1,
+                        **reference_args,
+                    )
+                    if generated_view is not None:
+                        photos.append(generated_view)
+            else:
+                for detail_photo in detail_crops[1:]:
+                    order = len(photos) + 1
+                    generated_view = self._generated_detail_view(
+                        role=detail_photo.photo_id,
+                        order=order,
+                        **reference_args,
+                    )
+                    photos.append(generated_view or replace(detail_photo, order=order))
 
         safe_photos = []
         for photo in photos:
@@ -905,6 +934,7 @@ class SourcePreservingProductPhotoGenerator:
         *,
         profile: ProductProfileDto,
         order: int,
+        photo_id: str = "lifestyle",
         source_asset_id: str,
         source_sha256: str,
         source_image: bytes,
@@ -925,9 +955,13 @@ class SourcePreservingProductPhotoGenerator:
         except (RuntimeError, ValueError, OSError):
             return None
         return ProductPhoto(
-            photo_id="lifestyle",
+            photo_id=photo_id,
             order=order,
-            label="AI 생성 활용 장면",
+            label=(
+                "AI 생성 활용 장면"
+                if photo_id == "lifestyle"
+                else self._labels[photo_id]
+            ),
             data=data,
             mime_type="image/png",
             width=image.width,
