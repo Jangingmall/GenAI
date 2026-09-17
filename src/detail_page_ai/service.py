@@ -7,7 +7,7 @@ import json
 import uuid
 
 from .backend_client import BackendDeliveryError
-from .ai_dto import AiToProductBeStatusResponseDto
+from .ai_dto import AiToBeStatusResponseDto
 from .dto import (
     AiFeAcceptedResponse,
     AiFeDraftResultDto,
@@ -334,11 +334,11 @@ class DetailPageJobService:
         self.repository.save(job)
         return rebuilt.fe_draft
 
-    def get_backend(self, job_id: str) -> AiToProductBeStatusResponseDto:
+    def get_backend(self, job_id: str) -> AiToBeStatusResponseDto:
         job = self.repository.get(job_id)
         if not job.product_id:
             raise ValueError("Job is not associated with a Product BE product")
-        return AiToProductBeStatusResponseDto.from_fe_status(
+        return AiToBeStatusResponseDto.from_fe_status(
             product_id=job.product_id,
             response=self.get(job_id),
         )

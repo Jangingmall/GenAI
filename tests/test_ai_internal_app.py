@@ -8,7 +8,7 @@ from fastapi import HTTPException, UploadFile
 from starlette.datastructures import Headers
 
 import detail_page_ai.app as app_module
-from detail_page_ai.ai_dto import AiToProductBeStatusResponseDto
+from detail_page_ai.ai_dto import AiToBeStatusResponseDto
 from detail_page_ai.dto import (
     AiFeResultDto,
     AiFeProductSummaryDto,
@@ -52,7 +52,7 @@ class RecordingService:
         }
 
     def get_backend(self, job_id):
-        return AiToProductBeStatusResponseDto(
+        return AiToBeStatusResponseDto(
             product_id="product-42",
             job_id=job_id,
             request_id="request-42",

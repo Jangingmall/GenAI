@@ -26,7 +26,7 @@ from .runner import (
 class _UnconfiguredBackend:
     def persist(self, request, image):
         raise BackendDeliveryError(
-            "BACKEND_PRODUCT_URL is not configured", retryable=True
+            "BACKEND_URL is not configured", retryable=True
         )
 
 
@@ -130,11 +130,11 @@ def build_service(settings) -> DetailPageJobService:
     renderer = HtmlDetailPageRenderer()
     backend = (
         BackendProductClient(
-            url=settings.backend_product_url,
+            url=settings.backend_url,
             token=settings.backend_auth_token,
             timeout=settings.backend_timeout_seconds,
         )
-        if settings.backend_product_url
+        if settings.backend_url
         else _UnconfiguredBackend()
     )
     return DetailPageJobService(

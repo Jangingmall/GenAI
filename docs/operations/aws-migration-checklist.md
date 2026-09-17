@@ -148,10 +148,10 @@
 - **무엇을 준비하는가**: `src/detail_page_ai/config.py`의 `Settings` 및 `.env.example` 정본에 부합하는 환경변수 등록.
   - SGLang 연동: `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`, `LOCAL_TEXT_URL=http://sglang-text:30000`, `LOCAL_IMAGE_URL=http://sglang-image:30001`, `LOCAL_TEXT_MODEL=qwen-text`, `LOCAL_IMAGE_MODEL=flux-klein`.
   - 모델 버전 고정: `TEXT_MODEL_REVISION=6e134bae811fb5adac50ee042ae5f029ac6779aa`, `IMAGE_MODEL_REVISION=58c2804f31af12c8888504b96250010c50b55e44`.
-  - 인증/보안: `AI_INTERNAL_AUTH_TOKEN`, `BACKEND_PRODUCT_URL`, `BACKEND_AUTH_TOKEN`, `AI_CORS_ORIGINS`.
+  - 인증/보안: `AI_INTERNAL_AUTH_TOKEN`, `BACKEND_URL`, `BACKEND_AUTH_TOKEN`, `AI_CORS_ORIGINS`.
 - **없으면 무엇이 막히는가**:
   - `AI_INTERNAL_AUTH_TOKEN` 누락 시: 모든 `/internal/v1/ai/*` 호출이 401 Unauthorized로 차단.
-  - `BACKEND_PRODUCT_URL` / `BACKEND_AUTH_TOKEN` 누락 시: 승인 후 BE로의 outbox 배달이 중단됨.
+  - `BACKEND_URL` / `BACKEND_AUTH_TOKEN` 누락 시: 승인 후 BE로의 outbox 배달이 중단됨.
   - `AI_CORS_ORIGINS` 미설정 시: 판매자 센터 웹 브라우저에서 CORS 차단 발생.
 - **확인 방법**:
   ```bash
@@ -172,7 +172,7 @@
 | **2단계** | 텍스트 분석 및 Draft 생성 | 상품 이미지 1장 업로드 후 `GET .../jobs/<job_id>` 폴링 | status가 `DRAFT_READY`로 전이 | `sglang-text` 응답 타임아웃 또는 JSON 파싱 오류 |
 | **3단계** | 이미지 생성 및 합성 | 2단계 완료 후 `photos/` 내 파일 생성 확인 | `hero`, `packshot`, `lifestyle`, `detail` 생성 | 확산 모델 VRAM OOM 또는 호출 규약 오류 |
 | **4단계** | 최종 상세페이지 PNG 렌더 | 승인 API (`POST .../approve`) 호출 | status가 `COMPLETED` 및 `detail_page.png` 생성 | Node.js / Playwright Chromium 라이브러리 누락 |
-| **5단계** | BE outbox 전달 | BE API 및 DB 조회 | BE에 `AiBeProductPersistRequest` 수신 확인 | `BACKEND_PRODUCT_URL` 오설정 또는 인증 토큰 오류 |
+| **5단계** | BE outbox 전달 | BE API 및 DB 조회 | BE에 `AiBeProductPersistRequest` 수신 확인 | `BACKEND_URL` 오설정 또는 인증 토큰 오류 |
 | **6단계** | 장애 복구 검증 | `docker compose restart detail-page-ai` | 재기동 후 `state.sqlite3` 유지 및 미완료 작업 복구 | 도커 볼륨 미마운트 (임시 컨테이너 파일시스템 사용) |
 
 ---
@@ -230,6 +230,6 @@
 | **GPU 인스턴스 타입** | `g6e.xlarge` (L40S 48GB; 온디맨드 기준 시간당 약 $1.8 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 도입 및 상주 아키텍처 승인 | 인프라 / FinOps 팀 | 결정 필요 (실제 단가·할인 옵션 검증이 승인 조건에 포함됨) |
 | **EKS 전환 여부 및 매니페스트 구축** | 현재 확정된 단일 호스트 Docker Compose 운영 대비 EKS 전환 필요성 검토 및 매니페스트/파드 분할 아키텍처 수립 | 인프라 / DevOps 팀 | 미결정 상태 (현재 EKS 전용 매니페스트 전무) |
 | **FLUX 모델 상업 라이선스 확인** | 원본 FLUX.2-klein-9B의 Non-Commercial 라이선스 조건과 커뮤니티 양자화본(`circulus/FLUX.2-klein-9B-bnb-4bit`)의 상업 서비스 허용 범위 확인 | 관리자 / 법무팀 | 확인 필요 (필요 시 Apache 2.0 라이선스의 FLUX.2-klein-4B 대안 전환 검토) |
-| **BE 엔드포인트** | 운영/스테이징 `BACKEND_PRODUCT_URL` 및 서비스 계정 토큰 | 상품 백엔드(BE) 팀 | 결정 필요 |
+| **BE 엔드포인트** | 운영/스테이징 `BACKEND_URL` 및 서비스 계정 토큰 | 상품 백엔드(BE) 팀 | 결정 필요 |
 | **프런트엔드 도메인** | `AI_CORS_ORIGINS`에 등록할 판매자 센터 정식 도메인 목록 | 프런트엔드(FE) 팀 | 결정 필요 |
 | **다중 파드 확장 여부** | 1단계: 단일 호스트(Docker Compose) / 단일 파드 유지 vs 2단계: RDS(PostgreSQL)+S3 전환 | 아키텍처 / 프로젝트 PM | 1단계 확정, 2단계 로드맵 수립 필요 |

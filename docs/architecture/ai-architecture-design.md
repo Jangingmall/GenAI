@@ -248,7 +248,7 @@ DRAFT_READY
 
 ### 6.4 결과 적재
 
-AI는 `AiToProductBePersistRequestDto` metadata와 다음 multipart 파일을 BE 적재 endpoint로 보낸다.
+AI는 `AiToBePersistRequestDto` metadata와 다음 multipart 파일을 BE 적재 endpoint로 보낸다.
 
 - `detail_page_image`: 전체 PNG
 - `detail_page_section_NN`: 섹션 PNG
@@ -271,12 +271,12 @@ POST /internal/v1/ai/detail-page-renders
 요청은 `X-AI-Internal-Token`을 요구하며, 작업 생성·승인은 `Idempotency-Key`와 metadata의
 `idempotency_key`가 일치해야 한다. 방향별 DTO는 다음과 같다.
 
-- `ProductBeToAiCreateJobRequestDto`
-- `ProductBeToAiSaveDraftRequestDto`
-- `ProductBeToAiApproveDraftRequestDto`
-- `AiToProductBeAcceptedResponseDto`
-- `AiToProductBeStatusResponseDto`
-- `AiToProductBeApprovedResponseDto`
+- `BeToAiCreateJobRequestDto`
+- `BeToAiSaveDraftRequestDto`
+- `BeToAiApproveDraftRequestDto`
+- `AiToBeAcceptedResponseDto`
+- `AiToBeStatusResponseDto`
+- `AiToBeApprovedResponseDto`
 
 ### 7.2 FE projection
 
@@ -367,7 +367,7 @@ provider와 `127.0.0.1:11234`는 서버 운영 provider가 아니며, 서버 SGL
 - Renderer: 브라우저 프로세스와 로컬 모델 메모리를 분리한다.
 - 로컬 MLX Serve: Qwen/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
 - SQLite/파일 저장소: job, idempotency, generation metadata, outbox, 원본·결과를 보관한다.
-- BE 적재: `BACKEND_PRODUCT_URL`이 설정된 경우에만 선택적으로 호출한다.
+- BE 적재: `BACKEND_URL`이 설정된 경우에만 선택적으로 호출한다.
 
 ## 9. 동시성·재시도·멱등성
 

@@ -24,26 +24,26 @@ Serve 또는 서버 SGLang의 Qwen/FLUX 기반 이미지 분석, 사실 기반 �
 
 | 방향 | Python DTO | 책임 |
 |---|---|---|
-| BE → AI 작업 생성 | `ProductBeToAiCreateJobRequestDto` | 상품 식별자·원본 자산·힌트·생성 옵션 |
-| BE → AI 최종 렌더링 | `ProductBeToAiApproveDraftRequestDto` | 장인이 수정·승인한 draft와 원본 식별자 |
-| BE → AI 초안 저장 | `ProductBeToAiSaveDraftRequestDto` | React JSON 미리보기 문구 저장 |
-| AI → BE 접수 응답 | `AiToProductBeAcceptedResponseDto` | 비동기 작업 접수와 polling URL |
-| AI → BE 상태 응답 | `AiToProductBeStatusResponseDto` | 상품 식별자를 포함한 작업 상태·결과 |
-| AI → BE 승인 결과 | `AiToProductBeApprovedResponseDto` | 최종 PNG 결과와 저장 ACK |
-| AI → BE 적재 요청 | `AiToProductBePersistRequestDto` | 분석 전체 결과·해시·PNG 자산 메타데이터 |
-| BE → AI 적재 ACK | `ProductBeToAiPersistAckDto` | `SAVED`/`ALREADY_SAVED` 멱등 결과 |
+| BE → AI 작업 생성 | `BeToAiCreateJobRequestDto` | 상품 식별자·원본 자산·힌트·생성 옵션 |
+| BE → AI 최종 렌더링 | `BeToAiApproveDraftRequestDto` | 장인이 수정·승인한 draft와 원본 식별자 |
+| BE → AI 초안 저장 | `BeToAiSaveDraftRequestDto` | React JSON 미리보기 문구 저장 |
+| AI → BE 접수 응답 | `AiToBeAcceptedResponseDto` | 비동기 작업 접수와 polling URL |
+| AI → BE 상태 응답 | `AiToBeStatusResponseDto` | 상품 식별자를 포함한 작업 상태·결과 |
+| AI → BE 승인 결과 | `AiToBeApprovedResponseDto` | 최종 PNG 결과와 저장 ACK |
+| AI → BE 적재 요청 | `AiToBePersistRequestDto` | 분석 전체 결과·해시·PNG 자산 메타데이터 |
+| BE → AI 적재 ACK | `BeToAiPersistAckDto` | `SAVED`/`ALREADY_SAVED` 멱등 결과 |
 
 구현 위치:
 
 ```python
 from detail_page_ai.ai_dto import (
-    AiToProductBeAcceptedResponseDto,
-    AiToProductBeApprovedResponseDto,
-    AiToProductBePersistRequestDto,
-    AiToProductBeStatusResponseDto,
-    ProductBeToAiApproveDraftRequestDto,
-    ProductBeToAiCreateJobRequestDto,
-    ProductBeToAiPersistAckDto,
+    AiToBeAcceptedResponseDto,
+    AiToBeApprovedResponseDto,
+    AiToBePersistRequestDto,
+    AiToBeStatusResponseDto,
+    BeToAiApproveDraftRequestDto,
+    BeToAiCreateJobRequestDto,
+    BeToAiPersistAckDto,
 )
 ```
 
@@ -198,7 +198,7 @@ Multipart 필드:
 |---|---|---:|---|
 | `product_image` | file | O | 기준 원본 제품 이미지 |
 | `product_images` | repeated file | X | 장인이 추가한 원본 구도 |
-| `metadata` | JSON string | O | `ProductBeToAiCreateJobRequestDto` |
+| `metadata` | JSON string | O | `BeToAiCreateJobRequestDto` |
 
 `metadata` 예시:
 
@@ -358,7 +358,7 @@ Multipart 필드:
 |---|---|---:|---|
 | `product_image` | file | X | 기준 원본 제품 이미지. 초안 작업에 저장된 원본을 재사용할 수 있음 |
 | `product_images` | repeated file | X | 추가 원본 구도 |
-| `metadata` | JSON string | O | `ProductBeToAiApproveDraftRequestDto` |
+| `metadata` | JSON string | O | `BeToAiApproveDraftRequestDto` |
 
 `metadata` 예시:
 
@@ -427,7 +427,7 @@ Multipart 필드:
 
 ## 5. AI → BE: 생성 결과 적재
 
-AI는 `BACKEND_PRODUCT_URL`로 설정된 BE 적재 API에 multipart 요청을 보냅니다. 적재 API의
+AI는 `BACKEND_URL`로 설정된 BE 적재 API에 multipart 요청을 보냅니다. 적재 API의
 구체적인 BE URL과 DB 구현은 BE 팀의 범위입니다.
 
 FE/상태 응답의 자산 모드는 `RESPONSE_ASSET_MODE`로 결정합니다. `base64`는 로컬 데모용,
@@ -439,7 +439,7 @@ FE/상태 응답의 자산 모드는 `RESPONSE_ASSET_MODE`로 결정합니다. `
 
 | 파트 | 필수 | 내용 |
 |---|---:|---|
-| `metadata` | O | `AiToProductBePersistRequestDto` (`AiBeProductPersistRequest`를 상품 식별자 필수로 강화한 모델) |
+| `metadata` | O | `AiToBePersistRequestDto` (`AiBeProductPersistRequest`를 상품 식별자 필수로 강화한 모델) |
 | `detail_page_image` | O | 전체 상세페이지 PNG |
 | `detail_page_section_NN` | X | 순서가 있는 섹션 PNG |
 | `product_photo_NN` | X | fidelity 검증을 통과한 제품 사진 |

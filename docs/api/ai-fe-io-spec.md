@@ -74,7 +74,7 @@ AI가 반환한 `result.detail_page`는 다음 자산을 제공합니다.
 
 ## 3. BE가 AI에 전달할 생성 메타데이터
 
-작업 생성 시 `ProductBeToAiCreateJobRequestDto`를 사용합니다.
+작업 생성 시 `BeToAiCreateJobRequestDto`를 사용합니다.
 
 ```json
 {
@@ -97,7 +97,7 @@ AI가 반환한 `result.detail_page`는 다음 자산을 제공합니다.
 }
 ```
 
-승인 시에는 `ProductBeToAiApproveDraftRequestDto`를 사용합니다. `draft_id`에는 초안 작업의
+승인 시에는 `BeToAiApproveDraftRequestDto`를 사용합니다. `draft_id`에는 초안 작업의
 `job_id`를 넣고 `idempotency_key`를 고정합니다. `draft`에는 장인이 수정한
 문구·특징·`layout_id`만 담으며, 승인 렌더링에서 AI 분석을 다시 호출하지 않습니다.
 

@@ -49,7 +49,7 @@ FE는 공개 job 식별자를 유지할 수 있다. source_asset_id와 내부 �
 
 ### AI → BE 적재
 
-BACKEND_PRODUCT_URL로 metadata, detail_page_image, detail_page_section_NN,
+BACKEND_URL로 metadata, detail_page_image, detail_page_section_NN,
 product_photo_NN을 보낸다. Idempotency-Key는 generation_id이며 설정 시 Bearer 내부 토큰을 사용한다.
 BE는 generation_id에 유일 제약을 두고 파일·metadata 저장 완료 후
 generation_id/product_id/status(SAVED 또는 ALREADY_SAVED)/saved_at을 ACK로 반환한다.
@@ -195,7 +195,7 @@ Multipart 파트:
 
 - `product_image`: 대표 원본 이미지, 필수
 - `product_images`: 추가 원본 이미지, 선택·반복
-- `metadata`: `ProductBeToAiCreateJobRequestDto` JSON, 필수
+- `metadata`: `BeToAiCreateJobRequestDto` JSON, 필수
 
 `metadata` 예시:
 
@@ -281,7 +281,7 @@ QUEUED (0%) → ANALYZING (15%) → EXTRACTING (60%) → DRAFT_READY (100%)
 | `COMPOSING` | 55% | 제품 누끼와 생성 배경의 기하학적 합성 |
 | `VERIFYING` | 65% | 원본 컷아웃 보존율 및 씬 분기 적합성 자동 품질 게이트 검증 |
 | `RENDERING` | 75% | React AST 기반 HTML 조립 및 Node Puppeteer 최종 PNG 렌더링 |
-| `DELIVERING` | 90% | 생성 자산 및 메타데이터를 BE(`BACKEND_PRODUCT_URL`)로 전달 |
+| `DELIVERING` | 90% | 생성 자산 및 메타데이터를 BE(`BACKEND_URL`)로 전달 |
 | `COMPLETED` | 100% | 최종 완료 및 BE 적재 성공 |
 | `FAILED` | - | 처리 도중 복구 불가능한 에러 발생 |
 
@@ -320,7 +320,7 @@ Idempotency-Key: <approval-idempotency-key>
 
 Multipart 파트:
 
-- `metadata`: `ProductBeToAiApproveDraftRequestDto` JSON, 필수
+- `metadata`: `BeToAiApproveDraftRequestDto` JSON, 필수
 - `product_image`: AI에 저장된 원본이 없을 때만 선택 전달
 - `product_images`: 추가 원본이 필요할 때 선택 전달
 
@@ -544,7 +544,7 @@ BE가 없는 로컬 단독 개발 및 프로토타입 브라우저 테스트 환
 |---|---|---|---|
 | `POST /api/v1/ai/detail-page-jobs` | `multipart/form-data` | `product_image` (파일, 필수)<br>`product_images` (파일 배열, 선택)<br>`product_name`, `making_method`, `care_guide` (폼)<br>`request_id`, `template_id`, `locale`, `options` (폼) | `202 Accepted`<br>`AiFeJobAcceptedResponseDto` |
 | `GET /api/v1/ai/detail-page-jobs/{job_id}` | (없음) | 경로 파라미터 `job_id` | `200 OK`<br>`AiFeJobStatusResponseDto` |
-| `PUT /api/v1/ai/detail-page-jobs/{job_id}/draft` | `application/json` | `ProductBeToAiSaveDraftRequestDto`<br>(`draft_id`, `version`, `draft`) | `200 OK`<br>`AiFeDraftResponseDto` |
+| `PUT /api/v1/ai/detail-page-jobs/{job_id}/draft` | `application/json` | `BeToAiSaveDraftRequestDto`<br>(`draft_id`, `version`, `draft`) | `200 OK`<br>`AiFeDraftResponseDto` |
 | `POST /api/v1/ai/detail-page-renders` | `multipart/form-data` | `product_image` (파일, 필수)<br>`draft` (JSON 문자열, 필수)<br>`product_images`, `request_id`, `options` (폼) | `200 OK`<br>`AiFeApprovedResponseDto` |
 
 ## 11. 구현 기준 및 검증 파일
@@ -585,7 +585,7 @@ AI 시스템 구동 및 BE 연동 시 사용되는 환경 변수 계약은 [`src
 |---|---|---|---|
 | `AI_CORS_ORIGINS` | string (쉼표 구분) | `http://127.0.0.1:4173,http://localhost:4173` | CORS 허용 오리진 목록 |
 | `AI_INTERNAL_AUTH_TOKEN` | string / null | `None` | BE가 `X-AI-Internal-Token` 헤더로 전송하는 공유 시크릿 토큰 |
-| `BACKEND_PRODUCT_URL` | string / null | `None` | AI 서버가 최종 PNG 및 메타데이터를 적재할 BE 엔드포인트 URL |
+| `BACKEND_URL` | string / null | `None` | AI 서버가 최종 PNG 및 메타데이터를 적재할 BE 엔드포인트 URL |
 | `MAX_IMAGE_BYTES` | integer | `10485760` (10MB) | 단일 원본 이미지의 최대 허용 바이트 크기 (초과 시 413) |
 | `MAX_SOURCE_IMAGES` | integer | `12` | 업로드 가능한 원본 이미지 최대 개수 (대표 1장 + 추가 11장) |
 | `MAX_REQUEST_BYTES` | integer | `125829120` (120MB) | 전체 multipart 요청 본문의 최대 허용 바이트 크기 |

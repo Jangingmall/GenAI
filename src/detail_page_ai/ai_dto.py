@@ -31,7 +31,7 @@ class _StrictAiBeDto(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class ProductBeToAiCreateJobRequestDto(_StrictAiBeDto):
+class BeToAiCreateJobRequestDto(_StrictAiBeDto):
     """JSON metadata sent by Product BE with the original image multipart."""
 
     model_config = ConfigDict(extra="forbid")
@@ -46,7 +46,7 @@ class ProductBeToAiCreateJobRequestDto(_StrictAiBeDto):
     options: GenerationOptions = Field(default_factory=GenerationOptions)
 
 
-class ProductBeToAiApproveDraftRequestDto(_StrictAiBeDto):
+class BeToAiApproveDraftRequestDto(_StrictAiBeDto):
     """Creator-approved draft metadata sent by Product BE for final PNG render."""
 
     model_config = ConfigDict(extra="forbid")
@@ -60,7 +60,7 @@ class ProductBeToAiApproveDraftRequestDto(_StrictAiBeDto):
     options: GenerationOptions = Field(default_factory=GenerationOptions)
 
 
-class ProductBeToAiSaveDraftRequestDto(_StrictAiBeDto):
+class BeToAiSaveDraftRequestDto(_StrictAiBeDto):
     """Creator edits saved without invoking analysis or image generation."""
 
     model_config = ConfigDict(extra="forbid")
@@ -70,7 +70,7 @@ class ProductBeToAiSaveDraftRequestDto(_StrictAiBeDto):
     draft: ApprovedDraftDto
 
 
-class AiToProductBeAcceptedResponseDto(_StrictAiBeDto):
+class AiToBeAcceptedResponseDto(_StrictAiBeDto):
     """Accepted response returned to Product BE for an asynchronous job."""
 
     product_id: str = Field(min_length=1, max_length=120)
@@ -81,7 +81,7 @@ class AiToProductBeAcceptedResponseDto(_StrictAiBeDto):
     created_at: datetime
 
 
-class AiToProductBeStatusResponseDto(_StrictAiBeDto):
+class AiToBeStatusResponseDto(_StrictAiBeDto):
     """Internal status projection used by Product BE polling/recovery."""
 
     product_id: str = Field(min_length=1, max_length=120)
@@ -97,7 +97,7 @@ class AiToProductBeStatusResponseDto(_StrictAiBeDto):
     @classmethod
     def from_fe_status(
         cls, *, product_id: str, response: AiFeStatusResponse
-    ) -> "AiToProductBeStatusResponseDto":
+    ) -> "AiToBeStatusResponseDto":
         return cls(
             product_id=product_id,
             job_id=response.job_id,
@@ -111,7 +111,7 @@ class AiToProductBeStatusResponseDto(_StrictAiBeDto):
         )
 
 
-class AiToProductBeApprovedResponseDto(_StrictAiBeDto):
+class AiToBeApprovedResponseDto(_StrictAiBeDto):
     """Synchronous final-render response returned to Product BE."""
 
     product_id: str = Field(min_length=1, max_length=120)
@@ -125,25 +125,25 @@ class AiToProductBeApprovedResponseDto(_StrictAiBeDto):
 # The canonical production request tightens the legacy shared model by making
 # Product BE identity mandatory.  The direct demo still uses the legacy model
 # when no product identity exists.
-class AiToProductBePersistRequestDto(AiBeProductPersistRequest):
+class AiToBePersistRequestDto(AiBeProductPersistRequest):
     model_config = ConfigDict(extra="forbid")
 
     product_id: str = Field(min_length=1, max_length=120)
 
 
-class ProductBeToAiPersistAckDto(AiBePersistAck):
+class BeToAiPersistAckDto(AiBePersistAck):
     """Strict ACK returned by Product BE after AI asset persistence."""
 
     model_config = ConfigDict(extra="forbid")
 
 
 __all__ = [
-    "AiToProductBeAcceptedResponseDto",
-    "AiToProductBeApprovedResponseDto",
-    "AiToProductBePersistRequestDto",
-    "AiToProductBeStatusResponseDto",
-    "ProductBeToAiApproveDraftRequestDto",
-    "ProductBeToAiCreateJobRequestDto",
-    "ProductBeToAiSaveDraftRequestDto",
-    "ProductBeToAiPersistAckDto",
+    "AiToBeAcceptedResponseDto",
+    "AiToBeApprovedResponseDto",
+    "AiToBePersistRequestDto",
+    "AiToBeStatusResponseDto",
+    "BeToAiApproveDraftRequestDto",
+    "BeToAiCreateJobRequestDto",
+    "BeToAiSaveDraftRequestDto",
+    "BeToAiPersistAckDto",
 ]

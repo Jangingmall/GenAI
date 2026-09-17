@@ -158,7 +158,7 @@ API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 - `POST /internal/v1/ai/detail-page-renders`
   - BE 전용. 장인이 수정한 `draft` JSON과 원본 이미지로 최종 PNG 생성
   - 분석 AI를 다시 호출하지 않고 승인 draft에서 `react_document`를 재조립·검증한 뒤 HTML/CSS + Playwright로 전체·섹션 PNG 생성
-- `BACKEND_PRODUCT_URL`
+- `BACKEND_URL`
   - AI가 BE로 생성 메타데이터·전체 PNG·섹션·제품 사진을 전달하는 적재 endpoint
 
 내부 API는 `AI_INTERNAL_AUTH_TOKEN`과 `X-AI-Internal-Token`을 사용합니다. 로컬 데모 페이지는

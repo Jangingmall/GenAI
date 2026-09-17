@@ -72,7 +72,7 @@
 3. **모델 가중치**: Hugging Face 허브에서 고정 커밋 기반으로 다운로드되어 볼륨 `huggingface-cache`에 1회 캐싱 (`HF_TOKEN` 설정 가능).
 4. **컨테이너 이미지**: `detail-page-ai` 애플리케이션 이미지 및 `local/sglang-diffusion:0.5.19` 확산 서버 이미지 빌드.
 5. **스토리지**: 도커 볼륨 `detail-page-ai-data` 마운트 (`/var/lib/detail-page-ai`).
-6. **환경변수/보안**: `.env.example`을 기반으로 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `AI_INTERNAL_AUTH_TOKEN`, `BACKEND_PRODUCT_URL`, `BACKEND_AUTH_TOKEN`, `AI_CORS_ORIGINS` 설정.
+6. **환경변수/보안**: `.env.example`을 기반으로 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `AI_INTERNAL_AUTH_TOKEN`, `BACKEND_URL`, `BACKEND_AUTH_TOKEN`, `AI_CORS_ORIGINS` 설정.
 
 ---
 
@@ -230,7 +230,7 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 | `PRODUCT_PHOTO_SHOTS` | 콤마 구분 문자열 | `hero,packshot,detail,lifestyle` | `hero,packshot,detail,lifestyle` | 생성 대상 사진 역할 목록 |
 | `SOURCE_PHOTO_VARIATION_THRESHOLD` | int (1~12) | `4` | `4` | 원본 사진 추가 컷 파생 임계값 |
 | `DETAIL_PAGE_RENDERER` | `html` | `html` | `html` | Playwright HTML 렌더러 (`html` 고정) |
-| `BACKEND_PRODUCT_URL` | 문자열 (URL) 또는 None | `None` | **반드시 설정** | BE 내부 수신 URL (예: `http://product-backend:8080/...`) |
+| `BACKEND_URL` | 문자열 (URL) 또는 None | `None` | **반드시 설정** | BE 내부 수신 URL (예: `http://product-backend:8080/...`) |
 | `BACKEND_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | BE 호출용 Bearer 토큰 (Secret 관리) |
 | `BACKEND_TIMEOUT_SECONDS` | float (초) | `60.0` | `60.0` | BE 호출 타임아웃 |
 | `AI_INTERNAL_AUTH_TOKEN` | 문자열 또는 None | `None` | **반드시 설정** | BE가 AI 호출 시 검증하는 `X-AI-Internal-Token` |
@@ -364,7 +364,7 @@ python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluatio
 | **GPU 인스턴스 승인** | EC2 `g6e.xlarge` (L40S 48GB; 온디맨드 기준 시간당 약 $1.8 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 예산 및 온디맨드 쿼터 할당 | **인프라 / FinOps 팀** | 결정 필요 (미승인 시 T4/A10G로 강제되어 OOM 발생; 실제 단가 검증이 승인 조건에 포함됨) |
 | **EKS 전환 여부 및 매니페스트 구축** | 현재 확정된 Docker Compose 운영 대비 EKS 전환 필요성 검토 및 K8s 매니페스트/GPU 분할 아키텍처 수립 | **인프라 / DevOps 팀** | 미결정 상태 (현재 EKS 전용 매니페스트 전무) |
 | **FLUX 모델 상업 라이선스 확인** | 원본 FLUX.2-klein-9B의 Non-Commercial 라이선스 조건과 채택된 커뮤니티 4bit 양자화본의 상업 서비스 허용 범위 확인 | **관리자 / 법무팀** | 확인 필요 (필요 시 Apache 2.0 라이선스의 FLUX.2-klein-4B 대안 전환 검토) |
-| **BE 엔드포인트** | 운영/스테이징 `BACKEND_PRODUCT_URL` 주소 및 인증 시크릿 발급 | **상품 백엔드(BE) 팀** | 미확정 시 outbox 배달 불가 |
+| **BE 엔드포인트** | 운영/스테이징 `BACKEND_URL` 주소 및 인증 시크릿 발급 | **상품 백엔드(BE) 팀** | 미확정 시 outbox 배달 불가 |
 | **프런트엔드 오리진** | `AI_CORS_ORIGINS`에 등록할 정식 웹 서비스 도메인 목록 | **프런트엔드(FE) 팀** | 미확정 시 브라우저 CORS 차단 |
 | **다중 호스트/파드 확장 시점** | 1단계(단일 호스트 Docker Compose / 단일 파드) 운영 후 RDS(PostgreSQL) + S3 이관 시점 | **프로젝트 PM / 아키텍트** | 트래픽 목표치에 따라 로드맵 수립 필요 |
 

@@ -8,12 +8,12 @@ from fastapi.responses import JSONResponse
 import httpx
 
 from .ai_dto import (
-    AiToProductBeAcceptedResponseDto,
-    AiToProductBeApprovedResponseDto,
-    AiToProductBeStatusResponseDto,
-    ProductBeToAiApproveDraftRequestDto,
-    ProductBeToAiCreateJobRequestDto,
-    ProductBeToAiSaveDraftRequestDto,
+    AiToBeAcceptedResponseDto,
+    AiToBeApprovedResponseDto,
+    AiToBeStatusResponseDto,
+    BeToAiApproveDraftRequestDto,
+    BeToAiCreateJobRequestDto,
+    BeToAiSaveDraftRequestDto,
 )
 from .backend_client import BackendDeliveryError
 from .config import get_settings
@@ -40,7 +40,7 @@ from .service import (
 class UnconfiguredBackend:
     def persist(self, request, image):
         raise BackendDeliveryError(
-            "BACKEND_PRODUCT_URL is not configured", retryable=True
+            "BACKEND_URL is not configured", retryable=True
         )
 
 
@@ -324,7 +324,7 @@ async def approve_detail_page(
 
 @app.post(
     "/internal/v1/ai/detail-page-jobs",
-    response_model=AiToProductBeAcceptedResponseDto,
+    response_model=AiToBeAcceptedResponseDto,
     status_code=202,
 )
 async def create_internal_detail_page_job(
@@ -338,7 +338,7 @@ async def create_internal_detail_page_job(
 
     _require_internal_auth(x_ai_internal_token)
     try:
-        request = ProductBeToAiCreateJobRequestDto.model_validate_json(metadata)
+        request = BeToAiCreateJobRequestDto.model_validate_json(metadata)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid AI job metadata") from exc
 
@@ -374,7 +374,7 @@ async def create_internal_detail_page_job(
         if hasattr(accepted, "model_dump")
         else accepted
     )
-    return AiToProductBeAcceptedResponseDto(
+    return AiToBeAcceptedResponseDto(
         product_id=request.product_id,
         **accepted_payload,
     )
@@ -382,7 +382,7 @@ async def create_internal_detail_page_job(
 
 @app.get(
     "/internal/v1/ai/detail-page-jobs/{job_id}",
-    response_model=AiToProductBeStatusResponseDto,
+    response_model=AiToBeStatusResponseDto,
 )
 def get_internal_detail_page_job(
     job_id: str,
@@ -405,7 +405,7 @@ def get_internal_detail_page_job(
 )
 async def save_internal_detail_page_draft(
     job_id: str,
-    request: ProductBeToAiSaveDraftRequestDto,
+    request: BeToAiSaveDraftRequestDto,
     x_ai_internal_token: Annotated[str | None, Header(alias="X-AI-Internal-Token")] = None,
 ):
     """Persist creator edits while keeping the preview as restricted React JSON."""
@@ -426,7 +426,7 @@ async def save_internal_detail_page_draft(
 
 @app.post(
     "/internal/v1/ai/detail-page-renders",
-    response_model=AiToProductBeApprovedResponseDto,
+    response_model=AiToBeApprovedResponseDto,
 )
 async def approve_internal_detail_page(
     metadata: Annotated[str, Form(...)],
@@ -439,7 +439,7 @@ async def approve_internal_detail_page(
 
     _require_internal_auth(x_ai_internal_token)
     try:
-        request = ProductBeToAiApproveDraftRequestDto.model_validate_json(metadata)
+        request = BeToAiApproveDraftRequestDto.model_validate_json(metadata)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid approved draft metadata") from exc
 
@@ -489,7 +489,7 @@ async def approve_internal_detail_page(
         if pipeline_result.backend_delivery_pending
         else "COMPLETED"
     )
-    return AiToProductBeApprovedResponseDto(
+    return AiToBeApprovedResponseDto(
         product_id=request.product_id,
         status=status,
         result=pipeline_result.fe_result,
@@ -519,7 +519,7 @@ def get_detail_page_job(
 )
 async def save_detail_page_draft(
     job_id: str,
-    request: ProductBeToAiSaveDraftRequestDto,
+    request: BeToAiSaveDraftRequestDto,
     _legacy_demo: None = Depends(_require_legacy_demo_api),
 ):
     try:

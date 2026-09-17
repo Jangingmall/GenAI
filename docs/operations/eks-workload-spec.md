@@ -98,7 +98,7 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 | 이름 | 값(서버 기준) |
 | --- | --- |
-| `BACKEND_PRODUCT_URL` | BE 엔드포인트 (환경별로 다름) |
+| `BACKEND_URL` | BE 엔드포인트 (환경별로 다름) |
 | `AI_CORS_ORIGINS` | **주입하지 않으셔도 됩니다.** FE 는 BE 를 통해서만 이 서비스에 도달하므로 브라우저가 직접 호출하는 경로가 없고, CORS 는 서버 대 서버 호출에 적용되지 않습니다. 기본값 그대로 둡니다 |
 | `LOCAL_TEXT_PROVIDER` / `LOCAL_IMAGE_PROVIDER` / `BACKGROUND_PROVIDER` | `sglang` (이미지 기본값) |
 | `LOCAL_TEXT_URL` / `LOCAL_IMAGE_URL` | `http://127.0.0.1:30000` / `http://127.0.0.1:30001` (이미지 기본값) |

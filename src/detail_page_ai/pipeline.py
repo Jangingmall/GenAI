@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 from typing import Callable, Literal
 
 from .backend_client import BackendDeliveryError
-from .ai_dto import AiToProductBePersistRequestDto
+from .ai_dto import AiToBePersistRequestDto
 from .dto import (
     AiBePersistAck,
     AiBeProductPersistRequest,
@@ -299,7 +299,7 @@ class DetailPagePipeline:
             approved_draft,
         )
         persist_request_model = (
-            AiToProductBePersistRequestDto
+            AiToBePersistRequestDto
             if product_id is not None
             else AiBeProductPersistRequest
         )

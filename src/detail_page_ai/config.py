@@ -59,8 +59,8 @@ class Settings(BaseSettings):
     detail_page_renderer: Literal["html"] = Field(
         default="html", alias="DETAIL_PAGE_RENDERER"
     )
-    backend_product_url: str | None = Field(
-        default=None, alias="BACKEND_PRODUCT_URL"
+    backend_url: str | None = Field(
+        default=None, alias="BACKEND_URL"
     )
     backend_auth_token: str | None = Field(
         default=None, alias="BACKEND_AUTH_TOKEN"

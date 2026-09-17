@@ -129,7 +129,7 @@ chmod 600 .env  # 비밀값이 포함되므로 권한 제한
 | **`BACKGROUND_PROVIDER`**| `sglang` | 연출 컷/배경판 생성 제공자 |
 | **`AI_INTERNAL_AUTH_TOKEN`**| (난수 문자열) | Product BE 호출 인증 토큰 (`openssl rand -hex 32`로 **반드시 설정**) |
 | **`BACKEND_AUTH_TOKEN`**| (토큰 문자열) | Product BE 콜백 전송 인증 토큰 (**반드시 설정**) |
-| **`BACKEND_PRODUCT_URL`**| `http://backend:8080` | 산출물 수신 Product BE URL (**반드시 설정**) |
+| **`BACKEND_URL`**| `http://backend:8080` | 산출물 수신 Product BE URL (**반드시 설정**) |
 
 ---
 

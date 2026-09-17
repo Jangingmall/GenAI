@@ -21,12 +21,12 @@ X-AI-Internal-Token은 src/detail_page_ai/app.py의 _require_internal_auth 심�
 
 | 메서드·경로 | 심볼 | 입력 | 결과 |
 |---|---|---|---|
-| POST /internal/v1/ai/detail-page-jobs | create_internal_detail_page_job | multipart product_image, JSON 문자열 metadata, 선택적 product_images, 선택적 Idempotency-Key | 202, AiToProductBeAcceptedResponseDto 형태의 QUEUED 작업 |
-| GET /internal/v1/ai/detail-page-jobs/{job_id} | get_internal_detail_page_job | X-AI-Internal-Token | AiToProductBeStatusResponseDto |
-| PUT /internal/v1/ai/detail-page-jobs/{job_id}/draft | save_internal_detail_page_draft | JSON ProductBeToAiSaveDraftRequestDto | draft projection |
-| POST /internal/v1/ai/detail-page-renders | approve_internal_detail_page | multipart metadata, 선택적 이미지, 선택적 Idempotency-Key | AiToProductBeApprovedResponseDto |
+| POST /internal/v1/ai/detail-page-jobs | create_internal_detail_page_job | multipart product_image, JSON 문자열 metadata, 선택적 product_images, 선택적 Idempotency-Key | 202, AiToBeAcceptedResponseDto 형태의 QUEUED 작업 |
+| GET /internal/v1/ai/detail-page-jobs/{job_id} | get_internal_detail_page_job | X-AI-Internal-Token | AiToBeStatusResponseDto |
+| PUT /internal/v1/ai/detail-page-jobs/{job_id}/draft | save_internal_detail_page_draft | JSON BeToAiSaveDraftRequestDto | draft projection |
+| POST /internal/v1/ai/detail-page-renders | approve_internal_detail_page | multipart metadata, 선택적 이미지, 선택적 Idempotency-Key | AiToBeApprovedResponseDto |
 
-내부 job 생성 metadata는 src/detail_page_ai/ai_dto.py의 ProductBeToAiCreateJobRequestDto다.
+내부 job 생성 metadata는 src/detail_page_ai/ai_dto.py의 BeToAiCreateJobRequestDto다.
 
     {
       "product_id": "<product id>",
@@ -47,7 +47,7 @@ X-AI-Internal-Token은 src/detail_page_ai/app.py의 _require_internal_auth 심�
       }
     }
 
-accepted 응답의 필드 구조는 src/detail_page_ai/ai_dto.py의 AiToProductBeAcceptedResponseDto에서 확인된다. 아래 값은 실제 호출 결과가 아니다.
+accepted 응답의 필드 구조는 src/detail_page_ai/ai_dto.py의 AiToBeAcceptedResponseDto에서 확인된다. 아래 값은 실제 호출 결과가 아니다.
 
     {
       "product_id": "<runtime value>",
@@ -58,7 +58,7 @@ accepted 응답의 필드 구조는 src/detail_page_ai/ai_dto.py의 AiToProductB
       "created_at": "<datetime>"
     }
 
-최종 승인 metadata는 ProductBeToAiApproveDraftRequestDto다. job metadata에 draft_id, draft, options를 추가하며, draft는 ApprovedDraftDto의 product_name, summary, hero_headline, hero_description, usage_scene, features, keywords, layout_id, page_plan 필드를 가진다.
+최종 승인 metadata는 BeToAiApproveDraftRequestDto다. job metadata에 draft_id, draft, options를 추가하며, draft는 ApprovedDraftDto의 product_name, summary, hero_headline, hero_description, usage_scene, features, keywords, layout_id, page_plan 필드를 가진다.
 
 ### 1.2 Legacy/public API projection
 

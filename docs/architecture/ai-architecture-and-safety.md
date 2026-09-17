@@ -244,10 +244,10 @@ QUEUED
 운영에서는 BE가 AI 결과를 FE 응답으로 변환한다. AI 경계의 canonical DTO는
 `src/detail_page_ai/ai_dto.py`에 있으며, 방향이 섞이지 않도록 다음처럼 나눈다.
 
-- BE→AI: `ProductBeToAiCreateJobRequestDto`, `ProductBeToAiApproveDraftRequestDto`
-- AI→BE: `AiToProductBeAcceptedResponseDto`, `AiToProductBeStatusResponseDto`,
-  `AiToProductBeApprovedResponseDto`
-- AI→BE 적재: `AiToProductBePersistRequestDto`
+- BE→AI: `BeToAiCreateJobRequestDto`, `BeToAiApproveDraftRequestDto`
+- AI→BE: `AiToBeAcceptedResponseDto`, `AiToBeStatusResponseDto`,
+  `AiToBeApprovedResponseDto`
+- AI→BE 적재: `AiToBePersistRequestDto`
 
 초안 단계에서는 AI가 BE에 실행 가능한 HTML/JSX가 아닌 구조화된 `draft` JSON과
 `draft.react_document`를 전달한다. BE/FE가 `react_document`를 React 컴포넌트 allowlist로
@@ -255,7 +255,7 @@ QUEUED
 뒤 내부 HTML/CSS로 PNG를 렌더링한다. 완료 단계 결과에는 전체 `image/png`, 섹션 PNG,
 provenance가 있는 제품 사진, `detail_page.react_document`가 함께 포함된다.
 
-AI→BE 요청은 `AiToProductBePersistRequestDto`를 사용한다.
+AI→BE 요청은 `AiToBePersistRequestDto`를 사용한다.
 
 - 상품 분류·특징·관찰·불확실성
 - 원본·최종 PNG·섹션·사진의 hash 및 asset id
@@ -329,7 +329,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 - **Local File Store**: 원본과 결과를 `.local/detail-page-ai/assets`에 보관한다.
 - **SQLite**: job 상태, idempotency, generation metadata, outbox, lease를 보관한다.
 - **MLX Serve**: loopback endpoint에서 Qwen/Flux를 제공하고 timeout을 적용한다.
-- **BE 연동**: `BACKEND_PRODUCT_URL`이 설정된 경우에만 생성 metadata와 PNG를 전달한다.
+- **BE 연동**: `BACKEND_URL`이 설정된 경우에만 생성 metadata와 PNG를 전달한다.
 
 ### 6.4 동시성·재시도
 

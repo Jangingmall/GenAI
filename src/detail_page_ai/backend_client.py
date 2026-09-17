@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from .ai_dto import AiToProductBePersistRequestDto, ProductBeToAiPersistAckDto
+from .ai_dto import AiToBePersistRequestDto, BeToAiPersistAckDto
 from .models import GeneratedImage
 
 
@@ -85,9 +85,9 @@ class BackendProductClient:
 
     def persist(
         self,
-        request: AiToProductBePersistRequestDto,
+        request: AiToBePersistRequestDto,
         image: GeneratedImage,
-    ) -> ProductBeToAiPersistAckDto:
+    ) -> BeToAiPersistAckDto:
         headers = {
             "Accept": "application/json",
             "Idempotency-Key": request.idempotency_key,
@@ -172,7 +172,7 @@ class BackendProductClient:
         status_code, body = self._response_parts(response)
         if 200 <= status_code < 300:
             try:
-                return ProductBeToAiPersistAckDto.model_validate(body)
+                return BeToAiPersistAckDto.model_validate(body)
             except Exception as exc:
                 raise BackendDeliveryError(
                     "Backend returned an invalid persistence response",
@@ -182,7 +182,7 @@ class BackendProductClient:
         if status_code == 409:
             body = {**body, "status": "ALREADY_SAVED"}
             try:
-                return ProductBeToAiPersistAckDto.model_validate(body)
+                return BeToAiPersistAckDto.model_validate(body)
             except Exception as exc:
                 raise BackendDeliveryError(
                     "Backend duplicate response is invalid",

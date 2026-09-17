@@ -2,13 +2,13 @@ import pytest
 from pydantic import ValidationError
 
 from detail_page_ai.ai_dto import (
-    AiToProductBeAcceptedResponseDto,
-    AiToProductBeApprovedResponseDto,
-    AiToProductBePersistRequestDto,
-    AiToProductBeStatusResponseDto,
-    ProductBeToAiApproveDraftRequestDto,
-    ProductBeToAiCreateJobRequestDto,
-    ProductBeToAiPersistAckDto,
+    AiToBeAcceptedResponseDto,
+    AiToBeApprovedResponseDto,
+    AiToBePersistRequestDto,
+    AiToBeStatusResponseDto,
+    BeToAiApproveDraftRequestDto,
+    BeToAiCreateJobRequestDto,
+    BeToAiPersistAckDto,
 )
 from detail_page_ai.dto import (
     AiBePersistAck,
@@ -30,8 +30,8 @@ def _create_payload() -> dict:
     }
 
 
-def test_product_be_to_ai_create_request_requires_product_identity():
-    request = ProductBeToAiCreateJobRequestDto.model_validate(_create_payload())
+def test_be_to_ai_create_request_requires_product_identity():
+    request = BeToAiCreateJobRequestDto.model_validate(_create_payload())
 
     assert request.product_id == "product-42"
     assert request.source_asset_id == "source-asset-42"
@@ -39,13 +39,13 @@ def test_product_be_to_ai_create_request_requires_product_identity():
     assert request.options.aspect_ratio == "1:8"
 
     with pytest.raises(ValidationError):
-        ProductBeToAiCreateJobRequestDto.model_validate(
+        BeToAiCreateJobRequestDto.model_validate(
             {**_create_payload(), "unexpected": "rejected"}
         )
 
 
-def test_product_be_to_ai_approval_request_contains_creator_approved_draft():
-    request = ProductBeToAiApproveDraftRequestDto.model_validate(
+def test_be_to_ai_approval_request_contains_creator_approved_draft():
+    request = BeToAiApproveDraftRequestDto.model_validate(
         {
             "product_id": "product-42",
             "request_id": "approval-42",
@@ -65,13 +65,13 @@ def test_product_be_to_ai_approval_request_contains_creator_approved_draft():
     assert request.options.output_mime_type == "image/png"
 
 
-def test_ai_to_product_be_status_keeps_product_identity_separate_from_fe_result():
+def test_ai_to_be_status_keeps_product_identity_separate_from_fe_result():
     result = AiFeResultDto(
         generation_id="generation-42",
         product=AiFeProductSummaryDto.from_profile(ProductProfileDto.minimal("장식함")),
         detail_page={"mime_type": "image/png"},
     )
-    response = AiToProductBeStatusResponseDto(
+    response = AiToBeStatusResponseDto(
         product_id="product-42",
         job_id="job-42",
         request_id="request-42",
@@ -88,8 +88,8 @@ def test_ai_to_product_be_status_keeps_product_identity_separate_from_fe_result(
     assert payload["result"]["product"].get("product_id") is None
 
 
-def test_ai_to_product_be_accepted_and_approved_contracts_are_explicit():
-    accepted = AiToProductBeAcceptedResponseDto(
+def test_ai_to_be_accepted_and_approved_contracts_are_explicit():
+    accepted = AiToBeAcceptedResponseDto(
         product_id="product-42",
         job_id="job-42",
         request_id="request-42",
@@ -97,7 +97,7 @@ def test_ai_to_product_be_accepted_and_approved_contracts_are_explicit():
         status_url="/internal/v1/ai/detail-page-jobs/job-42",
         created_at="2026-08-31T00:00:00Z",
     )
-    approved = AiToProductBeApprovedResponseDto(
+    approved = AiToBeApprovedResponseDto(
         product_id="product-42",
         status="COMPLETED",
         result=AiFeResultDto(
@@ -111,9 +111,9 @@ def test_ai_to_product_be_accepted_and_approved_contracts_are_explicit():
     assert approved.backend_delivery_pending is False
 
 
-def test_ai_to_product_be_envelopes_reject_unknown_fields():
+def test_ai_to_be_envelopes_reject_unknown_fields():
     with pytest.raises(ValidationError):
-        AiToProductBeAcceptedResponseDto.model_validate(
+        AiToBeAcceptedResponseDto.model_validate(
             {
                 "product_id": "product-42",
                 "job_id": "job-42",
@@ -127,7 +127,7 @@ def test_ai_to_product_be_envelopes_reject_unknown_fields():
 
 
 def test_canonical_persist_names_point_to_validated_shared_models():
-    request = AiToProductBePersistRequestDto.from_profile(
+    request = AiToBePersistRequestDto.from_profile(
         generation_id="generation-42",
         job_id="job-42",
         request_id="request-42",
@@ -141,7 +141,7 @@ def test_canonical_persist_names_point_to_validated_shared_models():
         generation={"prompt_version": "source-safe-v2"},
         product_id="product-42",
     )
-    ack = ProductBeToAiPersistAckDto(
+    ack = BeToAiPersistAckDto(
         generation_id="generation-42",
         product_id="product-42",
         status="SAVED",
@@ -168,4 +168,4 @@ def test_canonical_persist_request_rejects_missing_product_identity():
     )
 
     with pytest.raises(ValidationError):
-        AiToProductBePersistRequestDto.model_validate(legacy_request.model_dump())
+        AiToBePersistRequestDto.model_validate(legacy_request.model_dump())
