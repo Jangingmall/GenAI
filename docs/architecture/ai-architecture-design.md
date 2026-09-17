@@ -1,17 +1,21 @@
 # 상세페이지 AI 아키텍처 설계
 
-> 2026-09-08 점검: 현재 FastAPI·SQLite·프로세스 내부 executor와 로컬 MLX Serve 실행을 기준으로 한다.
-> API/worker 분리는 향후 확장안이며 현재 로컬 실행 경로는 SQLite·파일 저장소를 사용한다.
+> 2026-09-16 검수: 로컬 Mac 개발은 FastAPI·SQLite·프로세스 내부 executor와 MLX Serve를 사용하고,
+> 서버 운영은 Ubuntu `g6e.xlarge`의 Docker Compose·SGLang 2프로세스 구성을 사용한다.
+> API/worker 분리는 로컬 확장안이며 현재 서버 경로는 `detail-page-ai`와 두 SGLang 서비스로 분리돼 있다.
 > 승인 POST는 현재 동기 실행이다. 아래 승인 단계 목록은 논리 처리 순서이며 polling으로 각 단계가 노출된다는 보장이 아니다.
 > 같은 날 Qwen3.8 27B + Flux2 Klein 4B 전용 로컬 endpoint로 2건의 생성 smoke test를 완료했다. 이 테스트는 기본 9B 모델 설정을 변경하지 않는다.
+> 서버 GPU에서는 아직 실행하지 않았으므로 두 모델 동시 적재·4bit 파이프라인 로딩·편집 품질·처리 시간은 미검증이다.
 
 ## 구현과 설계의 차이
 
-- 기본 분석 설정은 로컬 MLX Serve Qwen3.8 27B이며, 이미지 생성은 로컬 MLX Serve Flux2다.
-- `app.build_service`와 local CLI가 같은 로컬 어댑터와 모델 기본값을 사용한다.
+- 로컬 개발 기본 분석 설정은 MLX Serve Qwen3.8 27B이며, 이미지 생성은 MLX Serve Flux2다.
+- 서버 운영 기본 설정은 SGLang 텍스트·비전 Qwen3.8 27B와 이미지 FLUX.2-klein 9B다.
+- `app.build_service`와 local CLI는 로컬 어댑터를 사용하고, 서버 배포에서는 같은 클라이언트 계약으로 SGLang 어댑터를 사용한다.
 - SourcePreservingProductPhotoGenerator는 선택 주입 시 lifestyle/generated_scene와 detail-02~05/generated_view를 허용한다.
-  해당 자산은 product_generated=true, fidelity_status=GENERATED이며 원본 픽셀 보존을 보장하지 않는다.
-  본문의 원본 보호 원칙은 source/source_crop/source_composite 경로에 적용한다.
+  해당 자산은 `product_generated=true`, `fidelity_status=GENERATED`이며 원본 픽셀 보존을 보장하지 않는다.
+  `hero`는 촬영 원본 그대로 `source_original`/`VERIFIED`를 사용하고, 누끼가 필요한 역할은 rembg 실패 시 `source`/`FALLBACK`으로 대체한다.
+  생성 자산은 별도 화면 '참고용' 표시 없이 플래그와 provenance로 구분한다.
 - 승인 API는 저장된 원본을 재사용한다. 업로드 파트는 현재 주 서비스에서 원본 교체에 사용되지 않는다.
 - 순차 완료 후 승인 재전송은 결과를 재사용한다. 동시 요청의 승인 claim/원자적 잠금 보장은 별도 검증·구현이 필요하다.
 - 생성 완료와 BE 적재 ACK, 상품 게시 상태를 구분한다. GET의 COMPLETED만으로 게시를 허용하지 않는다.
@@ -19,7 +23,7 @@
 - FE 구조 출력은 `react_document` 제한형 JSON AST를 canonical 결과로 사용한다. 모델은 `page_plan`과
   카피를 반환하고, 서버의 `react_document_builder`가 검증된 draft에서 AST를 결정적으로 조립한다.
 
-- 상태: Draft
+- 상태: 2026-09-16 현재 검수 기준
 - 대상: 이미지 기반 상품 상세페이지 생성 시스템
 - 기준 코드: `src/detail_page_ai`, `src/local_detail_page_ai`
 - 설계 범위: 모델 구성, 데이터 흐름, 서빙 구조, 저장·재시도·관측성
@@ -116,7 +120,7 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 | Renderer | HTML/CSS 및 섹션 PNG 생성 | `HtmlDetailPageRenderer` | 별도 Playwright worker pool |
 | React document builder | 승인 draft → 제한 AST 조립·스키마/보안 검증 | `react_document.py`, `react_document_builder.py` | 공통 FE schema/package로 공유 |
 | Backend client | 상품 BE multipart 적재 | `BackendProductClient` | private network/mTLS 또는 내부 auth |
-| Local model gateway | timeout/retry/version | MLX Serve/Ollama local adapter | GPU 호스트 분리 또는 로컬 endpoint pool |
+| Model gateway | timeout/retry/version | MLX Serve/Ollama local adapter, SGLang OpenAI-compatible adapter | 서버 SGLang 텍스트·이미지 프로세스와 로컬 MLX endpoint 분리 |
 
 ## 5. 모델 구성
 
@@ -124,9 +128,9 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 
 | 단계 | 기본 후보 | 입력 | 출력 | 실패 시 |
 |---|---|---|---|---|
-| 이미지 분석 | 로컬 MLX Serve Qwen3.8 27B | 원본 이미지, `user_hints` | `ProductProfileDto` | 제한 재시도 후 `FAILED` |
+| 이미지 분석 | 로컬 개발: `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`; 서버: `cyankiwi/Qwen3.8-27B-AWQ-INT4` (SGLang `qwen-text`) | 원본 이미지, `user_hints` | `ProductProfileDto` | 제한 재시도 후 `FAILED` |
 | 공예·제품 조사 | 자동 외부 조사 없음 | 상품 BE가 검수한 `user_hints` | 입력된 사실만 카피에 반영 | 미제공 내용은 `unknown`/보수적 문구 |
-| 배경·참고 컷 생성 | 로컬 MLX Serve Flux2 | 역할·배경 프롬프트, 선택적 원본 참고 | 제품 없는 배경판 또는 `GENERATED` 참고 자산 | 중립 단색 배경 또는 해당 슬롯 원본 fallback |
+| 배경·참고 컷 생성 | 로컬 개발: `mlx-community/flux2-klein-9b-4bit`; 서버: `circulus/FLUX.2-klein-9B-bnb-4bit` (SGLang `flux-klein`) | 역할·배경 프롬프트, 선택적 원본 참고 | 제품 없는 배경판 또는 `GENERATED` 자산 | 중립 단색 배경 또는 해당 슬롯 원본 fallback |
 | 제품 사진 합성 | 생성 모델 미사용, Pillow | 원본 RGB·mask·배경 | provenance 포함 `ProductPhoto` | 원본 컷 또는 해당 역할 제외 |
 | React JSON 조립 | 생성 모델 미사용, deterministic builder | 검증된 `ApprovedDraftDto`·`page_plan` | `ReactDetailPageDocumentDto` | schema/tree 검증 실패 시 결과 차단 |
 | 상세페이지 렌더 | 생성 모델 미사용, HTML/CSS + Playwright | 승인 draft·사진 | 전체/섹션 PNG | 렌더 재시도 또는 작업 실패 |
@@ -140,12 +144,12 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 - 이미지에서 보이는 형태·색·문양·질감은 입력을 보완할 뿐, 미입력 상품 고유 사실을 만들지 않는다.
 - 외부 검색은 호출하지 않는다. `ProductProfileDto`는 원본 이미지와 상품 BE가 전달한
   `user_hints`만 근거로 생성한다.
-- 최신성·출처가 필요한 내용은 상품 BE가 사전 검수해 입력해야 하며, 로컬 모델이 임의 URL이나
+- 최신성·출처가 필요한 내용은 상품 BE가 사전 검수해 입력해야 하며, 추론 모델이 임의 URL이나
   상품 고유 사실을 만들어내지 않도록 한다.
 
 ### 5.2 조사 데이터 정책
 
-- 로컬-only 서비스는 생성 중 외부 웹 검색이나 원격 조사 모델을 호출하지 않는다.
+- 이 서비스는 생성 중 외부 웹 검색이나 원격 조사 모델을 호출하지 않는다.
 - 제작자·원산지·진품성·인증·정확한 소재·성능·최신 가격은 `user_hints`로 명시되지 않으면
   확정하지 않는다.
 - 상품 BE가 전달한 검수 정보가 없거나 충돌하면 해당 문구를 제거하고 `unknown` 또는
@@ -153,22 +157,25 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 
 ### 5.3 이미지 생성 모델
 
-이미지 모델은 로컬 MLX Serve Flux2로 제한하며, 역할은 제품 자체가 아니라 제품이 없는
-배경판·활용 장면·생성 디테일 컷으로 한정한다. 생성 사진은 `product_generated=true`로 구분해 전달한다(커밋 `cfd60bb`에서 관리자 결정으로 화면 상의 '참고용' 표기 요구는 제거됨). 제품 없는 배경판은 제품 이미지 없이
-생성하고, 선택적인 활용 장면·디테일 컷은 원본 이미지를 시각 참고로 전달할 수 있다.
+이미지 모델의 역할은 제품 자체가 아니라 제품이 없는 배경판·활용 장면·생성 디테일 컷으로
+한정한다. 로컬 개발은 MLX Serve Flux2를 사용하고, 서버 운영은 SGLang `flux-klein`을
+사용한다. 생성 사진은 `product_generated=true`로 구분해 전달하며 화면의 별도 '참고용'
+표시는 사용하지 않는다. 제품 없는 배경판은 제품 이미지 없이 생성하고, 선택적인 활용
+장면·디테일 컷은 원본 이미지를 시각 참고로 전달할 수 있다.
 생성 결과는 원본 상품 근거 자산으로 승격하지 않는다.
 
 - 배경 프롬프트에 추가 제품, 제품과 유사한 주 피사체, 로고, 글자, 브랜드 패턴을 금지한다.
 - 배경판은 객체·문자·로고 안전성 검사를 거친다.
 - 검증 실패·timeout·provider 오류는 중립 배경으로 fallback한다.
-- `hero`·`packshot`·대표 `detail` 제품 사진은 원본 RGB와 원본에서 계산한 mask로만 최종 합성한다.
-- 생성 `lifestyle`·추가 `detail`은 `product_generated=true`, `asset_mode=generated_scene/generated_view`, `source_sha256`, `fidelity_status=GENERATED`를 표시하고 참고 슬롯에서만 사용한다.
+- `hero`는 촬영 원본 그대로 `asset_mode=source_original`, `fidelity_status=VERIFIED`를 사용한다.
+- `packshot`·대표 `detail`은 rembg(`birefnet-general`, `rembg==2.0.69`) 누끼와 원본 RGB/crop을 사용한다. 누끼 실패 또는 품질 검증 실패 시 해당 역할은 `source`/`FALLBACK`으로 안전하게 대체한다.
+- 생성 `lifestyle`·추가 `detail`은 `product_generated=true`, `asset_mode=generated_scene/generated_view`, `source_sha256`, `fidelity_status=GENERATED`를 표시하고 허용된 생성 자산 슬롯에서만 사용한다.
 - 제품 형태·색·문양·구성품이 바뀐 원본 근거 결과는 `REJECTED`로 분류하고 어떤 출력 경계에도 전달하지 않는다. 생성 참고 컷은 사람 검수 전까지 상품 사실성의 증거가 아니다.
-- `SolidBackgroundCutoutExtractor`는 색상 후보 전체를 배경으로 취급하지 않고, 이미지 테두리에서 시작한 4-이웃 flood fill로 연결된 후보 영역만 외곽 배경으로 정의한다. 따라서 밝은 배경 위의 밝은 제품에서도 제품 내부의 비연결 영역은 보존된다.
-- 마스크가 비어 있거나 foreground 비율·연결 성분 검증을 통과하지 못해 `extract`가 `None`을 반환하면 `SourcePreservingProductPhotoGenerator`는 제품 사진 역할을 원본으로 fallback한다.
+- `RembgCutoutExtractor`는 rembg `birefnet-general` 세션을 재사용해 원본 RGB 기반 마스크를 만든다.
+- 마스크가 비어 있거나 foreground 비율·경계 검증을 통과하지 못해 `extract`가 `None`을 반환하면 `SourcePreservingProductPhotoGenerator`는 `hero`를 촬영 원본으로, 나머지 제품 사진 역할을 `source`/`FALLBACK`으로 대체한다.
 - `_product_scene_direction`는 제품 신호에 따라 장면 방향을 결정하며, 장신구 marker에는 `jewelry` 전용 근접 tabletop 방향을 사용하고 금속 일반 분기와 분리한다.
 
-### 5.4 로컬 모델
+### 5.4 로컬 개발 모델
 
 로컬 실행은 다음 두 모델을 고정 기본값으로 사용한다.
 
@@ -179,7 +186,20 @@ FE는 AI를 직접 호출하지 않는다. 상품 BE는 인증·상품 식별·�
 두 모델은 `http://127.0.0.1:11234`의 MLX Serve에서 제공한다. 외부 검색·원격 모델·API
 키는 사용하지 않으며, Ollama는 별도 로컬 검증 옵션으로만 허용한다.
 
-### 5.5 Flux2 Klein 4B 검증 프로파일
+### 5.5 서버 운영 모델
+
+Ubuntu `g6e.xlarge`에서는 Docker Compose로 두 SGLang 프로세스를 구동한다.
+
+- 텍스트·비전: `cyankiwi/Qwen3.8-27B-AWQ-INT4` → `qwen-text`, 포트 `30000`
+- 이미지 생성·편집: `circulus/FLUX.2-klein-9B-bnb-4bit` → `flux-klein`, 포트 `30001`
+- AI 서비스 provider: `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`
+- SGLang 두 프로세스가 NVIDIA L40S 48GB 한 장을 나눠 쓴다. 두 서비스의 준비 상태는 `GET /v1/models`로 확인한다.
+
+기동 명령과 고정 revision은 [Ubuntu 배포 가이드](../operations/ubuntu-deployment.md)와
+[SGLang 서빙 운영 조사](../operations/sglang-serving-research.md)에 정리한다. 서버 GPU에서의
+실제 실행·동시 적재·4bit 로딩·편집 품질·처리 시간은 아직 검증하지 않았다.
+
+### 5.6 Flux2 Klein 4B 검증 프로파일
 
 `Runpod/FLUX.2-klein-4B-mflux-4bit`는 메모리 절약형 비교·개발 테스트 모델이다. 11234의
 기본 이미지 서버가 이 모델의 image modality를 제공하지 않아, 테스트 때만
@@ -261,8 +281,8 @@ POST /internal/v1/ai/detail-page-renders
 ### 7.2 FE projection
 
 상품 BE가 FE에 노출하는 projection은 `AiFeDraftDto`, `AiFeResultDto`, `AiFeJobStatusResponseDto`를
-기준으로 한다. 초안은 `status.draft.react_document`, 최종 결과는
-`status.result.detail_page.react_document`에 위치한다. FE는 `schemaVersion: "2.0"`의 AST를
+기준으로 한다. 초안은 `draft.react_document`, 최종 결과는
+`result.detail_page.react_document`에 위치한다. FE는 `schemaVersion: "2.0"`의 AST를
 컴포넌트 allowlist로 렌더링하고, `img.props.imageId`를 photos/asset manifest와 연결한다.
 이미지 바이너리는 `image_url` 또는 `image_base64`를 deployment asset policy에 따라 사용하며,
 React AST 안에 실제 URL을 직접 주입하지 않는다.
@@ -286,7 +306,36 @@ Browser :4173
 재시작·멱등성·outbox를 검증하는 환경이다.
 운영 트래픽이나 GPU 수평 확장을 목표로 하지 않는다.
 
-### 8.2 로컬 확장안
+### 8.2 서버 운영 (확정)
+
+```text
+FE
+ │
+ ▼
+상품 BE → detail-page-ai :8000 (CPU 전용)
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+       sglang-text :30000      sglang-image :30001
+       qwen-text               flux-klein
+       Qwen3.8-27B-AWQ-INT4    FLUX.2-klein-9B-bnb-4bit
+              │                     │
+              └──── NVIDIA L40S 48GB 1장 공유 ────┘
+                         │
+                  Docker Compose
+```
+
+서버는 AWS EC2 `g6e.xlarge` Ubuntu 단일 호스트에서 `Dockerfile`,
+`docker/sglang-diffusion.Dockerfile`, `docker-compose.yml`로 기동한다. 텍스트·이미지
+SGLang 서비스는 `GET /v1/models`로 준비 상태를 확인하며, AI 서비스는
+`LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과
+`qwen-text`/`flux-klein` 공개 모델명을 사용한다. 상세 기동 절차는
+[Ubuntu 배포 가이드](../operations/ubuntu-deployment.md)를 따른다.
+
+서버 GPU에서는 아직 실행하지 않았으므로 두 모델 동시 적재, 4bit 파이프라인 로딩, 편집
+품질, 처리 시간과 실제 peak VRAM은 미검증이다.
+
+### 8.3 로컬 개발 확장안
 
 ```text
 FE
@@ -307,12 +356,16 @@ FE
                    상품 BE 적재 API(선택)
 ```
 
+로컬 개발에서는 API·worker와 MLX Serve를 같은 Mac 또는 로컬 장비에서 실행한다. `MLX`
+provider와 `127.0.0.1:11234`는 서버 운영 provider가 아니며, 서버 SGLang 설정으로
+대체되지 않는다.
+
 권장 분리:
 
 - API: 인증·검증·작업 접수·상태 조회를 수행한다.
 - Worker: 로컬 분석·합성·검증·outbox를 수행한다.
 - Renderer: 브라우저 프로세스와 로컬 모델 메모리를 분리한다.
-- MLX Serve: Qwen/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
+- 로컬 MLX Serve: Qwen/Flux 모델을 loopback endpoint로 제공하고 요청 timeout을 적용한다.
 - SQLite/파일 저장소: job, idempotency, generation metadata, outbox, 원본·결과를 보관한다.
 - 상품 BE 적재: `BACKEND_PRODUCT_URL`이 설정된 경우에만 선택적으로 호출한다.
 
@@ -320,7 +373,7 @@ FE
 
 - 동일 `generation_id`는 상품 BE에 한 번만 적재한다.
 - worker는 lease·heartbeat·owner fencing으로 stale worker의 덮어쓰기를 차단한다.
-- 로컬 모델 endpoint 호출은 단계별 timeout과 제한된 exponential backoff를 사용한다.
+- 모델 endpoint 호출은 경로(로컬 MLX 또는 서버 SGLang)에 맞는 단계별 timeout과 제한된 exponential backoff를 사용한다.
 - 입력·스키마·정책 위반은 무조건 재시도하지 않고 원인별로 실패 처리한다.
 - 로컬 worker lease는 최대 예상 작업 시간보다 길게 설정하고 stale worker 재획득을 제한한다.
 - 같은 `Idempotency-Key`와 같은 payload는 기존 작업·결과를 재사용하고, 다른 payload는 `409`로 거절한다.
@@ -362,24 +415,24 @@ FE
 - `react_document` schema/tree/alias/image reference 지표 수집
 - 승인 전 게시 차단과 감사 metadata 검증
 
-### Phase 2 — 로컬 처리량 확장
+### Phase 2 — 서버 운영 검증
 
-- GPU 호스트와 API/renderer 프로세스 분리
-- SQLite lease 정책을 유지하면서 로컬 worker 수를 제한적으로 확장
-- 모델 파일·출력 자산·로그 보존 정책을 로컬 디스크 기준으로 확정
+- Ubuntu `g6e.xlarge`에서 Docker Compose 3서비스와 SGLang 2프로세스의 기동·헬스체크를 확인
+- GPU에서 두 모델 동시 적재, 4bit 파이프라인 로딩, 편집 품질, 처리 시간과 peak VRAM을 검증
+- SQLite lease 정책과 모델 파일·출력 자산·로그 보존 정책을 서버 디스크 기준으로 확정
 
-### Phase 3 — 로컬 모델 게이트웨이
+### Phase 3 — 로컬·서버 모델 게이트웨이
 
-- MLX Serve와 Ollama의 structured output·멀티모달·메모리·latency를 동일 골든셋으로 비교
+- 로컬 MLX Serve/Ollama와 서버 SGLang의 structured output·멀티모달·메모리·latency를 동일 골든셋으로 비교
 - 모델·프롬프트 변경 시 canary와 회귀 평가를 거친다.
 
 ## 12. 결정 필요 항목
 
-1. MLX Serve 단일 프로세스와 text/image 프로세스 분리 여부
-2. 로컬 GPU 메모리 상한과 동시 생성 수
+1. 서버 GPU에서 두 SGLang 프로세스의 실제 peak VRAM·동시성·처리 시간
+2. GPU 검증 후의 서버 SLA와 worker 동시성
 3. 배경 생성 실패 시 단색 fallback 수준
 4. signed URL과 BE 내부 저장의 최종 asset 전달 방식
-5. 목표 SLA, 로컬 작업 큐 상한, 사용자별 quota
+5. 서버 작업 큐 상한과 사용자별 quota
 6. 원본·파생 자산 보존 기간과 삭제 전파 범위
 
 ## 13. 참고 문서

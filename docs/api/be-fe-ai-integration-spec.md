@@ -101,7 +101,7 @@ AI→BE 적재 metadata에서는 `detail_page.react_document`에 위치한다.
 이 문서는 다음 핵심 규격을 준수한다:
 - `schemaVersion`: `"2.0"` (고정 버전)
 - `canvasWidth`: `774` (고정 캔버스 가로 너비 px)
-- `root[]`: 제한된 시맨틱 태그(`section`, `div`, `h1`, `h2`, `p`, `span`, `img` 등), 구조화 props, 재귀 children으로 구성된 AST 노드 배열
+- `root[]`: 제한된 시맨틱 태그(`section`, `article`, `div`, `h2`, `h3`, `h4`, `p`, `span`, `img` 등), 구조화 props, 재귀 children으로 구성된 AST 노드 배열
 - **자산 참조 (`props.imageId`)**: 문서 내의 모든 이미지 노드는 실제 외부 URL이나 거대 Base64 문자열 대신 `props.imageId`로 사진 자산(`photos[]`의 `photo_id`)을 논리적으로 참조한다. 실제 이미지 URL 매핑 및 CDN 해석은 상품 BE 및 FE의 책임이다.
 - **실행 보안**: HTML/CSS 문자열, 임의 JSX, JavaScript 함수, 이벤트 핸들러, `dangerouslySetInnerHTML` 등 실행 가능 필드는 전면 차단된다.
 
@@ -274,10 +274,10 @@ QUEUED (0%) → ANALYZING (15%) → EXTRACTING (60%) → DRAFT_READY (100%)
 | 상태값 (Status) | 진행률 (Progress) | 설명 |
 |---|:---:|---|
 | `QUEUED` | 0% | 작업 큐에 등록되어 워커 할당 대기 중 |
-| `ANALYZING` | 15% | Qwen 27B 모델 기반 시각 자산 분석 및 메타데이터 추출 |
+| `ANALYZING` | 15% | Qwen3.8 27B 기반 시각 자산 분석 및 메타데이터 추출 (Mac 로컬은 MLX Serve, 서버 운영은 SGLang) |
 | `EXTRACTING` | 30% / 60% | 단색 배경 외곽 연결성(flood-fill) 기반 누끼 추출 |
 | `DRAFT_READY` | 100% | 편집 가능한 초안 및 `react_document`가 준비되어 사용자 편집 대기 |
-| `GENERATING_BACKGROUNDS` | 45% | Flux2 Klein 9B 모델 기반 라이프스타일/디테일 연출 컷 생성 |
+| `GENERATING_BACKGROUNDS` | 45% | Flux2 Klein 9B 기반 라이프스타일/디테일 연출 컷 생성 (Mac 로컬은 MLX Serve, 서버 운영은 SGLang) |
 | `COMPOSING` | 55% | 제품 누끼와 생성 배경의 기하학적 합성 |
 | `VERIFYING` | 65% | 원본 컷아웃 보존율 및 씬 분기 적합성 자동 품질 게이트 검증 |
 | `RENDERING` | 75% | React AST 기반 HTML 조립 및 Node Puppeteer 최종 PNG 렌더링 |
@@ -487,11 +487,14 @@ FE와 상품 BE는 허용된 블록 타입만 렌더링하고 모든 텍스트�
 
 ```text
 source
+source_original
 source_crop
 source_composite
 generated_scene
 generated_view
 ```
+
+source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 사용하는 경우다.
 
 화면 표시 규칙:
 
@@ -593,3 +596,9 @@ AI 시스템 구동 및 상품 BE 연동 시 사용되는 환경 변수 계약�
 | `PROMPT_VERSION` | string | `local-mlx-qwen-flux-v1` | 모델 추론에 적용되는 시스템 프롬프트 템플릿 버전 |
 | `LOCAL_TEXT_TIMEOUT` | float | `300.0` (5분) | 텍스트/비전 LLM 추론 타임아웃 초 |
 | `LOCAL_IMAGE_TIMEOUT` | float | `300.0` (5분) | Flux 이미지 생성 타임아웃 초 |
+
+로컬 개발은 MLX Serve(`127.0.0.1:11234`)의 `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`와
+`mlx-community/flux2-klein-9b-4bit`를 사용한다. Ubuntu 서버 운영은 SGLang의
+`cyankiwi/Qwen3.8-27B-AWQ-INT4`(텍스트 `30000`, `qwen-text`)와
+`circulus/FLUX.2-klein-9B-bnb-4bit`(이미지 `30001`, `flux-klein`)를 사용하며,
+클라이언트 provider는 각각 `LOCAL_*_PROVIDER=mlx`와 `LOCAL_*_PROVIDER=sglang`으로 구분한다.

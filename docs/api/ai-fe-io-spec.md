@@ -1,7 +1,11 @@
 # FE 입출력 명세
 
-> 2026-09-08 최신화: Flux2 Klein 4B 비교 실행은 백엔드 로컬 모델 선택에만 영향을 주며,
-> FE 계약은 동일하다. 생성 여부는 `product_generated` 플래그로 구분하며 provenance를 제공한다.
+> 2026-09-16 최신화: Mac 로컬 개발은 MLX Serve(`127.0.0.1:11234`)의
+> `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`/`mlx-community/flux2-klein-9b-4bit`, 서버 운영은
+> SGLang 텍스트·이미지 서버(`30000`/`30001`)의
+> `cyankiwi/Qwen3.8-27B-AWQ-INT4`/`circulus/FLUX.2-klein-9B-bnb-4bit`를 사용한다.
+> Flux2 Klein 4B 비교 실행은 로컬 개발 프로파일에만 영향을 주며, FE 계약은 동일하다.
+> 생성 여부는 `product_generated` 플래그로 구분하며 provenance를 제공한다.
 
 운영 구조에서 FE는 AI를 직접 호출하지 않습니다.
 
@@ -109,6 +113,17 @@ POST /internal/v1/ai/detail-page-renders
 X-AI-Internal-Token: <공유 내부 토큰>
 ```
 
+공통 서비스 프로브는 인증 없이 호출합니다.
+
+```http
+GET /health
+GET /health/ready
+```
+
+`/health`는 추론 서버를 호출하지 않는 liveness 경로이며 항상 `200 {"status":"ok"}`를 반환합니다.
+`/health/ready`는 SGLang 두 서버의 `/v1/models`를 확인하고 준비되면 `200`, 실패하면 사유와 함께
+`503`을 반환합니다.
+
 생성·승인 요청은 `multipart/form-data`이며 `product_image`, 반복 `product_images`, JSON
 `metadata` 파트를 사용합니다. 초안 저장은 `application/json` 본문을 사용합니다. 상세 필드와
 예시는 [`ai-dto-contract.md`](ai-dto-contract.md)에 정의되어 있습니다.
@@ -162,6 +177,13 @@ POST /api/v1/ai/detail-page-jobs
 GET  /api/v1/ai/detail-page-jobs/{job_id}
 PUT  /api/v1/ai/detail-page-jobs/{job_id}/draft
 POST /api/v1/ai/detail-page-renders
+```
+
+공통 서비스 프로브는 직접 API와 별개로 인증 없이 호출합니다.
+
+```http
+GET /health
+GET /health/ready
 ```
 
 이 경로는 운영 FE 계약이 아니며 `product_id`가 없는 샘플도 허용합니다. 상품 BE 연동 시에는

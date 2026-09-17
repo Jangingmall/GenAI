@@ -1,7 +1,10 @@
 # AI-FE / AI-BE DTO 계약
 
-> 2026-09-08 최신화: 로컬 기본 모델은 Gemma 12B + Flux2 Klein 9B다. Flux2 Klein 4B는
-> 전용 endpoint를 사용한 개발 smoke test 프로파일이며 DTO 필드·FE/BE 흐름을 변경하지 않는다.
+> 2026-09-16 최신화: Mac 로컬 개발 기본 모델은 MLX Serve의
+> `ddalcu/Qwen3.8-27B-MLX-Serve-4bit` + `mlx-community/flux2-klein-9b-4bit`이고,
+> 서버 운영 기본 모델은 SGLang의 `cyankiwi/Qwen3.8-27B-AWQ-INT4` +
+> `circulus/FLUX.2-klein-9B-bnb-4bit`이다. Flux2 Klein 4B는 로컬 전용 개발 smoke test
+> 프로파일이며 DTO 필드·FE/BE 흐름을 변경하지 않는다.
 
 이 문서는 생성형 AI 팀이 제공하는 AI 경계의 DTO와 입출력 계약입니다.
 운영 호출 방향은 다음과 같습니다.
@@ -12,8 +15,8 @@ FE → 상품 BE → AI API/Worker → 상품 BE → FE
                     └─ 생성 결과 ───┘
 ```
 
-상품 BE 자체의 FE API·상품 DB·게시 로직은 이 저장소의 범위가 아닙니다. AI 팀은 로컬
-Gemma/Flux 기반 이미지 분석, 사실 기반 문구, `react_document` 제한 AST를 포함한 JSON 초안,
+상품 BE 자체의 FE API·상품 DB·게시 로직은 이 저장소의 범위가 아닙니다. AI 팀은 로컬 MLX
+Serve 또는 서버 SGLang의 Qwen/FLUX 기반 이미지 분석, 사실 기반 문구, `react_document` 제한 AST를 포함한 JSON 초안,
 원본 보존형 사진 연출, HTML/CSS 기반 최종 PNG, 그리고 BE 연동 DTO를 제공합니다. AI는 외부 검색·클라우드 모델을
 호출하지 않습니다.
 
@@ -109,9 +112,11 @@ AI renderer가 동일한 계획으로 PNG를 생성합니다.
 
 생성 자산을 응답할 때는 `product_generated=true`, `asset_mode`, `source_sha256`,
 `fidelity_status=GENERATED`를 함께 보냅니다. 생성 여부는 `product_generated` 플래그로
-구분하며, `source`·`source_crop`·`source_composite`만 상품 픽셀의 권위 있는 근거로 사용합니다.
-현재 기본 이미지 모델은 `mlx-community/flux2-klein-9b-4bit`이며,
-`Runpod/FLUX.2-klein-4B-mflux-4bit`는 별도 endpoint의 개발 smoke test에서만 사용합니다.
+구분하며, `source_original`·`source`·`source_crop`·`source_composite`를 상품 픽셀의 권위 있는 근거로 사용합니다.
+`source_original`은 `hero` 대표 이미지에 촬영 원본을 손대지 않고 사용하는 경우입니다.
+Mac 로컬 개발 이미지 모델은 `mlx-community/flux2-klein-9b-4bit`이며, 서버 운영 이미지
+모델은 SGLang `flux-klein`으로 제공되는 `circulus/FLUX.2-klein-9B-bnb-4bit`입니다.
+`Runpod/FLUX.2-klein-4B-mflux-4bit`는 별도 로컬 endpoint의 개발 smoke test에서만 사용합니다.
 
 ### React JSON 산출물
 
@@ -482,10 +487,10 @@ FE/상태 응답의 자산 모드는 `RESPONSE_ASSET_MODE`로 결정합니다. `
   },
   "generation": {
     "provider": "local",
-    "analysis_model": "mlx-community/gemma-4-12b-it-4bit",
+    "analysis_model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
     "image_model": "mlx-community/flux2-klein-9b-4bit",
     "layout_id": "editorial-split",
-    "prompt_version": "local-mlx-gemma-flux-v1",
+    "prompt_version": "local-mlx-qwen-flux-v1",
     "research_used": false,
     "generated_at": "2026-08-31T00:00:10Z"
   }

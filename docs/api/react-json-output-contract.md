@@ -16,9 +16,9 @@ HTML/CSS는 승인 후 PNG를 만드는 AI 내부 renderer에서만 사용한다
 
 | 상황 | JSON 경로 | FE/BE 용도 |
 |---|---|---|
-| 초안 상태 응답 | `status.draft.react_document` | 초안 미리보기 |
-| 초안 저장 응답 | `status.draft.react_document` | 수정된 draft 기준으로 재조립된 미리보기 |
-| 최종 FE 결과 | `status.result.detail_page.react_document` | 최종 구조 렌더링·게시 전 검토 |
+| 초안 상태 응답 | `draft.react_document` | 초안 미리보기 |
+| 초안 저장 응답 | `react_document` | AiFeDraftResponseDto 최상위의 수정된 draft 미리보기 |
+| 최종 FE 결과 | `result.detail_page.react_document` | 최종 구조 렌더링·게시 전 검토 |
 | AI→상품 BE 적재 metadata | `detail_page.react_document` | 상품 BE 저장·감사·재조회 |
 | 로컬 CLI 산출물 | `react_document.json` | PNG/sections/photos와 함께 보관하는 디버깅·검증 파일 |
 
@@ -138,7 +138,7 @@ style은 색상, 타이포그래피, 여백, border, shadow, `objectFit`, `objec
 ## 6. 생성·편집·렌더링 흐름
 
 ```text
-Gemma 분석
+Qwen3.8 27B 분석 (Mac 로컬 MLX Serve 또는 서버 SGLang)
   → ProductProfileDto / page_plan / 카피 검증
   → ApprovedDraftDto
   → React JSON builder + Pydantic tree validation
