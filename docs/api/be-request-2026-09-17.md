@@ -1,5 +1,11 @@
 # BE 팀에 드리는 요청 — 2026-09-17
 
+> 이 문서는 주체별로 다음 세 문서로 갈라졌습니다. 아래 본문은 이력 보존을 위해 그대로 남겨 둡니다.
+>
+> - [BE 팀 인계](be-handoff-2026-09-17.md)
+> - [AI 작업 목록](ai-worklist-2026-09-17.md)
+> - [양측 합의 필요 사항](open-decisions-2026-09-17.md)
+
 - 보내는 곳: 생성형 AI 팀 (상세페이지 생성)
 - 근거: `docs/evaluation/three-service-integration-test-2026-09-17.md` — 세 서비스를 모두 로컬에 띄워 측정한 기록
 - 로그: `docs/evaluation/logs/` — BE 원본 상태(패치 없음)로 재실행한 2026-09-17 로그 묶음
