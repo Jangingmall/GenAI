@@ -1,0 +1,229 @@
+{
+  "id": 137166,
+  "accession_number": "1962.125",
+  "share_license_status": "CC0",
+  "tombstone": "Chair, c. 1800. Attributed to Samuel McIntire (American, 1757–1811). Mahogany; overall: 97.2 x 57.2 x 46.4 cm (38 1/4 x 22 1/2 x 18 1/4 in.). The Cleveland Museum of Art, Purchase from the J. H. Wade Fund, 1962.125",
+  "current_location": null,
+  "title": "Chair",
+  "creation_date": "c. 1800",
+  "creation_date_earliest": 1795,
+  "creation_date_latest": 1805,
+  "artists_tags": [
+    "male"
+  ],
+  "culture": [
+    "America, Salem, early 19th Century"
+  ],
+  "technique": "mahogany",
+  "support_materials": [],
+  "department": "Decorative Art and Design",
+  "collection": "Furniture",
+  "type": "Furniture and woodwork",
+  "measurements": "Overall: 97.2 x 57.2 x 46.4 cm (38 1/4 x 22 1/2 x 18 1/4 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.972,
+      "height_inch": 38,
+      "height_inch_fraction": 0.25,
+      "width": 0.572,
+      "width_inch": 22,
+      "width_inch_fraction": 0.5,
+      "depth": 0.464,
+      "depth_inch": 18,
+      "depth_inch_fraction": 0.25
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 302276,
+        "title": "Year in Review - 1962",
+        "description": "<i>Year in Review - 1962</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (October 24-November 25, 1962).",
+        "opening_date": "1962-10-24T04:00:00"
+      },
+      {
+        "id": 304705,
+        "title": "Neo-classicism: Style and Motif",
+        "description": "<i>Neo-classicism: Style and Motif</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (September 23-October 31, 1964).",
+        "opening_date": "1964-09-23T04:00:00"
+      },
+      {
+        "id": 443908,
+        "title": "Seminar on American Furniture",
+        "description": "<i>Seminar on American Furniture</i>. Western Reserve Historical Society, Cleveland, OH (organizer) (February 27-March 2, 1976).",
+        "opening_date": "1976-02-27T05:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "(Israel Sack Inc., New York, NY, 1962, sold to the Cleveland Museum of Art)",
+      "citations": [],
+      "footnotes": null,
+      "date": "1962",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": null,
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This chair exemplifies the neoclassic style in America. Design books published by British cabinetmakers transmitted the style to the New World. Indeed, Samuel McIntire found inspiration for this chair in Plate 2 from the 1794 edition of George Hepplewhite's <em>Cabinetmaker and Upholsterer's Guide</em>. The McIntire chair's shield-shaped back, however, is pointed rather than rounded, and the front legs, enriched with carved grapevines, have tapered \"spade\" feet with ebony applied. McIntire's carving skill brought him great success in Salem, a town half the size of Boston, but where some of the finest furniture of the period was made. This chair comes from a set owned by the Derby family, one of the most prominent in Salem.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q80031551"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1962.125-chair"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Cooper, Wendy A. \"The Furniture and Furnishings of the Farm at Danvers.\" <em>M Bulletin (Museum of Fine Arts, Boston)</em> 81 (1983): 24-45.",
+      "page_number": null,
+      "url": "www.jstor.org/stable/4171643"
+    },
+    {
+      "citation": "Warren, David B., and Ima Hogg. Bayou Bend: American Furniture, Paintings and Silver from the Bayou Bend Collection. New York: New York Graphic Society [in Komm.], 1975.",
+      "page_number": "77",
+      "url": null
+    },
+    {
+      "citation": "Flanigan, J. Michael. American Furniture from the Kaufman Collection. Washington: National Gallery of Art, 1986.",
+      "page_number": "106",
+      "url": null
+    },
+    {
+      "citation": "Davidson, Marshall B., and Elizabeth Stillinger. The American Wing at the Metropolitan Museum of Art. New York: Metropolitan Museum of Art u.a, 1985.",
+      "page_number": "139",
+      "url": null
+    },
+    {
+      "citation": "Barter, Judith A., Kimberly Rhodes, Seth A. Thayer, and Andrew Walker. American Arts at the Art Institute of Chicago: From Colonial Times to World War I. Chicago: Art Institute of Chicago, 1998.",
+      "page_number": "110-111",
+      "url": null
+    },
+    {
+      "citation": "Hawley, Henry H. “A McIntire Chair.” <em>The Bulletin of the Cleveland Museum of Art</em> 50, no. 9 (November 1963): 249–251.",
+      "page_number": "Mentioned and reproduced: p. 249-251, figs. 1, 2",
+      "url": "http://www.jstor.org/stable/25151969"
+    }
+  ],
+  "url": "https://clevelandart.org/art/1962.125",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_web.jpg",
+      "width": "729",
+      "height": "900",
+      "filesize": "190880",
+      "filename": "1962.125_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_print.jpg",
+      "width": "2755",
+      "height": "3400",
+      "filesize": "1199577",
+      "filename": "1962.125_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_full.tif",
+      "width": "4338",
+      "height": "5353",
+      "filesize": "69692624",
+      "filename": "1962.125_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt0_web.jpg",
+        "width": "598",
+        "height": "900",
+        "filesize": "185398"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt0_print.jpg",
+        "width": "2258",
+        "height": "3400",
+        "filesize": "1167798"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt0_full.tif",
+        "width": "3624",
+        "height": "5456",
+        "filesize": "59346020"
+      },
+      "date_created": "2019-07-12T14:08:07",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt1_web.jpg",
+        "width": "609",
+        "height": "900",
+        "filesize": "144082"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt1_print.jpg",
+        "width": "2301",
+        "height": "3400",
+        "filesize": "791477"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1962.125/1962.125_alt1_full.tif",
+        "width": "3718",
+        "height": "5494",
+        "filesize": "61307044"
+      },
+      "date_created": "2019-07-12T14:12:25",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Purchase from the J. H. Wade Fund",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 137166,
+  "creators": [
+    {
+      "id": 8752,
+      "description": "Samuel McIntire (American, 1757–1811)",
+      "extent": null,
+      "qualifier": "attributed to",
+      "role": "designed and made by",
+      "biography": null,
+      "name_in_original_language": null,
+      "birth_year": "1757",
+      "death_year": "1811",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 1
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "1962-06-02T00:00:00",
+  "sortable_date": 1795,
+  "date_added_to_oa": null,
+  "date_text": "c. 1800",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-05-29 07:00:00.722000"
+}

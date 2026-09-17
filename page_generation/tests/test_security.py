@@ -1,0 +1,47 @@
+import re
+from pathlib import Path
+
+
+def _parse_env(path: Path) -> dict[str, str]:
+    values = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        values[key] = value
+    return values
+
+
+def test_env_example_contains_placeholders_not_credentials():
+    values = _parse_env(Path(".env.example"))
+
+    assert values["ANALYSIS_PROVIDER"] == "local"
+    # .env.example is the Ubuntu SGLang deployment template; the models are the
+    # names the SGLang servers register, not local MLX checkpoints.
+    assert values["LOCAL_TEXT_MODEL"] == values["TEXT_SERVED_MODEL_NAME"]
+    assert values["LOCAL_IMAGE_MODEL"] == values["IMAGE_SERVED_MODEL_NAME"]
+    assert values["IMAGE_MODEL_PATH"] == "circulus/FLUX.2-klein-9B-bnb-4bit"
+    # Model weights are pinned to a Hugging Face commit so a repository update
+    # cannot silently change what the server downloads.
+    for key in ("TEXT_MODEL_REVISION", "IMAGE_MODEL_REVISION"):
+        assert re.fullmatch(r"[0-9a-f]{40}", values[key]), key
+    assert "AWS_ACCESS_KEY_ID" not in values
+    assert "GEMINI_API_KEY" not in values
+
+
+def test_local_env_example_has_no_gemini_or_cloud_credentials():
+    local_env = Path("local.env.example").read_text(encoding="utf-8")
+
+    assert "GEMINI" not in local_env
+    assert "AWS_ACCESS_KEY_ID" not in local_env
+    assert "AWS_SECRET_ACCESS_KEY" not in local_env
+
+
+def test_sensitive_and_generated_local_files_are_ignored():
+    ignored = set(Path(".gitignore").read_text(encoding="utf-8").splitlines())
+
+    assert ".env" in ignored
+    assert ".env.local" in ignored
+    assert ".local/" in ignored
+    assert "generated/" in ignored

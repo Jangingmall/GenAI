@@ -1,0 +1,382 @@
+{
+  "id": 520329,
+  "accession_number": "2022.224",
+  "share_license_status": "CC0",
+  "tombstone": "Gu-Shaped Flower Vase (櫻華釉花缾), 1893–97. Seifū Yohei III (Japanese, 1851–1914). Glazed porcelain with molded and carved designs; height: 31.1 cm (12 1/4 in.); diameter of mouth: 13.5 cm (5 5/16 in.); diameter of foot: 11 cm (4 5/16 in.). The Cleveland Museum of Art, Gift of James and Christine Heusinger, 2022.224",
+  "current_location": "235A Japanese",
+  "title": "Gu-Shaped Flower Vase",
+  "title_in_original_language": "櫻華釉花缾",
+  "creation_date": "1893–97",
+  "creation_date_earliest": 1893,
+  "creation_date_latest": 1897,
+  "artists_tags": [
+    "male",
+    "Asian (from 1900 to present)"
+  ],
+  "culture": [
+    "Japan, Meiji period (1868–1912)"
+  ],
+  "technique": "Glazed porcelain with molded and carved designs",
+  "support_materials": [],
+  "department": "Japanese Art",
+  "collection": "Japanese Art",
+  "type": "Ceramic",
+  "measurements": "height: 31.1 cm (12 1/4 in.); Diameter of mouth: 13.5 cm (5 5/16 in.); Diameter of foot: 11 cm (4 5/16 in.)",
+  "dimensions": {
+    "height": {
+      "height": 0.311,
+      "height_inch": 12,
+      "height_inch_fraction": 0.25
+    },
+    "diameter of foot": {
+      "length": 0.11,
+      "length_inch": 4,
+      "length_inch_fraction": 0.3125
+    },
+    "diameter of mouth": {
+      "width": 0.135,
+      "width_inch": 5,
+      "width_inch_fraction": 0.3125
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": "大日本清風造",
+      "inscription_translation": "Inscription incised on the base: \"Made by Seifu of Great Japan\"",
+      "inscription_remark": null,
+      "sortorder": 1
+    },
+    {
+      "inscription": "This gu-shaped vase has “cherry blossom glaze” (ōkayū), according to the inscription on its box.",
+      "inscription_translation": "",
+      "inscription_remark": null,
+      "sortorder": 2
+    },
+    {
+      "inscription": "A label affixed to the side of the box gives a sense of how previous owners conceived of the piece. Although the label is partially abraded, one can make out the character nezu 鼠, used in the names of numerous light pinks, from Naniwa pink (Osaka pink) to Miyako pink (Kyoto, or capital, pink). Also legible is the phrase hakugōrai, a broad term that can describe a shade of white associated with ceramics discovered in Korean tombs, but often applied to other ceramics of similar coloration, many from Chinese kilns, including Ding (J. Tei) ware of the Northern Song dynasty.",
+      "inscription_translation": "",
+      "inscription_remark": null,
+      "sortorder": 3
+    },
+    {
+      "inscription": "清風",
+      "inscription_translation": "Seal on the top of the box lid: “Seifū”",
+      "inscription_remark": "The storage box is also inscribed with a description of the contents of the box.",
+      "sortorder": 4
+    },
+    {
+      "inscription": "帝室技芸員",
+      "inscription_translation": "Inscription on the inside of the box lid: Imperial Household Artist “Teishitsu gigei’in”",
+      "inscription_remark": null,
+      "sortorder": 5
+    },
+    {
+      "inscription": "清風與平",
+      "inscription_translation": "Seal on the inside of the box lid: “Seifū Yohei.”",
+      "inscription_remark": null,
+      "sortorder": 6
+    }
+  ],
+  "exhibitions": {
+    "current": [
+      {
+        "id": 448212,
+        "title": "Colors of Kyoto: The Seifū Yohei Ceramic Studio",
+        "description": "<i>Colors of Kyoto: The Seifū Yohei Ceramic Studio</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (August 19, 2023-March 10, 2024).",
+        "opening_date": "2023-08-19T04:00:00"
+      },
+      {
+        "id": 705668,
+        "title": "“Bunjin” in Japanese Art",
+        "description": "<i>“Bunjin” in Japanese Art</i>. The Cleveland Museum of Art, Cleveland, OH (organizer) (June 21, 2026-June 20, 2027).",
+        "opening_date": "2026-06-21T04:00:00"
+      }
+    ],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "James and Christine Heusinger, Berea, OH, given to the Cleveland Museum of Art",
+      "citations": [],
+      "footnotes": null,
+      "date": "?–2022",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "2022–",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "This <em>gu</em>-shaped vase has “cherry blossom glaze” (<em>ōkayū</em>), which Yohei III invented in 1890.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "Seifū Yohei III was the most prominent head of a ceramics studio in Kyoto that specialized in Chinese-style porcelains and especially items for use in <em>sencha</em> (煎茶), or the drinking of steeped-leaf tea with companions. Sencha was popular among the <em>bunjin</em> of Kyoto and Osaka, who often enjoyed it as part of their emulation of Chinese culture. While sencha was by design less formal than the Japanese tea ceremony, it still featured the display of treasured objects. Prized Chinese antiquities were generally unobtainable, so substitutes such as the <em>Gu-Shaped Flower Vase</em> were much in demand.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q117793878"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-2022.224-gu-shaped-vase"
+    ]
+  },
+  "citations": [
+    {
+      "citation": "Maezaki, Shinya and Sinéad Vilbar. <em>Colors of Kyoto: The Seifū Yohei Ceramic Studio</em>. Cleveland, OH: The Cleveland Museum of Art, 2023.",
+      "page_number": "Mentioned and Reproduced: cat. no. 82, pp. 170–171",
+      "url": ""
+    }
+  ],
+  "url": "https://clevelandart.org/art/2022.224",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_web.jpg",
+      "width": "580",
+      "height": "900",
+      "filesize": "135298",
+      "filename": "2022.224_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_print.jpg",
+      "width": "2190",
+      "height": "3400",
+      "filesize": "738607",
+      "filename": "2022.224_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_full.tif",
+      "width": "8754",
+      "height": "13593",
+      "filesize": "357006044",
+      "filename": "2022.224_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt0_web.jpg",
+        "width": "581",
+        "height": "900",
+        "filesize": "138133"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt0_print.jpg",
+        "width": "2195",
+        "height": "3400",
+        "filesize": "782657"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt0_full.tif",
+        "width": "8754",
+        "height": "13557",
+        "filesize": "356060660"
+      },
+      "date_created": "2022-09-13T20:31:18",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt1_web.jpg",
+        "width": "579",
+        "height": "900",
+        "filesize": "138335"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt1_print.jpg",
+        "width": "2187",
+        "height": "3400",
+        "filesize": "780935"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt1_full.tif",
+        "width": "8754",
+        "height": "13611",
+        "filesize": "357478800"
+      },
+      "date_created": "2022-09-13T20:36:45",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt2_web.jpg",
+        "width": "581",
+        "height": "900",
+        "filesize": "137982"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt2_print.jpg",
+        "width": "2195",
+        "height": "3400",
+        "filesize": "774712"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt2_full.tif",
+        "width": "8754",
+        "height": "13559",
+        "filesize": "356113180"
+      },
+      "date_created": "2022-09-13T20:42:32",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt3_web.jpg",
+        "width": "900",
+        "height": "876",
+        "filesize": "149771"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt3_print.jpg",
+        "width": "3400",
+        "height": "3308",
+        "filesize": "1096508"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt3_full.tif",
+        "width": "10041",
+        "height": "9768",
+        "filesize": "294269128"
+      },
+      "date_created": "2022-09-13T22:33:30",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt4_web.jpg",
+        "width": "900",
+        "height": "881",
+        "filesize": "164315"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt4_print.jpg",
+        "width": "3400",
+        "height": "3330",
+        "filesize": "1478274"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt4_full.tif",
+        "width": "10041",
+        "height": "9835",
+        "filesize": "296287404"
+      },
+      "date_created": "2022-09-13T22:39:23",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt5_web.jpg",
+        "width": "631",
+        "height": "900",
+        "filesize": "182632"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt5_print.jpg",
+        "width": "2382",
+        "height": "3400",
+        "filesize": "1638239"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt5_full.tif",
+        "width": "8573",
+        "height": "12235",
+        "filesize": "314699296"
+      },
+      "date_created": "2022-09-13T19:37:43",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt6_web.jpg",
+        "width": "900",
+        "height": "854",
+        "filesize": "258123"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt6_print.jpg",
+        "width": "3400",
+        "height": "3226",
+        "filesize": "3027297"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt6_full.tif",
+        "width": "8663",
+        "height": "8220",
+        "filesize": "213658136"
+      },
+      "date_created": "2022-09-13T19:32:09",
+      "annotation": ""
+    },
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt7_web.jpg",
+        "width": "900",
+        "height": "864",
+        "filesize": "235769"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt7_print.jpg",
+        "width": "3400",
+        "height": "3265",
+        "filesize": "2741584"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/2022.224/2022.224_alt7_full.tif",
+        "width": "8935",
+        "height": "8581",
+        "filesize": "230042176"
+      },
+      "date_created": "2022-09-13T19:33:01",
+      "annotation": ""
+    }
+  ],
+  "creditline": "Gift of James and Christine Heusinger",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 520329,
+  "creators": [
+    {
+      "id": 299428,
+      "description": "Seifū Yohei III (Japanese, 1851–1914)",
+      "extent": null,
+      "qualifier": null,
+      "role": "artist",
+      "biography": null,
+      "name_in_original_language": "三代清風与平",
+      "birth_year": "1851",
+      "death_year": "1914",
+      "use_in_caption": true,
+      "include_extent": false,
+      "weight": 1
+    }
+  ],
+  "legal_status": "accessioned",
+  "accession_date": "2022-12-05T05:00:00Z",
+  "sortable_date": 1893,
+  "date_added_to_oa": null,
+  "date_text": "1893–97",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [
+    "Gu-Shaped Vase"
+  ],
+  "is_highlight": false,
+  "updated_at": "2026-08-05 21:17:41.696000"
+}

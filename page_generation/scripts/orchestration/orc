@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# orc — cmux 멀티 에이전트 오케스트레이션 헬퍼
+# 이 세션(Claude Code)이 지휘자로서 옆 터미널의 CLI 에이전트(Codex, Antigravity 등)에
+# 작업을 배분하고 상태를 회수하기 위한 얇은 래퍼.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REG="$ROOT/scripts/orchestration/workers.tsv"
+STATE="$ROOT/.orchestration"
+TASKS="$STATE/tasks"
+BOARD="$STATE/board.md"
+CMUX="${CMUX_BIN:-/usr/local/bin/cmux}"
+
+mkdir -p "$TASKS"
+[ -f "$BOARD" ] || printf '# 오케스트레이션 보드\n\n| 시각 | 워커 | 작업 | 상태 | 브리프 |\n| --- | --- | --- | --- | --- |\n' > "$BOARD"
+
+die() { echo "orc: $*" >&2; exit 1; }
+
+# --- 레지스트리 ---------------------------------------------------------------
+reg_field() { # alias field_index
+  awk -F'\t' -v a="$1" -v i="$2" '!/^#/ && NF>=4 && $1==a {print $i; exit}' "$REG"
+}
+aliases() { awk -F'\t' '!/^#/ && NF>=4 {print $1}' "$REG"; }
+
+# --- 서피스 해석 ---------------------------------------------------------------
+# 제목으로 서피스 UUID 를 찾는다. UUID 는 재시작 시 바뀌므로 항상 제목으로 재해석한다.
+resolve() { # alias -> uuid
+  local a="$1" tty uuid
+  tty="$(reg_field "$a" 2)"
+  [ -n "$tty" ] || die "알 수 없는 워커: $a (등록: $(aliases | tr '\n' ' '))"
+  uuid="$("$CMUX" tree --all --id-format both 2>/dev/null \
+    | grep -F '[terminal]' \
+    | grep -F "tty=$tty" \
+    | grep -Eo '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' \
+    | head -1)"
+  [ -n "$uuid" ] || die "'$a' 서피스를 찾지 못했습니다 (tty=$tty). cmux tree 로 tty 를 확인하세요."
+  printf '%s' "$uuid"
+}
+
+screen() { # alias [lines]
+  "$CMUX" read-screen --surface "$(resolve "$1")" --lines "${2:-40}"
+}
+
+is_idle() { # alias — busy 패턴이 안 보이면 입력 대기로 본다
+  local a="$1" pat
+  pat="$(reg_field "$a" 4)"
+  ! screen "$a" 25 | tail -14 | grep -Eq "$pat"
+}
+
+# --- 명령 ---------------------------------------------------------------------
+cmd_list() {
+  printf '%-8s %-10s %-13s %-8s %s\n' ALIAS TTY KIND STATE SURFACE
+  local a tty kind uuid state
+  while read -r a; do
+    tty="$(reg_field "$a" 2)"; kind="$(reg_field "$a" 3)"
+    if uuid="$(resolve "$a" 2>/dev/null)"; then
+      if is_idle "$a"; then state=idle; else state=busy; fi
+    else uuid='-'; state=missing; fi
+    printf '%-8s %-10s %-13s %-8s %s\n' "$a" "$tty" "$kind" "$state" "$uuid"
+  done < <(aliases)
+}
+
+cmd_read() { screen "$1" "${2:-60}"; }
+
+# 한 줄 지시를 워커 프롬프트에 입력하고 엔터. (TUI 이므로 개행은 공백으로 접는다)
+cmd_send() {
+  local a="$1"; shift
+  local text; text="$(printf '%s' "$*" | tr '\n' ' ')"
+  local uuid; uuid="$(resolve "$a")"
+  "$CMUX" send --surface "$uuid" -- "$text"
+  sleep 0.3
+  "$CMUX" send-key --surface "$uuid" enter
+  echo "orc: -> $a: $text"
+}
+
+# 긴 브리프는 파일로 넘긴다: stdin 을 .orchestration/tasks/<id>.md 로 저장하고
+# 워커에게는 "이 파일 읽고 수행" 한 줄만 보낸다. (프롬프트 깨짐/조기 제출 방지)
+cmd_task() {
+  local a="$1" title="$2"
+  local id="$(date +%Y%m%d-%H%M%S)-$a"
+  local file="$TASKS/$id.md"
+  { echo "# $title"; echo; echo "- 워커: $a"; echo "- 발행: $(date '+%F %T')"; echo "- 지휘: Claude Code (오케스트레이터 세션)"; echo;
+    echo "## 지시"; echo; cat; echo;
+    echo "## 보고"; echo "완료되면 이 파일 하단에 '## 결과' 섹션으로 변경 파일/검증 방법/미해결 이슈를 적어 주세요."; } > "$file"
+  local rel="${file#$ROOT/}"
+  cmd_send "$a" "$rel 파일을 읽고 거기 적힌 지시를 수행한 뒤, 같은 파일 하단에 '## 결과' 섹션으로 보고해 주세요. 이 저장소 루트는 $ROOT 입니다."
+  printf '| %s | %s | %s | 배정 | %s |\n' "$(date '+%m-%d %H:%M')" "$a" "$title" "$rel" >> "$BOARD"
+  echo "orc: 브리프 -> $rel"
+}
+
+cmd_wait() { # alias [timeout_sec]
+  local a="$1" t="${2:-600}" waited=0 stable=0
+  while [ "$waited" -lt "$t" ]; do
+    if is_idle "$a"; then stable=$((stable+1)); else stable=0; fi
+    [ "$stable" -ge 2 ] && { echo "orc: $a idle (${waited}s)"; return 0; }
+    sleep 10; waited=$((waited+10))
+  done
+  echo "orc: $a 대기 시간 초과 (${t}s)"; return 1
+}
+
+cmd_broadcast() { local a; while read -r a; do cmd_send "$a" "$@"; done < <(aliases); }
+
+cmd_board() { cat "$BOARD"; }
+
+cmd_status() { # 워크스페이스 상단 상태줄에 진행 상황 표시
+  "$CMUX" set-status orc "$*" >/dev/null && echo "orc: status = $*"
+}
+
+usage() {
+  cat <<'U'
+orc — cmux 멀티 에이전트 오케스트레이션
+
+  orc list                      워커 목록 / idle·busy 상태
+  orc read <alias> [lines]      워커 화면 읽기
+  orc send <alias> <text...>    한 줄 지시 입력 + 엔터
+  orc task <alias> <제목>       stdin 을 브리프 파일로 저장 후 지시 (긴 작업용)
+  orc wait <alias> [sec]        워커가 입력 대기로 돌아올 때까지 폴링
+  orc broadcast <text...>       모든 워커에 동일 지시
+  orc board                     작업 보드 출력
+  orc status <text...>          cmux 워크스페이스 상태줄 갱신
+
+예:
+  scripts/orchestration/orc list
+  echo "tests/test_react_document.py 를 통과시키세요" | scripts/orchestration/orc task codex "react document 테스트 수리"
+  scripts/orchestration/orc wait codex 900 && scripts/orchestration/orc read codex 80
+U
+}
+
+[ $# -ge 1 ] || { usage; exit 1; }
+sub="$1"; shift
+case "$sub" in
+  list) cmd_list ;;
+  read) cmd_read "$@" ;;
+  send) cmd_send "$@" ;;
+  task) cmd_task "$@" ;;
+  wait) cmd_wait "$@" ;;
+  broadcast) cmd_broadcast "$@" ;;
+  board) cmd_board ;;
+  status) cmd_status "$@" ;;
+  -h|--help|help) usage ;;
+  *) die "알 수 없는 명령: $sub" ;;
+esac

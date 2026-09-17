@@ -1,0 +1,232 @@
+{
+  "product_type": "부채",
+  "display_name": "초충도 부채세트",
+  "is_traditional_craft": true,
+  "craft_type": "나염",
+  "classification_confidence": 0.95,
+  "craft_confidence": 0.85,
+  "classification_reason": "이미지에서 접이식 부채와 부채집이 함께 구성되어 있으며, 부채 표면의 초충도 문양과 부채집의 나염 무늬가 명확하게 확인됩니다. 입력된 제작 과정(신사임당 초충도 재구성, 한복원단 나염)과 시각적 증거가 일치하여 전통 공예 제품으로 분류합니다.",
+  "candidate_types": [
+    "부채",
+    "전통 소품",
+    "나염 공예품",
+    "한복 액세서리"
+  ],
+  "layout_id": "editorial-split",
+  "page_plan": [
+    {
+      "section_id": "hero",
+      "block_type": "hero",
+      "eyebrow": "TRADITIONAL CRAFT",
+      "title": "신사임당 초충도, 한복원단 위에 피어나다",
+      "body": "조선시대 여류화가 신사임당의 초충도를 자수 느낌으로 재구성하여 한복원단에 나염한 부채와 부채집 세트입니다. 전통의 정수를 담은 문양이 부채의 곡선을 따라 자연스럽게 흐릅니다.",
+      "variant": "paper",
+      "photo_id": "hero",
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "statement",
+      "block_type": "statement",
+      "eyebrow": "ART & CRAFT",
+      "title": "그림과 직물의 만남",
+      "body": "부채 표면에는 초록의 풀과 붉은 꽃, 그리고 작은 생명들이 섬세하게 표현되어 있습니다. 한복원단의 결을 살린 나염 기법으로, 그림이 직물 위에 살아 숨 쉬는 듯한 질감을 더했습니다.",
+      "variant": "light",
+      "photo_id": null,
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "detail-fan",
+      "block_type": "detail_split",
+      "eyebrow": "DETAIL",
+      "title": "부채의 곡선과 문양",
+      "body": "부채를 펼치면 나뭇가지 사이로 초충도 문양이 드러납니다. 끝단의 검은색 테두리와 매듭 장식이 전체적인 조화를 이루며, 전통적인 아름다움을 완성합니다.",
+      "variant": "dark",
+      "photo_id": "detail",
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "detail-case",
+      "block_type": "detail_split",
+      "eyebrow": "DETAIL",
+      "title": "부채집의 나염 무늬",
+      "body": "부채를 수납하는 부채집은 노란색 한복원단에 동그라미 무늬가 반복되는 나염으로 제작되었습니다. 부채의 화려한 문양과 대비되는 절제된 디자인이 세트를 완성합니다.",
+      "variant": "image-right",
+      "photo_id": "detail-02",
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "usage",
+      "block_type": "usage_scene",
+      "eyebrow": "LIFESTYLE",
+      "title": "한복과 함께, 전통의 멋을 더하다",
+      "body": "한복 차림에 부채를 들면 조선시대 여인의 자태를 떠올리게 합니다. 부채집에 수납하여 소지하거나, 한복 매장의 소품으로 활용하여 전통적인 분위기를 연출할 수 있습니다.",
+      "variant": "full-bleed",
+      "photo_id": "lifestyle",
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "product-gallery",
+      "block_type": "gallery",
+      "eyebrow": "PRODUCT GALLERY",
+      "title": "색과 형태를 가까이에서",
+      "body": "원본 이미지에서 확인되는 서로 다른 표면과 구성을 살펴보세요.",
+      "variant": "paper",
+      "photo_id": null,
+      "photo_ids": [
+        "detail",
+        "detail-02",
+        "detail-03",
+        "detail-04"
+      ],
+      "items": []
+    },
+    {
+      "section_id": "recommended-scenes",
+      "block_type": "recommendation",
+      "eyebrow": "RECOMMENDED SCENES",
+      "title": "이런 자리에서 더 잘 어울립니다.",
+      "body": "제품의 색과 실루엣을 기준으로 제안하는 연출 아이디어입니다.",
+      "variant": "paper",
+      "photo_id": null,
+      "photo_ids": [],
+      "items": [
+        {
+          "label": "01",
+          "value": "여백 있는 테이블",
+          "description": "주변 소품을 덜어 형태가 돋보이게 연출해 보세요.",
+          "evidence": "inferred"
+        },
+        {
+          "label": "02",
+          "value": "부드러운 자연광",
+          "description": "측면의 은은한 빛으로 표면의 결을 살려 보세요.",
+          "evidence": "inferred"
+        },
+        {
+          "label": "03",
+          "value": "차분한 배경색",
+          "description": "크림·베이지 계열 배경으로 제품에 시선을 모아 보세요.",
+          "evidence": "inferred"
+        }
+      ]
+    },
+    {
+      "section_id": "info",
+      "block_type": "info_table",
+      "eyebrow": "SPEC",
+      "title": "제품 정보",
+      "body": "제품 구성 및 소재에 대한 상세 정보입니다.",
+      "variant": "paper",
+      "photo_id": null,
+      "photo_ids": [],
+      "items": [
+        {
+          "label": "제품명",
+          "value": "초충도 부채세트",
+          "description": "",
+          "evidence": "image-visible"
+        },
+        {
+          "label": "구성",
+          "value": "부채, 부채집",
+          "description": "",
+          "evidence": "image-visible"
+        },
+        {
+          "label": "표면 문양",
+          "value": "신사임당 초충도 (자수 느낌 재구성)",
+          "description": "",
+          "evidence": "image-visible"
+        },
+        {
+          "label": "소재",
+          "value": "한복원단 (나염)",
+          "description": "",
+          "evidence": "image-visible"
+        }
+      ]
+    },
+    {
+      "section_id": "notice",
+      "block_type": "notice",
+      "eyebrow": "CARE",
+      "title": "관리 방법",
+      "body": "나염 제품 특성상 물세탁을 피하고, 오염 시 마른 천으로 가볍게 닦아주세요. 부채는 습기에 약할 수 있으므로 통풍이 잘 되는 곳에 보관하시기 바랍니다.",
+      "variant": "dark",
+      "photo_id": null,
+      "photo_ids": [],
+      "items": []
+    },
+    {
+      "section_id": "closing",
+      "block_type": "closing",
+      "eyebrow": "CLOSING",
+      "title": "손끝으로 전하는 전통의 온기",
+      "body": "신사임당의 그림과 한복원단의 만남, 초충도 부채세트가 당신의 일상에 전통의 아름다움을 더합니다.",
+      "variant": "paper",
+      "photo_id": null,
+      "photo_ids": [],
+      "items": []
+    }
+  ],
+  "summary": "신사임당의 초충도를 자수 느낌으로 재구성하여 한복원단에 나염한 부채와 부채집 세트입니다. 전통적인 문양과 나염 기법이 어우러져 한복 소품으로 제격입니다.",
+  "keywords": [
+    "초충도",
+    "부채",
+    "부채집",
+    "나염",
+    "한복",
+    "신사임당",
+    "전통공예",
+    "한복소품"
+  ],
+  "observations": {},
+  "features": [
+    {
+      "title": "신사임당 초충도 문양",
+      "description": "부채 표면에는 풀과 꽃, 곤충 등이 그려진 초충도 문양이 자수 느낌으로 표현되어 있습니다.",
+      "evidence": "image-visible",
+      "confidence": 0.95
+    },
+    {
+      "title": "한복원단 나염 부채집",
+      "description": "부채를 수납하는 부채집은 노란색 한복원단에 동그라미 무늬가 반복되는 나염으로 제작되었습니다.",
+      "evidence": "image-visible",
+      "confidence": 0.9
+    },
+    {
+      "title": "전통적인 매듭 장식",
+      "description": "부채의 끝단에는 검은색 테두리와 함께 전통적인 매듭 장식이 달려 있어 완성도를 높였습니다.",
+      "evidence": "image-visible",
+      "confidence": 0.85
+    }
+  ],
+  "copy_sections": [
+    {
+      "section_type": "hero",
+      "title": "신사임당 초충도, 한복원단 위에 피어나다",
+      "description": "조선시대 여류화가 신사임당의 초충도를 자수 느낌으로 재구성하여 한복원단에 나염한 부채와 부채집 세트입니다. 전통의 정수를 담은 문양이 부채의 곡선을 따라 자연스럽게 흐릅니다.",
+      "evidence": "image-visible"
+    }
+  ],
+  "usage_scene": "",
+  "uncertain_information": [],
+  "safety_notes": [
+    "부채의 정확한 크기(길이, 폭)",
+    "부채 뼈대(대)의 정확한 소재(대나무, 나무 등)",
+    "부채집의 정확한 소재(한복원단 종류)",
+    "부채 표면의 정확한 소재(한복원단 종류)",
+    "제품의 정확한 가격",
+    "검증되지 않은 AI 추정 문구 제외: 한복과 함께, 전통의 멋을 더하다",
+    "검증되지 않은 AI 추정 문구 제외: 손끝으로 전하는 전통의 온기",
+    "나염 제품 특성상 물세탁을 피하고, 오염 시 마른 천으로 가볍게 닦아주세요.",
+    "부채는 습기에 약할 수 있으므로 통풍이 잘 되는 곳에 보관하시기 바랍니다.",
+    "부채를 접을 때 뼈대를 과도하게 꺾지 않도록 주의해 주세요."
+  ],
+  "craft_research": null
+}

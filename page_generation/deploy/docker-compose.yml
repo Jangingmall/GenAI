@@ -1,0 +1,113 @@
+services:
+  detail-page-ai:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    platform: linux/amd64
+    container_name: detail-page-ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      LOCAL_TEXT_PROVIDER: ${LOCAL_TEXT_PROVIDER:-sglang}
+      LOCAL_TEXT_URL: ${LOCAL_TEXT_URL:-http://sglang-text:30000}
+      LOCAL_IMAGE_PROVIDER: ${LOCAL_IMAGE_PROVIDER:-sglang}
+      LOCAL_IMAGE_URL: ${LOCAL_IMAGE_URL:-http://sglang-image:30001}
+      LOCAL_TEXT_MODEL: ${LOCAL_TEXT_MODEL:-${TEXT_SERVED_MODEL_NAME:-qwen-text}}
+      LOCAL_IMAGE_MODEL: ${LOCAL_IMAGE_MODEL:-${IMAGE_SERVED_MODEL_NAME:-flux-klein}}
+    volumes:
+      - detail-page-ai-data:/var/lib/detail-page-ai
+    depends_on:
+      sglang-text:
+        condition: service_healthy
+      sglang-image:
+        condition: service_healthy
+
+  sglang-text:
+    image: ${SGLANG_IMAGE:-lmsysorg/sglang:v0.5.19}
+    platform: linux/amd64
+    container_name: sglang-text
+    restart: unless-stopped
+    ports:
+      - "30000:30000"
+    ipc: host
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
+    command: >
+      python3 -m sglang.launch_server
+      --model-path ${TEXT_MODEL_PATH:-cyankiwi/Qwen3.8-27B-AWQ-INT4}
+      --revision ${TEXT_MODEL_REVISION:-6e134bae811fb5adac50ee042ae5f029ac6779aa}
+      --served-model-name ${TEXT_SERVED_MODEL_NAME:-qwen-text}
+      --host 0.0.0.0
+      --port 30000
+      --mem-fraction-static ${TEXT_MEM_FRACTION:-0.50}
+      --context-length ${TEXT_CONTEXT_LENGTH:-8192}
+      --trust-remote-code
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:30000/v1/models', timeout=5).getcode() == 200 else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+
+  sglang-image:
+    build:
+      context: ..
+      dockerfile: deploy/docker/sglang-diffusion.Dockerfile
+      args:
+        BASE_IMAGE: ${SGLANG_IMAGE:-lmsysorg/sglang:v0.5.19}
+        SGLANG_VERSION: ${SGLANG_VERSION:-0.5.19}
+    image: local/sglang-diffusion:${SGLANG_VERSION:-0.5.19}
+    platform: linux/amd64
+    container_name: sglang-image
+    restart: unless-stopped
+    ports:
+      - "30001:30001"
+    ipc: host
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_HOME: /root/.cache/huggingface
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
+    command: >
+      sglang serve
+      --model-path ${IMAGE_MODEL_PATH:-circulus/FLUX.2-klein-9B-bnb-4bit}
+      --revision ${IMAGE_MODEL_REVISION:-58c2804f31af12c8888504b96250010c50b55e44}
+      --served-model-name ${IMAGE_SERVED_MODEL_NAME:-flux-klein}
+      --host 0.0.0.0
+      --port 30001
+      --num-gpus 1
+      --dit-cpu-offload false
+      --text-encoder-cpu-offload false
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request, sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:30001/v1/models', timeout=5).getcode() == 200 else 1)"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+
+volumes:
+  detail-page-ai-data:
+    name: detail-page-ai-data
+  huggingface-cache:
+    name: huggingface-cache

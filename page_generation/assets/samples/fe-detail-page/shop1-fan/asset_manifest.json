@@ -1,0 +1,13 @@
+{
+  "fixture": "shop1-fan",
+  "sourceImage": "input.jpg",
+  "imageIds": {
+    "hero": "input.jpg",
+    "detail": "input.jpg",
+    "detail-02": "input.jpg",
+    "detail-03": "input.jpg",
+    "detail-04": "input.jpg",
+    "lifestyle": "input.jpg"
+  },
+  "note": "Single-image FE fixture: every logical image reference intentionally resolves to the supplied source image."
+}

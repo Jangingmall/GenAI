@@ -1,0 +1,130 @@
+{
+  "id": 102980,
+  "accession_number": "1921.1596",
+  "share_license_status": "CC0",
+  "tombstone": "Textile fragment (Binakol), c. early 1900s(?). Philippines, Ilokos, Norte Province, Luzon, 20th century(?). Woven cotton; extended tabby weave; overall: 68.6 x 48.3 cm (27 x 19 in.). The Cleveland Museum of Art, Gift of W. A. Price, 1921.1596",
+  "current_location": null,
+  "title": "Textile fragment (Binakol)",
+  "creation_date": "c. early 1900s(?)",
+  "creation_date_earliest": 1900,
+  "creation_date_latest": 1921,
+  "artists_tags": [],
+  "culture": [
+    "Philippines, Ilokos, Norte Province, Luzon, 20th century(?)"
+  ],
+  "technique": "woven cotton; extended tabby weave",
+  "support_materials": [],
+  "department": "Textiles",
+  "collection": "Textiles",
+  "type": "Textile",
+  "measurements": "Overall: 68.6 x 48.3 cm (27 x 19 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.686,
+      "height_inch": 27,
+      "height_inch_fraction": 0.0,
+      "width": 0.483,
+      "width_inch": 19,
+      "width_inch_fraction": 0.0
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [],
+  "exhibitions": {
+    "current": [],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "Morris Ketchum Jesup [1830–1908], New York, NY, given to the American Museum of Natural History",
+      "citations": [],
+      "footnotes": [
+        "<div><!--block-->Morris Ketchum Jesup was an American banker and philanthropist, who supported scientific research and collected art. He was the third president of the American Museum of Natural History in New York, serving from 1881 until his death in 1908.</div>"
+      ],
+      "date": "?–1905",
+      "sortorder": 1
+    },
+    {
+      "description": "American Museum of Natural History, New York, NY, given to the Cleveland Museum of Art by exchange and with funds from William Albert Price [1847–1922]",
+      "citations": [],
+      "footnotes": null,
+      "date": "1905–1921",
+      "sortorder": 3
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": null,
+      "date": "1921–",
+      "sortorder": 4
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "The swirling <em>kusikos</em> pattern was meant to confuse evil spirits and had a protective function.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This intricate, hand-woven textile was likely produced on a back-strap or upright loom. The <em>binakol</em> block pattern creates a strong optical effect, organized in vertical registers separated by broad, dark stripes with narrow, red accents. The central design is a variant of the whirlpool motif known as <em>kusikos</em>, in which alternating light and dark squares appear to spiral or recede.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q79504539"
+    ],
+    "internet_archive": [
+      "https://archive.org/details/clevelandart-1921.1596-fragment"
+    ]
+  },
+  "citations": [],
+  "url": "https://clevelandart.org/art/1921.1596",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1921.1596/1921.1596_web.jpg",
+      "width": "624",
+      "height": "893",
+      "filesize": "518771",
+      "filename": "1921.1596_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1921.1596/1921.1596_print.jpg",
+      "width": "2377",
+      "height": "3400",
+      "filesize": "7926039",
+      "filename": "1921.1596_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1921.1596/1921.1596_full.tif",
+      "width": "3504",
+      "height": "5012",
+      "filesize": "52719288",
+      "filename": "1921.1596_full.tif"
+    }
+  },
+  "alternate_images": [],
+  "creditline": "Gift of W. A. Price",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 102980,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1921-12-22T00:00:00",
+  "sortable_date": 1900,
+  "date_added_to_oa": null,
+  "date_text": "c. early 1900s(?)",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [],
+  "is_highlight": false,
+  "updated_at": "2026-06-22 19:23:54.090000"
+}

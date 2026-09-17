@@ -1,0 +1,90 @@
+{
+  "dataset_id": "flux2-product-scene-50",
+  "dataset_version": "0.2.0",
+  "image_size": [1024, 1024],
+  "products": [
+    {
+      "product_id": "textile-scarf-01",
+      "product_type": "patterned textile scarf",
+      "split": "train",
+      "description": "a vivid green field with illustrated cranes, deer, flowers, and a navy-orange border",
+      "negative_product": "changed print, missing border, wrong green or navy-orange colors, synthetic pattern, extra textile, clothing, cushion",
+      "source_assets": [
+        {"asset_id": "source-detail-01", "path": "assets/samples/product-photos/ad87f32905d240f79455cf9d550341b5_720.jpg", "role": "preserve_original"},
+        {"asset_id": "source-drape-02", "path": "assets/samples/product-photos/689ea8b9216b4723a3cbc4f11477f173_720-2.jpg", "role": "preserve_angle"},
+        {"asset_id": "source-flatlay-03", "path": "assets/samples/product-photos/9d363c07221a4275a8910124e8fc5bbe_720.jpg", "role": "surface_detail"},
+        {"asset_id": "source-wall-04", "path": "assets/samples/product-photos/f8bc4f1e861a449ea0b5653e04f53dac_720.jpg", "role": "source_composition"}
+      ],
+      "variants": [
+        {"asset_id": "scene-01", "source_asset": "source-detail-01", "role": "hero_left_copyspace", "background": "warm_stone", "placement": "left_copy", "structure": "plinth", "occupancy": 0.55, "rotation": -1.0, "scene": "hero editorial composition weighted left with generous clean copy space on the right"},
+        {"asset_id": "scene-02", "source_asset": "source-drape-02", "role": "hero_right_copyspace", "background": "ivory_wall", "placement": "right_copy", "structure": "plinth", "occupancy": 0.58, "rotation": 1.0, "scene": "hero editorial composition weighted right with generous clean copy space on the left"},
+        {"asset_id": "scene-03", "source_asset": "source-flatlay-03", "role": "flatlay_oak", "background": "pale_oak", "placement": "center_low", "structure": "plinth", "occupancy": 0.60, "rotation": -2.0, "scene": "airy flat-lay presentation on a warm pale-oak surface with a calm centered balance"},
+        {"asset_id": "scene-04", "source_asset": "source-wall-04", "role": "drape_sage", "background": "sage_plaster", "placement": "upper_left", "structure": "plinth", "occupancy": 0.52, "rotation": 1.0, "scene": "quiet wall-display editorial composition with the textile held high and soft side light"},
+        {"asset_id": "scene-05", "source_asset": "source-detail-01", "role": "gallery_center", "background": "linen_neutral", "placement": "center", "structure": "console_shelf", "occupancy": 0.64, "rotation": 0.0, "scene": "gallery-like centered display with generous breathing room and a refined neutral palette"},
+        {"asset_id": "scene-06", "source_asset": "source-drape-02", "role": "close_detail_dark", "background": "dark_wood", "placement": "center_low", "structure": "plinth", "occupancy": 0.76, "rotation": -1.0, "scene": "close editorial crop that gives the printed surface visual priority against dark wood"},
+        {"asset_id": "scene-07", "source_asset": "source-flatlay-03", "role": "window_left", "background": "linen_neutral", "placement": "right_copy", "structure": "plinth", "occupancy": 0.56, "rotation": 1.0, "scene": "soft window-light scene with the textile on the right and open light space on the left"},
+        {"asset_id": "scene-08", "source_asset": "source-wall-04", "role": "topdown_bluegray", "background": "blue_gray", "placement": "topdown_center", "structure": "plinth", "occupancy": 0.62, "rotation": -3.0, "scene": "top-down inspired editorial layout on a cool blue-gray surface, uncluttered and balanced"},
+        {"asset_id": "scene-09", "source_asset": "source-detail-01", "role": "soft_rose_center", "background": "dusty_rose", "placement": "center_low", "structure": "plinth", "occupancy": 0.58, "rotation": 1.0, "scene": "warm lifestyle editorial composition on a dusty-rose plaster tone with soft diffused light"},
+        {"asset_id": "scene-10", "source_asset": "source-drape-02", "role": "wall_right", "background": "ivory_wall", "placement": "upper_right", "structure": "console_shelf", "occupancy": 0.50, "rotation": -1.0, "scene": "vertical wall-display composition positioned high on the right with clean negative space below"},
+        {"asset_id": "scene-11", "source_asset": "source-flatlay-03", "role": "fold_center_dark", "background": "charcoal_studio", "placement": "center", "structure": "plinth", "occupancy": 0.62, "rotation": 2.0, "scene": "premium dark editorial presentation with controlled contrast and the textile centered"},
+        {"asset_id": "scene-12", "source_asset": "source-wall-04", "role": "copy_left_ivory", "background": "ivory_wall", "placement": "right_copy", "structure": "plinth", "occupancy": 0.54, "rotation": 0.0, "scene": "product held to the right with a very clean ivory copy area on the left"},
+        {"asset_id": "scene-13", "source_asset": "source-detail-01", "role": "copy_right_warm", "background": "warm_stone", "placement": "left_copy", "structure": "console_shelf", "occupancy": 0.58, "rotation": -1.0, "scene": "product arranged left on a warm stone display shelf with quiet right-side copy space"},
+        {"asset_id": "scene-14", "source_asset": "source-drape-02", "role": "console_left", "background": "pale_oak", "placement": "shelf_left", "structure": "console_shelf", "occupancy": 0.55, "rotation": 1.0, "scene": "display-console composition with the draped textile on the left and a warm wood surface"},
+        {"asset_id": "scene-15", "source_asset": "source-flatlay-03", "role": "console_right", "background": "sage_plaster", "placement": "shelf_right", "structure": "console_shelf", "occupancy": 0.56, "rotation": -1.0, "scene": "display-console composition with the textile on the right against muted sage plaster"},
+        {"asset_id": "scene-16", "source_asset": "source-wall-04", "role": "diagonal_pale", "background": "ivory_wall", "placement": "upper_left", "structure": "plinth", "occupancy": 0.57, "rotation": -4.0, "scene": "slightly diagonal magazine-style composition on a pale seamless studio background"},
+        {"asset_id": "scene-17", "source_asset": "source-detail-01", "role": "minimal_center", "background": "blue_gray", "placement": "center_low", "structure": "plinth", "occupancy": 0.52, "rotation": 0.0, "scene": "minimal centered packshot with cool soft light and no distracting props"},
+        {"asset_id": "scene-18", "source_asset": "source-drape-02", "role": "portrait_sage", "background": "sage_plaster", "placement": "upper_right", "structure": "plinth", "occupancy": 0.58, "rotation": 2.0, "scene": "portrait-oriented wall styling with natural drape and a calm sage backdrop"},
+        {"asset_id": "scene-19", "source_asset": "source-flatlay-03", "role": "editorial_dark", "background": "dark_wood", "placement": "left_copy", "structure": "console_shelf", "occupancy": 0.55, "rotation": -2.0, "scene": "dark wood editorial scene weighted left with a strong premium color contrast"},
+        {"asset_id": "scene-20", "source_asset": "source-wall-04", "role": "gallery_left", "background": "linen_neutral", "placement": "gallery_left", "structure": "console_shelf", "occupancy": 0.60, "rotation": 1.0, "scene": "gallery display on the left with soft linen tones and ample space for product copy"}
+      ]
+    },
+    {
+      "product_id": "najeon-box-01",
+      "product_type": "dark rectangular tiered inlaid lacquer storage box",
+      "split": "train",
+      "description": "dense floral-vine inlay across the lid and stacked front panels, with exact dark brown proportions",
+      "negative_product": "changed box proportions, missing tier, open lid, changed floral inlay, wrong color, extra box, invented ornament",
+      "source_assets": [
+        {"asset_id": "source-hero-01", "path": "assets/samples/najeon-box.jpeg", "role": "preserve_original"}
+      ],
+      "variants": [
+        {"asset_id": "scene-01", "source_asset": "source-hero-01", "role": "hero_center", "background": "warm_stone", "placement": "center_low", "structure": "plinth", "occupancy": 0.62, "rotation": 0.0, "scene": "hero three-quarter product display centered on warm stone with soft window light"},
+        {"asset_id": "scene-02", "source_asset": "source-hero-01", "role": "left_copyspace", "background": "ivory_wall", "placement": "left_copy", "structure": "plinth", "occupancy": 0.58, "rotation": -1.0, "scene": "box positioned left with clean ivory copy space on the right"},
+        {"asset_id": "scene-03", "source_asset": "source-hero-01", "role": "right_copyspace", "background": "pale_oak", "placement": "right_copy", "structure": "console_shelf", "occupancy": 0.58, "rotation": 1.0, "scene": "box positioned right on a pale-oak console with clean space on the left"},
+        {"asset_id": "scene-04", "source_asset": "source-hero-01", "role": "shelf_left", "background": "linen_neutral", "placement": "shelf_left", "structure": "console_shelf", "occupancy": 0.56, "rotation": -1.0, "scene": "quiet gallery shelf composition with the box placed on the left"},
+        {"asset_id": "scene-05", "source_asset": "source-hero-01", "role": "shelf_right", "background": "sage_plaster", "placement": "shelf_right", "structure": "console_shelf", "occupancy": 0.56, "rotation": 1.0, "scene": "quiet gallery shelf composition with muted sage plaster and the box on the right"},
+        {"asset_id": "scene-06", "source_asset": "source-hero-01", "role": "angled_warm", "background": "dusty_rose", "placement": "upper_left", "structure": "plinth", "occupancy": 0.54, "rotation": -3.0, "scene": "slightly angled editorial placement high left on a warm dusty-rose backdrop"},
+        {"asset_id": "scene-07", "source_asset": "source-hero-01", "role": "dark_wood", "background": "dark_wood", "placement": "center", "structure": "plinth", "occupancy": 0.67, "rotation": 0.0, "scene": "premium dark-wood presentation that emphasizes the lacquer sheen and floral inlay"},
+        {"asset_id": "scene-08", "source_asset": "source-hero-01", "role": "sage_window", "background": "sage_plaster", "placement": "center_low", "structure": "plinth", "occupancy": 0.60, "rotation": 0.0, "scene": "calm home-interior-inspired display with gentle side daylight and muted sage tones"},
+        {"asset_id": "scene-09", "source_asset": "source-hero-01", "role": "window_right", "background": "ivory_wall", "placement": "upper_right", "structure": "console_shelf", "occupancy": 0.53, "rotation": 2.0, "scene": "high right wall-display composition with a bright window-lit ivory background"},
+        {"asset_id": "scene-10", "source_asset": "source-hero-01", "role": "close_detail", "background": "charcoal_studio", "placement": "center_low", "structure": "plinth", "occupancy": 0.78, "rotation": -1.0, "scene": "close premium crop prioritizing the exact floral inlay and tiered front detail"},
+        {"asset_id": "scene-11", "source_asset": "source-hero-01", "role": "copy_left", "background": "linen_neutral", "placement": "right_copy", "structure": "plinth", "occupancy": 0.55, "rotation": 0.0, "scene": "balanced product-right layout with generous linen copy space to the left"},
+        {"asset_id": "scene-12", "source_asset": "source-hero-01", "role": "copy_right", "background": "warm_stone", "placement": "left_copy", "structure": "plinth", "occupancy": 0.55, "rotation": 0.0, "scene": "balanced product-left layout with generous warm stone copy space to the right"},
+        {"asset_id": "scene-13", "source_asset": "source-hero-01", "role": "low_center", "background": "blue_gray", "placement": "center_low", "structure": "plinth", "occupancy": 0.64, "rotation": 1.0, "scene": "low grounded product placement on a cool blue-gray studio surface"},
+        {"asset_id": "scene-14", "source_asset": "source-hero-01", "role": "gallery_left", "background": "pale_oak", "placement": "gallery_left", "structure": "console_shelf", "occupancy": 0.58, "rotation": -1.0, "scene": "warm gallery-console composition with a left-weighted product and restrained wood texture"},
+        {"asset_id": "scene-15", "source_asset": "source-hero-01", "role": "charcoal_center", "background": "charcoal_studio", "placement": "center", "structure": "plinth", "occupancy": 0.60, "rotation": 0.0, "scene": "centered charcoal studio composition with controlled soft highlights on the inlay"}
+      ]
+    },
+    {
+      "product_id": "metal-tea-set-01",
+      "product_type": "multi-piece metal tea service set",
+      "split": "val",
+      "description": "the exact supplied silver, copper, white, and dark vessels with small cups and saucers, preserving every component and color",
+      "negative_product": "missing vessel, extra vessel, changed cup count, wrong colors, invented teapot, changed surface pattern, duplicate product, extra tableware",
+      "source_assets": [
+        {"asset_id": "source-hero-01", "path": "assets/samples/images-2.jpeg", "role": "preserve_original"}
+      ],
+      "variants": [
+        {"asset_id": "scene-01", "source_asset": "source-hero-01", "role": "center_warm", "background": "warm_stone", "placement": "center_low", "structure": "plinth", "occupancy": 0.67, "rotation": 0.0, "preservation": "frame", "scene": "centered tea-service presentation on a warm stone table with soft window light"},
+        {"asset_id": "scene-02", "source_asset": "source-hero-01", "role": "left_ivory", "background": "ivory_wall", "placement": "left_copy", "structure": "plinth", "occupancy": 0.66, "rotation": -1.0, "preservation": "frame", "scene": "full tea set weighted left on an ivory studio surface with clean right copy space"},
+        {"asset_id": "scene-03", "source_asset": "source-hero-01", "role": "right_oak", "background": "pale_oak", "placement": "right_copy", "structure": "console_shelf", "occupancy": 0.64, "rotation": 1.0, "preservation": "frame", "scene": "full tea set weighted right on a warm pale-oak console with soft daylight"},
+        {"asset_id": "scene-04", "source_asset": "source-hero-01", "role": "shelf_left", "background": "linen_neutral", "placement": "shelf_left", "structure": "console_shelf", "occupancy": 0.63, "rotation": -1.0, "preservation": "frame", "scene": "refined console-shelf styling with the complete set arranged to the left"},
+        {"asset_id": "scene-05", "source_asset": "source-hero-01", "role": "shelf_right", "background": "sage_plaster", "placement": "shelf_right", "structure": "console_shelf", "occupancy": 0.63, "rotation": 1.0, "preservation": "frame", "scene": "refined console-shelf styling with the complete set arranged to the right against sage plaster"},
+        {"asset_id": "scene-06", "source_asset": "source-hero-01", "role": "dark_wood", "background": "dark_wood", "placement": "center_low", "structure": "plinth", "occupancy": 0.70, "rotation": 0.0, "preservation": "frame", "scene": "premium dark-wood tea table scene emphasizing metallic reflections and complete set count"},
+        {"asset_id": "scene-07", "source_asset": "source-hero-01", "role": "window_linen", "background": "linen_neutral", "placement": "right_copy", "structure": "plinth", "occupancy": 0.65, "rotation": 0.0, "preservation": "frame", "scene": "soft morning window-light composition with the complete tea set on the right"},
+        {"asset_id": "scene-08", "source_asset": "source-hero-01", "role": "bluegray_center", "background": "blue_gray", "placement": "center", "structure": "plinth", "occupancy": 0.66, "rotation": 0.0, "preservation": "frame", "scene": "cool neutral studio arrangement centered with controlled highlights and no extra tableware"},
+        {"asset_id": "scene-09", "source_asset": "source-hero-01", "role": "rose_low", "background": "dusty_rose", "placement": "center_low", "structure": "plinth", "occupancy": 0.68, "rotation": -1.0, "preservation": "frame", "scene": "warm lifestyle table presentation on a dusty-rose backdrop while preserving every vessel and cup"}
+      ]
+    }
+  ]
+}

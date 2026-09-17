@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>상세페이지 AI로 만들기</title>
+  <link rel="stylesheet" href="./ai_input.css">
+  <script defer src="./ai_input.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark" aria-label="상세페이지 AI">AI DETAIL</div>
+      <nav class="stepper" aria-label="생성 단계">
+        <span class="stepper__step stepper__step--active"><b>1</b> 입력</span>
+        <i></i>
+        <span class="stepper__step"><b>2</b> 생성</span>
+        <i></i>
+        <span class="stepper__step"><b>3</b> 확인·수정</span>
+        <i></i>
+        <span class="stepper__step"><b>4</b> 승인·게시</span>
+      </nav>
+    </header>
+
+    <main class="page-content">
+      <section class="intro-copy">
+        <p class="eyebrow">IMAGE-BASED DETAIL PAGE</p>
+        <h1>상세페이지 AI로 만들기</h1>
+        <p>작품 사진과, 만들면서 하고 싶은 말을 적어 주시면 상세페이지 초안을 만들어 드립니다.</p>
+        <strong>만든 초안은 장인께서 확인하고 승인하셔야 게시됩니다.</strong>
+      </section>
+
+      <div class="content-grid">
+        <form
+          id="detail-page-form"
+          class="input-form"
+          data-api-url="/api/v1/ai/detail-page-jobs"
+          data-preview-url="/web/ai_draft_preview.html"
+          novalidate
+        >
+          <section class="form-section">
+            <div class="section-title-row">
+              <h2>1. 사진 올리기 <span>최소 1장 · 최대 12장</span></h2>
+            </div>
+            <div id="drop-zone" class="upload-card" role="button" tabindex="0" aria-describedby="upload-help">
+              <input id="product-image-input" class="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+              <div class="upload-icon" aria-hidden="true">＋</div>
+              <strong>여기로 사진을 끌어다 놓으세요</strong>
+              <p id="upload-help">완성한 작품·만드는 과정·재료 사진을 넣어 주시면 좋습니다.<br>JPG · PNG · WEBP · 한 장에 10MB까지</p>
+              <button id="choose-images" class="button button--outline" type="button">사진 고르기</button>
+            </div>
+            <div id="image-list" class="image-list" aria-live="polite"></div>
+            <p id="image-count" class="image-count">아직 사진이 없습니다.</p>
+            <p id="image-error" class="field-error" role="alert"></p>
+          </section>
+
+          <section class="form-section form-section--notes">
+            <div class="section-title-row">
+              <h2>2. 하고 싶은 말 적기 <span>말하듯 적어도 됩니다</span></h2>
+            </div>
+
+            <div class="field-group">
+              <label for="product-name">작품 이름 <em>*</em></label>
+              <input id="product-name" name="product_name" type="text" maxlength="120" autocomplete="off" placeholder="작품 이름을 적어 주세요" required>
+              <p class="field-error" data-error-for="product-name" role="alert"></p>
+            </div>
+
+            <div class="field-group">
+              <label for="making-method">어떻게 만들었나요 <em>*</em></label>
+              <textarea id="making-method" name="making_method" rows="5" maxlength="2000" placeholder="작품을 만들게 된 계기나, 눈에 보이지 않는 이야기도 적어 주세요" required></textarea>
+              <p class="field-error" data-error-for="making-method" role="alert"></p>
+            </div>
+
+            <div class="field-group">
+              <label for="care-guide">어떻게 쓰면 좋지 · 관리법 <small>선택</small></label>
+              <textarea id="care-guide" name="care_guide" rows="3" maxlength="1000" placeholder="사용하거나 보관할 때 알려주고 싶은 내용을 적어 주세요"></textarea>
+              <p class="field-error" data-error-for="care-guide" role="alert"></p>
+            </div>
+          </section>
+
+          <button id="create-button" class="button button--primary button--submit" type="submit">초안 만들기</button>
+          <div id="submit-status" class="submit-status" role="status" aria-live="polite"></div>
+        </form>
+
+        <aside class="guide-card">
+          <h2>이렇게 만들어집니다</h2>
+          <ul>
+            <li>올려 주신 <strong>사진과 글</strong>을 각각 받아, 정해진 틀에 맞춰 배치합니다.</li>
+            <li>없는 내용은 지어내지 않습니다. 적어 주신 말만 다듬습니다.</li>
+            <li>초안이 나오면 <strong>만든 분의 교실</strong>에서 수정할 수 있습니다.</li>
+            <li><strong>승인 전에는 게시되지 않습니다.</strong></li>
+          </ul>
+          <div class="guide-card__contact">
+            잘 안 되시면 <strong>관리자에게 문의</strong>해 주세요.<br>
+            입력한 원본 사진은 AI가 다시 그리지 않고 그대로 보존합니다.
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

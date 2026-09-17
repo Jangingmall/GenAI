@@ -1,0 +1,160 @@
+{
+  "id": 123616,
+  "accession_number": "1944.190",
+  "share_license_status": "CC0",
+  "tombstone": "Amphora Vase (雍正粉青釉双龙尊), 1723–35. China, Jiangxi Province, Jingdezhen, Qing dynasty (1644–1911), Yongzheng mark and period (1723–35). Porcelain with celadon glaze; overall: 52.1 cm (20 1/2 in.). The Cleveland Museum of Art, The Elisabeth Severance Prentiss Collection, 1944.190",
+  "current_location": "238 Chinese Ceramics",
+  "title": "Amphora Vase",
+  "title_in_original_language": "雍正粉青釉双龙尊",
+  "creation_date": "1723–35",
+  "creation_date_earliest": 1723,
+  "creation_date_latest": 1735,
+  "artists_tags": [],
+  "culture": [
+    "China, Jiangxi Province, Jingdezhen, Qing dynasty (1644–1911), Yongzheng mark and period (1723–35)"
+  ],
+  "technique": "porcelain with celadon glaze",
+  "support_materials": [],
+  "department": "Chinese Art",
+  "collection": "China - Qing Dynasty",
+  "type": "Ceramic",
+  "measurements": "Overall: 52.1 cm (20 1/2 in.)",
+  "dimensions": {
+    "overall": {
+      "height": 0.521,
+      "height_inch": 20,
+      "height_inch_fraction": 0.5
+    }
+  },
+  "state_of_the_work": null,
+  "edition_of_the_work": null,
+  "copyright": null,
+  "inscriptions": [
+    {
+      "inscription": "Yongzheng mark",
+      "inscription_translation": null,
+      "inscription_remark": null,
+      "sortorder": 1
+    }
+  ],
+  "exhibitions": {
+    "current": [],
+    "legacy": []
+  },
+  "provenance": [
+    {
+      "description": "Mrs. Francis F. [Elisabeth Severance Allen] Prentiss [1865-1944], Cleveland, OH, bequest to the Cleveland Museum of Art",
+      "citations": [],
+      "footnotes": [],
+      "date": "?-1944",
+      "sortorder": 1
+    },
+    {
+      "description": "The Cleveland Museum of Art, Cleveland, OH",
+      "citations": [],
+      "footnotes": [],
+      "date": "1944-",
+      "sortorder": 2
+    }
+  ],
+  "find_spot": null,
+  "related_works": [],
+  "former_accession_numbers": [],
+  "did_you_know": "The shape of the vase derives from Greece and was introduced to China via the Middle East.",
+  "early_education_description": null,
+  "artlens_description": null,
+  "description": "This elegant vase, modeled in the shape of an amphora with dragon handles has perfect symmetry. Its celadon glaze is of exceptional purity and of subtle green color, all characteristics of classical Yongzheng-era monochrome porcelains. <br><br>The amphora shape and dragon handles of this vase, seen earlier in the glazed stoneware of the Sui and Tang dynasties (581-907), were revived during the Yongzheng period for achieving \"antique-elegance\" (<em>guya</em>) in aesthetics as well as technical perfection in ceramic art.<br><br>Only four vases of this size and glaze are known to exist.",
+  "external_resources": {
+    "wikidata": [
+      "https://www.wikidata.org/wiki/Q60746610"
+    ],
+    "internet_archive": []
+  },
+  "citations": [
+    {
+      "citation": "<em>Catalogue of the Elisabeth Severance Prentiss Collection; Bequest of Elisabeth Severance Prentiss, 1944</em>. Cleveland, OH: The Cleveland Museum of Art, 1944. Published as: Vase in Shape of T'ang Amphora with Ovoid Body, Tall Neck, with \"Bamboo Joints\" and Projecting Lip.",
+      "page_number": "Mentioned: p. 82; Reproduced: Plate XXXVII",
+      "url": "https://archive.org/details/Prentiss/page/n81"
+    },
+    {
+      "citation": "Hollis, Howard. “Chinese and Korean Ceramics: Japanese Lacquer.” <em>The Bulletin of the Cleveland Museum of Art</em> 31, no. 6 (June 1944): 103–106.",
+      "page_number": null,
+      "url": "https://www.jstor.org/stable/25141135"
+    }
+  ],
+  "url": "https://clevelandart.org/art/1944.190",
+  "images": {
+    "annotation": null,
+    "web": {
+      "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_web.jpg",
+      "width": "599",
+      "height": "893",
+      "filesize": "37839",
+      "filename": "1944.190_web.jpg"
+    },
+    "print": {
+      "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_print.jpg",
+      "width": "2280",
+      "height": "3400",
+      "filesize": "352349",
+      "filename": "1944.190_print.jpg"
+    },
+    "full": {
+      "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_full.tif",
+      "width": "3797",
+      "height": "5660",
+      "filesize": "64495080",
+      "filename": "1944.190_full.tif"
+    }
+  },
+  "alternate_images": [
+    {
+      "web": {
+        "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_alt0_web.jpg",
+        "width": "582",
+        "height": "893",
+        "filesize": "36076"
+      },
+      "print": {
+        "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_alt0_print.jpg",
+        "width": "2217",
+        "height": "3400",
+        "filesize": "338425"
+      },
+      "full": {
+        "url": "https://openaccess-cdn.clevelandart.org/1944.190/1944.190_alt0_full.tif",
+        "width": "3688",
+        "height": "5655",
+        "filesize": "62588948"
+      },
+      "date_created": "2012-09-18T15:42:09",
+      "annotation": ""
+    }
+  ],
+  "creditline": "The Elisabeth Severance Prentiss Collection",
+  "image_credit": null,
+  "sketchfab_id": null,
+  "sketchfab_url": null,
+  "gallery_donor_text": null,
+  "athena_id": 123616,
+  "creators": [],
+  "legal_status": "accessioned",
+  "accession_date": "1944-03-17T00:00:00",
+  "sortable_date": 1723,
+  "date_added_to_oa": null,
+  "date_text": "1723–35",
+  "collapse_artists": false,
+  "on_loan": false,
+  "recently_acquired": false,
+  "record_type": "object",
+  "conservation_statement": null,
+  "has_conservation_images": false,
+  "cover_accession_number": null,
+  "is_nazi_era_provenance": false,
+  "impression": null,
+  "alternate_titles": [
+    "Vase in Shape of T'ang Amphora with Ovoid Body, Tall Neck, with \"Bamboo Joints\" and Projecting Lip"
+  ],
+  "is_highlight": true,
+  "updated_at": "2026-06-10 17:58:43.121000"
+}
