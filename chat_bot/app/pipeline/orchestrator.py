@@ -30,6 +30,7 @@ from app.pipeline import semantic_cache
 from app.pipeline.generate import (
     _effective_category,
     _fetch_artisans,
+    _fetch_attrs,
     _fetch_prices,
     _mentioned_category,
     build_reply,
@@ -92,6 +93,49 @@ def _is_disambiguation_followup(history: list[dict] | None) -> bool:
     )
 
 
+def _keep_previous_matching_new_filters(
+    previous_candidates: list[dict],
+    new_filters: dict,
+    *,
+    fetch_prices,
+    fetch_attrs,
+) -> list[dict]:
+    """가격·색상 필터가 새로 생긴 narrow_down 재검색에서, 방금 보여준 후보 중 새
+    조건에도 여전히 맞는 것을 먼저 살린다.
+
+    실측 확인된 문제: "선물용 도자기 추천해줘"(3개 중 2개가 5만원 이하) → "5만원
+    아래 제품들 뭐뭐있어?"에서 재검색이 카탈로그 전체를 새로 훑다 보니, 방금 보여준
+    5만원 이하 상품 하나가 순위 밖으로 밀려 빠지고 전혀 다른 상품으로 바뀌었다.
+    데이터가 틀린 건 아니지만(새 상품도 조건엔 맞음) 사용자 입장에서는 "방금 그거
+    왜 빠졌지"로 보인다. previous_candidates를 코드로 직접 걸러 새 필터에도 맞는
+    것부터 우선 포함시키면, 새 LLM 호출·프롬프트 추가 없이 이 불일치를 없앨 수 있다.
+    """
+    if not previous_candidates:
+        return []
+    max_price = new_filters.get("max_price")
+    min_price = new_filters.get("min_price")
+    colors = new_filters.get("color") or []
+    if max_price is None and min_price is None and not colors:
+        return previous_candidates
+    ids = [c["product_id"] for c in previous_candidates]
+    prices = (
+        fetch_prices(ids) if (max_price is not None or min_price is not None) else {}
+    )
+    attrs = fetch_attrs(ids) if colors else {}
+    kept = []
+    for c in previous_candidates:
+        pid = c["product_id"]
+        price = prices.get(pid)
+        if max_price is not None and (price is None or price > max_price):
+            continue
+        if min_price is not None and (price is None or price < min_price):
+            continue
+        if colors and (attrs.get(pid) or {}).get("color") not in colors:
+            continue
+        kept.append(c)
+    return kept
+
+
 def run(
     message: str,
     history: list[dict] | None = None,
@@ -104,6 +148,7 @@ def run(
     previous_query_text: str | None = None,
     fetch_prices=_fetch_prices,
     fetch_artisans=_fetch_artisans,
+    fetch_attrs=_fetch_attrs,
     cache_lookup=semantic_cache.lookup,
     cache_store=semantic_cache.store,
 ) -> dict:
@@ -416,6 +461,24 @@ def run(
             already_shown = set(previous_product_ids or [])
             fresh = search_and_rank(contact1, top_k=9)
             candidates = [c for c in fresh if c["product_id"] not in already_shown]
+        elif contact1["intent"] == "narrow_down" and (price_changed or color_changed):
+            # 실측 확인된 문제: "선물용 도자기 추천해줘"(3개 중 2개가 5만원 이하) →
+            # "5만원 아래 제품들 뭐뭐있어?"에서 재검색이 카탈로그 전체를 새로 훑다
+            # 보니, 방금 보여준 5만원 이하 상품 하나가 순위 밖으로 밀려 빠지고 전혀
+            # 다른 상품으로 바뀌었다 — 새 상품도 조건엔 맞지만 사용자 입장에선 "방금
+            # 그거 왜 빠졌지"로 보인다. previous_candidates를 새 필터로 코드에서 먼저
+            # 걸러 우선 포함시키고, 모자란 자리만 재검색으로 채운다.
+            kept = _keep_previous_matching_new_filters(
+                previous_candidates or [],
+                new_filters,
+                fetch_prices=fetch_prices,
+                fetch_attrs=fetch_attrs,
+            )
+            already_kept = {c["product_id"] for c in kept}
+            fresh = search_and_rank(contact1, top_k=9)
+            candidates = kept + [
+                c for c in fresh if c["product_id"] not in already_kept
+            ]
         else:
             # top_k=9로 넉넉히 받는다 — wants_alternatives와 같은 이유(recommend()가
             # 내부에서 이미 후보를 최대 10개까지 뽑아두는 구조라 A담당 코드를 안

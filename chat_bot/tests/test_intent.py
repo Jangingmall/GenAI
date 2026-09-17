@@ -26,6 +26,17 @@ def test_price_to_won_parses_man_dae():
     assert it._price_to_won("3만원대") == 30000
 
 
+def test_price_to_won_parses_cheon_unit():
+    """실측 확인된 버그: "천" 단위 처리가 없어서 "5천원"이 5원으로 파싱됐다
+    ("만"만 처리하고 나머지는 맨 숫자만 뽑는 폴백으로 떨어졌기 때문)."""
+    assert it._price_to_won("5천원") == 5000
+    assert it._price_to_won("5천원대") == 5000
+
+
+def test_price_to_won_parses_eok_unit():
+    assert it._price_to_won("1억원") == 100000000
+
+
 def test_price_to_won_empty_is_none():
     assert it._price_to_won("") is None
 
@@ -198,6 +209,36 @@ def test_to_contact1_corrects_llm_putting_upper_bound_into_min_price_for_andoene
         assert result["filters"]["min_price"] is None
 
 
+def test_to_contact1_corrects_llm_putting_upper_bound_into_min_price_for_an_neomneun():
+    """사용자 공유 실사용 리포트: "5만원 안 넘는 것"(상한 표현)이 min_price로
+    뒤집혀 나왔다 — "안 넘는"이 부정어라 상한을 뜻하는데, _MIN_PRICE_WORDS의
+    "넘는"이 그 안에 부분 문자열로 그대로 들어있어 min으로 잘못 판정됐던 게 원인
+    (안 되는/안되는과 같은 부정 패턴). "안 넘는"·"안넘는" 둘 다 커버해야 한다."""
+    for phrase in ("5만원 안 넘는 것 추천해줘", "5만원 안넘는 것 추천해줘"):
+        raw = {
+            "intent": "gift_recommendation",
+            "max_price": None,
+            "min_price": 50000,
+            "gift_theme": [],
+            "color": [],
+            "query_text": phrase,
+        }
+        result = it._to_contact1(
+            raw,
+            gift_themes=prompts.GIFT_THEMES,
+            colors=prompts.COLORS,
+            message=phrase,
+        )
+        assert result["filters"]["max_price"] == 50000
+        assert result["filters"]["min_price"] is None
+
+
+def test_price_direction_still_treats_plain_neomneun_as_lower_bound():
+    """부정어 처리를 추가해도 "넘는"(부정어 없음)은 그대로 하한(min)으로 남아야
+    한다 — "안 넘는" 관련 부분만 지우고 판정하므로 일반 넘는 표현은 영향 없다."""
+    assert it._price_direction("5만원 넘는 것 추천해줘") == "min"
+
+
 def test_to_contact1_keeps_max_price_when_message_says_upper_bound():
     raw = {
         "intent": "product_search",
@@ -215,6 +256,69 @@ def test_to_contact1_keeps_max_price_when_message_says_upper_bound():
     )
     assert result["filters"]["max_price"] == 30000
     assert result["filters"]["min_price"] is None
+
+
+def test_to_contact1_resolves_dae_suffix_into_decade_range():
+    """사용자 지적: "5만원대"는 "50,000원 이하"가 아니라 "50,000~59,999원 사이"를
+    뜻한다. 실측 확인: 기존엔 그냥 숫자 50000 하나로만 취급돼 51,000~59,999원
+    사이 실제 상품(DB 확인 17건)이 전부 검색에서 빠졌다. LLM이 이미 max_price에
+    50000을 넣었어도 "-대" 구간으로 덮어써야 한다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 50000,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "5만원대 도자기 추천해줘",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="5만원대 도자기 추천해줘",
+    )
+    assert result["filters"]["min_price"] == 50000
+    assert result["filters"]["max_price"] == 59999
+
+
+def test_to_contact1_dae_suffix_works_for_cheon_unit():
+    raw = {
+        "intent": "product_search",
+        "max_price": None,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "3천원대 소품 있어요",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="3천원대 소품 있어요",
+    )
+    assert result["filters"]["min_price"] == 3000
+    assert result["filters"]["max_price"] == 3999
+
+
+def test_price_direction_range_question_not_overridden_by_dae_logic():
+    """ "3만원 이상 5만원 이하"처럼 이미 명확한 이상·이하 범위 질문은 "-대" 보정
+    대상이 아니다(direction이 None이 아니라서 애초에 안 걸림) — 기존 동작 유지."""
+    raw = {
+        "intent": "product_search",
+        "max_price": 50000,
+        "min_price": 30000,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "도자기 3만원 이상 5만원 이하로",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="도자기 3만원 이상 5만원 이하로",
+    )
+    assert result["filters"]["min_price"] == 30000
+    assert result["filters"]["max_price"] == 50000
 
 
 def test_to_contact1_leaves_price_untouched_when_message_has_no_direction_word():
@@ -406,7 +510,11 @@ def test_classify_and_extract_parses_injected_response():
         "어머니 환갑 선물로 30만원대 찾아요", chat=_fake_chat(payload)
     )
     assert result["intent"] == "gift_recommendation"
-    assert result["filters"]["max_price"] == 300000
+    # "30만원대"는 "-대" 구간 보정이 300000~309999로 확정한다(아래 별도 테스트
+    # 참고) — 이 테스트는 원래 파싱 배선 자체를 보는 것이라 그 보정된 값을 그대로
+    # 기대하도록 갱신했다.
+    assert result["filters"]["max_price"] == 309999
+    assert result["filters"]["min_price"] == 300000
     assert result["filters"]["gift_theme"] == ["BIRTHDAY_60TH"]
 
 
