@@ -137,9 +137,15 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 ## 1-5. Image 발행 Branch
 
-**`main` push 기준으로 사용해도 됩니다.** 다만 두 가지만 확인 부탁드립니다.
+**`main` push 기준으로 사용하시면 됩니다.** 준비는 끝났습니다.
 
-1. **현재 이 저장소에는 원격(remote)이 없습니다.** 배포용 원격 저장소를 먼저 정해 주셔야 하고, 지금 작업물은 `deploy/ubuntu` 브랜치에 있습니다. `main` 발행을 쓰려면 이 브랜치를 `main` 에 병합해야 합니다.
+| 항목 | 값 |
+| --- | --- |
+| 저장소 | `https://github.com/sigjm/Team3_EcommerceSystemAI` (**비공개**) |
+| 기본 브랜치 | `main` — 배포 대상 코드가 여기 올라가 있습니다 |
+| 작업 브랜치 | `deploy/ubuntu` (`main` 과 같은 커밋) |
+
+1. **접근 권한이 필요합니다.** 비공개 저장소라 CI 나 인프라팀 계정을 collaborator 로 추가해야 clone 이 됩니다. 필요한 계정을 알려 주시면 권한을 부여하겠습니다.
 2. **빌드 컨텍스트는 저장소 루트**입니다. `docker build -f sglang/Dockerfile .` 형태로 실행해 주세요. Dockerfile 이 있는 디렉터리만 컨텍스트로 잡으면 빌드가 실패합니다.
 
 변경 런타임 감지는 `sglang/`, `src/`, `pyproject.toml`, `uv.lock`, `web/`, `assets/references/` 경로 변경을 트리거로 잡으시면 됩니다. 이 경로들이 이미지에 들어갑니다.
