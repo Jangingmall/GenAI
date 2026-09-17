@@ -71,3 +71,4 @@
 - [AI 아키텍처](architecture/ai-architecture-design.md)
 - [안전성 정책](architecture/ai-evaluation-and-safety-policy.md)
 - [최신 로컬 생성 테스트](operations/local-generation-test-report.md)
+- [2026-09-16 전체 산출물 검수 최종 판정](evaluation/deliverables-review-2026-09-16.md)

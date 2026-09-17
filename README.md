@@ -4,7 +4,7 @@
 
 > 2026-09-16 현재 구현 기준: FE가 소비하는 정식 구조 산출물은 `react_document`이며, `page_plan`은 모델·편집·하위 호환용 입력으로 유지합니다. React AST는 서버가 검증된 draft에서 결정적으로 조립하고, 모델이 임의 JSX·HTML·CSS를 반환하지 않습니다.
 
-> 추론 경로는 두 가지입니다. Mac 로컬 개발은 MLX Serve(`127.0.0.1:11234`)를 사용하고, 서버 운영은 Ubuntu `g6e.xlarge`에서 SGLang 텍스트·이미지 서버(`30000`/`30001`)를 사용합니다. 서버 GPU 실행과 두 모델 동시 적재는 아직 검증하지 않았습니다.
+> 추론 경로는 두 가지입니다. Mac 로컬 개발은 MLX Serve(`127.0.0.1:11234`)를 사용하고, 서버 운영은 Ubuntu `g6e.xlarge`에서 SGLang 텍스트·이미지 서버(`30000`/`30001`)를 사용합니다. **서버 GPU 에서는 아직 한 번도 실행되지 않았으며**, 두 모델 동시 적재와 4bit 파이프라인 실측은 미검증 상태입니다.
 
 대표 `hero`는 촬영 원본 그대로(`asset_mode=source_original`, `fidelity_status=VERIFIED`) 사용합니다. `packshot`과 `detail`은 rembg(`birefnet-general`, `rembg==2.0.69`) 누끼·원본 crop/합성 경로를 사용하고, 누끼가 실패하면 원본 자산(`source`, `FALLBACK`)으로 되돌립니다. lifestyle과 추가 detail은 원본을 시각 참고로 넣은 Flux2 편집 결과일 수 있으며, `product_generated=true`와 `asset_mode`로 구분하고 원본 상품 근거로 승격하지 않습니다. 생성 사진에 화면상의 별도 '참고용' 표시는 붙이지 않습니다.
 
@@ -144,6 +144,10 @@ API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 소재·성능을 자동으로 확정하지 않습니다. 최신성이나 출처가 필요한 내용은 상품 BE가
 검수한 뒤 `user_hints`로 전달해야 합니다.
 
+- `GET /health`
+  - liveness 헬스체크. 무인증 HTTP 200(`{"status": "ok"}`) 반환
+- `GET /health/ready`
+  - readiness 헬스체크. 무인증 HTTP 200(`{"status": "ok", "components": {...}}`) 또는 서비스 불능 시 503(`{"status": "not_ready", "reason": ..., "components": ...}`) 반환
 - `POST /internal/v1/ai/detail-page-jobs`
   - 상품 BE 전용. `product_image`, 반복 `product_images`, `metadata` JSON
   - `metadata.product_id`와 `source_asset_id`를 작업·결과·적재 요청에 보존
@@ -200,9 +204,9 @@ Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준�
 
 ## 서버 배포 (Ubuntu · SGLang)
 
-서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
+서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. EKS 배포를 위해 단일 GPU에서 3개 서비스를 통합 실행하는 단일 컨테이너 이미지(`sglang/Dockerfile`, `sglang/entrypoint.sh`) 구성도 함께 제공합니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
 
-현재 Mac 로컬에서 `docker compose config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, 실제 NVIDIA GPU에서 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 아직 검증하지 않았습니다.
+현재 Mac 로컬에서 `docker compose config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, **서버 GPU 에서는 아직 한 번도 실행되지 않았으며**, 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 첫 배포 실측을 통해 확인해야 합니다.
 
 ## 내부 HTML/CSS → PNG 렌더링
 
@@ -243,8 +247,10 @@ npm run render:detail-page -- \
 ## 테스트
 
 ```bash
+uv run pytest -q
+# 또는
 .venv/bin/python -m pytest -q
 .venv/bin/python -m compileall -q src scripts tests
 ```
 
-테스트는 외부 모델 호출 없이 payload, 배경 안전성 판정, 원본 해시와 crop/composite 픽셀 출처, deterministic hash, 역할 매핑, React AST 스키마·안전성·camelCase 직렬화, 로컬 `react_document.json` 산출, SQLite lease claim·재시작 복구, outbox 선저장·멱등 재전송과 FE/BE DTO를 검증합니다.
+전체 358개 단위 테스트가 외부 모델 호출 없이 payload, 배경 안전성 판정, 원본 해시와 crop/composite 픽셀 출처, deterministic hash, 역할 매핑, React AST 스키마·안전성·camelCase 직렬화, 로컬 `react_document.json` 산출, SQLite lease claim·재시작 복구, outbox 선저장·멱등 재전송과 FE/BE DTO를 검증합니다.

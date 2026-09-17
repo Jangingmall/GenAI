@@ -5,6 +5,11 @@ node_modules/
 data/
 .git/
 .orchestration/
+.idea/
+.claude/
+.gemini/
+.omo/
+.models/
 
 __pycache__/
 *.py[cod]
