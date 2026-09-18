@@ -659,6 +659,56 @@ def test_format_explain_block_shows_no_info_when_attr_missing():
     assert "색상: 정보 없음" in block
 
 
+def test_explain_products_includes_history_for_purpose_context(monkeypatch):
+    """실측 확인된 문제: "셰프 친구 개업 축하 선물로 15만원 이하 찾아줘" 다음
+    "이유가 뭐야?"에 explain_products가 evidence만 기계적으로 나열하고 "개업 축하"라는
+    원래 맥락을 전혀 반영하지 않았다 — history를 아예 안 받고 있어서 LLM이 그 맥락
+    자체를 볼 수 없었던 게 원인이다. history를 받으면 user_content에 그 맥락이
+    포함돼야 한다."""
+    captured = {}
+
+    def fake_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps({"reply": "설명입니다.", "suggestions": []})
+
+    candidates = [{"product_id": 1, "name": "치자염 방석", "evidence": {}}]
+    history = [
+        {"role": "user", "content": "셰프 친구 개업 선물로 15만원 이하 찾아줘"},
+        {"role": "assistant", "content": "15만 원 이하로 3점을 골랐어요."},
+    ]
+    gen.explain_products(
+        "이 제품들을 추천한 이유는 뭐야?",
+        candidates,
+        chat=fake_chat,
+        fetch_attrs=_no_attrs,
+        history=history,
+    )
+    assert "개업" in captured["user_content"]
+
+
+def test_explain_product_includes_history_for_purpose_context():
+    """explain_products와 같은 이유로 explain_product(단일 상품)도 history를 받아야 한다."""
+    captured = {}
+
+    def fake_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps({"reply": "설명입니다.", "suggestions": []})
+
+    candidate = {"product_id": 1, "name": "치자염 방석", "evidence": {}}
+    history = [
+        {"role": "user", "content": "셰프 친구 개업 선물로 15만원 이하 찾아줘"},
+        {"role": "assistant", "content": "15만 원 이하로 3점을 골랐어요."},
+    ]
+    gen.explain_product(
+        "이거 설명해줘",
+        candidate,
+        chat=fake_chat,
+        fetch_attrs=_no_attrs,
+        history=history,
+    )
+    assert "개업" in captured["user_content"]
+
+
 def test_explain_product_fetches_attrs_by_product_id(monkeypatch):
     captured = {}
 

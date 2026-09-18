@@ -308,7 +308,9 @@ def run(
             # 지시대명사("그거 설명해줘")로 와도 불필요하게 되묻지 말고 바로 그
             # 상품을 설명한다(실측 확인된 문제: 후보 1개인데도 "1번/전체 설명
             # 중에서 골라주세요"로 되물어 대화 턴을 한 번 더 낭비함).
-            explained = explain_product(message, previous_candidates[0], chat=chat)
+            explained = explain_product(
+                message, previous_candidates[0], chat=chat, history=history
+            )
             return _short_circuit(
                 explained["reply"],
                 "narrow_down",
@@ -318,7 +320,9 @@ def run(
                 shown_product_ids=explained["product_ids"],
             )
         if is_all_request(message):
-            explained = explain_products(message, previous_candidates, chat=chat)
+            explained = explain_products(
+                message, previous_candidates, chat=chat, history=history
+            )
             return _short_circuit(
                 explained["reply"],
                 "narrow_down",
@@ -380,7 +384,7 @@ def run(
                 candidates=previous_candidates,
             )
         target = previous_candidates[ordinal - 1]
-        explained = explain_product(message, target, chat=chat)
+        explained = explain_product(message, target, chat=chat, history=history)
         return _short_circuit(
             explained["reply"],
             "narrow_down",
@@ -458,7 +462,9 @@ def run(
                 filters=contact1["filters"],
                 shown_product_ids=[],
             )
-        explained = explain_products(message, previous_candidates, chat=chat)
+        explained = explain_products(
+            message, previous_candidates, chat=chat, history=history
+        )
         return _short_circuit(
             explained["reply"],
             contact1["intent"],
