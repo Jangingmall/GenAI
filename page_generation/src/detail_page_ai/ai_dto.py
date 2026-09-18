@@ -19,6 +19,7 @@ from .dto import (
     ApprovedDraftDto,
     AiFeStatusResponse,
     ErrorDto,
+    GeneratedAssetMetadataDto,
     GenerationOptions,
     UserHintsDto,
     Status,
@@ -126,9 +127,15 @@ class AiToBeApprovedResponseDto(_StrictAiBeDto):
 # Product BE identity mandatory.  The direct demo still uses the legacy model
 # when no product identity exists.
 class AiToBePersistRequestDto(AiBeProductPersistRequest):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    product_id: str = Field(min_length=1, max_length=120)
+    generation_id: str = Field(alias="generationId")
+    job_id: str = Field(alias="jobId")
+    request_id: str = Field(alias="requestId")
+    idempotency_key: str = Field(alias="idempotencyKey")
+    product_id: str = Field(min_length=1, max_length=120, alias="productId")
+    user_hints: UserHintsDto = Field(default_factory=UserHintsDto, alias="userHints")
+    detail_page: GeneratedAssetMetadataDto = Field(alias="detailPage")
 
 
 class BeToAiPersistAckDto(AiBePersistAck):

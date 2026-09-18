@@ -15,8 +15,10 @@ from detail_page_ai.dto import (
     AiBeProductPersistRequest,
     AiFeProductSummaryDto,
     AiFeResultDto,
+    ApprovedDraftDto,
     ProductProfileDto,
 )
+from detail_page_ai.react_document_builder import build_react_document_from_draft
 
 
 def _create_payload() -> dict:
@@ -147,8 +149,27 @@ def test_canonical_persist_names_point_to_validated_shared_models():
         status="SAVED",
         saved_at="2026-08-31T00:00:00Z",
     )
+    request.detail_page.react_document = build_react_document_from_draft(
+        ApprovedDraftDto.from_profile(request.product)
+    )
+
+    payload = request.model_dump(mode="json", by_alias=True)
+    assert payload["generationId"] == "generation-42"
+    assert payload["jobId"] == "job-42"
+    assert payload["requestId"] == "request-42"
+    assert payload["idempotencyKey"] == "generation-42"
+    assert payload["productId"] == "product-42"
+    assert "generation_id" not in payload
+    assert "product_id" not in payload
+    assert "detail_page" not in payload
+    assert payload["detailPage"]["reactDocument"]["schemaVersion"] == "2.0"
+    assert payload["detailPage"]["reactDocument"]["canvasWidth"] == 774
+    assert "react_document" not in payload["detailPage"]
+
+    snake_case_request = AiToBePersistRequestDto.model_validate(request.model_dump())
 
     assert request.product_id == "product-42"
+    assert snake_case_request.product_id == "product-42"
     assert isinstance(ack, AiBePersistAck)
 
 
