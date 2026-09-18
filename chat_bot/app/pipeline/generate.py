@@ -598,6 +598,14 @@ _ALL_WORDS = ("모두", "전체", "둘 다", "셋 다")
 # 이미 조회된 가격끼리 최소/최대만 비교하면 되는 단순 산술이라 LLM이 필요 없다.
 _CHEAPEST_WORDS = ("가장 저렴", "가장 싼", "제일 저렴", "제일 싼", "최저가")
 _MOST_EXPENSIVE_WORDS = ("가장 비싼", "가장 비싸", "제일 비싼", "제일 비싸", "최고가")
+# extract_price_rank 전용 — "가장"·"제일" 없이 "저렴"·"비싼"만 있어도 된다("두번째로
+# 저렴한"엔 "가장"이 안 붙는다). _CHEAPEST_WORDS·_MOST_EXPENSIVE_WORDS는 "가장"·"제일"
+# 요구를 그대로 두고(그래야 "저렴한 거 있어?" 같은 평범한 가격 질문을 최상급으로
+# 오인하지 않는다), 순번 단어와 같이 있을 때만 쓰는 이 목록은 그 안전장치가 필요
+# 없다 — extract_price_rank가 순번(extract_ordinal)까지 같이 요구하므로 오탐 위험이
+# 낮다.
+_CHEAP_DIRECTION_WORDS = ("저렴", "싼")
+_EXPENSIVE_DIRECTION_WORDS = ("비싼", "비싸")
 
 
 def _contains_with_spacing_fallback(message: str, words: tuple[str, ...]) -> bool:
@@ -652,6 +660,38 @@ def extract_price_superlative(message: str) -> str | None:
         return "min"
     if any(word in message for word in _MOST_EXPENSIVE_WORDS):
         return "max"
+    return None
+
+
+def extract_price_rank(message: str, total: int) -> tuple[int, str] | None:
+    """ "두번째로 저렴한 것"·"2번째로 비싼 것"처럼 순번 표현과 가격 최상급이 함께
+    오면, 가격 기준 몇 번째인지와 방향("min"/"max")을 함께 뽑는다. 없으면 None.
+
+    실측 확인된 버그: 이런 문장은 extract_ordinal이 "목록상 몇 번째"로 먼저
+    해석해버려("두번째"라는 순번 단어가 그대로 걸림), 실제로는 가격 순서를
+    말하는 건데 검색 순위(관련도) 순서의 엉뚱한 상품을 조용히 설명해버렸다
+    (목록 순서와 가격 순서가 다르면 재현 — 심하면 정반대 상품이 나올 수도
+    있다).
+
+    방향 판정은 extract_price_superlative가 아니라 별도의 _CHEAP_DIRECTION_WORDS·
+    _EXPENSIVE_DIRECTION_WORDS를 쓴다 — extract_price_superlative는 "가장 저렴한"류
+    최상급 문장만 잡도록 일부러 "가장"·"제일"을 요구하는데("저렴한 거 있어?" 같은
+    평범한 가격 질문 오탐 방지), "두번째로 저렴한"엔 "가장"이 안 붙어서 그 조건에
+    안 걸린다. 이 함수는 순번(extract_ordinal)까지 같이 요구해 오탐 위험이 이미
+    낮으므로 "가장" 요구가 필요 없다. 순번을 못 뽑으면(예: "가장 비싼 것"처럼
+    순번 없이 최상급만 있는 문장) None을 반환해 기존 extract_price_superlative
+    경로로 넘긴다 — 그 경로는 이미 정상 동작하므로 건드리지 않는다.
+    """
+    rank = extract_ordinal(message, total)
+    if rank is None:
+        return None
+    # 비싼 방향을 먼저 확인한다 — "비싼"이 "싼"(_CHEAP_DIRECTION_WORDS)을 부분
+    # 문자열로 포함해서(비+싼), 순서를 반대로 하면 "2번째로 비싼 것"이 "싼"에
+    # 먼저 걸려 "min"으로 잘못 분류된다(TDD로 실제 발견: 테스트 작성 중 재현).
+    if any(word in message for word in _EXPENSIVE_DIRECTION_WORDS):
+        return (rank, "max")
+    if any(word in message for word in _CHEAP_DIRECTION_WORDS):
+        return (rank, "min")
     return None
 
 

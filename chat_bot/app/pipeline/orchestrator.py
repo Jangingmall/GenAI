@@ -37,6 +37,7 @@ from app.pipeline.generate import (
     explain_product,
     explain_products,
     extract_ordinal,
+    extract_price_rank,
     extract_price_superlative,
     is_all_request,
     is_explain_request,
@@ -312,12 +313,35 @@ def run(
                 candidates=previous_candidates,
                 shown_product_ids=explained["product_ids"],
             )
-        ordinal = extract_ordinal(message, len(previous_candidates))
-        if ordinal is None:
-            # "가장 저렴한 것"류는 순번이 아니라 가격으로 상품을 가리킨다 — 이미
-            # 직전 턴에 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번
-            # "몇 번째예요?"로 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는
-            # LLM 호출 없이 이미 있는 fetch_prices로 즉시 판단 가능하다.
+        # "두번째로 저렴한 것"류 — 순번 표현과 가격 최상급이 같이 있으면 목록
+        # 순서(검색 관련도)가 아니라 가격 순서로 몇 번째인지 판단해야 한다(실측
+        # 확인된 버그: extract_ordinal만 보면 "목록상 2번째"로 잘못 짚어 전혀
+        # 다른 — 심하면 정반대인 — 상품을 조용히 설명해버렸다). extract_ordinal보다
+        # 먼저 확인한다.
+        price_rank = extract_price_rank(message, len(previous_candidates))
+        if price_rank is not None:
+            rank, direction = price_rank
+            prices = fetch_prices([c["product_id"] for c in previous_candidates])
+            priced = sorted(
+                (
+                    (i, prices[c["product_id"]])
+                    for i, c in enumerate(previous_candidates)
+                    if c["product_id"] in prices
+                ),
+                key=lambda pair: pair[1],
+                reverse=(direction == "max"),
+            )
+            # 가격 조회 자체가 실패했거나(빈 딕셔너리) rank가 실제 개수보다 크면
+            # (예: 후보 2개인데 "세번째로 싼 것") 잘못 추측하지 말고 되묻는다.
+            ordinal = priced[rank - 1][0] + 1 if rank <= len(priced) else None
+        else:
+            ordinal = extract_ordinal(message, len(previous_candidates))
+        if ordinal is None and price_rank is None:
+            # "가장 저렴한 것"류(순번 없이 최상급만)는 위 price_rank로는 안 잡힌다
+            # (extract_price_rank는 순번이 있어야만 값을 준다) — 이미 직전 턴에
+            # 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번 "몇 번째예요?"로
+            # 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는 LLM 호출 없이
+            # 이미 있는 fetch_prices로 즉시 판단 가능하다.
             superlative = extract_price_superlative(message)
             if superlative is not None:
                 prices = fetch_prices([c["product_id"] for c in previous_candidates])

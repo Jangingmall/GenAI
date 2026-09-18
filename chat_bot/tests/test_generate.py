@@ -561,6 +561,26 @@ def test_extract_price_superlative_none_for_ordinal_or_unrelated():
     assert gen.extract_price_superlative("무슨 색이야?") is None
 
 
+# ---------------------------------------------------------------------------
+# extract_price_rank — "두번째로 저렴한 것"류 순번+가격 최상급 결합 표현 판단
+# ---------------------------------------------------------------------------
+
+
+def test_extract_price_rank_recognizes_ordinal_plus_direction():
+    """ "가장"·"제일" 없이 "저렴"·"비싼"만 있어도 순번과 결합되면 뽑혀야 한다 —
+    extract_price_superlative는 "가장"·"제일"을 요구해서 이 문장들은 못 잡는다."""
+    assert gen.extract_price_rank("두번째로 저렴한 것 설명해줘", 3) == (2, "min")
+    assert gen.extract_price_rank("2번째로 비싼 것 알려줘", 3) == (2, "max")
+    assert gen.extract_price_rank("세번째로 싼 거 자세히 봐줘", 3) == (3, "min")
+
+
+def test_extract_price_rank_none_without_ordinal_or_without_direction():
+    """순번만 있고 가격 방향이 없으면(일반 순번 질문), 방향만 있고 순번이 없으면
+    (예: "가장 비싼 것" — extract_price_superlative가 따로 처리) None이어야 한다."""
+    assert gen.extract_price_rank("두번째 상품 설명해줘", 3) is None
+    assert gen.extract_price_rank("가장 비싼 것 알려줘", 3) is None
+
+
 def test_explain_products_calls_llm_once_and_shares_reply_across_products():
     """explain_product를 후보 수만큼 반복 호출하면 응답 시간이 배로 늘어난다 —
     explain_products는 LLM을 정확히 1번만 불러야 한다."""

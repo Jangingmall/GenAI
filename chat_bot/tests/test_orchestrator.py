@@ -1498,6 +1498,36 @@ def test_run_explain_request_cheapest_falls_back_to_asking_when_prices_unavailab
     assert "몇 번째" in result["reply"]
 
 
+def test_run_explain_request_second_cheapest_resolves_by_price_not_list_position():
+    """ "두번째로 저렴한 것"은 순번 표현("두번째")과 가격 최상급("저렴한")이 같이
+    있는 문장이다. extract_ordinal만 보면 "목록상 2번째"(product_id=2, 234000원 —
+    사실은 가장 비쌈)로 잘못 짚는다 — 실제로는 "가격 기준 2번째로 싼"
+    상품(product_id=6, 167000원)을 가리키므로 가격 정렬로 판단해야 한다(실측
+    확인된 버그: 목록 순서와 가격 순서가 다르면 조용히 틀린 상품을 설명해버림)."""
+    result = rr.run(
+        "두번째로 저렴한 것 설명해줘",
+        chat=_explain_chat("분청 화병은 문양을 새긴 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [6]
+
+
+def test_run_explain_request_second_most_expensive_resolves_by_price():
+    """위와 대칭 — "두번째로 비싼 것"도 목록 2번째(product_id=2, 실제로는 최고가라
+    "두번째로 비싼"이 아님)가 아니라 가격 내림차순 2번째(product_id=6)를 가리켜야
+    한다."""
+    result = rr.run(
+        "두번째로 비싼 것 설명해줘",
+        chat=_explain_chat("분청 화병은 문양을 새긴 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [6]
+
+
 def test_run_history_with_null_content_does_not_crash():
     """백엔드가 history 항목에 content:null을 실어 보내도(예: {"sender":"ARTISAN",
     "content":null}) _to_pipeline_history는 그 None을 그대로 통과시킨다(item.get으로
