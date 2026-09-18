@@ -44,7 +44,7 @@ class Settings:
     # 30건 평가셋에서 qwen3:8b보다 사실왜곡률(13.3%→0%)·인젝션방어율(50%→100%)이 크게 앞서고
     # 더 빠르다(p50 24.2s→18.6s) — eval/reports/gemma2-9b-think.json 실측 근거. 종목 모순
     # 케이스(b27) 1건은 아직 못 잡아 tests/test_generate.py에 xfail로 남겨뒀다(알려진 한계).
-    LLM_MODEL = os.environ.get("LLM_MODEL", "gemma2:9b")
+    LLM_MODEL = os.environ.get("LLM_MODEL", "gemma4:12b")
 
     # --- LLM 백엔드 선택 ---
     # "ollama"(기본) 또는 "mlx-serve". gemma4:12b-mlx를 Ollama의 MLX 프리뷰로 띄워보니
