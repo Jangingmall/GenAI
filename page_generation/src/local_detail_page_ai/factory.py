@@ -1,7 +1,11 @@
 from pathlib import Path
 
 from detail_page_ai.assets import LocalFileAssetStore
-from detail_page_ai.backend_client import BackendDeliveryError, BackendProductClient
+from detail_page_ai.backend_client import (
+    DEFAULT_BACKEND_CALLBACK_PATH,
+    BackendDeliveryError,
+    BackendProductClient,
+)
 from detail_page_ai.dto import GenerationMetadataDto
 from detail_page_ai.html_renderer import HtmlDetailPageRenderer
 from detail_page_ai.persistence import SQLiteDeliveryOutbox, SQLiteJobRepository
@@ -52,7 +56,15 @@ def build_service(settings) -> DetailPageJobService:
         )
     else:
         raise ValueError("LOCAL_TEXT_PROVIDER must be 'mlx', 'ollama', or 'sglang'")
-    analyzer = LocalProductAnalyzer(chat_client=chat_client)
+    image_generation_enabled = (
+        getattr(settings, "local_image_provider", "none") != "none"
+        and getattr(settings, "background_provider", "none") != "none"
+        and getattr(settings, "max_generated_photos", 5) > 0
+    )
+    analyzer = LocalProductAnalyzer(
+        chat_client=chat_client,
+        image_generation_enabled=image_generation_enabled,
+    )
     analysis_model = settings.local_text_model
     asset_store = LocalFileAssetStore(
         getattr(settings, "asset_store_dir", ".local/detail-page-ai/assets")
@@ -133,6 +145,11 @@ def build_service(settings) -> DetailPageJobService:
             url=settings.backend_url,
             token=settings.backend_auth_token,
             timeout=settings.backend_timeout_seconds,
+            callback_path=getattr(
+                settings,
+                "backend_callback_path",
+                DEFAULT_BACKEND_CALLBACK_PATH,
+            ),
         )
         if settings.backend_url
         else _UnconfiguredBackend()

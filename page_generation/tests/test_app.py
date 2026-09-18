@@ -77,6 +77,7 @@ def test_build_service_wires_only_local_mlx_and_flux(monkeypatch, tmp_path):
     assert service.pipeline.analyzer.chat_client.kwargs["model"] == (
         "ddalcu/Qwen3.8-27B-MLX-Serve-4bit"
     )
+    assert service.pipeline.analyzer.image_generation_enabled is True
     assert service.pipeline.photo_generator.background_generator.image_client.kwargs[
         "model"
     ] == "mlx-community/flux2-klein-9b-4bit"
@@ -269,6 +270,25 @@ def test_build_service_does_not_construct_local_background_in_none_mode(
     service = app_module.build_service()
 
     assert service.pipeline.photo_generator.background_generator is None
+    assert service.pipeline.analyzer.image_generation_enabled is False
+
+
+def test_build_service_disables_usage_layout_when_generated_photo_cap_is_zero(
+    monkeypatch, tmp_path
+):
+    from detail_page_ai.config import Settings
+
+    settings = Settings(
+        _env_file=None,
+        MAX_GENERATED_PHOTOS=0,
+        ASSET_STORE_DIR=str(tmp_path / "assets"),
+        SQLITE_PATH=str(tmp_path / "state.sqlite3"),
+    )
+    monkeypatch.setattr(app_module, "get_settings", lambda: settings)
+
+    service = app_module.build_service()
+
+    assert service.pipeline.analyzer.image_generation_enabled is False
 
 
 def test_create_job_accepts_repeated_additional_original_images(monkeypatch):

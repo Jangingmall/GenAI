@@ -322,6 +322,13 @@ class FeProductPhotoDto(BaseModel):
     fidelity_status: FidelityStatus = "VERIFIED"
 
 
+class PhotoGenerationFailureDto(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    photo_id: str = Field(min_length=1, max_length=80)
+    reason: str = Field(min_length=1, max_length=200)
+
+
 class FeDetailPageAssetDto(BaseModel):
     image_url: str | None = None
     image_base64: str | None = None
@@ -330,6 +337,10 @@ class FeDetailPageAssetDto(BaseModel):
     height: int | None = None
     sections: list[FeDetailPageSectionDto] = Field(default_factory=list)
     photos: list[FeProductPhotoDto] = Field(default_factory=list)
+    photo_generation_failures: list[PhotoGenerationFailureDto] = Field(
+        default_factory=list
+    )
+    unused_generated_photo_ids: list[str] = Field(default_factory=list)
     react_document: ReactDetailPageDocumentDto | None = None
 
 
@@ -370,6 +381,10 @@ class AiFeDraftResultDto(BaseModel):
     draft: ApprovedDraftDto
     preview: AiFeDraftPreviewDto
     preview_photos: list[FeProductPhotoDto] = Field(default_factory=list)
+    photo_generation_failures: list[PhotoGenerationFailureDto] = Field(
+        default_factory=list
+    )
+    unused_generated_photo_ids: list[str] = Field(default_factory=list)
     react_document: ReactDetailPageDocumentDto | None = None
 
 
@@ -487,6 +502,10 @@ class GeneratedAssetMetadataDto(BaseModel):
     asset_id: str | None = Field(default=None, alias="assetId")
     sections: list[GeneratedSectionMetadataDto] = Field(default_factory=list)
     photos: list[GeneratedPhotoMetadataDto] = Field(default_factory=list)
+    photo_generation_failures: list[PhotoGenerationFailureDto] = Field(
+        default_factory=list
+    )
+    unused_generated_photo_ids: list[str] = Field(default_factory=list)
     react_document: ReactDetailPageDocumentDto | None = Field(
         default=None, alias="reactDocument"
     )
@@ -537,6 +556,8 @@ class AiBeProductPersistRequest(BaseModel):
         generation: dict[str, Any] | GenerationMetadataDto,
         generated_sections: list[GeneratedSectionMetadataDto] | None = None,
         generated_photos: list[GeneratedPhotoMetadataDto] | None = None,
+        photo_generation_failures: list[PhotoGenerationFailureDto] | None = None,
+        unused_generated_photo_ids: list[str] | None = None,
         react_document: ReactDetailPageDocumentDto | None = None,
         product_id: str | None = None,
     ) -> Self:
@@ -566,6 +587,8 @@ class AiBeProductPersistRequest(BaseModel):
                 asset_id=generated_asset_id,
                 sections=generated_sections or [],
                 photos=generated_photos or [],
+                photo_generation_failures=photo_generation_failures or [],
+                unused_generated_photo_ids=unused_generated_photo_ids or [],
                 react_document=react_document,
             ),
             generation=generation_metadata,

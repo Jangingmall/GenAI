@@ -32,6 +32,25 @@ def test_local_analysis_and_source_safe_photos_are_the_defaults():
     assert settings.local_image_model == "mlx-community/flux2-klein-9b-4bit"
 
 
+def test_backend_callback_path_defaults_and_uses_environment_alias():
+    settings = Settings(_env_file=None)
+
+    assert (
+        settings.backend_callback_path
+        == "/internal/generations/{generation_id}/completion"
+    )
+
+    overridden = Settings(
+        _env_file=None,
+        BACKEND_CALLBACK_PATH="/internal/v2/generations/{generation_id}/complete",
+    )
+
+    assert (
+        overridden.backend_callback_path
+        == "/internal/v2/generations/{generation_id}/complete"
+    )
+
+
 def test_local_models_are_the_only_service_defaults():
     settings = Settings(_env_file=None)
 

@@ -115,6 +115,97 @@ def test_same_hash_injects_the_same_selected_layout_sequence():
         assert f"{index}. {block_type} → {variant}" in prompt
 
 
+def test_image_generation_enabled_sample_contains_only_usage_scene_archetypes():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    selected = select_layout_archetypes(
+        "0" * 60 + "0143",
+        UserHintsDto(),
+        count=4,
+        image_generation_enabled=True,
+    )
+
+    assert selected
+    assert all("usage_scene" in archetype["sequence"] for archetype in selected)
+
+
+def test_image_generation_disabled_sample_preserves_existing_seeded_selection():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    selected = select_layout_archetypes(
+        "0" * 60 + "0143",
+        UserHintsDto(),
+        count=4,
+        image_generation_enabled=False,
+    )
+
+    assert [archetype["id"] for archetype in selected] == [
+        "color-system-led",
+        "scale-decision",
+        "palette-and-choice",
+        "silhouette-proof",
+    ]
+
+
+def test_image_generation_enabled_falls_back_when_usage_pool_is_empty(monkeypatch):
+    from detail_page_ai import layout_archetypes
+
+    candidates = [
+        {"id": "first", "sequence": ["hero"]},
+        {"id": "second", "sequence": ["hero", "closing"]},
+    ]
+    monkeypatch.setattr(layout_archetypes, "LAYOUT_ARCHETYPES", candidates)
+
+    disabled = layout_archetypes.select_layout_archetypes(
+        "fallback-seed", UserHintsDto(), count=2, image_generation_enabled=False
+    )
+    enabled = layout_archetypes.select_layout_archetypes(
+        "fallback-seed", UserHintsDto(), count=2, image_generation_enabled=True
+    )
+
+    assert enabled == disabled
+
+
+def test_enabled_layout_sample_is_reproducible_and_usage_archetype_varies_by_seed():
+    from detail_page_ai.layout_archetypes import select_layout_archetypes
+
+    seed = "1" * 64
+    first = select_layout_archetypes(
+        seed, UserHintsDto(), count=4, image_generation_enabled=True
+    )
+    second = select_layout_archetypes(
+        seed, UserHintsDto(), count=4, image_generation_enabled=True
+    )
+    usage_archetype_ids = {
+        archetype["id"]
+        for index in range(64)
+        for archetype in select_layout_archetypes(
+            f"{index:064x}",
+            UserHintsDto(),
+            count=4,
+            image_generation_enabled=True,
+        )
+        if "usage_scene" in archetype["sequence"]
+    }
+
+    assert first == second
+    assert all("usage_scene" in archetype["sequence"] for archetype in first)
+    assert len(usage_archetype_ids) >= 3
+
+
+def test_analysis_prompt_mentions_generated_usage_scene_only_when_enabled():
+    disabled_prompt = build_analysis_prompt(
+        "ko-KR", image_generation_enabled=False
+    )
+    enabled_prompt = build_analysis_prompt(
+        "ko-KR", image_generation_enabled=True
+    )
+
+    instruction = "If a generated lifestyle photo is provided downstream"
+    assert instruction not in disabled_prompt
+    assert instruction in enabled_prompt
+
+
 def test_selected_layout_sequences_vary_across_image_hashes():
     from detail_page_ai.layout_archetypes import select_layout_archetypes
 

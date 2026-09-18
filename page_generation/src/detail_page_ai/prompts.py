@@ -207,6 +207,7 @@ def build_analysis_prompt(
     locale: str = "ko-KR",
     user_hints: UserHintsDto | None = None,
     archetypes: Sequence[Mapping[str, Any]] | None = None,
+    image_generation_enabled: bool = False,
 ) -> str:
     data_lines = []
     if user_hints:
@@ -451,6 +452,14 @@ Creator product data:
             "  closing is last, and all output fields conform to the provided schema.",
             final_structure_check,
             1,
+        )
+    if image_generation_enabled:
+        prompt += (
+            "\nGenerated usage-scene availability:\n"
+            "If a generated lifestyle photo is provided downstream, include a usage_scene "
+            "block in page_plan and use photo_id \"lifestyle\" for it. Keep the block "
+            "grounded in creator-provided use or scale context and preserve all existing "
+            "evidence rules; do not invent unsupported product facts.\n"
         )
     return prompt
 

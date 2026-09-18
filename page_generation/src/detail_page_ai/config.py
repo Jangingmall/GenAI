@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     backend_url: str | None = Field(
         default=None, alias="BACKEND_URL"
     )
+    backend_callback_path: str = Field(
+        default="/internal/generations/{generation_id}/completion",
+        alias="BACKEND_CALLBACK_PATH",
+    )
     backend_auth_token: str | None = Field(
         default=None, alias="BACKEND_AUTH_TOKEN"
     )

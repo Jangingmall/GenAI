@@ -163,6 +163,9 @@ def build_local_pipeline(
     return DetailPagePipeline(
         analyzer=LocalProductAnalyzer(
             chat_client=chat_client,
+            image_generation_enabled=(
+                generate_product_photos and image_provider != "none"
+            ),
         ),
         photo_generator=(
             SourcePreservingProductPhotoGenerator(

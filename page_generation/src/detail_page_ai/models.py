@@ -59,8 +59,15 @@ class ProductPhoto:
 
 
 @dataclass(frozen=True, slots=True)
+class PhotoGenerationFailure:
+    photo_id: str
+    reason: str
+
+
+@dataclass(frozen=True, slots=True)
 class ProductPhotoSet:
     photos: tuple[ProductPhoto, ...] = ()
+    photo_generation_failures: tuple[PhotoGenerationFailure, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
