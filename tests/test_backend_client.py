@@ -1,6 +1,6 @@
 from detail_page_ai.backend_client import BackendProductClient
+from detail_page_ai.ai_dto import AiToBePersistRequestDto
 from detail_page_ai.dto import (
-    AiBeProductPersistRequest,
     ApprovedDraftDto,
     ProductProfileDto,
 )
@@ -28,8 +28,8 @@ class FakeHttpTransport:
         }
 
 
-def make_request() -> AiBeProductPersistRequest:
-    return AiBeProductPersistRequest.from_profile(
+def make_request() -> AiToBePersistRequestDto:
+    return AiToBePersistRequestDto.from_profile(
         generation_id="generation-1",
         job_id="job-1",
         request_id="request-1",
@@ -41,6 +41,7 @@ def make_request() -> AiBeProductPersistRequest:
         generated_image_sha256="generated-hash",
         profile=ProductProfileDto.minimal("desk lamp"),
         generation={"prompt_version": "detail-page-v1"},
+        product_id="product-1",
     )
 
 
@@ -58,7 +59,11 @@ def test_persist_sends_metadata_and_image_as_separate_parts():
     )
 
     assert ack.status == "SAVED"
-    assert transport.request["fields"]["metadata"]["generation_id"] == "generation-1"
+    metadata = transport.request["fields"]["metadata"]
+    assert metadata["generationId"] == "generation-1"
+    assert metadata["productId"] == "product-1"
+    assert "generation_id" not in metadata
+    assert "detail_page" not in metadata
     assert transport.request["files"]["detail_page_image"]["data"] == b"png"
     assert transport.request["files"]["detail_page_image"]["filename"] == "generation-1.png"
     assert transport.request["headers"]["Authorization"] == "Bearer secret"
@@ -80,7 +85,7 @@ def test_persist_serializes_react_document_with_contract_aliases():
         GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
     )
 
-    document = transport.request["fields"]["metadata"]["detail_page"]["react_document"]
+    document = transport.request["fields"]["metadata"]["detailPage"]["reactDocument"]
     assert document["schemaVersion"] == "2.0"
     assert "schema_version" not in document
     assert document["root"][0]["children"][0]["type"] == "element"
