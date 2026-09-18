@@ -433,6 +433,16 @@ def run(
 
     prev_filters = previous_filters or {}
     new_filters = contact1["filters"]
+    # 실측 확인된 버그: LLM이 맥락 유지 차원에서 이전 턴 가격을 다시 채워 넣을 때
+    # max_price/min_price 중 엉뚱한 칸에 넣는 경우가 있다 — "50만원 이하"로 확정됐던
+    # 게 다음 턴엔 이유 없이 min_price에 채워져 "50만원 이상"으로 뒤집혔다.
+    # category_changed·color_changed는 이미 "이번 메시지에 실제 신호가 있어야만
+    # 바뀐 걸로 친다"는 원칙인데 가격만 빠져 있었다 — 이번 메시지에 숫자가 아예
+    # 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서 채운 것) 그 값을
+    # 못 믿고 이전 턴 값을 그대로 유지한다.
+    if not any(ch.isdigit() for ch in message):
+        new_filters["max_price"] = prev_filters.get("max_price")
+        new_filters["min_price"] = prev_filters.get("min_price")
     # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야
     # 한다 — 진리값 검사(truthy)를 쓰면 0이 falsy라 "새 조건 없음"으로 잘못 판정돼 재검색을
     # 건너뛴다. color는 빈 리스트/None이 "조건 없음"의 정상 표현이라 진리값 검사를 유지한다.

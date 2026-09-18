@@ -232,6 +232,51 @@ def test_run_narrow_down_treats_zero_price_as_new_filter():
     assert result["candidates"] == fresh
 
 
+def test_run_narrow_down_ignores_price_refilled_into_wrong_field_without_digit_in_message():
+    """실측 확인된 버그: LLM이 맥락 유지 차원에서 이전 턴 가격을 다시 채워 넣을 때
+    max_price/min_price 중 엉뚱한 칸에 넣는 경우가 있다 — "50만원 이하"로 확정됐던
+    게 다음 턴엔 이유 없이 min_price에 채워져 "50만원 이상"으로 뒤집혔다. 이번
+    메시지에 숫자가 아예 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서
+    채운 것) 그 값을 못 믿고 이전 턴 값을 그대로 유지해야 한다 — category_changed·
+    color_changed와 같은 원칙("이번 메시지에 실제 신호가 있어야만 바뀐 걸로 친다")을
+    가격에도 적용."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": 500000,  # 버그: 이전 턴의 max_price(50만원 이하)가 엉뚱한 칸에 재등장
+            "gift_theme": [],
+            "color": [],
+            "query_text": "옹기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [
+        {"product_id": 221, "name": "옹기토 젓갈독", "score": 0.9, "evidence": {}}
+    ]
+
+    def search_and_rank_must_not_be_called(contact1, top_k=3):
+        raise AssertionError(
+            "메시지에 숫자가 없는데 가격이 바뀐 걸로 오판해 재검색하면 안 된다"
+        )
+
+    result = rr.run(
+        "그럼 다른 재질도 볼 수 있을까요?",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        previous_filters={
+            "max_price": 500000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": None,
+        },
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == previous
+
+
 def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
     """intent.py는 이전 턴에 이미 확정된 조건(예: "집들이"→gift_theme=HOUSEWARMING)을
     맥락 유지를 위해 매 턴 계속 다시 채워 넣는다 — 이게 실제로 "새 조건"은 아니므로
