@@ -40,6 +40,29 @@ def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
     assert gen._fetch_artisans([1, 2]) == {}
 
 
+def test_fetch_attrs_returns_empty_dict_when_connect_fails(monkeypatch):
+    """_fetch_prices·_fetch_artisans와 같은 이유(_fetch_rows 리팩토링으로 셋이 이제
+    같은 경로를 타므로) — 원래 이 케이스만 테스트가 빠져 있었다."""
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(
+            psycopg2.OperationalError("연결 실패")
+        ),
+    )
+    assert gen._fetch_attrs([1, 2]) == {}
+
+
+def test_fetch_rows_returns_empty_list_without_connecting_when_no_ids(monkeypatch):
+    """product_ids가 비어 있으면 DB 연결 자체를 열지 않는다."""
+
+    def fail_if_called(*_a, **_kw):
+        raise AssertionError("product_ids가 비었으면 connect를 호출하면 안 된다")
+
+    monkeypatch.setattr(gen.psycopg2, "connect", fail_if_called)
+    assert gen._fetch_rows("SELECT 1", [], label="테스트") == []
+
+
 # ---------------------------------------------------------------------------
 # _format_candidates
 # ---------------------------------------------------------------------------

@@ -275,98 +275,86 @@ def _purpose_relevance_warning(
     )
 
 
+def _fetch_rows(sql: str, product_ids: list[int], *, label: str) -> list[tuple] | None:
+    """product_id 목록으로 조회하는 세 함수(_fetch_prices·_fetch_artisans·_fetch_attrs)가
+    똑같이 반복하던 connect·조회·정리 절차를 한 곳으로 모았다(리팩토링, 동작 변화 없음
+    — 세 함수 모두 여전히 각자 커넥션을 열고 각자 쿼리 1번만 날린다. round-trip 자체를
+    줄이려면 세 쿼리를 하나로 합쳐야 하는데, 그러려면 세 함수를 호출하는 모든
+    지점(orchestrator.py·main.py·테스트)의 인터페이스까지 바꿔야 해서 이번엔 안 건드림
+    — DB 조회 자체는 실측상 웜 상태 0.05초로 무시할 수준이라 그럴 가치도 적다).
+
+    실패하면 None을 반환해 호출부가 각자의 기본값(전부 빈 딕셔너리)으로 대체하게 한다
+    — 예외가 build_reply까지 전파되면 채팅 호출 자체가 실패한다(_fetch_prices 원래
+    docstring 참고).
+    """
+    if not product_ids:
+        return []
+    try:
+        conn = psycopg2.connect(settings.dsn())
+    except psycopg2.Error:
+        logger.exception("%s용 DB 연결 실패", label)
+        return None
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, (list(product_ids),))
+            return cur.fetchall()
+    except psycopg2.Error:
+        logger.exception("%s 쿼리 실패", label)
+        return None
+    finally:
+        conn.close()
+
+
 def _fetch_prices(product_ids: list[int]) -> dict[int, int]:
     """product_id → price. 접점2엔 가격이 없지만, products 테이블 자체엔 있는 공유 컬럼이라
     A의 검색·랭킹을 거치지 않고 B가 직접 조회한다(search.py·ranking.py는 안 건드린다).
-
-    DB 연결·쿼리 실패는 빈 딕셔너리로 흡수한다 — 여기서 예외가 build_reply까지 전파되면
-    채팅 호출 자체가 실패해서, _format_candidates가 원래 대비해 둔 "정보 없음" 대체
-    경로(가격만 못 가져와도 상품 추천 자체는 계속하는 동작)에 도달하지 못한다.
     """
-    if not product_ids:
-        return {}
-    try:
-        conn = psycopg2.connect(settings.dsn())
-    except psycopg2.Error:
-        logger.exception("가격 조회용 DB 연결 실패")
-        return {}
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT product_id, price FROM products WHERE product_id = ANY(%s)",
-                (list(product_ids),),
-            )
-            return dict(cur.fetchall())
-    except psycopg2.Error:
-        logger.exception("가격 조회 쿼리 실패")
-        return {}
-    finally:
-        conn.close()
+    rows = _fetch_rows(
+        "SELECT product_id, price FROM products WHERE product_id = ANY(%s)",
+        product_ids,
+        label="가격 조회",
+    )
+    return dict(rows) if rows is not None else {}
 
 
 def _fetch_artisans(product_ids: list[int]) -> dict[int, dict]:
-    """product_id → {"business_name", "region"}. price와 같은 이유로 B가 직접 조회하고,
-    DB 실패도 같은 이유로 빈 딕셔너리로 흡수한다(_fetch_prices 참고).
-    """
-    if not product_ids:
+    """product_id → {"business_name", "region"}. price와 같은 이유로 B가 직접 조회한다."""
+    rows = _fetch_rows(
+        """
+        SELECT p.product_id, a.business_name, a.region
+        FROM products p JOIN artisans a ON p.artisan_id = a.artisan_id
+        WHERE p.product_id = ANY(%s)
+        """,
+        product_ids,
+        label="장인 조회",
+    )
+    if rows is None:
         return {}
-    try:
-        conn = psycopg2.connect(settings.dsn())
-    except psycopg2.Error:
-        logger.exception("장인 조회용 DB 연결 실패")
-        return {}
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT p.product_id, a.business_name, a.region
-                FROM products p JOIN artisans a ON p.artisan_id = a.artisan_id
-                WHERE p.product_id = ANY(%s)
-                """,
-                (list(product_ids),),
-            )
-            return {
-                product_id: {"business_name": name, "region": region}
-                for product_id, name, region in cur.fetchall()
-            }
-    except psycopg2.Error:
-        logger.exception("장인 조회 쿼리 실패")
-        return {}
-    finally:
-        conn.close()
+    return {
+        product_id: {"business_name": name, "region": region}
+        for product_id, name, region in rows
+    }
 
 
 def _fetch_attrs(product_ids: list[int]) -> dict[int, dict]:
-    """product_id → {"material", "color"}. price·artisan과 같은 이유(_fetch_prices
-    참고)로 B가 직접 조회한다.
+    """product_id → {"material", "color"}. price·artisan과 같은 이유로 B가 직접 조회한다.
 
     실측 확인: _format_candidates에 이 두 필드가 빠져 있던 동안, "무슨 색이야?" 질문에
     evidence 어디에도 없는 색을 모델이 지어내 답한 사례가 있었다(DB 실제 색은 BROWN인데
     "회색"이라고 답함) — 재질·색상 둘 다 products 테이블의 실제 컬럼인데 접점2
     {product_id, name, score, evidence}엔 없어서 후보 블록에 아예 안 실렸던 게 원인이다.
     """
-    if not product_ids:
+    rows = _fetch_rows(
+        "SELECT product_id, material, color FROM products WHERE product_id = ANY(%s)",
+        product_ids,
+        label="재질·색상 조회",
+    )
+    if rows is None:
         return {}
-    try:
-        conn = psycopg2.connect(settings.dsn())
-    except psycopg2.Error:
-        logger.exception("재질·색상 조회용 DB 연결 실패")
-        return {}
-    try:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT product_id, material, color FROM products WHERE product_id = ANY(%s)",
-                (list(product_ids),),
-            )
-            return {
-                product_id: {"material": material, "color": color}
-                for product_id, material, color in cur.fetchall()
-            }
-    except psycopg2.Error:
-        logger.exception("재질·색상 조회 쿼리 실패")
-        return {}
-    finally:
-        conn.close()
+    return {
+        product_id: {"material": material, "color": color}
+        for product_id, material, color in rows
+    }
 
 
 def _format_candidates(
