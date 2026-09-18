@@ -50,6 +50,13 @@ class _RawIntent(BaseModel):
     # intent가 general_chat일 때만 채워지는, 소비자에게 바로 보여줄 답변. 이 필드 덕분에
     # 잡담 턴은 generate.py의 무거운 두 번째 LLM 호출(가격 환각 방지·종목 대조 등 상품
     # 관련 규칙 전체)을 아예 안 거친다 — 애초에 상품이 없는 턴에 그 규칙들은 불필요하다.
+    #
+    # min_length는 일부러 안 건다 — query_text와 마찬가지로 product_search 등 다른
+    # intent에선 빈 문자열이 정상이라(프롬프트 예시 다수가 "chat_reply": ""), 스키마에
+    # 무조건 min_length=1을 걸면 그런 정상 케이스에서도 모델이 억지로 뭔가 채우려 들
+    # 위험이 있다. general_chat·needs_clarification일 때만 비어 있으면 안 된다는 조건은
+    # 이 필드 하나로 표현이 안 돼(다른 필드 값에 따라 달라지는 조건부 제약이라
+    # Pydantic Field로는 못 씀) _to_contact1의 코드 방어(아래)로만 처리한다.
     chat_reply: str = Field(max_length=200)
 
 
@@ -223,6 +230,18 @@ def _to_contact1(
         message,
     )
 
+    needs_clarification = bool(raw.get("needs_clarification"))
+    chat_reply = raw.get("chat_reply") or ""
+    # 실측 확인된 버그: 대화 히스토리가 있으면 "고마워요"류 짧은 인사에 LLM이
+    # intent는 general_chat으로 맞게 분류하면서도 chat_reply를 빈 문자열로 돌려주는
+    # 경우가 100% 재현됐다 — chat_reply엔 max_length만 있고 min_length가 없어(다른
+    # 필드에서도 겪은 "제약이 느슨하면 모델이 빈 값으로 때운다"는 같은 문제) 스키마상
+    # 빈 문자열도 "정답"으로 통과된다. general_chat·needs_clarification 둘 다
+    # orchestrator.py가 이 chat_reply를 그대로 사용자에게 보여주므로, 비어 있으면
+    # 빈 말풍선이 그대로 나간다 — 안전한 기본 문구로 대체한다.
+    if not chat_reply and (intent == "general_chat" or needs_clarification):
+        chat_reply = "무엇을 도와드릴까요?"
+
     return {
         "query_text": query_text,
         "filters": {
@@ -233,9 +252,9 @@ def _to_contact1(
         },
         "intent": intent,
         "wants_reason": bool(raw.get("wants_reason")),
-        "needs_clarification": bool(raw.get("needs_clarification")),
+        "needs_clarification": needs_clarification,
         "wants_alternatives": bool(raw.get("wants_alternatives")),
-        "chat_reply": raw.get("chat_reply") or "",
+        "chat_reply": chat_reply,
     }
 
 

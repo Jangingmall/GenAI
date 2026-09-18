@@ -439,6 +439,40 @@ def test_to_contact1_missing_chat_reply_defaults_empty():
     assert result["chat_reply"] == ""
 
 
+def test_to_contact1_general_chat_with_blank_chat_reply_falls_back_to_generic_reply():
+    """실측 확인된 버그: 대화 히스토리가 있는 상태에서 "고마워요"류 짧은 인사에
+    LLM이 intent는 general_chat으로 맞게 분류하면서도 chat_reply를 빈 문자열로
+    돌려주는 경우가 100% 재현됐다 — _RawIntent.chat_reply에 min_length 제약이
+    없어(query_text와 같은 문제) 스키마상 빈 문자열도 "정답"으로 통과된다.
+    orchestrator.py는 general_chat일 때 이 chat_reply를 그대로 사용자에게
+    보여주므로, 비어 있으면 빈 말풍선이 그대로 나간다 — 안전한 기본 문구로
+    대체해야 한다."""
+    raw = {
+        "intent": "general_chat",
+        "query_text": "",
+        "chat_reply": "",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="고마워요"
+    )
+    assert result["chat_reply"] != ""
+
+
+def test_to_contact1_needs_clarification_with_blank_chat_reply_falls_back_to_generic_reply():
+    """needs_clarification=true일 때도 chat_reply가 그대로 사용자에게 나가므로
+    (orchestrator.py의 되묻기 분기) 같은 방어가 필요하다."""
+    raw = {
+        "intent": "product_search",
+        "query_text": "",
+        "needs_clarification": True,
+        "chat_reply": "",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="선물"
+    )
+    assert result["chat_reply"] != ""
+
+
 def test_to_contact1_unknown_intent_becomes_general_chat():
     raw = {"intent": "made_up_intent", "query_text": "아무말"}
     result = it._to_contact1(
