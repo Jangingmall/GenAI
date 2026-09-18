@@ -50,20 +50,35 @@ class _RawIntent(BaseModel):
     # intent가 general_chat일 때만 채워지는, 소비자에게 바로 보여줄 답변. 이 필드 덕분에
     # 잡담 턴은 generate.py의 무거운 두 번째 LLM 호출(가격 환각 방지·종목 대조 등 상품
     # 관련 규칙 전체)을 아예 안 거친다 — 애초에 상품이 없는 턴에 그 규칙들은 불필요하다.
+    #
+    # min_length는 일부러 안 건다 — query_text와 마찬가지로 product_search 등 다른
+    # intent에선 빈 문자열이 정상이라(프롬프트 예시 다수가 "chat_reply": ""), 스키마에
+    # 무조건 min_length=1을 걸면 그런 정상 케이스에서도 모델이 억지로 뭔가 채우려 들
+    # 위험이 있다. general_chat·needs_clarification일 때만 비어 있으면 안 된다는 조건은
+    # 이 필드 하나로 표현이 안 돼(다른 필드 값에 따라 달라지는 조건부 제약이라
+    # Pydantic Field로는 못 씀) _to_contact1의 코드 방어(아래)로만 처리한다.
     chat_reply: str = Field(max_length=200)
 
 
 _RAW_INTENT_SCHEMA = _RawIntent.model_json_schema()  # 매 요청마다 재계산할 필요 없다
 
 
-# (단위, 배수) — 배수가 큰 것부터 검사한다. 실측 확인된 버그: "억"·"천"이 아예 없어서
-# "5천원"이 5원으로, "1억원"이 1원으로 파싱됐다("만"만 처리하고 나머지는 맨 숫자만
-# 뽑는 폴백으로 떨어짐). 이 도메인(공예품) 상품가에 "억"이 실제로 나올 일은 거의
-# 없지만, 폴백 함수 자체의 정확성을 위해 갖춰둔다.
+# (단위, 배수) — 배수가 큰 것부터, 또한 복합 단위("천만"·"백만"·"십만")를 단일
+# 단위("천"·"백")보다 먼저 검사한다. 실측 확인된 버그: "1천만원"이 "만" 바로 앞에
+# 숫자가 없다는 이유로(그 자리엔 "천") "천" 단위로 잘못 떨어져 1000원으로,
+# "3백만원"은 "만" 앞이 "백"이라 아예 매칭이 안 돼 맨 숫자 폴백(3원)까지 떨어졌다
+# — 만 단위 앞에 천·백·십이 붙는 한국어 복합 표기를 명시적으로 다뤄야 한다.
+# ("1억5천만원"처럼 억+만을 더하는 표기는 이 도메인(공예품) 상품가에 나올 일이
+# 거의 없어 다루지 않는다 — 그런 경우 "억" 단위만 반영된다.)
 _WON_UNIT_MULTIPLIERS: tuple[tuple[str, int], ...] = (
     ("억", 100_000_000),
+    ("천만", 10_000_000),
+    ("백만", 1_000_000),
+    ("십만", 100_000),
     ("만", 10_000),
     ("천", 1_000),
+    ("백", 100),
+    ("십", 10),
 )
 
 
@@ -142,16 +157,24 @@ def _price_decade_range(message: str) -> tuple[int, int] | None:
 
     실측 확인된 문제: 기존엔 INTENT_SYSTEM이 "5만원대"를 그냥 숫자 50000 하나로만
     바꾸라고 가르쳐서, 사실상 "5만원 이하"와 똑같이 취급됐다 — DB에 실제로
-    51,000~59,999원 사이 상품이 17개 있는데도 전부 빠졌다. "-대"는 십진 자릿수 한
-    칸(만/천/억) 구간을 뜻하므로 그 시작·끝을 코드로 확정한다 — 어느 필드에 넣을지
-    LLM 판단에 기대지 않는다.
+    51,000~59,999원 사이 상품이 17개 있는데도 전부 빠졌다. "-대"는 "20대"(나이
+    20~29)와 같은 원리로, 계수의 마지막 자리가 변하는 것으로 본다 — 계수가 몇
+    자리든(3만원대=1만원 폭, 50만원대=10만원 폭, 120만원대=100만원 폭) 자릿수만큼
+    폭도 같이 넓어진다. 어느 필드에 넣을지 LLM 판단에 기대지 않고 코드로 확정한다.
     """
     match = _PRICE_DECADE_RE.search(message)
     if not match:
         return None
     multiplier = {"억": 100_000_000, "만": 10_000, "천": 1_000}[match.group(2)]
-    base = int(float(match.group(1)) * multiplier)
-    return base, base + multiplier - 1
+    coefficient_text = match.group(1)
+    # 계수가 한 자리("3")면 1만원 폭 그대로, 두 자리 이상("50"·"120")이면 10배(10만원
+    # 폭)로 고정한다 — "120만원대"가 "50만원대"보다 더 넓어지진 않는다("20대"가
+    # "120대"라고 자릿수만큼 계속 넓어지지 않는 것과 같다. 소수(예: "3.5만원대")는
+    # 정수부만 자릿수로 센다.
+    digit_count = len(coefficient_text.split(".")[0])
+    band = multiplier * (10 if digit_count >= 2 else 1)
+    base = int(float(coefficient_text) * multiplier)
+    return base, base + band - 1
 
 
 def _resolve_price_filters(
@@ -207,6 +230,18 @@ def _to_contact1(
         message,
     )
 
+    needs_clarification = bool(raw.get("needs_clarification"))
+    chat_reply = raw.get("chat_reply") or ""
+    # 실측 확인된 버그: 대화 히스토리가 있으면 "고마워요"류 짧은 인사에 LLM이
+    # intent는 general_chat으로 맞게 분류하면서도 chat_reply를 빈 문자열로 돌려주는
+    # 경우가 100% 재현됐다 — chat_reply엔 max_length만 있고 min_length가 없어(다른
+    # 필드에서도 겪은 "제약이 느슨하면 모델이 빈 값으로 때운다"는 같은 문제) 스키마상
+    # 빈 문자열도 "정답"으로 통과된다. general_chat·needs_clarification 둘 다
+    # orchestrator.py가 이 chat_reply를 그대로 사용자에게 보여주므로, 비어 있으면
+    # 빈 말풍선이 그대로 나간다 — 안전한 기본 문구로 대체한다.
+    if not chat_reply and (intent == "general_chat" or needs_clarification):
+        chat_reply = "무엇을 도와드릴까요?"
+
     return {
         "query_text": query_text,
         "filters": {
@@ -217,9 +252,9 @@ def _to_contact1(
         },
         "intent": intent,
         "wants_reason": bool(raw.get("wants_reason")),
-        "needs_clarification": bool(raw.get("needs_clarification")),
+        "needs_clarification": needs_clarification,
         "wants_alternatives": bool(raw.get("wants_alternatives")),
-        "chat_reply": raw.get("chat_reply") or "",
+        "chat_reply": chat_reply,
     }
 
 

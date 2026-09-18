@@ -40,6 +40,29 @@ def test_fetch_artisans_returns_empty_dict_when_connect_fails(monkeypatch):
     assert gen._fetch_artisans([1, 2]) == {}
 
 
+def test_fetch_attrs_returns_empty_dict_when_connect_fails(monkeypatch):
+    """_fetch_prices·_fetch_artisans와 같은 이유(_fetch_rows 리팩토링으로 셋이 이제
+    같은 경로를 타므로) — 원래 이 케이스만 테스트가 빠져 있었다."""
+    monkeypatch.setattr(
+        gen.psycopg2,
+        "connect",
+        lambda *_a, **_kw: (_ for _ in ()).throw(
+            psycopg2.OperationalError("연결 실패")
+        ),
+    )
+    assert gen._fetch_attrs([1, 2]) == {}
+
+
+def test_fetch_rows_returns_empty_list_without_connecting_when_no_ids(monkeypatch):
+    """product_ids가 비어 있으면 DB 연결 자체를 열지 않는다."""
+
+    def fail_if_called(*_a, **_kw):
+        raise AssertionError("product_ids가 비었으면 connect를 호출하면 안 된다")
+
+    monkeypatch.setattr(gen.psycopg2, "connect", fail_if_called)
+    assert gen._fetch_rows("SELECT 1", [], label="테스트") == []
+
+
 # ---------------------------------------------------------------------------
 # _format_candidates
 # ---------------------------------------------------------------------------
@@ -145,6 +168,23 @@ def test_filter_by_category_excludes_wood_item_hidden_by_ambiguous_match():
     ]
     filtered = gen._filter_by_category(candidates, "도자기 선물 추천해줘")
     assert [c["product_id"] for c in filtered] == [78]
+
+
+def test_is_explain_request_tolerates_accidental_space_in_keyword():
+    """실측 확인된 버그: "설 명해줄래?"처럼 "설명해" 중간에 실수로 띄어쓰기가
+    들어가면 "설명해" in message 검사가 실패해 설명 요청 자체를 못 알아챈다.
+    _mentioned_category가 이미 쓰는 패턴(원문에서 못 찾으면 공백 제거 후
+    재시도)을 여기도 적용한다."""
+    assert gen.is_explain_request("각 상품들 설 명해줄래?") is True
+    assert gen.is_explain_request("좀 더 자 세히 알려줘") is True
+
+
+def test_is_explain_request_still_false_for_unrelated_message():
+    assert gen.is_explain_request("찻잔 있나요") is False
+
+
+def test_is_all_request_tolerates_accidental_space_in_keyword():
+    assert gen.is_all_request("전 체 다 보여줘") is True
 
 
 def test_build_reply_caps_candidates_at_max_displayed_even_with_larger_pool():
@@ -544,6 +584,26 @@ def test_extract_price_superlative_none_for_ordinal_or_unrelated():
     assert gen.extract_price_superlative("무슨 색이야?") is None
 
 
+# ---------------------------------------------------------------------------
+# extract_price_rank — "두번째로 저렴한 것"류 순번+가격 최상급 결합 표현 판단
+# ---------------------------------------------------------------------------
+
+
+def test_extract_price_rank_recognizes_ordinal_plus_direction():
+    """ "가장"·"제일" 없이 "저렴"·"비싼"만 있어도 순번과 결합되면 뽑혀야 한다 —
+    extract_price_superlative는 "가장"·"제일"을 요구해서 이 문장들은 못 잡는다."""
+    assert gen.extract_price_rank("두번째로 저렴한 것 설명해줘", 3) == (2, "min")
+    assert gen.extract_price_rank("2번째로 비싼 것 알려줘", 3) == (2, "max")
+    assert gen.extract_price_rank("세번째로 싼 거 자세히 봐줘", 3) == (3, "min")
+
+
+def test_extract_price_rank_none_without_ordinal_or_without_direction():
+    """순번만 있고 가격 방향이 없으면(일반 순번 질문), 방향만 있고 순번이 없으면
+    (예: "가장 비싼 것" — extract_price_superlative가 따로 처리) None이어야 한다."""
+    assert gen.extract_price_rank("두번째 상품 설명해줘", 3) is None
+    assert gen.extract_price_rank("가장 비싼 것 알려줘", 3) is None
+
+
 def test_explain_products_calls_llm_once_and_shares_reply_across_products():
     """explain_product를 후보 수만큼 반복 호출하면 응답 시간이 배로 늘어난다 —
     explain_products는 LLM을 정확히 1번만 불러야 한다."""
@@ -597,6 +657,56 @@ def test_format_explain_block_shows_no_info_when_attr_missing():
     block = gen._format_explain_block(candidate)
     assert "재질: 정보 없음" in block
     assert "색상: 정보 없음" in block
+
+
+def test_explain_products_includes_history_for_purpose_context(monkeypatch):
+    """실측 확인된 문제: "셰프 친구 개업 축하 선물로 15만원 이하 찾아줘" 다음
+    "이유가 뭐야?"에 explain_products가 evidence만 기계적으로 나열하고 "개업 축하"라는
+    원래 맥락을 전혀 반영하지 않았다 — history를 아예 안 받고 있어서 LLM이 그 맥락
+    자체를 볼 수 없었던 게 원인이다. history를 받으면 user_content에 그 맥락이
+    포함돼야 한다."""
+    captured = {}
+
+    def fake_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps({"reply": "설명입니다.", "suggestions": []})
+
+    candidates = [{"product_id": 1, "name": "치자염 방석", "evidence": {}}]
+    history = [
+        {"role": "user", "content": "셰프 친구 개업 선물로 15만원 이하 찾아줘"},
+        {"role": "assistant", "content": "15만 원 이하로 3점을 골랐어요."},
+    ]
+    gen.explain_products(
+        "이 제품들을 추천한 이유는 뭐야?",
+        candidates,
+        chat=fake_chat,
+        fetch_attrs=_no_attrs,
+        history=history,
+    )
+    assert "개업" in captured["user_content"]
+
+
+def test_explain_product_includes_history_for_purpose_context():
+    """explain_products와 같은 이유로 explain_product(단일 상품)도 history를 받아야 한다."""
+    captured = {}
+
+    def fake_chat(messages, schema, *, think, model=None):
+        captured["user_content"] = messages[1]["content"]
+        return json.dumps({"reply": "설명입니다.", "suggestions": []})
+
+    candidate = {"product_id": 1, "name": "치자염 방석", "evidence": {}}
+    history = [
+        {"role": "user", "content": "셰프 친구 개업 선물로 15만원 이하 찾아줘"},
+        {"role": "assistant", "content": "15만 원 이하로 3점을 골랐어요."},
+    ]
+    gen.explain_product(
+        "이거 설명해줘",
+        candidate,
+        chat=fake_chat,
+        fetch_attrs=_no_attrs,
+        history=history,
+    )
+    assert "개업" in captured["user_content"]
 
 
 def test_explain_product_fetches_attrs_by_product_id(monkeypatch):

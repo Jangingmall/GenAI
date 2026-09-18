@@ -37,6 +37,7 @@ from app.pipeline.generate import (
     explain_product,
     explain_products,
     extract_ordinal,
+    extract_price_rank,
     extract_price_superlative,
     is_all_request,
     is_explain_request,
@@ -88,7 +89,9 @@ def _is_disambiguation_followup(history: list[dict] | None) -> bool:
     if not history:
         return False
     last = history[-1]
-    return last.get("role") == "assistant" and last.get("content", "").startswith(
+    # content가 키 자체로 없을 수도(get 기본값 "") 있고, 백엔드가 content:null을
+    # 실어 보내서 값이 None일 수도(get 기본값 안 먹음) 있다 — 둘 다 ""로 취급한다.
+    return last.get("role") == "assistant" and (last.get("content") or "").startswith(
         _DISAMBIGUATION_PROMPT
     )
 
@@ -220,6 +223,19 @@ def run(
     run_recommend.py, A담당 코드 안 건드림), top_k를 넉넉히 넘겨 더 받은 뒤 이미
     보여준 product_id만 code에서 제외하면 진짜 다른 상품을 보여줄 수 있다.
     """
+    # 실제 백엔드(ChatService.sendMessage)는 사용자 메시지를 먼저 DB에 저장한 다음
+    # 그 저장분까지 포함해 history를 조회해서 넘긴다(코드로 직접 확인됨) — 그래서
+    # 실전 history의 마지막 줄은 항상 message와 똑같이 중복된다. 이 중복이 있으면
+    # _is_disambiguation_followup·_last_user_message가 "방금 내 발화"를 "직전 턴"으로
+    # 잘못 보게 된다. 백엔드가 순서를 고치든 말든 우리 쪽에서 안전하게 걸러낸다 — 진짜
+    # 사용자가 완전히 같은 말을 두 번 연달아 한 경우만 예외적으로 못 잡지만(드묾), 그
+    # 경우도 걸러내서 생기는 손해는 크지 않다.
+    if (
+        history
+        and history[-1].get("role") == "user"
+        and history[-1].get("content") == message
+    ):
+        history = history[:-1]
 
     def _short_circuit(
         reply: str,
@@ -264,7 +280,22 @@ def run(
     # 먼저 해석한다(clarification subdialogue 원칙 — 명확화 질문 다음 턴을 새 메시지로
     # 재분류하면 안 된다는 실측 확인된 버그: "모두"가 일반 narrow_down으로 새 분류되면서
     # evidence 없는 뭉뚱그린 답이 나갔었다).
-    if is_explain_request(message) or _is_disambiguation_followup(history):
+    disambiguation_followup = _is_disambiguation_followup(history)
+    if disambiguation_followup:
+        # 실측 확인된 버그: 되물음 다음 턴에 순번·"모두"·가격최상급 어느 것도 아닌
+        # 완전히 다른 종목으로 답하면(예: "아 됐고 목공예로 보여줘"), ordinal이 계속
+        # None으로 나와 매번 같은 되물음을 반복해 대화가 갇혔다. classify_and_extract는
+        # 아직 안 돌았지만(아래에서 호출) taxonomy 대조(_mentioned_category)는 추가 LLM
+        # 호출 없이 바로 쓸 수 있어, 이전 후보와 다른 종목이 명확히 언급되면 되물음
+        # 루프에서 빠져나와 새 화제로 취급한다(가격·색상만 바뀐 경우까지는 이 코드
+        # 판단만으로는 못 잡는다 — 종목 전환만 taxonomy로 확정 가능하다).
+        mentioned = _mentioned_category(message)
+        if mentioned is not None and not any(
+            _effective_category(c) == mentioned for c in (previous_candidates or [])
+        ):
+            disambiguation_followup = False
+
+    if is_explain_request(message) or disambiguation_followup:
         if not previous_candidates:
             return _short_circuit(
                 "설명해 드릴 상품이 아직 없어요. 먼저 어떤 걸 찾으실지 말씀해 주세요!",
@@ -272,8 +303,14 @@ def run(
                 candidates=[],
                 shown_product_ids=[],
             )
-        if is_all_request(message):
-            explained = explain_products(message, previous_candidates, chat=chat)
+        if len(previous_candidates) == 1:
+            # 후보가 1개뿐이면 "몇 번째"를 고를 필요 자체가 없다 — 순번 없는
+            # 지시대명사("그거 설명해줘")로 와도 불필요하게 되묻지 말고 바로 그
+            # 상품을 설명한다(실측 확인된 문제: 후보 1개인데도 "1번/전체 설명
+            # 중에서 골라주세요"로 되물어 대화 턴을 한 번 더 낭비함).
+            explained = explain_product(
+                message, previous_candidates[0], chat=chat, history=history
+            )
             return _short_circuit(
                 explained["reply"],
                 "narrow_down",
@@ -282,12 +319,47 @@ def run(
                 candidates=previous_candidates,
                 shown_product_ids=explained["product_ids"],
             )
-        ordinal = extract_ordinal(message, len(previous_candidates))
-        if ordinal is None:
-            # "가장 저렴한 것"류는 순번이 아니라 가격으로 상품을 가리킨다 — 이미
-            # 직전 턴에 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번
-            # "몇 번째예요?"로 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는
-            # LLM 호출 없이 이미 있는 fetch_prices로 즉시 판단 가능하다.
+        if is_all_request(message):
+            explained = explain_products(
+                message, previous_candidates, chat=chat, history=history
+            )
+            return _short_circuit(
+                explained["reply"],
+                "narrow_down",
+                product_ids=explained["product_ids"],
+                suggestions=explained["suggestions"],
+                candidates=previous_candidates,
+                shown_product_ids=explained["product_ids"],
+            )
+        # "두번째로 저렴한 것"류 — 순번 표현과 가격 최상급이 같이 있으면 목록
+        # 순서(검색 관련도)가 아니라 가격 순서로 몇 번째인지 판단해야 한다(실측
+        # 확인된 버그: extract_ordinal만 보면 "목록상 2번째"로 잘못 짚어 전혀
+        # 다른 — 심하면 정반대인 — 상품을 조용히 설명해버렸다). extract_ordinal보다
+        # 먼저 확인한다.
+        price_rank = extract_price_rank(message, len(previous_candidates))
+        if price_rank is not None:
+            rank, direction = price_rank
+            prices = fetch_prices([c["product_id"] for c in previous_candidates])
+            priced = sorted(
+                (
+                    (i, prices[c["product_id"]])
+                    for i, c in enumerate(previous_candidates)
+                    if c["product_id"] in prices
+                ),
+                key=lambda pair: pair[1],
+                reverse=(direction == "max"),
+            )
+            # 가격 조회 자체가 실패했거나(빈 딕셔너리) rank가 실제 개수보다 크면
+            # (예: 후보 2개인데 "세번째로 싼 것") 잘못 추측하지 말고 되묻는다.
+            ordinal = priced[rank - 1][0] + 1 if rank <= len(priced) else None
+        else:
+            ordinal = extract_ordinal(message, len(previous_candidates))
+        if ordinal is None and price_rank is None:
+            # "가장 저렴한 것"류(순번 없이 최상급만)는 위 price_rank로는 안 잡힌다
+            # (extract_price_rank는 순번이 있어야만 값을 준다) — 이미 직전 턴에
+            # 가격을 알려줬는데도(narrow_down 순수 속성 질문) 매번 "몇 번째예요?"로
+            # 되묻던 문제(실측 확인)를 여기서 고친다. 가격 비교는 LLM 호출 없이
+            # 이미 있는 fetch_prices로 즉시 판단 가능하다.
             superlative = extract_price_superlative(message)
             if superlative is not None:
                 prices = fetch_prices([c["product_id"] for c in previous_candidates])
@@ -312,7 +384,7 @@ def run(
                 candidates=previous_candidates,
             )
         target = previous_candidates[ordinal - 1]
-        explained = explain_product(message, target, chat=chat)
+        explained = explain_product(message, target, chat=chat, history=history)
         return _short_circuit(
             explained["reply"],
             "narrow_down",
@@ -364,7 +436,20 @@ def run(
             filters=contact1["filters"],
         )
 
-    if contact1.get("wants_reason"):
+    # "아니 그거 말고 목공예로" — 가격·색상 필터엔 안 잡히는 종목·재질 전환 요청.
+    # wants_reason 분기보다 먼저 계산한다 — 실측 확인된 버그: 순서가 반대였을 땐
+    # "금속 공예품이 왜 좋은지 설명해줘"처럼 이유를 물으면서 종목도 바꾼 문장이
+    # previous_candidates(예: 도자기)를 그대로 explain_products에 넘겨 엉뚱한 종목을
+    # 설명해버렸다 — 종목이 바뀌었으면 이유 질문이어도 먼저 재검색해야 한다.
+    # taxonomy.CATEGORY_SIGNALS로 이미 검증된 종목 대조 로직(generate.py)을 그대로
+    # 재사용해 새 LLM 판단 없이 코드로 확정한다.
+    mentioned_category = _mentioned_category(message)
+    category_changed = mentioned_category is not None and not any(
+        _effective_category(c) == mentioned_category
+        for c in (previous_candidates or [])
+    )
+
+    if contact1.get("wants_reason") and not category_changed:
         # "왜 추천했어?"류 — 어떤 상품을(순번·"모두") 설명할지는 코드로 확정 판단하지만
         # (파일 상단 is_explain_request 분기), "이유를 궁금해하는 질문인가" 자체는
         # intent 분류 LLM이 이미 판단해 넘겨준 신호를 그대로 쓴다. 순번을 안 짚었으므로
@@ -377,7 +462,9 @@ def run(
                 filters=contact1["filters"],
                 shown_product_ids=[],
             )
-        explained = explain_products(message, previous_candidates, chat=chat)
+        explained = explain_products(
+            message, previous_candidates, chat=chat, history=history
+        )
         return _short_circuit(
             explained["reply"],
             contact1["intent"],
@@ -390,6 +477,16 @@ def run(
 
     prev_filters = previous_filters or {}
     new_filters = contact1["filters"]
+    # 실측 확인된 버그: LLM이 맥락 유지 차원에서 이전 턴 가격을 다시 채워 넣을 때
+    # max_price/min_price 중 엉뚱한 칸에 넣는 경우가 있다 — "50만원 이하"로 확정됐던
+    # 게 다음 턴엔 이유 없이 min_price에 채워져 "50만원 이상"으로 뒤집혔다.
+    # category_changed·color_changed는 이미 "이번 메시지에 실제 신호가 있어야만
+    # 바뀐 걸로 친다"는 원칙인데 가격만 빠져 있었다 — 이번 메시지에 숫자가 아예
+    # 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서 채운 것) 그 값을
+    # 못 믿고 이전 턴 값을 그대로 유지한다.
+    if not any(ch.isdigit() for ch in message):
+        new_filters["max_price"] = prev_filters.get("max_price")
+        new_filters["min_price"] = prev_filters.get("min_price")
     # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야
     # 한다 — 진리값 검사(truthy)를 쓰면 0이 falsy라 "새 조건 없음"으로 잘못 판정돼 재검색을
     # 건너뛴다. color는 빈 리스트/None이 "조건 없음"의 정상 표현이라 진리값 검사를 유지한다.
@@ -397,21 +494,14 @@ def run(
         new_filters.get(k) is not None and new_filters.get(k) != prev_filters.get(k)
         for k in ("max_price", "min_price")
     )
-    color_changed = bool(new_filters.get("color")) and new_filters.get(
-        "color"
-    ) != prev_filters.get("color")
-    # "아니 그거 말고 목공예로" — 가격·색상 필터엔 안 잡히는 종목·재질 전환 요청.
-    # 실측 확인된 버그: 이 신호가 없으면 이전(다른 종목) 후보를 그대로 재사용해
-    # generate.py의 종목 대조(_filter_by_category)가 전부 걸러내고 "카탈로그에 없다"고
-    # 답해버린다 — 실제로는 새 종목으로 재검색을 아예 안 해본 것뿐인데, 결과만 보면
-    # "진짜 그 종목이 카탈로그에 없는 경우"와 구별이 안 된다. taxonomy.CATEGORY_SIGNALS로
-    # 이미 검증된 종목 대조 로직(generate.py)을 그대로 재사용해 새 LLM 판단 없이 코드로
-    # 확정한다.
-    mentioned_category = _mentioned_category(message)
-    category_changed = mentioned_category is not None and not any(
-        _effective_category(c) == mentioned_category
-        for c in (previous_candidates or [])
-    )
+    # color도 gift_theme과 같은 이유로 순서가 턴마다 흔들릴 수 있는 리스트라(실측
+    # 확인) set으로 비교한다 — 리스트 그대로 `!=` 비교하면 값은 같은데 순서만 바뀐
+    # 것도 "새 조건"으로 오판해 불필요한 재검색을 유발한다.
+    color_changed = bool(new_filters.get("color")) and set(
+        new_filters.get("color") or []
+    ) != set(prev_filters.get("color") or [])
+    # mentioned_category·category_changed는 wants_reason 분기보다 앞에서 이미 계산했다
+    # (위 참고).
     has_new_filter = price_changed or color_changed or category_changed
     # "다른 거 추천해줘"·"그거말고 또 없어?" — 새 조건은 없지만 지금 후보 말고 다른
     # 상품을 원하는 경우다. 실측 확인: 이걸 그냥 속성 질문("가격대 확인해줘")과 똑같이
@@ -542,10 +632,18 @@ def run(
         # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
         # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
         # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다. 0건으로
-        # 끝난 재검색도 같은 이유로 "안 쓰인 것"과 동일하게 취급한다.
+        # 끝난 재검색도 종목이 안 바뀌었으면 같은 이유로 "안 쓰인 것"과 동일하게
+        # 취급해 이전 값으로 되돌린다.
+        #
+        # 다만 category_changed면 되돌리지 않는다 — 실측 확인된 버그: "도자기
+        # 50만원대"가 0건이어도(종목을 이번 턴에 실제로 바꿔 시도한 것) query_text를
+        # 종목 전환 *이전*(예: "금속공예") 값으로 되돌리면, 바로 다음 턴("50만원
+        # 이하로는?"처럼 가격만 조정하는 순수 후속 질문)이 위 topic_context 이어붙이기
+        # 로직 때문에 엉뚱하게 옛 종목으로 재검색된다. 이번 턴에 실제로 시도한(비록
+        # 0건이지만) 새 종목을 다음 턴 참조용으로 남겨야 한다.
         "query_text": (
             (previous_query_text or "")
-            if search_found_nothing
+            if search_found_nothing and not category_changed
             else (contact1["query_text"] if did_search else (previous_query_text or ""))
         ),
     }

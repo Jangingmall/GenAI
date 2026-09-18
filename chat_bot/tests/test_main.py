@@ -9,6 +9,7 @@ TestClient(app)를 컨텍스트 매니저(with) 없이 쓰면 lifespan(=orchestr
 
 import json
 
+import psycopg2
 import pytest
 import requests
 from fastapi.testclient import TestClient
@@ -142,6 +143,30 @@ def test_chat_returns_friendly_reply_on_malformed_llm_json():
         return "죄송해요, 요청을 이해하지 못했어요."  # JSON이 아닌 순수 텍스트
 
     _override(chat=malformed_chat, search_and_rank=lambda contact1, top_k=3: [])
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["product_ids"] == []
+    assert "다시 시도" in body["reply"]
+
+
+def test_chat_returns_friendly_reply_on_db_connection_failure():
+    """search.py의 psycopg2.connect()는 try/except 밖에 있어 DB 접속 실패 시
+    psycopg2.OperationalError를 던진다(A담당 파일이라 여기서 직접 안 고치고, main.py의
+    except 튜플만 넓힌다). 지금 except엔 이 타입이 없어서 안 잡히면 E29와 같은
+    "친절한 fallback" 대신 FastAPI 기본 500이 나간다 — 실측 확인된 버그."""
+
+    def db_down_search_and_rank(contact1, top_k=3):
+        raise psycopg2.OperationalError("could not connect to server")
+
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=db_down_search_and_rank,
+    )
 
     response = client.post(
         "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}

@@ -37,6 +37,15 @@ def test_price_to_won_parses_eok_unit():
     assert it._price_to_won("1억원") == 100000000
 
 
+def test_price_to_won_parses_cheonman_compound_unit():
+    """실측 확인된 버그: "천만"처럼 만 단위 앞에 "천"이 붙는 복합 단위는 "만" 바로
+    앞에 숫자가 없어서(그 자리엔 "천"이 있음) "만" 매칭이 실패하고 "천" 매칭으로
+    떨어져 1000배 작게 파싱됐다("1천만원" → 1000원). "3백만원"도 같은 이유로
+    "만" 앞이 "백"이라 매칭이 아예 안 되고 맨 숫자 폴백(3)까지 떨어졌다."""
+    assert it._price_to_won("1천만원") == 10000000
+    assert it._price_to_won("3백만원") == 3000000
+
+
 def test_price_to_won_empty_is_none():
     assert it._price_to_won("") is None
 
@@ -300,6 +309,48 @@ def test_to_contact1_dae_suffix_works_for_cheon_unit():
     assert result["filters"]["max_price"] == 3999
 
 
+def test_to_contact1_dae_suffix_widens_with_two_digit_coefficient():
+    """ "50만원대"는 "20대"(나이 20~29)와 같은 원리로, 계수("50")의 마지막 자리가
+    변하는 것으로 본다 — 500,000~509,999(1만원 폭)가 아니라 500,000~599,999
+    (10만원 폭)여야 한다. 한 자리 계수("3만원대"→3만원 폭 1만원)와 자릿수만
+    다를 뿐 같은 규칙이다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": None,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "50만원대 도자기 추천해줘",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="50만원대 도자기 추천해줘",
+    )
+    assert result["filters"]["min_price"] == 500000
+    assert result["filters"]["max_price"] == 599999
+
+
+def test_to_contact1_dae_suffix_widens_with_three_digit_coefficient():
+    raw = {
+        "intent": "product_search",
+        "max_price": None,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "120만원대 가구 있어요",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="120만원대 가구 있어요",
+    )
+    assert result["filters"]["min_price"] == 1200000
+    assert result["filters"]["max_price"] == 1299999
+
+
 def test_price_direction_range_question_not_overridden_by_dae_logic():
     """ "3만원 이상 5만원 이하"처럼 이미 명확한 이상·이하 범위 질문은 "-대" 보정
     대상이 아니다(direction이 None이 아니라서 애초에 안 걸림) — 기존 동작 유지."""
@@ -386,6 +437,40 @@ def test_to_contact1_missing_chat_reply_defaults_empty():
         raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="찻잔"
     )
     assert result["chat_reply"] == ""
+
+
+def test_to_contact1_general_chat_with_blank_chat_reply_falls_back_to_generic_reply():
+    """실측 확인된 버그: 대화 히스토리가 있는 상태에서 "고마워요"류 짧은 인사에
+    LLM이 intent는 general_chat으로 맞게 분류하면서도 chat_reply를 빈 문자열로
+    돌려주는 경우가 100% 재현됐다 — _RawIntent.chat_reply에 min_length 제약이
+    없어(query_text와 같은 문제) 스키마상 빈 문자열도 "정답"으로 통과된다.
+    orchestrator.py는 general_chat일 때 이 chat_reply를 그대로 사용자에게
+    보여주므로, 비어 있으면 빈 말풍선이 그대로 나간다 — 안전한 기본 문구로
+    대체해야 한다."""
+    raw = {
+        "intent": "general_chat",
+        "query_text": "",
+        "chat_reply": "",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="고마워요"
+    )
+    assert result["chat_reply"] != ""
+
+
+def test_to_contact1_needs_clarification_with_blank_chat_reply_falls_back_to_generic_reply():
+    """needs_clarification=true일 때도 chat_reply가 그대로 사용자에게 나가므로
+    (orchestrator.py의 되묻기 분기) 같은 방어가 필요하다."""
+    raw = {
+        "intent": "product_search",
+        "query_text": "",
+        "needs_clarification": True,
+        "chat_reply": "",
+    }
+    result = it._to_contact1(
+        raw, gift_themes=prompts.GIFT_THEMES, colors=prompts.COLORS, message="선물"
+    )
+    assert result["chat_reply"] != ""
 
 
 def test_to_contact1_unknown_intent_becomes_general_chat():
@@ -510,10 +595,11 @@ def test_classify_and_extract_parses_injected_response():
         "어머니 환갑 선물로 30만원대 찾아요", chat=_fake_chat(payload)
     )
     assert result["intent"] == "gift_recommendation"
-    # "30만원대"는 "-대" 구간 보정이 300000~309999로 확정한다(아래 별도 테스트
-    # 참고) — 이 테스트는 원래 파싱 배선 자체를 보는 것이라 그 보정된 값을 그대로
-    # 기대하도록 갱신했다.
-    assert result["filters"]["max_price"] == 309999
+    # "30만원대"는 "-대" 구간 보정이 300000~399999로 확정한다(아래 별도 테스트
+    # 참고 — "20대"=20~29와 같은 원리로 계수 "30"의 마지막 자리가 변한다) — 이
+    # 테스트는 원래 파싱 배선 자체를 보는 것이라 그 보정된 값을 그대로 기대하도록
+    # 갱신했다.
+    assert result["filters"]["max_price"] == 399999
     assert result["filters"]["min_price"] == 300000
     assert result["filters"]["gift_theme"] == ["BIRTHDAY_60TH"]
 

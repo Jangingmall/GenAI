@@ -232,6 +232,51 @@ def test_run_narrow_down_treats_zero_price_as_new_filter():
     assert result["candidates"] == fresh
 
 
+def test_run_narrow_down_ignores_price_refilled_into_wrong_field_without_digit_in_message():
+    """실측 확인된 버그: LLM이 맥락 유지 차원에서 이전 턴 가격을 다시 채워 넣을 때
+    max_price/min_price 중 엉뚱한 칸에 넣는 경우가 있다 — "50만원 이하"로 확정됐던
+    게 다음 턴엔 이유 없이 min_price에 채워져 "50만원 이상"으로 뒤집혔다. 이번
+    메시지에 숫자가 아예 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서
+    채운 것) 그 값을 못 믿고 이전 턴 값을 그대로 유지해야 한다 — category_changed·
+    color_changed와 같은 원칙("이번 메시지에 실제 신호가 있어야만 바뀐 걸로 친다")을
+    가격에도 적용."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": 500000,  # 버그: 이전 턴의 max_price(50만원 이하)가 엉뚱한 칸에 재등장
+            "gift_theme": [],
+            "color": [],
+            "query_text": "옹기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [
+        {"product_id": 221, "name": "옹기토 젓갈독", "score": 0.9, "evidence": {}}
+    ]
+
+    def search_and_rank_must_not_be_called(contact1, top_k=3):
+        raise AssertionError(
+            "메시지에 숫자가 없는데 가격이 바뀐 걸로 오판해 재검색하면 안 된다"
+        )
+
+    result = rr.run(
+        "그럼 다른 재질도 볼 수 있을까요?",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        previous_filters={
+            "max_price": 500000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": None,
+        },
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == previous
+
+
 def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
     """intent.py는 이전 턴에 이미 확정된 조건(예: "집들이"→gift_theme=HOUSEWARMING)을
     맥락 유지를 위해 매 턴 계속 다시 채워 넣는다 — 이게 실제로 "새 조건"은 아니므로
@@ -272,6 +317,51 @@ def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
             "min_price": None,
             "gift_theme": ["HOUSEWARMING"],
             "color": None,
+        },
+        **_NO_DB,
+    )
+
+    assert result["candidates"] == previous
+
+
+def test_run_narrow_down_ignores_color_reorder_for_new_filter_check():
+    """실측 확인된 버그: color는 리스트라 LLM이 매 턴 재추출할 때 값은 같아도 순서가
+    흔들릴 수 있는데(gift_theme과 같은 종류의 불안정성), 리스트를 `!=`로 그대로
+    비교하면 순서만 바뀌어도 "새 조건"으로 오판해 불필요한 재검색을 유발한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": ["BLUE", "RED"],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "ok",
+            "allowed_ids": [834],
+            "suggestions": [],
+        },
+    )
+    previous = [
+        {"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}
+    ]
+
+    def search_and_rank_must_not_be_called(contact1, top_k=3):
+        raise AssertionError(
+            "색상 순서만 바뀐 건 새 조건이 아니므로 재검색하면 안 된다"
+        )
+
+    result = rr.run(
+        "그중에 더 싼거",
+        chat=chat,
+        search_and_rank=search_and_rank_must_not_be_called,
+        previous_candidates=previous,
+        previous_filters={
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": ["RED", "BLUE"],
         },
         **_NO_DB,
     )
@@ -800,6 +890,56 @@ def test_run_narrow_down_new_filter_with_zero_results_preserves_previous_context
     assert result["query_text"] == "찻잔 있나요"
 
 
+def test_run_zero_results_with_category_change_keeps_the_new_topic_for_next_turn():
+    """실측 확인된 버그: "50만원 이하로는?" 같은 후속 질문이 실제 겪은 시나리오.
+
+    직전에 "금속공예" 추천이 성공했고(previous_query_text="집들이 선물용
+    금속공예품 추천해줘"), 이번 턴에 "도자기"로 종목을 바꿔 검색했는데 0건이면
+    (위 테스트처럼) 다음 턴 참조용 query_text를 되돌리는 것까진 맞다 — 그런데
+    "이전 값"을 previous_query_text(금속공예, 종목이 바뀌기 *전*)로 되돌리면,
+    바로 다음 턴("50만원 이하로는?"처럼 가격만 조정하는 후속 질문)이 엉뚱하게
+    금속공예 주제로 재검색된다. 종목이 이번 턴에 실제로 바뀌었다면(category_changed)
+    "이전"이 아니라 "이번 턴에 시도했던(비록 0건이지만) 새 종목"을 다음 턴 참조용으로
+    남겨야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "gift_recommendation",
+            "max_price": 500000,
+            "min_price": None,
+            "gift_theme": ["PARENTS"],
+            "color": [],
+            "query_text": "부모님 퇴직 선물용 도자기 50만원대로 추천해줘",
+        },
+        generate_payload={
+            "reply": "50만원대 도자기는 찾지 못했어요.",
+            "allowed_ids": [],
+            "suggestions": [],
+        },
+    )
+    previous_metal = [
+        {"product_id": 667, "name": "은 촛대", "category": "METAL", "score": 0.9}
+    ]
+
+    result = rr.run(
+        "부모님 퇴직 선물용 도자기 50만원대로 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        previous_candidates=previous_metal,
+        previous_product_ids=[667],
+        previous_query_text="집들이 선물용 금속공예품 추천해줘",
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == []
+    # candidates·shown_product_ids는 기존처럼 직전 성공 상태로 되돌아가도 된다
+    # (여기서 검증하려는 건 query_text뿐).
+    assert result["candidates"] == previous_metal
+    # 종목이 바뀌었으므로 되돌리지 않고, 이번 턴이 실제로 시도한(0건이었지만) 도자기
+    # 주제를 다음 턴이 이어받아야 한다.
+    assert "도자기" in result["query_text"]
+    assert "금속" not in result["query_text"]
+
+
 # ---------------------------------------------------------------------------
 # 카드 중복 노출 억제 — previous_product_ids와 완전히 같은 세트면 카드를 안 띄운다
 # ---------------------------------------------------------------------------
@@ -1157,6 +1297,22 @@ _CANDIDATES_3 = [
 ]
 
 
+def test_run_explain_request_single_candidate_skips_disambiguation():
+    """직전 후보가 1개뿐이면 "몇 번째"를 고를 필요 자체가 없다 — 순번을 못 찾아도
+    (실측 확인된 문제: "그거 설명해줘"처럼 순번 없는 지시대명사) 불필요하게
+    되묻지 말고 바로 그 상품을 설명해야 한다."""
+    single = [_CANDIDATES_3[0]]
+    result = rr.run(
+        "그거 설명해줘",
+        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        previous_candidates=single,
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+    assert "몇 번째" not in result["reply"]
+
+
 def test_run_explain_request_without_ordinal_asks_which_one_with_all_chip():
     """순번을 못 찾으면 되묻는데, 이번엔 "전체 설명" 칩도 같이 나가야 한다."""
 
@@ -1237,6 +1393,81 @@ def test_run_disambiguation_followup_ordinal_answer_explains_single_product():
     assert result["suggestions"] == ["다른 재질로"]
 
 
+def test_run_deduplicates_history_when_backend_echoes_current_message_last():
+    """실제 백엔드(ChatService.sendMessage)는 사용자 메시지를 먼저 DB에 저장한
+    다음에야 history를 조회해서 우리한테 넘긴다 — 그래서 실전 history의 마지막
+    줄은 항상 지금 막 받은 message와 똑같은 내용으로 중복된다(코드로 직접 확인된
+    버그). 이 중복이 있으면 _is_disambiguation_followup이 보는 history[-1]이
+    "방금 내가 한 말"이 돼버려서 직전 봇의 되물음을 절대 못 본다. history 마지막이
+    지금 message와 똑같은 사용자 발화면 그 한 줄은 버리고 시작해야 한다."""
+    history = [
+        {"role": "user", "content": "이 상품들 설명해줘"},
+        {
+            "role": "assistant",
+            "content": "몇 번째 상품을 말씀하시는 건가요? (1번/2번/3번/전체 설명 중에서 골라주세요)",
+        },
+        {"role": "user", "content": "1번"},  # 백엔드가 실어 보내는 중복
+    ]
+
+    result = rr.run(
+        "1번",
+        history=history,
+        chat=_explain_chat(
+            "도기토 수반은 물레로 직접 성형한 작품입니다.",
+            suggestions=["다른 재질로"],
+        ),
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+    assert result["suggestions"] == ["다른 재질로"]
+
+
+def test_run_disambiguation_followup_with_new_category_escapes_the_loop():
+    """실측 확인된 버그: 봇이 "몇 번째 상품을 말씀하시는 건가요?"라고 되물은 다음,
+    사용자가 순번·"모두"·가격최상급 어느 것도 아닌 완전히 다른 화제(다른 종목)로
+    답하면, ordinal이 계속 None으로 나와 매번 같은 되물음을 반복해 대화가 갇혀버렸다.
+    적어도 이전 후보와 다른 종목이 명확히 언급된 경우는(taxonomy 대조로 추가 LLM
+    호출 없이 판단 가능) 되물음 루프에서 빠져나와 새 종목으로 재검색해야 한다."""
+    history = [
+        {"role": "user", "content": "이 상품들 설명해줘"},
+        {
+            "role": "assistant",
+            "content": "몇 번째 상품을 말씀하시는 건가요? (1번/2번/3번/전체 설명 중에서 골라주세요)",
+        },
+    ]
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "목공예로 보여줘",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    fresh = [{"product_id": 466, "name": "소나무 의자", "score": 0.7, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["called"] = True
+        return fresh
+
+    result = rr.run(
+        "아 됐고 목공예로 보여줘",
+        history=history,
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=_CANDIDATES_3,
+        **_NO_DB,
+    )
+
+    assert seen.get("called") is True
+    assert "몇 번째" not in result["reply"]
+
+
 def _prices_for_candidates_3(product_ids: list[int]) -> dict[int, int]:
     """_CANDIDATES_3 기준 가격 — product_id 1이 최저가, 2가 최고가다."""
     return {1: 45000, 2: 234000, 6: 167000}
@@ -1281,6 +1512,80 @@ def test_run_explain_request_cheapest_falls_back_to_asking_when_prices_unavailab
     )
 
     assert "몇 번째" in result["reply"]
+
+
+def test_run_explain_request_second_cheapest_resolves_by_price_not_list_position():
+    """ "두번째로 저렴한 것"은 순번 표현("두번째")과 가격 최상급("저렴한")이 같이
+    있는 문장이다. extract_ordinal만 보면 "목록상 2번째"(product_id=2, 234000원 —
+    사실은 가장 비쌈)로 잘못 짚는다 — 실제로는 "가격 기준 2번째로 싼"
+    상품(product_id=6, 167000원)을 가리키므로 가격 정렬로 판단해야 한다(실측
+    확인된 버그: 목록 순서와 가격 순서가 다르면 조용히 틀린 상품을 설명해버림)."""
+    result = rr.run(
+        "두번째로 저렴한 것 설명해줘",
+        chat=_explain_chat("분청 화병은 문양을 새긴 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [6]
+
+
+def test_run_explain_request_second_most_expensive_resolves_by_price():
+    """위와 대칭 — "두번째로 비싼 것"도 목록 2번째(product_id=2, 실제로는 최고가라
+    "두번째로 비싼"이 아님)가 아니라 가격 내림차순 2번째(product_id=6)를 가리켜야
+    한다."""
+    result = rr.run(
+        "두번째로 비싼 것 설명해줘",
+        chat=_explain_chat("분청 화병은 문양을 새긴 작품입니다."),
+        previous_candidates=_CANDIDATES_3,
+        **{**_NO_DB, "fetch_prices": _prices_for_candidates_3},
+    )
+
+    assert result["product_ids"] == [6]
+
+
+def test_run_history_with_null_content_does_not_crash():
+    """백엔드가 history 항목에 content:null을 실어 보내도(예: {"sender":"ARTISAN",
+    "content":null}) _to_pipeline_history는 그 None을 그대로 통과시킨다(item.get으로
+    키가 있을 땐 기본값이 안 먹으므로). _is_disambiguation_followup이 매 턴 무조건
+    history[-1]을 보는데, 거기서 None.startswith(...)를 호출하면 AttributeError로
+    죽는다(실측 확인된 버그) — 친절한 fallback 대신 날것 그대로의 500이 나간다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "찻잔",
+        },
+        generate_payload={
+            "reply": "이 찻잔을 추천드려요.",
+            "allowed_ids": [9],
+            "suggestions": [],
+        },
+    )
+    search_and_rank = _fake_search_and_rank(
+        [
+            {
+                "product_id": 9,
+                "name": "청자 다완",
+                "score": 0.8,
+                "evidence": {"artisan_input": "", "verified": None},
+            }
+        ]
+    )
+    history = [{"role": "assistant", "content": None}]
+
+    result = rr.run(
+        "찻잔 있나요",
+        history=history,
+        chat=chat,
+        search_and_rank=search_and_rank,
+        **_NO_DB,
+    )
+
+    assert result["reply"]
 
 
 def test_run_plain_message_without_disambiguation_history_is_not_treated_as_explain():
@@ -1391,6 +1696,46 @@ def test_run_wants_reason_without_previous_candidates_asks_to_search_first():
 
     assert result["product_ids"] == []
     assert "먼저" in result["reply"]
+
+
+def test_run_wants_reason_with_category_change_does_not_explain_stale_candidates():
+    """실측 확인된 버그: wants_reason 분기가 category_changed 계산(더 아래)보다
+    먼저 실행돼서, "금속 공예품이 왜 좋은지 설명해줘"처럼 이유를 물으면서 동시에
+    종목도 바꾼 문장이 previous_candidates(도자기)를 그대로 explain_products에
+    넘겨버렸다 — 엉뚱한 종목을 설명하고 새 종목으로 재검색할 기회가 없어졌다.
+    종목이 바뀌었으면 이유 질문이어도 먼저 재검색해야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "wants_reason": True,
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "금속 공예품 추천해줄래?",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh = [{"product_id": 466, "name": "은장도", "score": 0.7, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["called"] = True
+        return fresh
+
+    result = rr.run(
+        # "설명해"·"자세히" 키워드가 없어야 is_explain_request(키워드 판단) 분기가 아니라
+        # wants_reason(LLM 판단) 분기를 실제로 탄다 — 이 둘은 서로 다른 코드 경로다.
+        "아니 그거 말고 금속 공예품이 왜 좋아?",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        **_NO_DB,
+    )
+
+    assert seen.get("called") is True
+    assert result["candidates"] == fresh
 
 
 def test_run_wants_reason_false_does_not_shortcut_to_explain():
