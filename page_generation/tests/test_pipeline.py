@@ -10,6 +10,7 @@ from detail_page_ai.dto import (
 from detail_page_ai.models import (
     GeneratedImage,
     GeneratedSection,
+    PhotoGenerationFailure,
     ProductPhoto,
     ProductPhotoSet,
 )
@@ -17,6 +18,7 @@ from detail_page_ai.pipeline import DetailPagePipeline
 from detail_page_ai.assets import MemoryAssetStore, StoredAsset
 from detail_page_ai.persistence import SQLiteDeliveryOutbox
 import hashlib
+import logging
 
 
 VALID_PNG = b"\x89PNG\r\n\x1a\nimage"
@@ -140,6 +142,117 @@ def test_pipeline_delivers_react_document_to_fe_and_be():
     assert document.schema_version == "2.0"
     assert document.root[0].tag == "section"
     assert backend.last_request.detail_page.react_document == document
+
+
+def _generated_photo(photo_id: str, order: int) -> ProductPhoto:
+    return ProductPhoto(
+        photo_id=photo_id,
+        order=order,
+        label=f"AI generated {photo_id}",
+        data=b"generated-photo",
+        mime_type="image/png",
+        asset_mode="generated_scene" if photo_id == "lifestyle" else "generated_view",
+        source_sha256=hashlib.sha256(VALID_PNG).hexdigest(),
+        background_generated=True,
+        product_generated=True,
+        fidelity_status="GENERATED",
+    )
+
+
+def test_pipeline_reports_generated_photos_not_referenced_by_react_document():
+    renderer = FakeRenderer()
+    backend = FakeBackend(fail=False)
+
+    class PhotoGenerator:
+        def generate(self, **kwargs):
+            return ProductPhotoSet(
+                photos=(
+                    _generated_photo("lifestyle", 4),
+                    _generated_photo("detail-02", 5),
+                )
+            )
+
+    pipeline = DetailPagePipeline(
+        analyzer=FakeAnalyzer(),
+        photo_generator=PhotoGenerator(),
+        renderer=renderer,
+        backend=backend,
+        id_factory=lambda: "generation-unused-photo",
+    )
+    profile = ProductProfileDto.minimal("desk lamp").model_copy(
+        update={
+            "page_plan": [
+                PageBlockDto(
+                    section_id="usage",
+                    block_type="usage_scene",
+                    photo_id="lifestyle",
+                )
+            ]
+        }
+    )
+
+    result = pipeline.run(
+        "job-unused-photo",
+        "request-unused-photo",
+        VALID_PNG,
+        "image/png",
+        profile_override=profile,
+    )
+
+    assert result.fe_result.detail_page.unused_generated_photo_ids == ["detail-02"]
+    assert backend.last_request.detail_page.unused_generated_photo_ids == ["detail-02"]
+    assert pipeline.recover_fe_result(
+        "generation-unused-photo"
+    ).detail_page.unused_generated_photo_ids == ["detail-02"]
+
+
+def test_pipeline_reports_no_unused_generated_photos_when_all_are_referenced():
+    renderer = FakeRenderer()
+    backend = FakeBackend(fail=False)
+
+    class PhotoGenerator:
+        def generate(self, **kwargs):
+            return ProductPhotoSet(
+                photos=(
+                    _generated_photo("lifestyle", 4),
+                    _generated_photo("detail-02", 5),
+                )
+            )
+
+    pipeline = DetailPagePipeline(
+        analyzer=FakeAnalyzer(),
+        photo_generator=PhotoGenerator(),
+        renderer=renderer,
+        backend=backend,
+        id_factory=lambda: "generation-all-photos",
+    )
+    profile = ProductProfileDto.minimal("desk lamp").model_copy(
+        update={
+            "page_plan": [
+                PageBlockDto(
+                    section_id="usage",
+                    block_type="usage_scene",
+                    photo_id="lifestyle",
+                ),
+                PageBlockDto(
+                    section_id="detail",
+                    block_type="detail_split",
+                    photo_id="detail-02",
+                ),
+            ]
+        }
+    )
+
+    result = pipeline.run(
+        "job-all-photos",
+        "request-all-photos",
+        VALID_PNG,
+        "image/png",
+        profile_override=profile,
+    )
+
+    assert result.fe_result.detail_page.unused_generated_photo_ids == []
+    assert backend.last_request.detail_page.unused_generated_photo_ids == []
 
 
 def test_pipeline_completes_missing_required_blocks_in_ai_page_plan():
@@ -450,6 +563,41 @@ def test_pipeline_generates_product_photo_set_before_detail_page_rendering():
     assert backend.last_request.detail_page.photos[0].photo_id == "hero"
 
 
+def test_pipeline_delivers_photo_generation_failures_to_fe_be_and_recovery():
+    renderer = FakeRenderer()
+    backend = FakeBackend(fail=False)
+
+    class PhotoGenerator:
+        def generate(self, **kwargs):
+            return ProductPhotoSet(
+                photo_generation_failures=(
+                    PhotoGenerationFailure(
+                        photo_id="lifestyle",
+                        reason="생성하지 못했습니다",
+                    ),
+                )
+            )
+
+    pipeline = DetailPagePipeline(
+        analyzer=FakeAnalyzer(),
+        photo_generator=PhotoGenerator(),
+        renderer=renderer,
+        backend=backend,
+        id_factory=lambda: "generation-photo-failure",
+    )
+
+    result = pipeline.run("job-1", "request-1", VALID_PNG, "image/png")
+
+    assert result.fe_result.detail_page.photo_generation_failures[0].photo_id == "lifestyle"
+    assert (
+        result.fe_result.detail_page.photo_generation_failures[0].reason
+        == "생성하지 못했습니다"
+    )
+    assert backend.last_request.detail_page.photo_generation_failures[0].photo_id == "lifestyle"
+    recovered = pipeline.recover_fe_result("generation-photo-failure")
+    assert recovered.detail_page.photo_generation_failures[0].photo_id == "lifestyle"
+
+
 def test_pipeline_maps_photo_provenance_to_fe_and_be():
     result_pipeline, _, backend = make_pipeline(return_parts=True)
 
@@ -606,3 +754,126 @@ def test_url_response_mode_omits_duplicate_base64_payloads():
     assert recovered.detail_page.image_base64 is None
     assert recovered.detail_page.sections[0].image_base64 is None
     assert recovered.detail_page.photos[0].image_base64 is None
+
+
+def test_pipeline_resolves_dangling_page_plan_photo_id_to_actual_photo(caplog):
+    pipeline, _, backend = make_pipeline(return_parts=True)
+
+    class ScaleReferenceAnalyzer:
+        def analyze(self, image, mime_type):
+            return ProductProfileDto.minimal("초충도 부채 세트").model_copy(
+                update={
+                    "summary": "전통 부채 세트입니다.",
+                    "page_plan": [
+                        PageBlockDto(
+                            section_id="hero",
+                            block_type="hero",
+                            title="초충도 부채 세트",
+                            photo_id="hero",
+                        ),
+                        PageBlockDto(
+                            section_id="statement",
+                            block_type="statement",
+                            title="대나무 살과 한지",
+                            body="합죽선 세트의 이야기입니다.",
+                        ),
+                        PageBlockDto(
+                            section_id="scale_reference",
+                            block_type="scale_reference",
+                            title="부채와 파우치의 비율",
+                            photo_id="scale",
+                        ),
+                        PageBlockDto(
+                            section_id="feature_grid",
+                            block_type="feature_grid",
+                            title="특징",
+                            body="제품의 주요 특징입니다.",
+                        ),
+                        PageBlockDto(
+                            section_id="recommendation",
+                            block_type="recommendation",
+                            title="추천 연출",
+                            body="다양한 상황에서의 연출 방법입니다.",
+                        ),
+                        PageBlockDto(
+                            section_id="info_table",
+                            block_type="info_table",
+                            title="기본 정보",
+                            body="기본 사양입니다.",
+                        ),
+                        PageBlockDto(
+                            section_id="notice",
+                            block_type="notice",
+                            title="안내 사항",
+                            body="관리 방법입니다.",
+                        ),
+                        PageBlockDto(
+                            section_id="closing",
+                            block_type="closing",
+                            title="오래 남는 인상",
+                        ),
+                    ]
+                }
+            )
+
+    pipeline.analyzer = ScaleReferenceAnalyzer()
+
+    with caplog.at_level(logging.WARNING, logger="detail_page_ai.react_document_builder"):
+        result = pipeline.run("job-scale", "request-scale", VALID_PNG, "image/png")
+
+    fe_photos = result.fe_result.detail_page.photos
+    available_fe_photo_ids = {p.photo_id for p in fe_photos}
+    assert "scale" not in available_fe_photo_ids
+    assert "hero" in available_fe_photo_ids
+
+    # Check FE page_plan: scale_reference.photo_id must be resolved to 'hero'
+    fe_plan = result.fe_result.product.page_plan
+    scale_blocks = [b for b in fe_plan if b.block_type == "scale_reference"]
+    assert len(scale_blocks) == 1
+    assert scale_blocks[0].photo_id == "hero"
+    for block in fe_plan:
+        if block.photo_id is not None:
+            assert block.photo_id in available_fe_photo_ids, (
+                f"Dangling photo_id {block.photo_id} in FE block {block.section_id}"
+            )
+        for pid in block.photo_ids:
+            assert pid in available_fe_photo_ids, (
+                f"Dangling photo_id {pid} in FE block {block.section_id}"
+            )
+
+    # Check BE persist request: product.page_plan must point to existing photos
+    be_request = backend.last_request
+    be_photos = be_request.detail_page.photos
+    available_be_photo_ids = {p.photo_id for p in be_photos}
+    assert "scale" not in available_be_photo_ids
+    be_plan = be_request.product.page_plan
+    be_scale_blocks = [b for b in be_plan if b.block_type == "scale_reference"]
+    assert len(be_scale_blocks) == 1
+    assert be_scale_blocks[0].photo_id == "hero"
+    for block in be_plan:
+        if block.photo_id is not None:
+            assert block.photo_id in available_be_photo_ids, (
+                f"Dangling photo_id {block.photo_id} in BE block {block.section_id}"
+            )
+        for pid in block.photo_ids:
+            assert pid in available_be_photo_ids, (
+                f"Dangling photo_id {pid} in BE block {block.section_id}"
+            )
+
+    # Check React document has hero for scale_reference image node
+    react_doc = result.fe_result.detail_page.react_document
+    assert react_doc is not None
+
+    # Check warning log was emitted exactly 1 time per block
+    assert (
+        "photo_id 'scale' requested by scale_reference block is unavailable; using default photo_id 'hero'"
+        in caplog.text
+    )
+    scale_warnings = [
+        record
+        for record in caplog.records
+        if "photo_id 'scale' requested by scale_reference block is unavailable" in record.message
+    ]
+    assert len(scale_warnings) == 1
+
+

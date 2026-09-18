@@ -62,9 +62,11 @@ class LocalProductAnalyzer(ProductAnalyzer):
         *,
         chat_client: StructuredJsonChatClient,
         locale: str = "ko-KR",
+        image_generation_enabled: bool = False,
     ):
         self.chat_client = chat_client
         self.locale = locale
+        self.image_generation_enabled = image_generation_enabled
 
     def _base_prompt(
         self,
@@ -72,9 +74,20 @@ class LocalProductAnalyzer(ProductAnalyzer):
         image_sha256: str,
     ) -> tuple[str, dict[str, Any]]:
         schema = ProductProfileDto.model_json_schema()
-        archetypes = select_layout_archetypes(image_sha256, user_hints, count=4)
+        archetypes = select_layout_archetypes(
+            image_sha256,
+            user_hints,
+            count=4,
+            image_generation_enabled=self.image_generation_enabled,
+        )
+        analysis_prompt = build_analysis_prompt(
+            self.locale,
+            user_hints=user_hints,
+            archetypes=archetypes,
+            image_generation_enabled=self.image_generation_enabled,
+        )
         prompt = (
-            f"{build_analysis_prompt(self.locale, user_hints=user_hints, archetypes=archetypes)}\n"
+            f"{analysis_prompt}\n"
             "입력된 제품명·제작과정·관리법은 장인이 제공한 상품 데이터이므로 상품별 "
             "제품명·제작 이야기·관리 안내 카피에 반드시 반영하라. 입력 데이터가 이미지보다 "
             "우선하며, 이미지와 다르게 보여도 입력 데이터를 기준으로 작성하라. 이미지에 "

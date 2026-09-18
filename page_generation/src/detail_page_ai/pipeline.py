@@ -19,6 +19,7 @@ from .dto import (
     GenerationMetadataDto,
     GeneratedSectionMetadataDto,
     GeneratedPhotoMetadataDto,
+    PhotoGenerationFailureDto,
     ProductProfileDto,
     ApprovedDraftDto,
     UserHintsDto,
@@ -34,7 +35,11 @@ from .ports import (
     SourceAssetStore,
 )
 from .persistence import DeliveryOutbox, LeaseOwnershipError, MemoryDeliveryOutbox
-from .react_document_builder import build_react_document_from_draft
+from .react_document_builder import (
+    build_react_document_from_draft,
+    collect_referenced_photo_ids,
+    resolve_page_plan_photos,
+)
 from .source_photos import ProductFidelityValidator
 from .validation import (
     ensure_editorial_page_plan,
@@ -214,6 +219,13 @@ class DetailPagePipeline:
         emit("VERIFYING", 65)
         source_images = ((source_image, source_mime_type),) + additional_source_images
         photo_set = self._validated_photo_set(photo_set, source_images)
+        photo_generation_failures = [
+            PhotoGenerationFailureDto(
+                photo_id=failure.photo_id,
+                reason=failure.reason,
+            )
+            for failure in photo_set.photo_generation_failures
+        ]
         emit("RENDERING", 75)
         generated_image = self.renderer.render(
             source_image=source_image,
@@ -295,8 +307,23 @@ class DetailPagePipeline:
             )
             for photo, asset in zip(sorted_photos, photo_assets, strict=True)
         ]
+        available_photo_ids = {photo.photo_id for photo in sorted_photos}
+        resolved_plan = resolve_page_plan_photos(
+            approved_draft.page_plan, available_photo_ids
+        )
+        profile = profile.model_copy(update={"page_plan": resolved_plan})
         react_document = build_react_document_from_draft(
             approved_draft,
+            available_photo_ids=available_photo_ids,
+        )
+        referenced_photo_ids = collect_referenced_photo_ids(react_document)
+        unused_generated_photo_ids = list(
+            dict.fromkeys(
+                photo.photo_id
+                for photo in sorted_photos
+                if photo.product_generated
+                and photo.photo_id not in referenced_photo_ids
+            )
         )
         persist_request_model = (
             AiToBePersistRequestDto
@@ -328,6 +355,8 @@ class DetailPagePipeline:
             ),
             generated_sections=section_metadata,
             generated_photos=photo_metadata,
+            photo_generation_failures=photo_generation_failures,
+            unused_generated_photo_ids=unused_generated_photo_ids,
             react_document=react_document,
             product_id=product_id,
         )
@@ -381,6 +410,8 @@ class DetailPagePipeline:
                     )
                     for photo, asset in zip(sorted_photos, photo_assets, strict=True)
                 ],
+                "photo_generation_failures": photo_generation_failures,
+                "unused_generated_photo_ids": unused_generated_photo_ids,
                 "react_document": react_document,
             },
         )
@@ -556,6 +587,8 @@ class DetailPagePipeline:
                 image_base64=preview_image_base64,
             ),
             preview_photos=[],
+            photo_generation_failures=[],
+            unused_generated_photo_ids=[],
             react_document=react_document,
         )
         return DraftPipelineResult(
@@ -703,6 +736,8 @@ class DetailPagePipeline:
                         record.image.photos, key=lambda item: item.order
                     )
                 ],
+                "photo_generation_failures": record.request.detail_page.photo_generation_failures,
+                "unused_generated_photo_ids": record.request.detail_page.unused_generated_photo_ids,
                 "react_document": react_document,
             },
         )
@@ -731,7 +766,10 @@ class DetailPagePipeline:
                     if photo.fidelity_status == status
                     else replace(photo, fidelity_status=status)
                 )
-        return ProductPhotoSet(photos=tuple(verified))
+        return ProductPhotoSet(
+            photos=tuple(verified),
+            photo_generation_failures=photo_set.photo_generation_failures,
+        )
 
     @staticmethod
     def _fe_product(profile: ProductProfileDto) -> AiFeProductSummaryDto:

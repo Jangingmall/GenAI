@@ -43,6 +43,7 @@ def select_layout_archetypes(
     image_sha256: str,
     user_hints: UserHintsDto | None,
     count: int = 4,
+    image_generation_enabled: bool = False,
 ) -> list[dict[str, Any]]:
     """Return a reproducible, data-compatible sample of layout examples."""
     if count <= 0:
@@ -54,7 +55,16 @@ def select_layout_archetypes(
         for archetype in LAYOUT_ARCHETYPES
         if has_making_method or "statement" not in archetype.get("sequence", [])
     ]
-    selected = random.Random(image_sha256).sample(candidates, k=min(count, len(candidates)))
+    if image_generation_enabled:
+        usage_candidates = [
+            archetype
+            for archetype in candidates
+            if "usage_scene" in archetype.get("sequence", [])
+        ]
+        if usage_candidates:
+            candidates = usage_candidates
+    rng = random.Random(image_sha256)
+    selected = rng.sample(candidates, k=min(count, len(candidates)))
     return [dict(archetype) for archetype in selected]
 
 
@@ -92,4 +102,3 @@ def match_page_plan_to_archetype(
             best_match = dict(arch)
 
     return best_match
-

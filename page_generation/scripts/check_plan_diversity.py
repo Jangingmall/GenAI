@@ -5,9 +5,9 @@ Measures how much section page plans actually differ across cases in a pilot run
 by analyzing block_type sequences, set Jaccard similarities, common blocks,
 length distributions, and positional fixedness.
 
-Criteria are grounded in a Monte Carlo baseline computed from the 25 catalog
+Criteria are grounded in a Monte Carlo baseline computed from the catalog
 archetypes (assets/references/detail-page-layouts.json):
-  1. Average Jaccard similarity <= catalog_baseline_mean + delta (default: +10.0%p)
+  1. Average Jaccard similarity <= the batch-size baseline P95 + validation padding (default: +1.0%p)
   2. Effective common blocks (excluding mandatory hero & closing) <= 4
   3. Identical set pairs <= 1 (allows incidental birthday-paradox collision for small batches)
 """
@@ -34,7 +34,7 @@ STRUCTURAL_BLOCKS: frozenset[str] = frozenset({"hero", "closing"})
 DEFAULT_SIMULATION_ITERATIONS: int = 2000
 DEFAULT_SIMULATION_SEED: int = 42
 
-# Rationale for max_jaccard_delta = 0.10 (+10.0%p above catalog baseline):
+# Historical rationale for max_jaccard_delta = 0.10 (+10.0%p above catalog baseline):
 #   1. Statistical variance: In sampling 6 distinct archetypes from 25 without replacement,
 #      the 95th percentile is ~71.6% (mean is ~64.1%, std is ~4.5%p; +2σ is ~73.1%).
 #   2. Archetype category collision: With replacement across 25 archetypes, expected similarity
@@ -42,8 +42,14 @@ DEFAULT_SIMULATION_SEED: int = 42
 #   3. Normalization padding: validation.py guarantees minimum craft invariants (notice, info_table),
 #      adding a slight (~1.0%p) upward drift in set overlap.
 #   Total headroom: 7.5%p (variance) + 1.5%p (collisions) + 1.0%p (validation) = 10.0%p.
-#   An observed Jaccard > baseline + 10.0%p indicates true model template collapse.
+# This remains available as an explicit legacy CLI override, but is no longer the default:
+# the default baseline now uses the actual batch-size P95, so variance and replacement
+# collisions are already represented instead of being counted again in a fixed delta.
 DEFAULT_MAX_JACCARD_DELTA: float = 0.10
+
+# The only padding retained by the default P95-derived gate comes from the validation.py
+# craft-invariant adjustment described above.
+DEFAULT_JACCARD_VALIDATION_PADDING: float = 0.01
 
 # Rationale for max_effective_common_blocks = 4:
 #   In the 25 catalog archetypes, notice (24/25), info_table (24/25), detail_split (22/25),
@@ -52,12 +58,8 @@ DEFAULT_MAX_JACCARD_DELTA: float = 0.10
 #   5 or more effective common blocks only occurs under severe model monotony.
 DEFAULT_MAX_EFFECTIVE_COMMON: int = 4
 
-# Rationale for max_identical_pairs = 1 (relaxed from 0):
-#   When sampling 6 cases from 25 archetypes with replacement, the probability of at least
-#   one collision is 1 - (25*24*23*22*21*20)/(25^6) = 49.0% (0 pairs: 50.2%, 1 pair: 39.8%, 2+ pairs: 10.0%).
-#   In real production, products are generated independently, so two products sharing an archetype
-#   are not viewed side-by-side. A threshold of <= 1 tolerates a single incidental 2-product collision
-#   while strictly rejecting template collapse (3 identical cases = 3 pairs; 5 identical = 10 pairs).
+# Kept as an explicit CLI override for historical comparisons. The default gate threshold
+# is derived from the catalog baseline's identical-pair P95 instead.
 DEFAULT_MAX_IDENTICAL_PAIRS: int = 1
 
 # Previous absolute criteria (for historical tracking and comparison)
@@ -218,13 +220,16 @@ def compute_sequence_diversity(plans: list[list[str]]) -> dict[str, Any]:
 def compute_catalog_baseline(
     catalog_path: Path = CATALOG_PATH,
     sample_size: int = 6,
+    candidate_pool_size: int | None = None,
     iterations: int = DEFAULT_SIMULATION_ITERATIONS,
     seed: int = DEFAULT_SIMULATION_SEED,
 ) -> dict[str, Any]:
     """Compute deterministic ideal diversity baseline from catalog layouts.
 
-    Simulates drawing `sample_size` distinct archetypes without replacement
-    from the reference catalog to determine the theoretical upper bound of diversity.
+    Simulates independently drawing `sample_size` archetypes with replacement
+    from the reference catalog to match the production per-case selection model.
+    ``candidate_pool_size`` optionally restricts the catalog prefix used as the
+    null-model candidate pool; when omitted, the full catalog is used.
     """
     layout_sets: list[set[str]] = []
     if catalog_path.is_file():
@@ -234,10 +239,17 @@ def compute_catalog_baseline(
         except Exception as exc:
             print(f"[WARN] Failed to load catalog from {catalog_path}: {exc}", file=sys.stderr)
 
+    catalog_archetypes_total = len(layout_sets)
+    if candidate_pool_size is not None:
+        if candidate_pool_size <= 0:
+            raise ValueError("candidate_pool_size must be greater than zero")
+        layout_sets = layout_sets[:candidate_pool_size]
+
     if not layout_sets or len(layout_sets) < 2:
         # Fallback baseline when catalog is unavailable
         return {
             "sample_size": sample_size,
+            "candidate_pool_size": len(layout_sets),
             "iterations": 0,
             "seed": seed,
             "mean_jaccard": 0.640,
@@ -246,24 +258,31 @@ def compute_catalog_baseline(
             "p95_jaccard_pct": 71.6,
             "mean_effective_common": 2.4,
             "p95_effective_common": 4,
+            "mean_identical_pairs": 0.0,
+            "p95_identical_pairs": 0,
+            "catalog_archetypes_count": len(layout_sets),
+            "catalog_archetypes_total": catalog_archetypes_total,
             "source": "fallback_default",
         }
 
-    effective_k = min(sample_size, len(layout_sets))
     rng = random.Random(seed)
     jaccards: list[float] = []
     eff_commons: list[int] = []
+    identical_pairs_counts: list[int] = []
 
     for _ in range(iterations):
-        sample = rng.sample(layout_sets, effective_k)
+        sample = [rng.choice(layout_sets) for _ in range(sample_size)]
         pairs_j: list[float] = []
         for s1, s2 in itertools.combinations(sample, 2):
             u = s1 | s2
             pairs_j.append(len(s1 & s2) / len(u) if u else 1.0)
-        jaccards.append(sum(pairs_j) / len(pairs_j))
+        jaccards.append(sum(pairs_j) / len(pairs_j) if pairs_j else 0.0)
 
-        common = set.intersection(*sample) - STRUCTURAL_BLOCKS
+        common = set.intersection(*sample) - STRUCTURAL_BLOCKS if sample else set()
         eff_commons.append(len(common))
+        identical_pairs_counts.append(
+            sum(s1 == s2 for s1, s2 in itertools.combinations(sample, 2))
+        )
 
     mean_j = sum(jaccards) / len(jaccards)
     sorted_j = sorted(jaccards)
@@ -273,8 +292,13 @@ def compute_catalog_baseline(
     sorted_c = sorted(eff_commons)
     p95_eff_c = sorted_c[int(0.95 * len(sorted_c))]
 
+    mean_identical_pairs = sum(identical_pairs_counts) / len(identical_pairs_counts)
+    sorted_identical_pairs = sorted(identical_pairs_counts)
+    p95_identical_pairs = sorted_identical_pairs[int(0.95 * len(sorted_identical_pairs))]
+
     return {
-        "sample_size": effective_k,
+        "sample_size": sample_size,
+        "candidate_pool_size": len(layout_sets),
         "iterations": iterations,
         "seed": seed,
         "mean_jaccard": round(mean_j, 4),
@@ -283,7 +307,10 @@ def compute_catalog_baseline(
         "p95_jaccard_pct": round(p95_j * 100, 2),
         "mean_effective_common": round(mean_eff_c, 2),
         "p95_effective_common": p95_eff_c,
+        "mean_identical_pairs": round(mean_identical_pairs, 2),
+        "p95_identical_pairs": p95_identical_pairs,
         "catalog_archetypes_count": len(layout_sets),
+        "catalog_archetypes_total": catalog_archetypes_total,
         "source": str(catalog_path),
     }
 
@@ -378,9 +405,10 @@ def evaluate_plan_diversity(
     records: list[dict[str, Any]],
     *,
     catalog_path: Path = CATALOG_PATH,
-    max_jaccard_delta: float = DEFAULT_MAX_JACCARD_DELTA,
+    candidate_pool_size: int | None = None,
+    max_jaccard_delta: float | None = None,
     max_effective_common: int = DEFAULT_MAX_EFFECTIVE_COMMON,
-    max_identical_pairs: int = DEFAULT_MAX_IDENTICAL_PAIRS,
+    max_identical_pairs: int | None = None,
     simulation_iterations: int = DEFAULT_SIMULATION_ITERATIONS,
     simulation_seed: int = DEFAULT_SIMULATION_SEED,
     max_avg_jaccard: float | None = None,
@@ -389,11 +417,13 @@ def evaluate_plan_diversity(
     """Evaluate plan diversity against quality gates.
 
     Quality Gate Thresholds (Catalog-grounded):
-      1. Average Jaccard Similarity <= catalog_baseline_mean + max_jaccard_delta (default: baseline + 10.0%p)
-         (Can be overridden explicitly via max_avg_jaccard)
+      1. Average Jaccard Similarity <= catalog_baseline_p95 + 1.0%p by default.
+         An explicitly supplied max_jaccard_delta retains the historical
+         catalog_baseline_mean + delta behavior. max_avg_jaccard is an absolute override.
       2. Effective common block types count (excluding hero & closing) <= max_effective_common (default: 4)
          (Can be overridden explicitly via max_common_blocks)
-      3. Identical set pairs count <= max_identical_pairs (default: 1)
+      3. Identical set pairs count <= catalog baseline P95 by default.
+         (Can be overridden explicitly via max_identical_pairs)
     """
     case_ids = [r["case_id"] for r in records]
     plans = [r["blocks"] for r in records]
@@ -403,6 +433,7 @@ def evaluate_plan_diversity(
     baseline = compute_catalog_baseline(
         catalog_path=catalog_path,
         sample_size=sample_size,
+        candidate_pool_size=candidate_pool_size,
         iterations=simulation_iterations,
         seed=simulation_seed,
     )
@@ -424,16 +455,31 @@ def evaluate_plan_diversity(
     if max_avg_jaccard is not None:
         threshold_avg_jaccard = max_avg_jaccard
         is_dynamic_jaccard = False
-    else:
+        jaccard_threshold_mode = "absolute_override"
+    elif max_jaccard_delta is not None:
         threshold_avg_jaccard = round(baseline["mean_jaccard"] + max_jaccard_delta, 4)
         is_dynamic_jaccard = True
+        jaccard_threshold_mode = "explicit_delta"
+    else:
+        threshold_avg_jaccard = round(
+            baseline["p95_jaccard"] + DEFAULT_JACCARD_VALIDATION_PADDING,
+            4,
+        )
+        is_dynamic_jaccard = True
+        jaccard_threshold_mode = "baseline_p95_plus_padding"
 
     effective_max_common = max_common_blocks if max_common_blocks is not None else max_effective_common
+    if max_identical_pairs is not None:
+        effective_max_identical_pairs = max_identical_pairs
+        is_dynamic_identical_pairs = False
+    else:
+        effective_max_identical_pairs = baseline["p95_identical_pairs"]
+        is_dynamic_identical_pairs = True
 
     # Gate evaluations (New Grounded Criteria)
     gate_avg_jaccard_pass = (avg_jaccard <= threshold_avg_jaccard)
     gate_effective_common_pass = (len(effective_common_blocks) <= effective_max_common)
-    gate_identical_pairs_pass = (len(identical_pairs) <= max_identical_pairs)
+    gate_identical_pairs_pass = (len(identical_pairs) <= effective_max_identical_pairs)
 
     overall_pass = (
         gate_avg_jaccard_pass
@@ -443,7 +489,14 @@ def evaluate_plan_diversity(
 
     failures: list[str] = []
     if not gate_avg_jaccard_pass:
-        if is_dynamic_jaccard:
+        if jaccard_threshold_mode == "baseline_p95_plus_padding":
+            failures.append(
+                f"평균 집합 일치도 초과: {avg_jaccard * 100:.1f}% "
+                f"(기준: <= {threshold_avg_jaccard * 100:.1f}%, 기준선 p95 "
+                f"{baseline['p95_jaccard_pct']:.1f}% + 패딩 "
+                f"{DEFAULT_JACCARD_VALIDATION_PADDING * 100:.1f}%p)"
+            )
+        elif jaccard_threshold_mode == "explicit_delta":
             failures.append(
                 f"평균 집합 일치도 초과: {avg_jaccard * 100:.1f}% "
                 f"(기준: <= {threshold_avg_jaccard * 100:.1f}%, 카탈로그 기대치 {baseline['mean_jaccard_pct']:.1f}% + {max_jaccard_delta * 100:.1f}%p)"
@@ -459,9 +512,17 @@ def evaluate_plan_diversity(
         )
     if not gate_identical_pairs_pass:
         pairs_repr = ", ".join(f"({a}, {b})" for a, b in identical_pairs)
-        failures.append(
-            f"완전 일치 쌍 허용치 초과: {len(identical_pairs)}쌍 (기준: <= {max_identical_pairs}쌍) [{pairs_repr}]"
-        )
+        if is_dynamic_identical_pairs:
+            failures.append(
+                f"완전 일치 쌍 허용치 초과: {len(identical_pairs)}쌍 "
+                f"(기준: <= {effective_max_identical_pairs}쌍, 카탈로그 기대치 "
+                f"{baseline['p95_identical_pairs']}쌍(p95)) [{pairs_repr}]"
+            )
+        else:
+            failures.append(
+                f"완전 일치 쌍 허용치 초과: {len(identical_pairs)}쌍 "
+                f"(기준: <= {effective_max_identical_pairs}쌍, CLI override) [{pairs_repr}]"
+            )
 
     # Legacy criteria evaluation (for comparison)
     legacy_jaccard_pass = (avg_jaccard <= LEGACY_MAX_AVG_JACCARD)
@@ -495,8 +556,12 @@ def evaluate_plan_diversity(
             "max_avg_jaccard": threshold_avg_jaccard,
             "max_jaccard_delta": max_jaccard_delta,
             "is_dynamic_jaccard": is_dynamic_jaccard,
+            "jaccard_threshold_mode": jaccard_threshold_mode,
+            "jaccard_validation_padding": DEFAULT_JACCARD_VALIDATION_PADDING,
             "max_effective_common": effective_max_common,
-            "max_identical_pairs": max_identical_pairs,
+            "max_identical_pairs": effective_max_identical_pairs,
+            "is_dynamic_identical_pairs": is_dynamic_identical_pairs,
+            "candidate_pool_size": baseline["candidate_pool_size"],
             "structural_blocks_excluded": sorted(STRUCTURAL_BLOCKS),
         },
         "gates": {
@@ -506,7 +571,16 @@ def evaluate_plan_diversity(
                 "threshold": threshold_avg_jaccard,
                 "threshold_pct": round(threshold_avg_jaccard * 100, 2),
                 "baseline_mean_pct": baseline["mean_jaccard_pct"],
-                "delta_pct": round(max_jaccard_delta * 100, 2),
+                "baseline_p95_pct": baseline["p95_jaccard_pct"],
+                "delta_pct": (
+                    round(max_jaccard_delta * 100, 2)
+                    if max_jaccard_delta is not None
+                    else None
+                ),
+                "validation_padding_pct": round(
+                    DEFAULT_JACCARD_VALIDATION_PADDING * 100, 2
+                ),
+                "threshold_mode": jaccard_threshold_mode,
                 "pass": gate_avg_jaccard_pass,
             },
             "effective_common_blocks": {
@@ -526,7 +600,10 @@ def evaluate_plan_diversity(
             "identical_pairs": {
                 "count": len(identical_pairs),
                 "pairs": [list(p) for p in identical_pairs],
-                "threshold": max_identical_pairs,
+                "threshold": effective_max_identical_pairs,
+                "baseline_mean": baseline["mean_identical_pairs"],
+                "baseline_p95": baseline["p95_identical_pairs"],
+                "is_dynamic": is_dynamic_identical_pairs,
                 "pass": gate_identical_pairs_pass,
             },
         },
@@ -614,9 +691,18 @@ def print_report(results: dict[str, Any]) -> None:
 
     print(f"2. **평균 집합 일치도 (Jaccard)**: {metrics['avg_jaccard_pct']:.1f}%")
     if baseline.get("mean_jaccard_pct") is not None:
-        print(f"   - 카탈로그 기준치 (비복원 {baseline['sample_size']}개 시뮬레이션 {baseline['iterations']}회 평균): {baseline['mean_jaccard_pct']:.1f}% (P95: {baseline['p95_jaccard_pct']:.1f}%)")
+        print(
+            f"   - 카탈로그 기준치 (복원 {baseline['sample_size']}건, "
+            f"후보 {baseline['candidate_pool_size']}종, 시뮬레이션 {baseline['iterations']}회 평균): "
+            f"{baseline['mean_jaccard_pct']:.1f}% (P95: {baseline['p95_jaccard_pct']:.1f}%)"
+        )
 
     print(f"3. **완전 일치 쌍 수 (100% 동일 집합)**: {metrics['identical_pairs_count']}쌍")
+    if "p95_identical_pairs" in baseline:
+        print(
+            f"   - 카탈로그 기대치 {baseline['p95_identical_pairs']}쌍(p95) / "
+            f"관측 {metrics['identical_pairs_count']}쌍"
+        )
     if metrics["identical_pairs"]:
         for a, b in metrics["identical_pairs"]:
             print(f"   - `{a}` ↔ `{b}` (100.0%)")
@@ -678,7 +764,14 @@ def print_report(results: dict[str, Any]) -> None:
     p_mark = "[PASS]" if g_pairs["pass"] else "[FAIL]"
 
     print("#### [신규 기준: 카탈로그 도달성 기반 게이트]")
-    if "baseline_mean_pct" in g_jaccard:
+    if g_jaccard.get("threshold_mode") == "baseline_p95_plus_padding":
+        print(
+            f"- {j_mark} **평균 집합 일치도**: {g_jaccard['value_pct']:.1f}% "
+            f"(기준: <= {g_jaccard['threshold_pct']:.1f}% | 기준선 p95 "
+            f"{g_jaccard['baseline_p95_pct']:.1f}% + 패딩 "
+            f"{g_jaccard['validation_padding_pct']:.1f}%p)"
+        )
+    elif g_jaccard.get("threshold_mode") == "explicit_delta":
         print(
             f"- {j_mark} **평균 집합 일치도**: {g_jaccard['value_pct']:.1f}% "
             f"(기준: <= {g_jaccard['threshold_pct']:.1f}% | 카탈로그 기대치 {g_jaccard['baseline_mean_pct']:.1f}% + {g_jaccard['delta_pct']:.1f}%p)"
@@ -694,7 +787,8 @@ def print_report(results: dict[str, Any]) -> None:
     )
     print(
         f"- {p_mark} **완전 일치 쌍 수**: {g_pairs['count']}쌍 "
-        f"(기준: <= {g_pairs['threshold']}쌍 | 25개 아키타입 생일역설 및 단품 생성 관점 허용)"
+        f"(기준: <= {g_pairs['threshold']}쌍 | 기대치 "
+        f"{g_pairs['baseline_p95']}쌍(p95) / 관측 {g_pairs['count']}쌍)"
     )
     print()
 
@@ -761,10 +855,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Path to catalog layouts JSON (default: {CATALOG_PATH}).",
     )
     parser.add_argument(
+        "--candidate-pool-size",
+        type=int,
+        default=None,
+        help="Override the catalog candidate-pool size used by the null model (default: full catalog).",
+    )
+    parser.add_argument(
         "--max-jaccard-delta",
         type=float,
-        default=DEFAULT_MAX_JACCARD_DELTA,
-        help=f"Allowed delta above catalog baseline mean Jaccard (default: {DEFAULT_MAX_JACCARD_DELTA:.2f} / +10.0%%p).",
+        default=None,
+        help=(
+            "Legacy compatibility override: use baseline mean Jaccard + this delta "
+            "when explicitly supplied (default: baseline P95 + validation padding)."
+        ),
     )
     parser.add_argument(
         "--max-avg-jaccard",
@@ -787,8 +890,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--max-identical-pairs",
         type=int,
-        default=DEFAULT_MAX_IDENTICAL_PAIRS,
-        help=f"Maximum allowed count of pairs with 100%% identical block sets (default: {DEFAULT_MAX_IDENTICAL_PAIRS}).",
+        default=None,
+        help=(
+            "Explicit maximum allowed count of pairs with 100%% identical block sets "
+            f"(default: catalog baseline P95; pass {DEFAULT_MAX_IDENTICAL_PAIRS} for the historical override)."
+        ),
     )
     parser.add_argument(
         "--simulation-iterations",
@@ -838,6 +944,7 @@ def main(argv: list[str] | None = None) -> int:
     results = evaluate_plan_diversity(
         records,
         catalog_path=args.catalog_path,
+        candidate_pool_size=args.candidate_pool_size,
         max_jaccard_delta=args.max_jaccard_delta,
         max_effective_common=args.max_effective_common,
         max_identical_pairs=args.max_identical_pairs,

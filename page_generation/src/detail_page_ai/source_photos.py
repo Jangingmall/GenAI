@@ -1,5 +1,6 @@
 import hashlib
 import io
+import logging
 import math
 from collections import deque
 from dataclasses import dataclass, replace
@@ -10,8 +11,32 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps, Unidentifie
 
 from .assets import MemoryAssetStore
 from .dto import GenerationOptions, ProductProfileDto
-from .models import FidelityStatus, PhotoTransform, ProductPhoto, ProductPhotoSet
+from .models import (
+    FidelityStatus,
+    PhotoGenerationFailure,
+    PhotoTransform,
+    ProductPhoto,
+    ProductPhotoSet,
+)
 from .ports import SourceAssetStore
+
+
+logger = logging.getLogger(__name__)
+_PHOTO_GENERATION_FAILURE_REASON = "생성하지 못했습니다"
+
+
+def _record_photo_generation_failure(
+    failures: list[PhotoGenerationFailure], photo_id: str, exc: Exception
+) -> None:
+    reason = _PHOTO_GENERATION_FAILURE_REASON
+    failures.append(PhotoGenerationFailure(photo_id=photo_id, reason=reason))
+    logger.warning(
+        "photo generation failed: photo_id=%s reason=%s error=%s",
+        photo_id,
+        reason,
+        exc,
+        exc_info=True,
+    )
 
 
 class BackgroundGenerator(Protocol):
@@ -738,6 +763,7 @@ class SourcePreservingProductPhotoGenerator:
         )
         photos = list(provided_photos)
         generated_photo_count = 0
+        photo_generation_failures: list[PhotoGenerationFailure] = []
 
         def generation_available() -> bool:
             return generated_photo_count < self.max_generated_photos
@@ -745,7 +771,11 @@ class SourcePreservingProductPhotoGenerator:
         def background_for(role: str) -> tuple[Image.Image, bool]:
             if self.max_generated_photos == 0:
                 return self._solid_background("#E9E4DC"), False
-            return self._background_for(profile=profile, role=role)
+            return self._background_for(
+                profile=profile,
+                role=role,
+                photo_generation_failures=photo_generation_failures,
+            )
 
         if cutout is None:
             for role in missing_roles:
@@ -778,7 +808,9 @@ class SourcePreservingProductPhotoGenerator:
                 )
                 scene = (
                     self._generated_usage_scene(
-                        order=photos[index].order, **reference_args
+                        order=photos[index].order,
+                        photo_generation_failures=photo_generation_failures,
+                        **reference_args,
                     )
                     if generation_available()
                     else None
@@ -840,6 +872,7 @@ class SourcePreservingProductPhotoGenerator:
                         source_sha256=source_record.sha256,
                         source_image=source_image,
                         source_mime_type=source_mime_type,
+                        photo_generation_failures=photo_generation_failures,
                     )
                     if generation_available()
                     else None
@@ -903,6 +936,7 @@ class SourcePreservingProductPhotoGenerator:
                 self._generated_usage_scene(
                     order=len(photos) + 1,
                     photo_id="lifestyle-02",
+                    photo_generation_failures=photo_generation_failures,
                     **reference_args,
                 )
                 if generation_available()
@@ -919,6 +953,7 @@ class SourcePreservingProductPhotoGenerator:
                 generated_view = self._generated_detail_view(
                     role=role,
                     order=len(photos) + 1,
+                    photo_generation_failures=photo_generation_failures,
                     **reference_args,
                 )
                 if generated_view is not None:
@@ -932,6 +967,7 @@ class SourcePreservingProductPhotoGenerator:
                     generated_view = self._generated_detail_view(
                         role=role,
                         order=len(photos) + 1,
+                        photo_generation_failures=photo_generation_failures,
                         **reference_args,
                     )
                     if generated_view is not None:
@@ -944,6 +980,7 @@ class SourcePreservingProductPhotoGenerator:
                         self._generated_detail_view(
                             role=detail_photo.photo_id,
                             order=order,
+                            photo_generation_failures=photo_generation_failures,
                             **reference_args,
                         )
                         if generation_available()
@@ -960,7 +997,10 @@ class SourcePreservingProductPhotoGenerator:
             status = self.validator.validate(photo, source_images=source_images)
             if status != "REJECTED":
                 safe_photos.append(photo)
-        return ProductPhotoSet(photos=tuple(safe_photos))
+        return ProductPhotoSet(
+            photos=tuple(safe_photos),
+            photo_generation_failures=tuple(photo_generation_failures),
+        )
 
     def _generated_usage_scene(
         self,
@@ -972,6 +1012,7 @@ class SourcePreservingProductPhotoGenerator:
         source_sha256: str,
         source_image: bytes,
         source_mime_type: str,
+        photo_generation_failures: list[PhotoGenerationFailure],
     ) -> ProductPhoto | None:
         if self.usage_scene_generator is None:
             return None
@@ -985,7 +1026,12 @@ class SourcePreservingProductPhotoGenerator:
                 height=self.canvas_size[1],
             )
             image = _decode_rgb(data)
-        except (RuntimeError, ValueError, OSError):
+        except (RuntimeError, ValueError, OSError) as exc:
+            _record_photo_generation_failure(
+                photo_generation_failures,
+                photo_id,
+                exc,
+            )
             return None
         return ProductPhoto(
             photo_id=photo_id,
@@ -1017,6 +1063,7 @@ class SourcePreservingProductPhotoGenerator:
         source_sha256: str,
         source_image: bytes,
         source_mime_type: str,
+        photo_generation_failures: list[PhotoGenerationFailure],
     ) -> ProductPhoto | None:
         if self.detail_view_generator is None:
             return None
@@ -1030,7 +1077,12 @@ class SourcePreservingProductPhotoGenerator:
                 height=self.canvas_size[1],
             )
             image = _decode_rgb(data)
-        except (RuntimeError, ValueError, OSError):
+        except (RuntimeError, ValueError, OSError) as exc:
+            _record_photo_generation_failure(
+                photo_generation_failures,
+                role,
+                exc,
+            )
             return None
         return ProductPhoto(
             photo_id=role,
@@ -1315,7 +1367,11 @@ class SourcePreservingProductPhotoGenerator:
         return Image.alpha_composite(canvas.convert("RGBA"), shadow).convert("RGB")
 
     def _background_for(
-        self, *, profile: ProductProfileDto, role: str
+        self,
+        *,
+        profile: ProductProfileDto,
+        role: str,
+        photo_generation_failures: list[PhotoGenerationFailure],
     ) -> tuple[Image.Image, bool]:
         if self.background_generator is None:
             return self._solid_background("#E9E4DC"), False
@@ -1327,7 +1383,12 @@ class SourcePreservingProductPhotoGenerator:
                 height=self.canvas_size[1],
             )
             return _decode_rgb(data), True
-        except (RuntimeError, ValueError, OSError):
+        except (RuntimeError, ValueError, OSError) as exc:
+            _record_photo_generation_failure(
+                photo_generation_failures,
+                role,
+                exc,
+            )
             return self._solid_background("#E9E4DC"), False
 
     @staticmethod

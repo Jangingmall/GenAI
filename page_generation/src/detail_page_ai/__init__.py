@@ -35,7 +35,11 @@ from .react_document import (
     ReactTextMarkDto,
     ReactTextNodeDto,
 )
-from .react_document_builder import build_react_document_from_draft
+from .react_document_builder import (
+    build_react_document_from_draft,
+    resolve_page_block_photos,
+    resolve_page_plan_photos,
+)
 from .models import (
     GeneratedImage,
     GeneratedSection,
@@ -113,6 +117,8 @@ __all__ = [
     "ReactTextMarkDto",
     "ReactTextNodeDto",
     "build_react_document_from_draft",
+    "resolve_page_block_photos",
+    "resolve_page_plan_photos",
     "AiFeApprovalRequestDto",
     "AiFeApprovedResponseDto",
     "AiFeCreateJobRequestDto",

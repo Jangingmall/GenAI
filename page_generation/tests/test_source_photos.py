@@ -1,6 +1,7 @@
 import builtins
 import hashlib
 import io
+import logging
 from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
@@ -72,11 +73,17 @@ def test_mask_failure_still_edits_original_for_scene_and_four_detail_views():
             return _png(Image.new("RGB", (32, 32), "blue"))
 
     editor = Editor()
-    photos = _generator(
+    photo_set = _generator(
         extractor=NoMask(), usage_scene_generator=editor,
         detail_view_generator=editor,
-    ).generate(source_image=source, source_mime_type="image/png",
-               profile=_profile(), options=GenerationOptions()).photos
+    ).generate(
+        source_image=source,
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+    photos = photo_set.photos
+    assert photo_set.photo_generation_failures == ()
     assert [call["role"] for call in editor.calls] == [
         "lifestyle", "detail-02", "detail-03", "detail-04", "detail-05"
     ]
@@ -87,6 +94,91 @@ def test_mask_failure_still_edits_original_for_scene_and_four_detail_views():
     assert all(call["source_image"] == source for call in editor.calls)
     assert sum(photo.fidelity_status == "GENERATED" for photo in photos) == 5
     assert next(photo for photo in photos if photo.photo_id == "hero").data == source
+
+
+def test_usage_scene_failure_is_reported_and_source_fallback_is_preserved(caplog):
+    class FailingUsageSceneGenerator:
+        def generate(self, **kwargs):
+            raise RuntimeError("HTTP 503")
+
+    caplog.set_level(logging.WARNING, logger=source_photos.__name__)
+    photo_set = _generator(
+        usage_scene_generator=FailingUsageSceneGenerator(),
+    ).generate(
+        source_image=_source_fixture(),
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+
+    lifestyle = next(photo for photo in photo_set.photos if photo.photo_id == "lifestyle")
+    assert [failure.photo_id for failure in photo_set.photo_generation_failures] == [
+        "lifestyle"
+    ]
+    assert [failure.reason for failure in photo_set.photo_generation_failures] == [
+        "생성하지 못했습니다"
+    ]
+    assert "photo_id=lifestyle" in caplog.text
+    assert lifestyle.asset_mode == "source_composite"
+    assert lifestyle.product_generated is False
+    assert lifestyle.fidelity_status == "VERIFIED"
+
+
+def test_detail_view_failures_are_reported_for_each_preserved_detail_photo(caplog):
+    class FailingDetailViewGenerator:
+        def generate(self, **kwargs):
+            raise ValueError("model unavailable")
+
+    caplog.set_level(logging.WARNING, logger=source_photos.__name__)
+    photo_set = _generator(
+        detail_view_generator=FailingDetailViewGenerator(),
+    ).generate(
+        source_image=_source_fixture(),
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+
+    failure_ids = [failure.photo_id for failure in photo_set.photo_generation_failures]
+    assert failure_ids == ["detail-02", "detail-03", "detail-04", "detail-05"]
+    assert all(
+        failure.reason == "생성하지 못했습니다"
+        for failure in photo_set.photo_generation_failures
+    )
+    assert "photo_id=detail-02" in caplog.text
+    detail_photos = {
+        photo.photo_id: photo
+        for photo in photo_set.photos
+        if photo.photo_id.startswith("detail")
+    }
+    assert all(photo.product_generated is False for photo in detail_photos.values())
+    assert all(photo.fidelity_status == "VERIFIED" for photo in detail_photos.values())
+
+
+def test_background_failure_is_reported_before_source_composite_fallback(caplog):
+    class FailingBackgroundGenerator:
+        def generate(self, **kwargs):
+            raise OSError("background service unavailable")
+
+    caplog.set_level(logging.WARNING, logger=source_photos.__name__)
+    photo_set = _generator(
+        background_generator=FailingBackgroundGenerator(),
+        include_scale=True,
+    ).generate(
+        source_image=_source_fixture(),
+        source_mime_type="image/png",
+        profile=_profile(),
+        options=GenerationOptions(),
+    )
+
+    failure_ids = [failure.photo_id for failure in photo_set.photo_generation_failures]
+    assert failure_ids == ["lifestyle", "scale"]
+    assert "photo_id=scale" in caplog.text
+    for photo_id in failure_ids:
+        photo = next(photo for photo in photo_set.photos if photo.photo_id == photo_id)
+        assert photo.asset_mode == "source_composite"
+        assert photo.product_generated is False
+        assert photo.fidelity_status == "VERIFIED"
 
 
 def test_cutout_rgb_channels_are_copied_from_source_pixels():

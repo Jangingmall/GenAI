@@ -1,9 +1,13 @@
 import json
 from dataclasses import dataclass
 from typing import Any, Protocol
+from urllib.parse import quote
 
 from .ai_dto import AiToBePersistRequestDto, BeToAiPersistAckDto
 from .models import GeneratedImage
+
+
+DEFAULT_BACKEND_CALLBACK_PATH = "/internal/generations/{generation_id}/completion"
 
 
 class BackendDeliveryError(RuntimeError):
@@ -76,11 +80,13 @@ class BackendProductClient:
         url: str,
         token: str | None = None,
         timeout: float = 60.0,
+        callback_path: str = DEFAULT_BACKEND_CALLBACK_PATH,
         transport: MultipartTransport | None = None,
     ):
         self.url = url
         self.token = token
         self.timeout = timeout
+        self.callback_path = callback_path
         self.transport = transport or HttpxMultipartTransport()
 
     def persist(
@@ -156,7 +162,7 @@ class BackendProductClient:
             }
         try:
             response = self.transport.post_multipart(
-                self.url,
+                self._callback_url(request.generation_id),
                 fields,
                 files,
                 headers,
@@ -194,6 +200,14 @@ class BackendProductClient:
             retryable=status_code >= 500 or status_code == 429,
             status_code=status_code,
         )
+
+    def _callback_url(self, generation_id: str) -> str:
+        encoded_generation_id = quote(generation_id, safe="")
+        path = self.callback_path.format(
+            generation_id=encoded_generation_id,
+            generationId=encoded_generation_id,
+        )
+        return f"{self.url.rstrip('/')}/{path.lstrip('/')}"
 
     @staticmethod
     def _response_parts(

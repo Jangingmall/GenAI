@@ -410,6 +410,23 @@ def test_local_analyzer_validates_ollama_profile_response():
     assert profile.product_type == "desk lamp"
 
 
+def test_local_analyzer_passes_image_generation_state_to_layout_prompt():
+    class FakeChat:
+        def __init__(self):
+            self.prompt = None
+
+        def generate_json(self, prompt, *, image, mime_type, json_schema):
+            self.prompt = prompt
+            return ProductProfileDto.minimal("desk lamp").model_dump(mode="json")
+
+    chat = FakeChat()
+    LocalProductAnalyzer(
+        chat_client=chat, image_generation_enabled=True
+    ).analyze(b"source", "image/jpeg")
+
+    assert "If a generated lifestyle photo is provided downstream" in chat.prompt
+
+
 def test_local_analyzer_uses_only_image_and_creator_hints():
     class FakeChat:
         def __init__(self):
@@ -536,6 +553,7 @@ def test_local_pipeline_can_use_mlx_qwen_and_flux_clients():
         pipeline.photo_generator.background_generator,
         MlxServeBackgroundGenerator,
     )
+    assert pipeline.analyzer.image_generation_enabled is True
 
 
 def test_local_pipeline_never_wires_gemini_from_environment(monkeypatch):
@@ -548,3 +566,4 @@ def test_local_pipeline_never_wires_gemini_from_environment(monkeypatch):
     )
 
     assert not hasattr(pipeline.analyzer, "web_search_client")
+    assert pipeline.analyzer.image_generation_enabled is False

@@ -1,4 +1,6 @@
-from detail_page_ai.backend_client import BackendProductClient
+import pytest
+
+from detail_page_ai.backend_client import BackendDeliveryError, BackendProductClient
 from detail_page_ai.ai_dto import AiToBePersistRequestDto
 from detail_page_ai.dto import (
     ApprovedDraftDto,
@@ -6,6 +8,7 @@ from detail_page_ai.dto import (
 )
 from detail_page_ai.models import GeneratedImage, GeneratedSection, ProductPhoto
 from detail_page_ai.react_document_builder import build_react_document_from_draft
+from local_detail_page_ai.factory import _UnconfiguredBackend
 
 
 class FakeHttpTransport:
@@ -45,10 +48,71 @@ def make_request() -> AiToBePersistRequestDto:
     )
 
 
+@pytest.mark.parametrize(
+    "base_url",
+    ["https://backend.example", "https://backend.example/"],
+)
+def test_persist_assembles_default_generation_callback_url(base_url):
+    transport = FakeHttpTransport()
+    client = BackendProductClient(url=base_url, transport=transport)
+
+    client.persist(
+        make_request(),
+        GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
+    )
+
+    assert (
+        transport.request["url"]
+        == "https://backend.example/internal/generations/generation-1/completion"
+    )
+
+
+def test_persist_assembles_overridden_generation_callback_url():
+    transport = FakeHttpTransport()
+    client = BackendProductClient(
+        url="https://backend.example/",
+        callback_path="/internal/v2/generations/{generation_id}/complete",
+        transport=transport,
+    )
+
+    client.persist(
+        make_request(),
+        GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
+    )
+
+    assert (
+        transport.request["url"]
+        == "https://backend.example/internal/v2/generations/generation-1/complete"
+    )
+
+
+def test_persist_sends_generation_id_as_the_idempotency_key():
+    transport = FakeHttpTransport()
+    client = BackendProductClient(url="https://backend.example", transport=transport)
+    request = make_request()
+
+    assert request.idempotency_key == request.generation_id
+
+    client.persist(
+        request,
+        GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
+    )
+
+    assert transport.request["headers"]["Idempotency-Key"] == request.generation_id
+
+
+def test_unconfigured_backend_preserves_deferred_delivery():
+    with pytest.raises(BackendDeliveryError, match="BACKEND_URL is not configured"):
+        _UnconfiguredBackend().persist(
+            make_request(),
+            GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
+        )
+
+
 def test_persist_sends_metadata_and_image_as_separate_parts():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         token="secret",
         transport=transport,
     )
@@ -72,7 +136,7 @@ def test_persist_sends_metadata_and_image_as_separate_parts():
 def test_persist_serializes_react_document_with_contract_aliases():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     request = make_request()
@@ -94,7 +158,7 @@ def test_persist_serializes_react_document_with_contract_aliases():
 def test_persist_sends_ordered_section_images_when_available():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(
@@ -123,7 +187,7 @@ def test_persist_sends_ordered_section_images_when_available():
 def test_persist_sends_generated_product_photos_when_available():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(
@@ -153,7 +217,7 @@ def test_persist_sends_generated_product_photos_when_available():
 def test_persist_sends_generated_lifestyle_scene_with_explicit_marker():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(
@@ -185,7 +249,7 @@ def test_persist_sends_generated_lifestyle_scene_with_explicit_marker():
 def test_persist_sends_generated_angle_detail_with_explicit_marker():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(
@@ -217,7 +281,7 @@ def test_persist_sends_generated_angle_detail_with_explicit_marker():
 def test_persist_omits_rejected_product_photos():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(
@@ -246,7 +310,7 @@ def test_persist_omits_rejected_product_photos():
 def test_persist_omits_product_photo_without_explicit_provenance():
     transport = FakeHttpTransport()
     client = BackendProductClient(
-        url="https://backend.example/internal/v1/ai-generated-products",
+        url="https://backend.example",
         transport=transport,
     )
     image = GeneratedImage(

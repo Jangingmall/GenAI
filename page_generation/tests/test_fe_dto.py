@@ -122,6 +122,8 @@ def test_fe_response_aliases_validate_the_completed_contract():
     )
 
     assert response.result.detail_page.mime_type == "image/png"
+    assert response.result.detail_page.photo_generation_failures == []
+    assert response.result.detail_page.unused_generated_photo_ids == []
 
 
 def test_fe_request_dto_is_available_from_package_public_api():
