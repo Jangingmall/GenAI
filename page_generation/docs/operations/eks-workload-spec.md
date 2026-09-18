@@ -58,7 +58,7 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 
 - 두 경로 모두 **인증 토큰이 필요 없습니다.**
 - **liveness 를 `/health/ready` 로 잡지 말아 주세요.** 모델 로딩에 수 분이 걸리므로 liveness 가 추론 서버에 묶이면 파드가 계속 재시작됩니다.
-- `startupProbe` 를 `/health/ready` 로 두고 `failureThreshold` 를 넉넉히(첫 기동은 모델 다운로드 약 30GB 포함) 잡아 주시면 좋겠습니다.
+- `startupProbe` 를 `/health/ready` 로 두고 `failureThreshold` 를 넉넉히 잡아 주세요. EKS 경로의 정상 기동은 모델 다운로드가 아니라 S3→PVC 동기화, 모델 로딩, GPU 초기화가 끝난 뒤이며, 정확한 시간은 서버 GPU에서 아직 실측하지 않았습니다. S3 동기화가 끝나기 전에 파드가 뜨면 우리 컨테이너가 명확한 오류를 남기고 즉시 종료하므로, 아래 1-4의 initContainer 또는 동기화 Job 완료를 파드 시작 조건으로 묶어 주세요.
 
 ## 1-4. 공유 정보
 
@@ -103,7 +103,8 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 | `LOCAL_TEXT_PROVIDER` / `LOCAL_IMAGE_PROVIDER` / `BACKGROUND_PROVIDER` | `sglang` (이미지 기본값) |
 | `LOCAL_TEXT_URL` / `LOCAL_IMAGE_URL` | `http://127.0.0.1:30000` / `http://127.0.0.1:30001` (이미지 기본값) |
 | `LOCAL_TEXT_MODEL` / `LOCAL_IMAGE_MODEL` | `qwen-text` / `flux-klein` (SGLang 등록 이름과 일치해야 함) |
-| `TEXT_MODEL_REVISION` / `IMAGE_MODEL_REVISION` | 모델 가중치 커밋 고정값 |
+| `TEXT_MODEL_PATH` / `IMAGE_MODEL_PATH` | PVC 안의 모델 디렉터리 절대 경로. 예: `/var/lib/detail-page-ai/models/text/qwen3.8-27b-awq-int4`, `/var/lib/detail-page-ai/models/image/flux2-klein-9b-bnb-4bit` |
+| `TEXT_MODEL_REVISION` / `IMAGE_MODEL_REVISION` | HF 모드에서만 사용하는 모델 가중치 커밋 고정값. 로컬 모드에서는 `--revision` 을 전달하지 않습니다 |
 | `SQLITE_PATH` / `ASSET_STORE_DIR` / `HF_HOME` / `U2NET_HOME` | PVC 경로 (이미지 기본값) |
 
 전체 목록은 `.env.example` 과 `src/detail_page_ai/config.py` 에 있습니다.
@@ -116,7 +117,9 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 /var/lib/detail-page-ai/          ← PVC 마운트 지점 (1개)
 ├ state.sqlite3                    작업 상태 · BE 전달 outbox
 ├ assets/                          생성된 이미지 산출물
-├ models/huggingface/              SGLang 모델 약 30 GiB
+├ models/text/<model>/              텍스트·비전 모델 가중치
+├ models/image/<model>/             이미지 확산 모델 가중치
+├ models/huggingface/              HF 모드 fallback·런타임 캐시
 ├ models/u2net/                    rembg 누끼 모델 약 973 MB
 ├ models/torch/                    torch 캐시
 └ cache/                           SGLang·FlashInfer·Triton 등 런타임 캐시
@@ -129,11 +132,31 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 | 권한 | UID/GID **10001** 이 쓸 수 있어야 합니다. `securityContext.fsGroup: 10001` 설정 필요 |
 | 제약 | `ReadWriteOnce` 라 **단일 파드만 가능**합니다. 파드를 늘리려면 상태를 RDS + S3 로 옮기는 별도 작업이 필요합니다 |
 
-첫 기동 시 모델 약 30GB 를 내려받아 PVC 에 저장하고, 이후 재시작에서는 다시 받지 않습니다.
+EKS 경로에서는 인프라팀이 S3에서 위 모델 디렉터리로 가중치를 동기화한 뒤 파드를 시작해야 합니다. 우리 컨테이너는 PVC의 로컬 디렉터리만 읽습니다. PVC 마운트 후 모델 디렉터리가 생성되어 있으나 `config.json`이 아직 없으면 로컬 모드의 명확한 오류를 남기고 즉시 종료합니다. 모델 경로 디렉터리 자체가 없으면 HF 모드로 fallback하므로, EKS에서는 네트워크 다운로드에 의존하지 않도록 모델 디렉터리와 파일을 initContainer 또는 선행 Job으로 준비해 주세요.
+
+#### 인프라팀 동기화 대상
+
+| 모델 | 저장소·고정 커밋 | 용도 | 크기 |
+| --- | --- | --- | --- |
+| 텍스트·비전 | `cyankiwi/Qwen3.8-27B-AWQ-INT4` (`6e134bae811fb5adac50ee042ae5f029ac6779aa`) | SGLang 텍스트 서버 | 가중치 19.6 GiB |
+| 이미지 확산 | `circulus/FLUX.2-klein-9B-bnb-4bit` (`58c2804f31af12c8888504b96250010c50b55e44`) | SGLang 확산 서버 | 약 10.2 GiB |
+
+S3 버킷은 `jangin-{env}-s3-models`를 사용하고, 인프라팀이 S3 Gateway Endpoint를 통해 PVC로 동기화합니다. 각 모델은 별도 디렉터리에 **압축하지 않고 펼친 형태**로 저장해야 하며, `config.json`과 가중치 파일(`*.safetensors`)이 해당 디렉터리 안에 직접 있어야 합니다. 위 예시의 `TEXT_MODEL_PATH`와 `IMAGE_MODEL_PATH`에 PVC 안의 실제 절대 경로를 주입해 주세요.
+
+모델 서버는 텍스트·비전과 이미지 확산을 **각각 독립적으로** 다음과 같이 판정합니다.
+
+- 지정한 모델 경로가 디렉터리로 존재하면 로컬 모드입니다. 이때 저장소 ID 대신 해당 경로를 사용하고 `--revision`을 전달하지 않으며, 네트워크를 시도하지 않도록 `HF_HUB_OFFLINE=1`로 실행합니다.
+- 로컬 모드에서 `config.json`이 없으면 모델 디렉터리가 불완전하다는 명확한 오류 메시지를 표준 출력/오류로 남기고 기동을 중단합니다. 파드가 Ready 상태가 되지 않습니다.
+- 지정한 모델 경로가 디렉터리로 존재하지 않으면 HF 모드입니다. 이때 지금의 저장소 ID와 `--revision` 고정 커밋을 사용합니다. EKS 정상 경로에서는 인프라팀의 S3→PVC 동기화가 먼저 완료되어 로컬 모드가 선택되어야 합니다.
 
 ### S3 등 AWS Resource 접근 필요 여부
 
-**필요 없습니다.** 현재 코드에 AWS SDK(`boto3`) 의존성이 없고 S3 접근 경로도 없습니다. 산출물은 위 PVC 에 저장합니다. 다중 파드로 확장하는 시점에 S3 전환을 다시 논의하면 됩니다.
+앞선 답변에서는 “S3 등 AWS Resource 접근은 필요 없습니다”라고 말씀드렸으나, S3 사전 업로드 제안에 따라 **모델 확보 방식은 다음과 같이 바뀝니다.**
+
+- 우리 컨테이너는 여전히 AWS 자격이 필요하지 않습니다. `boto3`·AWS CLI 의존성이 없고, 컨테이너에 IAM 역할이나 S3 권한을 부여하지 않습니다.
+- 인프라팀이 `jangin-{env}-s3-models`에서 PVC로 두 모델을 동기화하고, 우리는 주입받은 `TEXT_MODEL_PATH`·`IMAGE_MODEL_PATH`의 로컬 디렉터리만 읽습니다. S3 Gateway Endpoint와 `aws s3 sync`의 주체는 인프라팀의 initContainer 또는 선행 Job입니다.
+- 이전 답변은 첫 기동 때 Hugging Face에서 약 30GB를 내려받는 전제였지만, EKS 경로에서는 사전 동기화된 PVC를 읽는 전제로 변경되었습니다. 따라서 우리 컨테이너가 S3 또는 Hugging Face 네트워크에 직접 접근할 필요가 없습니다.
+- 생성 이미지, SQLite 상태, outbox 및 런타임 캐시는 이전과 같이 `/var/lib/detail-page-ai` 아래 PVC에 저장합니다. **산출물 저장 위치는 변경되지 않았습니다.**
 
 ## 1-5. Image 발행 Branch
 
@@ -156,6 +179,6 @@ FastAPI 에 두 경로를 새로 추가했습니다.
 ## 함께 알아 두셔야 할 사항
 
 1. **이미지가 큽니다.** SGLang 베이스(`lmsysorg/sglang:v0.5.19`)에 `sglang[diffusion]` 과 `bitsandbytes` 를 얹은 것만으로 약 18~22 GB 이고, 여기에 Chromium·Node·서비스 의존성이 더해집니다. ECR 저장 용량, 노드 디스크, 첫 pull 시간을 감안해 주세요.
-2. **첫 기동이 오래 걸립니다.** 모델 약 30GB 다운로드와 GPU 적재가 끝나야 `/health/ready` 가 200 이 됩니다. `startupProbe` 여유가 필요합니다.
+2. **첫 기동의 모델 다운로드 단계가 EKS 경로에서는 사라집니다.** 인프라팀이 미리 S3에서 PVC로 동기화한 모델 디렉터리를 읽으므로, 컨테이너가 첫 기동에 약 30GB를 직접 받지 않습니다. 동기화 완료, GPU 적재, 두 서버의 Ready 전환 시간은 아직 서버 GPU에서 실측하지 않았으므로 정확한 기동 시간을 단정할 수 없습니다. `startupProbe`는 이 미측정 구간을 반영해 설정해 주세요. 단일 EC2 Compose 경로의 HF 다운로드 전제는 `aws-migration-checklist.md`에 별도로 남아 있습니다.
 3. **이미지 모델 라이선스.** 현재 이미지 모델은 FLUX Non-Commercial License 원본을 커뮤니티가 4bit 로 양자화한 가중치를 사용합니다. 상업 운영 전에 라이선스 확인이 필요하다는 점을 기록해 둡니다. 대안은 Apache 2.0 인 `black-forest-labs/FLUX.2-klein-4B` 입니다.
 4. **아직 GPU 검증 전입니다.** Colab 스모크 테스트 노트북(`notebooks/colab_sglang_smoke_test.ipynb`)으로 사전 확인이 가능하며, 아직 실행하지 않았습니다.

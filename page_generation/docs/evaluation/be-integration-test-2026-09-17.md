@@ -14,7 +14,7 @@ AI 서비스를 `127.0.0.1:8099` 에 띄우고, BE 의 `RestAiContentClient` 가
 
 | BE 가 호출하는 것 | 근거 | 응답 |
 | --- | --- | ---: |
-| `POST /ai/products` | `RestAiContentClient.java:53` | **404** |
+| `POST /ai/products` | `RestAiContentClient.java:54` | **404** |
 | `POST /ai/products/sync` | `RestAiContentClient.java:64` | **404** |
 | `PUT /ai/products/{id}` | `RestAiContentClient.java:76` | **404** |
 | `DELETE /ai/products/{id}` | `RestAiContentClient.java:87` | **404** |

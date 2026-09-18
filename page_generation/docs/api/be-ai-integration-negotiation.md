@@ -1,5 +1,11 @@
 # BE ↔ AI 연동 협의 요청
 
+> 이 문서는 주체별로 다음 세 문서로 갈라졌습니다. 아래 본문은 이력 보존을 위해 그대로 남겨 둡니다.
+>
+> - [BE 팀 인계](be-handoff-2026-09-17.md)
+> - [AI 작업 목록](ai-worklist-2026-09-17.md)
+> - [양측 합의 필요 사항](open-decisions-2026-09-17.md)
+
 - 보내는 곳: 생성형 AI 팀
 - 받는 곳: BE 팀
 - 작성일: 2026-09-17
@@ -55,13 +61,13 @@
 
 | 주체 | `POST /ai/products` 의 의미 | 본문 |
 | --- | --- | --- |
-| BE `RestAiContentClient:53` | **상세페이지 생성 요청** | `{generationId, productId, images[], productName, howMade, careTips}` |
+| BE `RestAiContentClient.java:54` | **상세페이지 생성 요청** | `{generationId, productId, images[], productName, howMade, careTips}` |
 | `GenAI/chat_bot` `app/main.py:112` | **추천 색인용 상품 upsert** | `{artisan, product}` |
 | BE 계약서 5-3 | 상품 게시 시점 **동기화** | `{artisan, product}` |
 
 여기서 두 가지 문제가 나옵니다.
 
-1. **BE 는 상품 동기화를 `AI_OLLAMA_URL`(= 상세페이지 서버)로 보냅니다**(`RestAiContentClient:64,76,87`). 그런데 그 데이터가 실제로 필요한 곳은 **추천 색인을 가진 챗봇**입니다. 지금 설정대로면 챗봇은 상품 동기화를 영영 받지 못하고, 추천에 상품이 노출되지 않습니다.
+1. **BE 는 상품 동기화를 `AI_OLLAMA_URL`(= 상세페이지 서버)로 보냅니다**(`RestAiContentClient.java:64,78,92`). 그런데 그 데이터가 실제로 필요한 곳은 **추천 색인을 가진 챗봇**입니다. 지금 설정대로면 챗봇은 상품 동기화를 영영 받지 못하고, 추천에 상품이 노출되지 않습니다.
 2. **챗봇에는 `/ai/products/sync` 가 없습니다.** 챗봇은 upsert 를 `POST /ai/products` 로 받습니다. BE 가 부르는 `/ai/products/sync` 와 경로가 다릅니다.
 
 **제안**: 상품 동기화 3종(`sync`, `PUT`, `DELETE`)은 **챗봇 서비스(`AI_SGLANG_URL`)로 보내고**, 상세페이지 생성만 `AI_OLLAMA_URL` 로 보내 주세요. 경로 이름은 세 팀이 한 번에 맞추는 편이 낫습니다. 저희는 어느 쪽으로 정하든 따르겠습니다.
@@ -74,7 +80,7 @@
 
 | # | 항목 | 현재 | 맞출 방향 |
 | --- | --- | --- | --- |
-| A-1 | 생성 요청 경로 | AI 는 `POST /internal/v1/ai/detail-page-jobs` | **`POST /ai/products` 를 AI 에 추가**합니다 (`RestAiContentClient.java:53`) |
+| A-1 | 생성 요청 경로 | AI 는 `POST /internal/v1/ai/detail-page-jobs` | **`POST /ai/products` 를 AI 에 추가**합니다 (`RestAiContentClient.java:54`) |
 | A-2 | 요청 형식 | AI 가 multipart 요구 → BE JSON 에 422 | **JSON 수용**. BE 가 보내는 `{generationId, productId, images[], productName, howMade, careTips}` 그대로 받습니다 |
 | A-3 | 이미지 전달 | AI 가 바이트 multipart 기대 | **URL 목록 수용**. BE 가 주는 이미지 URL 을 AI 가 내려받습니다 |
 | A-4 | 콜백 경로·형식 | AI 가 단일 URL 로 multipart POST | **`POST /internal/generations/{generationId}/complete` 에 JSON `{"reactDocument": ...}`** 로 보냅니다 (실측 200 확인) |
@@ -88,17 +94,17 @@ A-1 ~ A-6 은 **BE 코드를 하나도 바꾸지 않아도** 되는 항목입니
 
 | # | 항목 | 실측 내용 | 요청 |
 | --- | --- | --- | --- |
-| B-1 | 상품 동기화를 받는 쪽 | BE 가 상품 동기화 3종을 `ollamaUrl`(상세페이지 서버)로 보냅니다 (`RestAiContentClient:64,76,87`) | 위 **결정 2-1** 참고. 동기화는 추천 색인을 가진 **챗봇 서비스**로 가야 합니다. 두 URL 설정 자체는 그대로 두시면 됩니다 |
+| B-1 | 상품 동기화를 받는 쪽 | BE 가 상품 동기화 3종을 `ollamaUrl`(상세페이지 서버)로 보냅니다 (`RestAiContentClient.java:64,78,92`) | 위 **결정 2-1** 참고. 동기화는 추천 색인을 가진 **챗봇 서비스**로 가야 합니다. 두 URL 설정 자체는 그대로 두시면 됩니다 |
 | B-2 | `.env` 미동작 | 가이드 1장이 루트 `.env` 로 `AI_OLLAMA_URL` 을 설정하라고 하지만 `build.gradle` 에 dotenv 의존성이 없어 Spring 이 읽지 않습니다. 기본값으로 호출됐습니다 | 가이드를 고치거나 dotenv 를 추가해 주세요. AI 팀이 로컬 재현할 때 첫 번째로 걸립니다 |
 | B-3 | 실패 시 재시도 | 계약서 3-6 은 "최대 2회 재시도" 인데, BE 로그에는 **1회 호출 후 즉시 실패**로 남았습니다 | 재시도가 구현돼 있는지 확인 부탁드립니다 |
 | B-4 | 202 안의 FAILED | `POST .../generations` 가 `202 Accepted` 를 주는데 본문 `status` 가 이미 `FAILED` 였습니다. AI 호출이 동기로 일어나 즉시 실패한 뒤 202 로 감싸집니다 | 비동기(계약서 5-1)가 의도라면 호출을 분리해 주세요. FE 가 202 를 성공으로 오인합니다 |
-| B-5 | 문서와 코드 불일치 | 계약서 5-3 은 출력이 블록 배열(`{order, tag, text, imageUrl}`)인데, `AiCallbackController` 는 `reactDocument` 를 받습니다 (`AiCallbackRequest.java:8-11`) | **어느 쪽이 정본입니까?** 저희는 코드 기준(`reactDocument`)으로 맞추겠습니다 |
+| B-5 | 문서와 코드 불일치 | 계약서 5-3 은 출력이 블록 배열(`{order, tag, text, imageUrl}`)인데, `AiCallbackController` 는 `reactDocument` 를 받습니다 (`AiCallbackRequest.java:10`) | **어느 쪽이 정본입니까?** 저희는 코드 기준(`reactDocument`)으로 맞추겠습니다 |
 
 ### C. 합의가 필요합니다
 
 | # | 항목 | 쟁점 |
 | --- | --- | --- |
-| **C-1** | **생성 이미지를 어떻게 넘깁니까 — 가장 급한 항목** | AI 가 이미지를 생성하기로 확정됐습니다(결정 1). 그런데 **넘길 방법이 없습니다.** BE 콜백은 `reactDocument` 하나만 받고(`AiCallbackRequest.java:8-11`), 현재 AI 는 이미지 바이트를 multipart 로 보냅니다. 셋 중 하나를 정해 주세요 — ① BE 가 이미지 업로드 API 를 열고 AI 가 그리로 올린 뒤 받은 `imageId` 를 `reactDocument` 에 심는다 ② AI 가 S3 에 직접 올리고 URL 을 심는다(현재 AI 는 AWS SDK 의존성이 없어 추가 작업이 필요합니다) ③ 콜백 본문을 확장해 이미지를 함께 받는다. **저희는 ①을 권합니다** — 이미지 저장·CDN 은 이미 BE 책임이고(계약서 5-5), AI 에 S3 권한을 새로 주지 않아도 됩니다 |
+| **C-1** | **생성 이미지를 어떻게 넘깁니까 — 가장 급한 항목** | AI 가 이미지를 생성하기로 확정됐습니다(결정 1). 그런데 **넘길 방법이 없습니다.** BE 콜백은 `reactDocument` 하나만 받고(`AiCallbackRequest.java:10`), 현재 AI 는 이미지 바이트를 multipart 로 보냅니다. 셋 중 하나를 정해 주세요 — ① BE 가 이미지 업로드 API 를 열고 AI 가 그리로 올린 뒤 받은 `imageId` 를 `reactDocument` 에 심는다 ② AI 가 S3 에 직접 올리고 URL 을 심는다(현재 AI 는 AWS SDK 의존성이 없어 추가 작업이 필요합니다) ③ 콜백 본문을 확장해 이미지를 함께 받는다. **저희는 ①을 권합니다** — 이미지 저장·CDN 은 이미 BE 책임이고(계약서 5-5), AI 에 S3 권한을 새로 주지 않아도 됩니다 |
 | C-2 | 계약서 5-4 수정 여부 | 위 결정 1. 계약서를 현재 동작에 맞출지, 생성을 끌지(`MAX_GENERATED_PHOTOS=0`) |
 | C-3 | `/ai/products` 경로 정리 | 위 결정 2-1. BE·상세페이지·챗봇 세 곳이 같은 경로를 다르게 씁니다 |
 | C-4 | **인증** | AI 의 `/internal/v1/ai/*` 는 `X-AI-Internal-Token` 을 요구합니다(없으면 401). BE 클라이언트는 인증 헤더를 보내지 않습니다. 반대로 BE 의 `/internal/generations/{id}/complete` 도 인증 없이 열려 있었습니다. **양방향 내부 호출 인증을 어떻게 할지** 정해야 합니다. 토큰 발급 주체도 함께 정해 주세요 |

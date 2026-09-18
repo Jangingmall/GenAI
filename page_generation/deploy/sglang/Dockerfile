@@ -18,6 +18,11 @@ COPY --from=node /usr/local/bin/npm /usr/local/bin/npm
 COPY --from=node /usr/local/bin/npx /usr/local/bin/npx
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 
+# The model path defaults below are HF repository IDs for the single-EC2
+# compose path. EKS may override them with PVC directories such as
+# /var/lib/detail-page-ai/models/qwen3.8-27b-awq. The entrypoint detects
+# directories, omits --revision, and enables HF_HUB_OFFLINE for that server.
+# Keep the commit SHA values for HF repository mode.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \

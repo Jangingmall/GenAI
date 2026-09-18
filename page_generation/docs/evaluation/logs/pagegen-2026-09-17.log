@@ -1,0 +1,2 @@
+INFO:     127.0.0.1:63049 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63059 - "POST /ai/products HTTP/1.1" 404 Not Found
