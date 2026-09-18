@@ -1297,6 +1297,22 @@ _CANDIDATES_3 = [
 ]
 
 
+def test_run_explain_request_single_candidate_skips_disambiguation():
+    """직전 후보가 1개뿐이면 "몇 번째"를 고를 필요 자체가 없다 — 순번을 못 찾아도
+    (실측 확인된 문제: "그거 설명해줘"처럼 순번 없는 지시대명사) 불필요하게
+    되묻지 말고 바로 그 상품을 설명해야 한다."""
+    single = [_CANDIDATES_3[0]]
+    result = rr.run(
+        "그거 설명해줘",
+        chat=_explain_chat("도기토 수반은 물레로 직접 성형한 작품입니다."),
+        previous_candidates=single,
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == [1]
+    assert "몇 번째" not in result["reply"]
+
+
 def test_run_explain_request_without_ordinal_asks_which_one_with_all_chip():
     """순번을 못 찾으면 되묻는데, 이번엔 "전체 설명" 칩도 같이 나가야 한다."""
 

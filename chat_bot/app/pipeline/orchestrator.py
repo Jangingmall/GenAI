@@ -303,6 +303,20 @@ def run(
                 candidates=[],
                 shown_product_ids=[],
             )
+        if len(previous_candidates) == 1:
+            # 후보가 1개뿐이면 "몇 번째"를 고를 필요 자체가 없다 — 순번 없는
+            # 지시대명사("그거 설명해줘")로 와도 불필요하게 되묻지 말고 바로 그
+            # 상품을 설명한다(실측 확인된 문제: 후보 1개인데도 "1번/전체 설명
+            # 중에서 골라주세요"로 되물어 대화 턴을 한 번 더 낭비함).
+            explained = explain_product(message, previous_candidates[0], chat=chat)
+            return _short_circuit(
+                explained["reply"],
+                "narrow_down",
+                product_ids=explained["product_ids"],
+                suggestions=explained["suggestions"],
+                candidates=previous_candidates,
+                shown_product_ids=explained["product_ids"],
+            )
         if is_all_request(message):
             explained = explain_products(message, previous_candidates, chat=chat)
             return _short_circuit(
