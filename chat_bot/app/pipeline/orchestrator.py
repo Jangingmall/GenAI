@@ -588,10 +588,18 @@ def run(
         # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
         # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
         # 안 쓰였으니 그대로 넘기면 주제어가 아닌 값으로 덮어써버릴 수 있다. 0건으로
-        # 끝난 재검색도 같은 이유로 "안 쓰인 것"과 동일하게 취급한다.
+        # 끝난 재검색도 종목이 안 바뀌었으면 같은 이유로 "안 쓰인 것"과 동일하게
+        # 취급해 이전 값으로 되돌린다.
+        #
+        # 다만 category_changed면 되돌리지 않는다 — 실측 확인된 버그: "도자기
+        # 50만원대"가 0건이어도(종목을 이번 턴에 실제로 바꿔 시도한 것) query_text를
+        # 종목 전환 *이전*(예: "금속공예") 값으로 되돌리면, 바로 다음 턴("50만원
+        # 이하로는?"처럼 가격만 조정하는 순수 후속 질문)이 위 topic_context 이어붙이기
+        # 로직 때문에 엉뚱하게 옛 종목으로 재검색된다. 이번 턴에 실제로 시도한(비록
+        # 0건이지만) 새 종목을 다음 턴 참조용으로 남겨야 한다.
         "query_text": (
             (previous_query_text or "")
-            if search_found_nothing
+            if search_found_nothing and not category_changed
             else (contact1["query_text"] if did_search else (previous_query_text or ""))
         ),
     }

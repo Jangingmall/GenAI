@@ -890,6 +890,56 @@ def test_run_narrow_down_new_filter_with_zero_results_preserves_previous_context
     assert result["query_text"] == "찻잔 있나요"
 
 
+def test_run_zero_results_with_category_change_keeps_the_new_topic_for_next_turn():
+    """실측 확인된 버그: "50만원 이하로는?" 같은 후속 질문이 실제 겪은 시나리오.
+
+    직전에 "금속공예" 추천이 성공했고(previous_query_text="집들이 선물용
+    금속공예품 추천해줘"), 이번 턴에 "도자기"로 종목을 바꿔 검색했는데 0건이면
+    (위 테스트처럼) 다음 턴 참조용 query_text를 되돌리는 것까진 맞다 — 그런데
+    "이전 값"을 previous_query_text(금속공예, 종목이 바뀌기 *전*)로 되돌리면,
+    바로 다음 턴("50만원 이하로는?"처럼 가격만 조정하는 후속 질문)이 엉뚱하게
+    금속공예 주제로 재검색된다. 종목이 이번 턴에 실제로 바뀌었다면(category_changed)
+    "이전"이 아니라 "이번 턴에 시도했던(비록 0건이지만) 새 종목"을 다음 턴 참조용으로
+    남겨야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "gift_recommendation",
+            "max_price": 500000,
+            "min_price": None,
+            "gift_theme": ["PARENTS"],
+            "color": [],
+            "query_text": "부모님 퇴직 선물용 도자기 50만원대로 추천해줘",
+        },
+        generate_payload={
+            "reply": "50만원대 도자기는 찾지 못했어요.",
+            "allowed_ids": [],
+            "suggestions": [],
+        },
+    )
+    previous_metal = [
+        {"product_id": 667, "name": "은 촛대", "category": "METAL", "score": 0.9}
+    ]
+
+    result = rr.run(
+        "부모님 퇴직 선물용 도자기 50만원대로 추천해줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank([]),
+        previous_candidates=previous_metal,
+        previous_product_ids=[667],
+        previous_query_text="집들이 선물용 금속공예품 추천해줘",
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == []
+    # candidates·shown_product_ids는 기존처럼 직전 성공 상태로 되돌아가도 된다
+    # (여기서 검증하려는 건 query_text뿐).
+    assert result["candidates"] == previous_metal
+    # 종목이 바뀌었으므로 되돌리지 않고, 이번 턴이 실제로 시도한(0건이었지만) 도자기
+    # 주제를 다음 턴이 이어받아야 한다.
+    assert "도자기" in result["query_text"]
+    assert "금속" not in result["query_text"]
+
+
 # ---------------------------------------------------------------------------
 # 카드 중복 노출 억제 — previous_product_ids와 완전히 같은 세트면 카드를 안 띄운다
 # ---------------------------------------------------------------------------
