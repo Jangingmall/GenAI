@@ -600,14 +600,28 @@ _CHEAPEST_WORDS = ("가장 저렴", "가장 싼", "제일 저렴", "제일 싼",
 _MOST_EXPENSIVE_WORDS = ("가장 비싼", "가장 비싸", "제일 비싼", "제일 비싸", "최고가")
 
 
+def _contains_with_spacing_fallback(message: str, words: tuple[str, ...]) -> bool:
+    """원문에서 못 찾으면 공백을 없앤 버전으로 한 번 더 시도한다.
+
+    _mentioned_category와 같은 이유·같은 패턴이다 — 실측 확인된 버그:
+    "설 명해줄래?"처럼 키워드 중간에 실수로 띄어쓰기가 들어가면 원문 그대로는
+    안 걸린다. 원문에서 이미 뭔가 찾았으면 이 재시도 자체를 안 해서(오탐 위험
+    감소), "찾은 게 있으면 그대로 신뢰"를 우선한다.
+    """
+    if any(word in message for word in words):
+        return True
+    collapsed = message.replace(" ", "")
+    return any(word in collapsed for word in words)
+
+
 def is_explain_request(message: str) -> bool:
     """ "이 상품 설명해줘"류 상세 설명 요청인지 키워드로 판단한다."""
-    return "설명해" in message or "자세히" in message
+    return _contains_with_spacing_fallback(message, ("설명해", "자세히"))
 
 
 def is_all_request(message: str) -> bool:
     """ "모두"·"전체"·"둘 다"·"셋 다" 등 후보 전체를 가리키는 표현인지 판단한다."""
-    return any(word in message for word in _ALL_WORDS)
+    return _contains_with_spacing_fallback(message, _ALL_WORDS)
 
 
 def extract_ordinal(message: str, total: int) -> int | None:

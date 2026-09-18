@@ -147,6 +147,23 @@ def test_filter_by_category_excludes_wood_item_hidden_by_ambiguous_match():
     assert [c["product_id"] for c in filtered] == [78]
 
 
+def test_is_explain_request_tolerates_accidental_space_in_keyword():
+    """실측 확인된 버그: "설 명해줄래?"처럼 "설명해" 중간에 실수로 띄어쓰기가
+    들어가면 "설명해" in message 검사가 실패해 설명 요청 자체를 못 알아챈다.
+    _mentioned_category가 이미 쓰는 패턴(원문에서 못 찾으면 공백 제거 후
+    재시도)을 여기도 적용한다."""
+    assert gen.is_explain_request("각 상품들 설 명해줄래?") is True
+    assert gen.is_explain_request("좀 더 자 세히 알려줘") is True
+
+
+def test_is_explain_request_still_false_for_unrelated_message():
+    assert gen.is_explain_request("찻잔 있나요") is False
+
+
+def test_is_all_request_tolerates_accidental_space_in_keyword():
+    assert gen.is_all_request("전 체 다 보여줘") is True
+
+
 def test_build_reply_caps_candidates_at_max_displayed_even_with_larger_pool():
     """오케스트레이터가 검색 임베딩의 종목 혼입에 대비해 top_k=9로 넉넉히 받아오므로
     (실측: "선물로 좋은 도자기 찾아줘"가 top_k=3만 받으면 종목 필터 후 1개만 남던
