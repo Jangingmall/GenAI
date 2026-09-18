@@ -17,11 +17,12 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 
 from app.pipeline.embedding import embed_query
-from app.pipeline.generate import _mentioned_category
+from app.pipeline.generate import _COLOR_LABELS, _mentioned_categories
 
 _SIMILARITY_THRESHOLD = 0.82  # 실측(실제 임베딩 모델)으로 캘리브레이션한 값 — 같은 뜻
 # 문장 쌍은 0.84~0.96, 다른 질문 쌍은 0.36~0.74로 갈렸다("선물로 좋은 도자기 찾아줘" vs
@@ -33,9 +34,13 @@ _SIMILARITY_THRESHOLD = 0.82  # 실측(실제 임베딩 모델)으로 캘리브�
 # 퇴직선물 도자기 50만원 이하로 추천해줘"와 "...목공예품 50만원 이하로 추천해줘"처럼
 # 문장 틀이 거의 같고 종목명만 바뀐 경우, 실제로 종목이 완전히 다른데도 유사도가
 # 0.93까지 나와(위 "다른 질문 쌍" 상한 0.74를 훨씬 넘음) 캐시가 오판했다 — 도자기로
-# 캐싱된 query_text·filters가 목공예품 질문에 그대로 새어나갔다. 임베딩 하나로는 못
-# 막아서, taxonomy 기반 종목 대조(_mentioned_category)를 추가 방어선으로 건다 — 아래
-# lookup() 참고.
+# 캐싱된 query_text·filters가 목공예품 질문에 그대로 새어나갔다. 처음엔 종목만 막았지만
+# ("이런 유사한 상황을 더 테스트해봤냐"는 지적으로 재점검) 가격 숫자만 다른 쌍("도자기
+# 5만원" vs "10만원", 유사도 0.871)·색상만 다른 쌍("빨간색" vs "파란색", 유사도 0.876)도
+# 같은 사각지대에 있는 걸 실측으로 추가 확인했다 — "문장 틀은 같고 한 단어(슬롯)만
+# 바뀌면 임베딩이 그 차이를 충분히 크게 반영 못 한다"는 같은 근본 원인이다. 임베딩
+# 하나로는 못 막아서, 종목·가격 숫자·색상 셋 다 코드로 뽑아 대조하는 추가 방어선을
+# 건다 — 아래 _cache_signal·lookup() 참고.
 _TTL_SECONDS = 600  # 카탈로그 변경 반영 지연을 짧게 묶어두기 위한 상한
 _MAX_ENTRIES = 200  # 무한정 커지지 않게 제한 — 다 차면 오래된 것부터 버림(FIFO)
 
@@ -54,28 +59,56 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return sum(x * y for x, y in zip(a, b))
 
 
+_DIGITS_RE = re.compile(r"\d+")
+_COLOR_WORDS = frozenset(_COLOR_LABELS.values())  # {"흰색", "검정색", ...} — DB enum
+# 한국어 라벨을 그대로 재사용한다(단일 출처, generate.py와 어긋날 일이 없음).
+
+
+def _cache_signal(message: str) -> dict[str, frozenset[str]]:
+    """임베딩 유사도의 사각지대를 코드로 보강하는 신호 3가지.
+
+    "문장 틀은 같고 한 단어(종목·가격 숫자·색상)만 바뀐" 문장 쌍은 임베딩 유사도가
+    임계값을 넘어버릴 수 있다(_SIMILARITY_THRESHOLD 주석의 실측 사례 참고) — 그
+    바뀐 단어 자체를 코드로 뽑아 두 문장이 정말 같은 요청인지 한 번 더 확인한다.
+    """
+    return {
+        "categories": frozenset(_mentioned_categories(message)),
+        "colors": frozenset(w for w in _COLOR_WORDS if w in message),
+        "digits": frozenset(_DIGITS_RE.findall(message)),
+    }
+
+
+def _signal_conflicts(
+    a: dict[str, frozenset[str]], b: dict[str, frozenset[str]]
+) -> bool:
+    """두 신호가 "같은 요청"이라고 보기엔 서로 다른지 판단한다.
+
+    한쪽에 신호가 아예 없으면(예: 종목을 안 언급한 자유 서술) 그 축은 비교하지
+    않는다 — 무조건 다르다고 막으면 캐시가 과도하게 안 맞는다. 양쪽 다 신호가
+    있는데 집합이 다르면(부분적으로만 겹쳐도) 다른 요청으로 본다 — 첫 턴에만
+    쓰는 캐시라(narrow_down 등 맥락 있는 턴은 대상이 아님) 엄격하게 판단해도
+    손해가 적다.
+    """
+    for key, a_signal in a.items():
+        if a_signal and b[key] and a_signal != b[key]:
+            return True
+    return False
+
+
 def lookup(message: str) -> dict | None:
     """비슷한 질문이 최근에 있었으면 그 의도분류 결과를 돌려주고, 없으면 None."""
     now = time.time()
     # embed_query는 무거운 모델 추론이라 락 밖에서 한다 — 락은 _cache 읽기·순회
     # 구간만 감싸서, 다른 요청의 embed_query 호출까지 불필요하게 직렬화하지 않는다.
     vec = embed_query(message)
-    # taxonomy 기반 종목 대조(추가 방어선) — 임베딩 유사도만으로는 "도자기"·"목공예품"처럼
-    # 종목명만 다른 문장을 못 걸러낸다(위 _SIMILARITY_THRESHOLD 주석 참고). None이면(종목을
-    # 특정 못 함) 이 문장에선 이 방어를 적용하지 않는다 — 종목이 아예 안 걸리는 자유
-    # 서술("다도용으로 쓸 만한 것")까지 무조건 다르다고 막으면 캐시가 과도하게 안 맞는다.
-    category = _mentioned_category(message)
+    signal = _cache_signal(message)
     with _lock:
         for entry in reversed(_cache):
             if now - entry["ts"] > _TTL_SECONDS:
                 continue
             if _cosine(vec, entry["embedding"]) < _SIMILARITY_THRESHOLD:
                 continue
-            if (
-                category is not None
-                and entry["category"] is not None
-                and category != entry["category"]
-            ):
+            if _signal_conflicts(signal, entry["signal"]):
                 continue
             return {
                 "intent": entry["intent"],
@@ -89,12 +122,12 @@ def lookup(message: str) -> dict | None:
 def store(message: str, contact1: dict) -> None:
     """의도분류 결과를 캐시에 넣는다. 대화 맥락이 있던 턴은 orchestrator가 애초에 안 부른다."""
     vec = embed_query(message)  # lookup()과 같은 이유로 락 밖에서 계산한다.
-    category = _mentioned_category(message)  # lookup()과 같은 종목 대조 방어선.
+    signal = _cache_signal(message)  # lookup()과 같은 추가 방어선.
     with _lock:
         _cache.append(
             {
                 "embedding": vec,
-                "category": category,
+                "signal": signal,
                 "ts": time.time(),
                 "intent": contact1["intent"],
                 "filters": contact1["filters"],
