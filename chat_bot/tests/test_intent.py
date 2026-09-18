@@ -309,6 +309,48 @@ def test_to_contact1_dae_suffix_works_for_cheon_unit():
     assert result["filters"]["max_price"] == 3999
 
 
+def test_to_contact1_dae_suffix_widens_with_two_digit_coefficient():
+    """ "50만원대"는 "20대"(나이 20~29)와 같은 원리로, 계수("50")의 마지막 자리가
+    변하는 것으로 본다 — 500,000~509,999(1만원 폭)가 아니라 500,000~599,999
+    (10만원 폭)여야 한다. 한 자리 계수("3만원대"→3만원 폭 1만원)와 자릿수만
+    다를 뿐 같은 규칙이다."""
+    raw = {
+        "intent": "product_search",
+        "max_price": None,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "50만원대 도자기 추천해줘",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="50만원대 도자기 추천해줘",
+    )
+    assert result["filters"]["min_price"] == 500000
+    assert result["filters"]["max_price"] == 599999
+
+
+def test_to_contact1_dae_suffix_widens_with_three_digit_coefficient():
+    raw = {
+        "intent": "product_search",
+        "max_price": None,
+        "min_price": None,
+        "gift_theme": [],
+        "color": [],
+        "query_text": "120만원대 가구 있어요",
+    }
+    result = it._to_contact1(
+        raw,
+        gift_themes=prompts.GIFT_THEMES,
+        colors=prompts.COLORS,
+        message="120만원대 가구 있어요",
+    )
+    assert result["filters"]["min_price"] == 1200000
+    assert result["filters"]["max_price"] == 1299999
+
+
 def test_price_direction_range_question_not_overridden_by_dae_logic():
     """ "3만원 이상 5만원 이하"처럼 이미 명확한 이상·이하 범위 질문은 "-대" 보정
     대상이 아니다(direction이 None이 아니라서 애초에 안 걸림) — 기존 동작 유지."""
@@ -519,10 +561,11 @@ def test_classify_and_extract_parses_injected_response():
         "어머니 환갑 선물로 30만원대 찾아요", chat=_fake_chat(payload)
     )
     assert result["intent"] == "gift_recommendation"
-    # "30만원대"는 "-대" 구간 보정이 300000~309999로 확정한다(아래 별도 테스트
-    # 참고) — 이 테스트는 원래 파싱 배선 자체를 보는 것이라 그 보정된 값을 그대로
-    # 기대하도록 갱신했다.
-    assert result["filters"]["max_price"] == 309999
+    # "30만원대"는 "-대" 구간 보정이 300000~399999로 확정한다(아래 별도 테스트
+    # 참고 — "20대"=20~29와 같은 원리로 계수 "30"의 마지막 자리가 변한다) — 이
+    # 테스트는 원래 파싱 배선 자체를 보는 것이라 그 보정된 값을 그대로 기대하도록
+    # 갱신했다.
+    assert result["filters"]["max_price"] == 399999
     assert result["filters"]["min_price"] == 300000
     assert result["filters"]["gift_theme"] == ["BIRTHDAY_60TH"]
 

@@ -150,16 +150,24 @@ def _price_decade_range(message: str) -> tuple[int, int] | None:
 
     실측 확인된 문제: 기존엔 INTENT_SYSTEM이 "5만원대"를 그냥 숫자 50000 하나로만
     바꾸라고 가르쳐서, 사실상 "5만원 이하"와 똑같이 취급됐다 — DB에 실제로
-    51,000~59,999원 사이 상품이 17개 있는데도 전부 빠졌다. "-대"는 십진 자릿수 한
-    칸(만/천/억) 구간을 뜻하므로 그 시작·끝을 코드로 확정한다 — 어느 필드에 넣을지
-    LLM 판단에 기대지 않는다.
+    51,000~59,999원 사이 상품이 17개 있는데도 전부 빠졌다. "-대"는 "20대"(나이
+    20~29)와 같은 원리로, 계수의 마지막 자리가 변하는 것으로 본다 — 계수가 몇
+    자리든(3만원대=1만원 폭, 50만원대=10만원 폭, 120만원대=100만원 폭) 자릿수만큼
+    폭도 같이 넓어진다. 어느 필드에 넣을지 LLM 판단에 기대지 않고 코드로 확정한다.
     """
     match = _PRICE_DECADE_RE.search(message)
     if not match:
         return None
     multiplier = {"억": 100_000_000, "만": 10_000, "천": 1_000}[match.group(2)]
-    base = int(float(match.group(1)) * multiplier)
-    return base, base + multiplier - 1
+    coefficient_text = match.group(1)
+    # 계수가 한 자리("3")면 1만원 폭 그대로, 두 자리 이상("50"·"120")이면 10배(10만원
+    # 폭)로 고정한다 — "120만원대"가 "50만원대"보다 더 넓어지진 않는다("20대"가
+    # "120대"라고 자릿수만큼 계속 넓어지지 않는 것과 같다. 소수(예: "3.5만원대")는
+    # 정수부만 자릿수로 센다.
+    digit_count = len(coefficient_text.split(".")[0])
+    band = multiplier * (10 if digit_count >= 2 else 1)
+    base = int(float(coefficient_text) * multiplier)
+    return base, base + band - 1
 
 
 def _resolve_price_filters(
