@@ -1,0 +1,325 @@
+{
+  "generation_id": "021d7ca7-5f33-4c44-adc8-5a6bf356b270",
+  "product": {
+    "product_type": "동제 목걸이",
+    "display_name": "녹슨 동제 목걸이",
+    "is_traditional_craft": false,
+    "craft_type": null,
+    "classification_confidence": 0.85,
+    "craft_confidence": 0.0,
+    "classification_reason": "이미지에서 U자형 목걸이 형태와 반복된 고리 구조, 구리 산화물(녹) 표면이 명확히 관찰된다. 전통 공예로 단정할 근거는 부족하다.",
+    "candidate_types": [
+      "동제 목걸이",
+      "고대 금속 장신구",
+      "동제 장식"
+    ],
+    "layout_id": "editorial-split",
+    "page_plan": [
+      {
+        "section_id": "hero",
+        "block_type": "hero",
+        "eyebrow": "METAL ORNAMENT",
+        "title": "녹슨 동제 목걸이",
+        "body": "반복된 고리 구조와 짙은 청록색 산화 표면이 어우러진 U자형 금속 장신구입니다.",
+        "variant": "paper",
+        "photo_id": "hero",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "statement",
+        "block_type": "statement",
+        "eyebrow": "MATERIAL STORY",
+        "title": "시간이 남긴 표면",
+        "body": "동 소재 특유의 산화층이 고리 전체를 덮어 청록색과 회색 톤을 만들어냅니다. 표면의 결과 색 변화가 이 제품의 가장 큰 시각적 특징입니다.",
+        "variant": "light",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "feature_grid",
+        "block_type": "feature_grid",
+        "eyebrow": "DETAILS",
+        "title": "세 가지 관찰 포인트",
+        "body": "형태, 표면, 구조의 세 가지 시각적 특징을 정리했습니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "U자형 실루엣",
+            "value": "목걸이 형태",
+            "description": "위에서 아래로 이어지는 U자 곡선",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "청록색 산화 표면",
+            "value": "동 산화물",
+            "description": "고리 전체를 덮는 녹색 톤",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "반복 고리 구조",
+            "value": "연속 링",
+            "description": "여러 개의 고리가 겹쳐진 형태",
+            "evidence": "image-visible"
+          }
+        ]
+      },
+      {
+        "section_id": "detail_split",
+        "block_type": "detail_split",
+        "eyebrow": "SURFACE",
+        "title": "표면의 질감",
+        "body": "고리 표면에는 고르지 않은 산화층과 미세한 결이 보입니다. 빛이 닿는 위치에 따라 색의 농담이 달라집니다.",
+        "variant": "image-left",
+        "photo_id": "detail",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "usage_scene",
+        "block_type": "usage_scene",
+        "eyebrow": "USE",
+        "title": "장식용 착용",
+        "body": "목걸이 형태로 목에 걸 수 있는 구조입니다. 산화 표면이 특징인 만큼, 착용 시 표면 변화에 유의할 수 있습니다.",
+        "variant": "full-bleed",
+        "photo_id": "lifestyle",
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "info_table",
+        "block_type": "info_table",
+        "eyebrow": "SPEC",
+        "title": "기본 정보",
+        "body": "이미지에서 확인 가능한 정보와 확인이 필요한 항목을 정리했습니다.",
+        "variant": "compact",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": [
+          {
+            "label": "형태",
+            "value": "U자형 목걸이",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "표면",
+            "value": "청록색 산화층",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "구조",
+            "value": "반복 고리",
+            "description": "",
+            "evidence": "image-visible"
+          },
+          {
+            "label": "소재",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          },
+          {
+            "label": "크기",
+            "value": "확인 필요",
+            "description": "",
+            "evidence": "unknown"
+          }
+        ]
+      },
+      {
+        "section_id": "notice",
+        "block_type": "notice",
+        "eyebrow": "CARE",
+        "title": "관리 안내 확인 필요",
+        "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+        "variant": "sand",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      },
+      {
+        "section_id": "closing",
+        "block_type": "closing",
+        "eyebrow": "CLOSING",
+        "title": "시간의 흔적",
+        "body": "반복된 고리와 산화 표면이 만들어내는 독특한 질감을 지닌 금속 장신구입니다.",
+        "variant": "paper",
+        "photo_id": null,
+        "photo_ids": [],
+        "items": []
+      }
+    ],
+    "observations": {
+      "shape": "U자형 목걸이 형태",
+      "color": "청록색, 회색, 갈색 산화 톤",
+      "texture": "고르지 않은 산화 표면, 미세한 결",
+      "structure": "여러 개의 고리가 겹쳐진 반복 구조",
+      "scale": "확인 필요"
+    },
+    "summary": "반복된 고리 구조와 짙은 청록색 산화 표면이 특징인 U자형 동제 목걸이입니다. 표면의 결과 색 변화가 시각적 중심을 이룹니다.",
+    "keywords": [
+      "동제",
+      "목걸이",
+      "산화",
+      "녹",
+      "고리",
+      "장신구",
+      "U자형"
+    ],
+    "features": [
+      {
+        "title": "U자형 실루엣",
+        "description": "위에서 아래로 이어지는 U자 곡선 형태",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      },
+      {
+        "title": "청록색 산화 표면",
+        "description": "동 소재 특유의 산화층이 고리 전체를 덮음",
+        "evidence": "image-visible",
+        "confidence": 0.9
+      },
+      {
+        "title": "반복 고리 구조",
+        "description": "여러 개의 고리가 겹쳐진 연속 구조",
+        "evidence": "image-visible",
+        "confidence": 0.95
+      }
+    ],
+    "warnings": [
+      "정확한 소재(동, 청동 등)",
+      "크기 및 무게",
+      "제작 시기와 지역",
+      "관리 방법",
+      "제작자 정보",
+      "검증되지 않은 AI 추정 문구 제외: 장식용 착용"
+    ],
+    "craft_research": null
+  },
+  "detail_page": {
+    "mime_type": "image/png",
+    "width": 774,
+    "height": 3378,
+    "sections": [
+      {
+        "order": 1,
+        "section_id": "hero",
+        "label": "상품 소개"
+      },
+      {
+        "order": 2,
+        "section_id": "statement",
+        "label": "핵심 메시지"
+      },
+      {
+        "order": 3,
+        "section_id": "feature_grid",
+        "label": "제품 특징"
+      },
+      {
+        "order": 4,
+        "section_id": "detail_split",
+        "label": "표면의 질감"
+      },
+      {
+        "order": 5,
+        "section_id": "usage_scene",
+        "label": "활용 장면"
+      },
+      {
+        "order": 6,
+        "section_id": "info_table",
+        "label": "기본 정보"
+      },
+      {
+        "order": 7,
+        "section_id": "notice",
+        "label": "안내"
+      },
+      {
+        "order": 8,
+        "section_id": "closing",
+        "label": "마무리"
+      }
+    ],
+    "photos": [
+      {
+        "order": 1,
+        "photo_id": "hero",
+        "label": "원본 보존 대표 이미지",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 2,
+        "photo_id": "packshot",
+        "label": "원본 보존 팩샷",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 3,
+        "photo_id": "detail",
+        "label": "원본 디테일 크롭",
+        "asset_mode": "source",
+        "background_generated": false,
+        "product_generated": false,
+        "fidelity_status": "FALLBACK"
+      },
+      {
+        "order": 4,
+        "photo_id": "lifestyle",
+        "label": "AI 생성 활용 장면(참고용)",
+        "asset_mode": "generated_scene",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 5,
+        "photo_id": "detail-02",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 6,
+        "photo_id": "detail-03",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 7,
+        "photo_id": "detail-04",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      },
+      {
+        "order": 8,
+        "photo_id": "detail-05",
+        "label": "AI 생성 디테일(참고용)",
+        "asset_mode": "generated_view",
+        "background_generated": true,
+        "product_generated": true,
+        "fidelity_status": "GENERATED"
+      }
+    ]
+  }
+}

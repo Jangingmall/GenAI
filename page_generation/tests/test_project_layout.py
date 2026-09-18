@@ -33,9 +33,8 @@ def test_project_assets_docs_and_generated_outputs_are_grouped():
         ROOT / "docs/api/ai-fe-io-spec.md",
         ROOT / "docs/operations/local-llm.md",
         ROOT / "docs/references/product-photography.md",
-        ROOT / "generated/samples/live_najeon_box",
-        ROOT / "generated/previews/ai_draft_preview.png",
-        ROOT / "generated/verified/source_safe_detail_page.png",
+        ROOT / "tests/fixtures/full60",
+        ROOT / "tests/fixtures/images-2",
     ]
 
     missing = [str(path.relative_to(ROOT)) for path in expected_paths if not path.exists()]

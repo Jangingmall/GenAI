@@ -10,6 +10,80 @@ IMAGE_MODEL_PATH="${IMAGE_MODEL_PATH:-circulus/FLUX.2-klein-9B-bnb-4bit}"
 IMAGE_MODEL_REVISION="${IMAGE_MODEL_REVISION:-58c2804f31af12c8888504b96250010c50b55e44}"
 IMAGE_SERVED_MODEL_NAME="${IMAGE_SERVED_MODEL_NAME:-flux-klein}"
 
+text_model_is_local=0
+image_model_is_local=0
+if [[ -d "$TEXT_MODEL_PATH" ]]; then
+    text_model_is_local=1
+fi
+if [[ -d "$IMAGE_MODEL_PATH" ]]; then
+    image_model_is_local=1
+fi
+
+validate_local_model() {
+    local model_role="$1"
+    local model_path="$2"
+
+    if [[ -d "$model_path" && ! -f "$model_path/config.json" ]]; then
+        echo "ERROR: ${model_role}_MODEL_PATH=${model_path} 는 디렉터리지만 config.json 이 없습니다." >&2
+        echo "       S3 동기화가 끝나기 전에 파드가 뜬 것일 수 있습니다." >&2
+        return 1
+    fi
+}
+
+validate_local_model "TEXT" "$TEXT_MODEL_PATH"
+validate_local_model "IMAGE" "$IMAGE_MODEL_PATH"
+
+text_command=(
+    sglang-python -m sglang.launch_server
+    --model-path "$TEXT_MODEL_PATH"
+)
+if (( ! text_model_is_local )); then
+    text_command+=(--revision "$TEXT_MODEL_REVISION")
+fi
+text_command+=(
+    --served-model-name "$TEXT_SERVED_MODEL_NAME"
+    --host 127.0.0.1
+    --port 30000
+    --mem-fraction-static "$TEXT_MEM_FRACTION"
+    --context-length "$TEXT_CONTEXT_LENGTH"
+    --trust-remote-code
+)
+
+image_command=(
+    sglang serve
+    --model-path "$IMAGE_MODEL_PATH"
+)
+if (( ! image_model_is_local )); then
+    image_command+=(--revision "$IMAGE_MODEL_REVISION")
+fi
+image_command+=(
+    --served-model-name "$IMAGE_SERVED_MODEL_NAME"
+    --host 127.0.0.1
+    --port 30001
+    --num-gpus 1
+    --dit-cpu-offload false
+    --text-encoder-cpu-offload false
+)
+
+print_command() {
+    local label="$1"
+    local offline="$2"
+    shift 2
+
+    printf '%s:' "$label"
+    if [[ "$offline" == "1" ]]; then
+        printf ' HF_HUB_OFFLINE=1'
+    fi
+    printf ' %q' "$@"
+    printf '\n'
+}
+
+if [[ "${DRY_RUN:-0}" == "1" ]]; then
+    print_command "TEXT" "$text_model_is_local" "${text_command[@]}"
+    print_command "IMAGE" "$image_model_is_local" "${image_command[@]}"
+    exit 0
+fi
+
 # A PVC mounted over this path hides the image-layer directories. The service
 # code creates the SQLite parent and asset-store directories itself, while the
 # entrypoint creates model/cache directories before SGLang starts on a blank
@@ -32,27 +106,19 @@ mkdir -p \
     "$(dirname "${SQLITE_PATH:-/var/lib/detail-page-ai/state.sqlite3}")"
 
 echo "Starting SGLang text server on 127.0.0.1:30000" >&2
-sglang-python -m sglang.launch_server \
-    --model-path "$TEXT_MODEL_PATH" \
-    --revision "$TEXT_MODEL_REVISION" \
-    --served-model-name "$TEXT_SERVED_MODEL_NAME" \
-    --host 127.0.0.1 \
-    --port 30000 \
-    --mem-fraction-static "$TEXT_MEM_FRACTION" \
-    --context-length "$TEXT_CONTEXT_LENGTH" \
-    --trust-remote-code &
+if (( text_model_is_local )); then
+    HF_HUB_OFFLINE=1 "${text_command[@]}" &
+else
+    "${text_command[@]}" &
+fi
 text_pid=$!
 
 echo "Starting SGLang image server on 127.0.0.1:30001" >&2
-sglang serve \
-    --model-path "$IMAGE_MODEL_PATH" \
-    --revision "$IMAGE_MODEL_REVISION" \
-    --served-model-name "$IMAGE_SERVED_MODEL_NAME" \
-    --host 127.0.0.1 \
-    --port 30001 \
-    --num-gpus 1 \
-    --dit-cpu-offload false \
-    --text-encoder-cpu-offload false &
+if (( image_model_is_local )); then
+    HF_HUB_OFFLINE=1 "${image_command[@]}" &
+else
+    "${image_command[@]}" &
+fi
 image_pid=$!
 
 # kill -0 also succeeds for a zombie on Linux. Inspecting /proc lets the
