@@ -478,14 +478,18 @@ class GeneratedPhotoMetadataDto(BaseModel):
 
 
 class GeneratedAssetMetadataDto(BaseModel):
-    mime_type: str
+    model_config = ConfigDict(populate_by_name=True)
+
+    mime_type: str = Field(alias="mimeType")
     width: int | None = None
     height: int | None = None
     sha256: str
-    asset_id: str | None = None
+    asset_id: str | None = Field(default=None, alias="assetId")
     sections: list[GeneratedSectionMetadataDto] = Field(default_factory=list)
     photos: list[GeneratedPhotoMetadataDto] = Field(default_factory=list)
-    react_document: ReactDetailPageDocumentDto | None = None
+    react_document: ReactDetailPageDocumentDto | None = Field(
+        default=None, alias="reactDocument"
+    )
 
 
 class GenerationMetadataDto(BaseModel):
