@@ -93,6 +93,44 @@ def test_lookup_misses_when_message_is_unrelated(monkeypatch):
     assert sc.lookup("나전으로 만든 곡물독 있어요?") is None
 
 
+def test_lookup_rejects_high_similarity_when_category_differs(monkeypatch):
+    """실측 확인된 버그: "부모님 퇴직선물 도자기 50만원 이하로 추천해줘"와 "부모님
+    퇴직선물용 목공예품 50만원 이하로 추천해줘"는 종목만 다를 뿐인데 실제 임베딩
+    유사도가 0.93까지 나와(임계값 0.82를 훨씬 넘음) 서로 다른 종목인데도 캐시가
+    맞다고 판단해버렸다 — 도자기로 물어본 캐시를 목공예품 질문에 그대로 재사용해
+    엉뚱한 query_text·filters가 새어나갔다. 임베딩 유사도가 임계값을 넘어도,
+    두 문장 모두에서 종목이 특정되고 그 종목이 다르면 캐시를 쓰지 않아야 한다."""
+    monkeypatch.setattr(
+        sc,
+        "embed_query",
+        _fake_embed(
+            {
+                "부모님 퇴직선물 도자기 50만원 이하로 추천해줘": [1.0, 0.0],
+                "부모님 퇴직선물용 목공예품 50만원 이하로 추천해줘": [
+                    0.93,
+                    0.368,
+                ],  # 임계값(0.82)보다 높은 유사도 — 실측 재현
+            }
+        ),
+    )
+    sc.store(
+        "부모님 퇴직선물 도자기 50만원 이하로 추천해줘",
+        {
+            "intent": "gift_recommendation",
+            "filters": {
+                "max_price": 500000,
+                "min_price": None,
+                "gift_theme": None,
+                "color": None,
+            },
+            "query_text": "부모님 퇴직선물 도자기 50만원 이하로 추천해줘",
+            "chat_reply": "",
+        },
+    )
+
+    assert sc.lookup("부모님 퇴직선물용 목공예품 50만원 이하로 추천해줘") is None
+
+
 def test_lookup_ignores_expired_entries(monkeypatch):
     monkeypatch.setattr(
         sc,

@@ -21,12 +21,21 @@ import threading
 import time
 
 from app.pipeline.embedding import embed_query
+from app.pipeline.generate import _mentioned_category
 
 _SIMILARITY_THRESHOLD = 0.82  # 실측(실제 임베딩 모델)으로 캘리브레이션한 값 — 같은 뜻
 # 문장 쌍은 0.84~0.96, 다른 질문 쌍은 0.36~0.74로 갈렸다("선물로 좋은 도자기 찾아줘" vs
 # "선물용 도자기 추천해줘" 0.88, vs "집들이 선물로 옹기 찾아줘"(다른 종목) 0.74). 두 구간
 # 사이(0.74~0.84)에 여유를 두고 0.82로 잡았다 — 처음엔 0.93으로 잡았다가 실측해보니
 # 같은 뜻 문장 쌍조차 대부분 0.93 밑이라 캐시가 전혀 안 맞아서(실측 확인) 다시 잡았다.
+#
+# 실측 확인된 버그(2026-09-18): 이 임계값만으로는 못 거르는 사각지대가 있다 — "부모님
+# 퇴직선물 도자기 50만원 이하로 추천해줘"와 "...목공예품 50만원 이하로 추천해줘"처럼
+# 문장 틀이 거의 같고 종목명만 바뀐 경우, 실제로 종목이 완전히 다른데도 유사도가
+# 0.93까지 나와(위 "다른 질문 쌍" 상한 0.74를 훨씬 넘음) 캐시가 오판했다 — 도자기로
+# 캐싱된 query_text·filters가 목공예품 질문에 그대로 새어나갔다. 임베딩 하나로는 못
+# 막아서, taxonomy 기반 종목 대조(_mentioned_category)를 추가 방어선으로 건다 — 아래
+# lookup() 참고.
 _TTL_SECONDS = 600  # 카탈로그 변경 반영 지연을 짧게 묶어두기 위한 상한
 _MAX_ENTRIES = 200  # 무한정 커지지 않게 제한 — 다 차면 오래된 것부터 버림(FIFO)
 
@@ -51,27 +60,41 @@ def lookup(message: str) -> dict | None:
     # embed_query는 무거운 모델 추론이라 락 밖에서 한다 — 락은 _cache 읽기·순회
     # 구간만 감싸서, 다른 요청의 embed_query 호출까지 불필요하게 직렬화하지 않는다.
     vec = embed_query(message)
+    # taxonomy 기반 종목 대조(추가 방어선) — 임베딩 유사도만으로는 "도자기"·"목공예품"처럼
+    # 종목명만 다른 문장을 못 걸러낸다(위 _SIMILARITY_THRESHOLD 주석 참고). None이면(종목을
+    # 특정 못 함) 이 문장에선 이 방어를 적용하지 않는다 — 종목이 아예 안 걸리는 자유
+    # 서술("다도용으로 쓸 만한 것")까지 무조건 다르다고 막으면 캐시가 과도하게 안 맞는다.
+    category = _mentioned_category(message)
     with _lock:
         for entry in reversed(_cache):
             if now - entry["ts"] > _TTL_SECONDS:
                 continue
-            if _cosine(vec, entry["embedding"]) >= _SIMILARITY_THRESHOLD:
-                return {
-                    "intent": entry["intent"],
-                    "filters": entry["filters"],
-                    "query_text": entry["query_text"],
-                    "chat_reply": entry["chat_reply"],
-                }
+            if _cosine(vec, entry["embedding"]) < _SIMILARITY_THRESHOLD:
+                continue
+            if (
+                category is not None
+                and entry["category"] is not None
+                and category != entry["category"]
+            ):
+                continue
+            return {
+                "intent": entry["intent"],
+                "filters": entry["filters"],
+                "query_text": entry["query_text"],
+                "chat_reply": entry["chat_reply"],
+            }
     return None
 
 
 def store(message: str, contact1: dict) -> None:
     """의도분류 결과를 캐시에 넣는다. 대화 맥락이 있던 턴은 orchestrator가 애초에 안 부른다."""
     vec = embed_query(message)  # lookup()과 같은 이유로 락 밖에서 계산한다.
+    category = _mentioned_category(message)  # lookup()과 같은 종목 대조 방어선.
     with _lock:
         _cache.append(
             {
                 "embedding": vec,
+                "category": category,
                 "ts": time.time(),
                 "intent": contact1["intent"],
                 "filters": contact1["filters"],
