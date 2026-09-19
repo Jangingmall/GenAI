@@ -19,11 +19,11 @@
 `.github/workflows/genai-ci.yml` 하나에서 두 서비스 matrix를 관리한다.
 
 1. `pull_request`가 `main`을 대상으로 열리거나 갱신되면 서비스별 테스트를 실행한다.
-2. PR에서는 서비스별 Docker context/Dockerfile을 정확히 지정해 `linux/amd64` 전체 build를 push 없이 수행한다. 현재 확인된 상세페이지 이미지가 15.47GiB이고 BuildKit 작업층까지 필요하므로, 표준 runner는 먼저 35GiB 여유 공간을 검사하고 부족하면 요구량을 Summary와 오류로 남긴다.
+2. PR에서는 서비스별 Docker context/Dockerfile을 정확히 지정해 `linux/amd64` 전체 build를 push 없이 수행한다. 현재 확인된 상세페이지 이미지가 15.47GiB이고 BuildKit 작업층까지 필요하므로, 표준 runner는 먼저 35GiB 여유 공간을 검사한다. 부족하면 Dockerfile `--check` 결과와 요구량을 Summary에 남기고 full build만 warning과 함께 건너뛴다.
 3. `push`가 `main`에서 발생하면 테스트 성공 후 OIDC 인증, ECR 로그인, 서비스별 `linux/amd64` build/push를 수행한다.
 4. ECR tag가 이미 존재하면 `describe-images`로 기존 digest를 읽고 push를 건너뛴다. immutable tag를 덮어쓰거나 삭제하지 않는다.
 5. 새 push 또는 기존 tag 재사용 모두 Actions Summary에 서비스명, `image@digest`, source SHA, 실행 URL, 테스트 결과를 기록한다.
-6. 상세페이지 image build는 최소 여유 디스크를 사전 검사하고 부족하면 실제 요구량과 runner 상태를 Summary에 남긴 뒤 명확히 실패한다. 표준 `ubuntu-24.04` runner가 부족하면 Native/Infra에 larger runner 또는 self-hosted runner가 필요하다.
+6. main의 상세페이지 image publish는 최소 여유 디스크를 사전 검사하고 부족하면 실제 요구량과 runner 상태를 Summary에 남긴 뒤 ECR 인증 전에 명확히 실패한다. 표준 `ubuntu-24.04` runner가 부족하면 Native/Infra에 larger runner 또는 self-hosted runner가 필요하다.
 
 ## 챗봇 실행 계약
 

@@ -173,7 +173,7 @@ Use `ubuntu-24.04`, Python 3.13 plus locked `uv` dependencies for `page_generati
 
 - [ ] **Step 2: Add PR Docker validation**
 
-Use the exact context and Dockerfile matrix. Run `docker buildx build --check --platform linux/amd64` and a normal push-free amd64 build for both services. Gate the large page image on the measured storage requirement. Do not configure AWS credentials, ECR login, or push in pull-request jobs.
+Use the exact context and Dockerfile matrix. Run `docker buildx build --check --platform linux/amd64` and a normal push-free amd64 build for both services when capacity permits. If the page PR runner has less than 35 GiB free, keep the definition check green, write a warning Summary, and skip only the full page build. Do not configure AWS credentials, ECR login, or push in pull-request jobs.
 
 - [ ] **Step 3: Add main OIDC publish matrix**
 
@@ -185,7 +185,7 @@ Before building a matrix entry, call `aws ecr describe-images --repository-name 
 
 - [ ] **Step 5: Add disk preflight and digest Summary**
 
-For both PR validation and page-generation publish, require enough free disk for the measured 15.47GiB image plus BuildKit working layers. Use a 35GiB free-space gate and fail with a Summary instruction if `ubuntu-24.04` is insufficient. Never publish `latest`. Always print image URI, digest, source SHA, execution URL, test result, and whether the digest was pushed or reused.
+For page-generation publish, require enough free disk for the measured 15.47GiB image plus BuildKit working layers. Use a 35GiB free-space gate and fail before ECR authentication if `ubuntu-24.04` is insufficient. In PR validation, report the same requirement and skip only the full page build when the runner is too small. Never publish `latest`. Always print image URI, digest, source SHA, execution URL, test result, and whether the digest was pushed or reused.
 
 - [ ] **Step 6: Validate workflow syntax and local paths**
 

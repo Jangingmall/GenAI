@@ -128,6 +128,7 @@ jobs:
 
       - name: Check page-generation PR build capacity
         if: matrix.service == 'page-generation'
+        id: page_capacity
         run: |
           free_gib="$(df --output=avail -BG "$GITHUB_WORKSPACE" | tail -n 1 | tr -dc '0-9')"
           {
@@ -137,11 +138,18 @@ jobs:
             printf '| Measured image size | `15.47 GiB` |\n'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$free_gib" -lt 35 ]; then
-            echo "::error::page-generation needs at least 35 GiB free for the full Docker build; this runner has ${free_gib} GiB."
-            exit 1
+            {
+              printf '| Full image build | `skipped: larger runner required` |\n'
+              printf '\n> **Warning:** full page-generation image build was skipped because this runner has less than 35 GiB free.\n'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::page-generation full build skipped; it needs at least 35 GiB free, but this runner has ${free_gib} GiB."
+            printf 'full_build=false\n' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          printf 'full_build=true\n' >> "$GITHUB_OUTPUT"
 
       - name: Build image without push
+        if: matrix.service == 'chatbot-api' || steps.page_capacity.outputs.full_build == 'true'
         env:
           CONTEXT: ${{ matrix.context }}
           DOCKERFILE: ${{ matrix.dockerfile }}
