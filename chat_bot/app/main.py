@@ -47,9 +47,10 @@ from contextlib import asynccontextmanager
 import psycopg2
 import requests
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app import products_service, session_store
+from app import products_service, readiness, session_store
 from app.pipeline import orchestrator, semantic_cache
 from app.pipeline.generate import _fetch_artisans, _fetch_prices
 from app.pipeline.llm import chat_json
@@ -61,6 +62,7 @@ from app.schemas import (
     ProductUpdateResponse,
     ProductUpsertRequest,
     ProductUpsertResponse,
+    ReadinessResponse,
 )
 
 
@@ -108,6 +110,19 @@ app = FastAPI(title="미담 AI 추천 챗봇", version="0.1.0", lifespan=lifespa
 def health():
     """서비스 상태 (DB 연결·임베더)."""
     return products_service.health()
+
+
+@app.get(
+    "/ai/ready",
+    response_model=ReadinessResponse,
+    responses={503: {"model": ReadinessResponse}},
+)
+def ready():
+    """DB·임베딩 모델 파일·LLM이 실제 요청을 받을 준비가 됐는지 확인한다."""
+    result = ReadinessResponse.model_validate(readiness.check_readiness())
+    if result.status != "ready":
+        return JSONResponse(status_code=503, content=result.model_dump())
+    return result
 
 
 @app.post("/ai/products", response_model=ProductUpsertResponse)

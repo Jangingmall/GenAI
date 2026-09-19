@@ -75,3 +75,13 @@ class HealthResponse(BaseModel):
     status: str
     db: str
     embedder: str
+
+
+class ReadinessCheck(BaseModel):
+    ready: bool
+    detail: str
+
+
+class ReadinessResponse(BaseModel):
+    status: str
+    checks: dict[str, ReadinessCheck]

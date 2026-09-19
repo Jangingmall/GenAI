@@ -290,6 +290,47 @@ def test_lifespan_survives_warmup_failure(monkeypatch):
         assert response.status_code == 200
 
 
+def test_ready_returns_503_when_a_dependency_is_not_ready(monkeypatch):
+    monkeypatch.setattr(
+        main.readiness,
+        "check_readiness",
+        lambda: {
+            "status": "not_ready",
+            "checks": {
+                "database": {"ready": False, "detail": "connection failed"},
+                "embedding_model": {"ready": True, "detail": "configured"},
+                "llm": {"ready": True, "detail": "model available"},
+            },
+        },
+    )
+
+    response = client.get("/ai/ready")
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "not_ready"
+    assert response.json()["checks"]["database"]["ready"] is False
+
+
+def test_ready_returns_200_when_all_dependencies_are_ready(monkeypatch):
+    monkeypatch.setattr(
+        main.readiness,
+        "check_readiness",
+        lambda: {
+            "status": "ready",
+            "checks": {
+                "database": {"ready": True, "detail": "database query succeeded"},
+                "embedding_model": {"ready": True, "detail": "configured"},
+                "llm": {"ready": True, "detail": "model available"},
+            },
+        },
+    )
+
+    response = client.get("/ai/ready")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "ready"
+
+
 def test_different_session_ids_do_not_share_state():
     """session_id가 다르면 narrow_down이어도 이전 후보를 못 물려받아 새로 검색한다."""
     calls = {"n": 0}

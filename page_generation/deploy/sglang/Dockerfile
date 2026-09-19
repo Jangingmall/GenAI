@@ -14,9 +14,15 @@ ARG SGLANG_VERSION=0.5.19
 
 COPY --from=uv /uv /uvx /bin/
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/bin/npm /usr/local/bin/npm
-COPY --from=node /usr/local/bin/npx /usr/local/bin/npx
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+
+# npm and npx are relative symlinks in the Node image. Copying those paths
+# directly dereferences them into /usr/local/bin, where npm-cli.js can no
+# longer resolve its ../lib/cli.js dependency. Recreate the links after the
+# npm module has been copied.
+RUN rm -f /usr/local/bin/npm /usr/local/bin/npx \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # The model path defaults below are HF repository IDs for the single-EC2
 # compose path. EKS may override them with PVC directories such as
@@ -63,8 +69,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Preserve the base image interpreter for SGLang before the service venv is
-# created and placed first on PATH below.
-RUN ln -s "$(command -v python3)" /usr/local/bin/sglang-python
+# created and placed first on PATH below. A wrapper avoids resolving the
+# service venv's Python when the entrypoint starts the model server.
+RUN printf '%s\n' '#!/bin/sh' 'exec /opt/sglang/bin/python3 "$@"' \
+        > /usr/local/bin/sglang-python \
+    && chmod 755 /usr/local/bin/sglang-python
 
 # Node.js is needed by the HTML renderer. Playwright installs Chromium and its
 # OS libraries during the build, so runtime rendering does not download files.

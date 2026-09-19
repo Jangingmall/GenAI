@@ -31,13 +31,33 @@ def _load_env():
 _load_env()
 
 
+def _read_db_password() -> str:
+    """Read the database password from a mounted secret when configured.
+
+    Kubernetes Secret Store CSI mounts are exposed as files.  Prefer that file
+    over the legacy environment variable, remove only the newline written by
+    the secret mount, and fail closed when a configured file cannot be read.
+    """
+
+    password_file = os.environ.get("DB_PASSWORD_FILE", "").strip()
+    if not password_file:
+        return os.environ.get("DB_PASSWORD", "")
+
+    try:
+        return Path(password_file).read_text(encoding="utf-8").rstrip("\r\n")
+    except OSError as exc:
+        raise RuntimeError(
+            f"DB_PASSWORD_FILE is configured but cannot be read: {password_file}"
+        ) from exc
+
+
 class Settings:
     # --- PostgreSQL ---
     DB_HOST = os.environ.get("DB_HOST", "localhost")
     DB_PORT = int(os.environ.get("DB_PORT", "5432"))
     DB_NAME = os.environ.get("DB_NAME", "midam")
     DB_USER = os.environ.get("DB_USER", "User")
-    DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+    DB_PASSWORD = _read_db_password()
 
     # --- Ollama ---
     OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
