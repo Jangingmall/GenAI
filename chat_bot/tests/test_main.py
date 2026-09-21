@@ -178,6 +178,85 @@ def test_chat_returns_friendly_reply_on_db_connection_failure():
     assert "다시 시도" in body["reply"]
 
 
+def test_chat_returns_friendly_reply_on_embedding_failure():
+    """embedding.py의 embed_query()는 DB·LLM 호출과 달리 try/except가 전혀 없다(보안
+    리서치 중 발견 — sentence-transformers 공식 GitHub 이슈에서도 모델 파일 누락·버전
+    불일치가 실제로 흔한 실패 유형으로 보고됨). 임베딩 모델 로딩·추론 실패는 보통
+    OSError(파일 없음 등)로 올라오는데, 지금 except 튜플엔 이 타입이 없어서 DB·LLM
+    장애와 달리 임베딩만 FastAPI 기본 500으로 나간다."""
+
+    def embedding_down_search_and_rank(contact1, top_k=3):
+        raise OSError("모델 파일을 찾을 수 없음: /models/bge-m3")
+
+    _override(
+        chat=_sequenced_chat(_INTENT_PRODUCT_SEARCH, _GENERATE_OK),
+        search_and_rank=embedding_down_search_and_rank,
+    )
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["product_ids"] == []
+    assert "다시 시도" in body["reply"]
+
+
+# ---------------------------------------------------------------------------
+# /ai/products — 에러 메시지에 내부 예외 원문이 그대로 노출되지 않아야 한다
+# (보안 리서치 중 발견: detail=f"...: {e}"는 DB 연결 정보 등 내부 구조가 클라이언트
+# 응답에 그대로 노출될 위험이 있다).
+# ---------------------------------------------------------------------------
+
+_ARTISAN_BODY = {
+    "artisan_id": 1,
+    "business_name": "테스트공방",
+}
+_PRODUCT_BODY = {
+    "product_id": 1,
+    "name": "테스트 상품",
+}
+
+
+def test_create_product_does_not_leak_internal_exception_detail(monkeypatch):
+    def boom(artisan, product):
+        raise RuntimeError("host=internal-db.private port=5432 password=s3cr3t")
+
+    monkeypatch.setattr(main.products_service, "upsert_product", boom)
+
+    response = client.post(
+        "/ai/products", json={"artisan": _ARTISAN_BODY, "product": _PRODUCT_BODY}
+    )
+    assert response.status_code == 500
+    assert "s3cr3t" not in response.text
+    assert "internal-db" not in response.text
+
+
+def test_update_product_does_not_leak_internal_exception_detail(monkeypatch):
+    def boom(product_id, changed):
+        raise RuntimeError("host=internal-db.private port=5432 password=s3cr3t")
+
+    monkeypatch.setattr(main.products_service, "update_product", boom)
+
+    response = client.put("/ai/products/1", json={"product": {"price": 1000}})
+    assert response.status_code == 500
+    assert "s3cr3t" not in response.text
+    assert "internal-db" not in response.text
+
+
+def test_delete_product_does_not_leak_internal_exception_detail(monkeypatch):
+    def boom(product_id):
+        raise RuntimeError("host=internal-db.private port=5432 password=s3cr3t")
+
+    monkeypatch.setattr(main.products_service, "delete_product", boom)
+
+    response = client.delete("/ai/products/1")
+    assert response.status_code == 500
+    assert "s3cr3t" not in response.text
+    assert "internal-db" not in response.text
+
+
 def test_narrow_down_reuses_previous_candidates_via_session_id():
     """같은 session_id로 새 하드필터 없는 narrow_down을 보내면 재검색하지 않는다."""
     calls = {"n": 0}
