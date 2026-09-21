@@ -107,9 +107,15 @@ jobs:
           - service: page-generation
             context: ./page_generation
             dockerfile: ./page_generation/deploy/sglang/Dockerfile
+            min-free-gib: 35
           - service: chatbot-api
             context: ./chat_bot
             dockerfile: ./chat_bot/Dockerfile
+            min-free-gib: 10
+          - service: chatbot-llm
+            context: ./chat_bot/deploy/sglang
+            dockerfile: ./chat_bot/deploy/sglang/Dockerfile
+            min-free-gib: 35
 
     steps:
       - name: Check out source
@@ -126,30 +132,34 @@ jobs:
           DOCKERFILE: ${{ matrix.dockerfile }}
         run: docker buildx build --check --platform linux/amd64 --file "$DOCKERFILE" "$CONTEXT"
 
-      - name: Check page-generation PR build capacity
-        if: matrix.service == 'page-generation'
-        id: page_capacity
+      # page-generation과 chatbot-llm 둘 다 lmsysorg/sglang 베이스 이미지를 써서 10 GiB를
+      # 넘는 대형 이미지다. 세 서비스 모두 같은 패턴(디스크 부족하면 전체 빌드는 건너뛰고
+      # 문법 검사 결과만 남김)이 필요해 matrix.min-free-gib 하나로 통일했다.
+      - name: Check PR build capacity
+        id: capacity
+        env:
+          REQUIRED_GIB: ${{ matrix.min-free-gib }}
+          SERVICE: ${{ matrix.service }}
         run: |
           free_gib="$(df --output=avail -BG "$GITHUB_WORKSPACE" | tail -n 1 | tr -dc '0-9')"
           {
-            printf '### page-generation PR build capacity\n'
-            printf '| Required free storage | `35 GiB` |\n'
+            printf '### %s PR build capacity\n' "$SERVICE"
+            printf '| Required free storage | `%s GiB` |\n' "$REQUIRED_GIB"
             printf '| Available storage | `%s GiB` |\n' "$free_gib"
-            printf '| Measured image size | `15.47 GiB` |\n'
           } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$free_gib" -lt 35 ]; then
+          if [ "$free_gib" -lt "$REQUIRED_GIB" ]; then
             {
               printf '| Full image build | `skipped: larger runner required` |\n'
-              printf '\n> **Warning:** full page-generation image build was skipped because this runner has less than 35 GiB free.\n'
+              printf '\n> **Warning:** full %s image build was skipped because this runner has less than %s GiB free.\n' "$SERVICE" "$REQUIRED_GIB"
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning::page-generation full build skipped; it needs at least 35 GiB free, but this runner has ${free_gib} GiB."
+            echo "::warning::${SERVICE} full build skipped; it needs at least ${REQUIRED_GIB} GiB free, but this runner has ${free_gib} GiB."
             printf 'full_build=false\n' >> "$GITHUB_OUTPUT"
             exit 0
           fi
           printf 'full_build=true\n' >> "$GITHUB_OUTPUT"
 
       - name: Build image without push
-        if: matrix.service == 'chatbot-api' || steps.page_capacity.outputs.full_build == 'true'
+        if: steps.capacity.outputs.full_build == 'true'
         env:
           CONTEXT: ${{ matrix.context }}
           DOCKERFILE: ${{ matrix.dockerfile }}
@@ -180,6 +190,11 @@ jobs:
             dockerfile: ./chat_bot/Dockerfile
             repository: jangin-ai/ollama
             min-free-gib: 10
+          - service: chatbot-llm
+            context: ./chat_bot/deploy/sglang
+            dockerfile: ./chat_bot/deploy/sglang/Dockerfile
+            repository: jangin-ai/chatbot-llm
+            min-free-gib: 35
 
     steps:
       - name: Check out source
