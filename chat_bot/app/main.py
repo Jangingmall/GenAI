@@ -132,8 +132,14 @@ def create_product(req: ProductUpsertRequest):
         embedded = products_service.upsert_product(
             req.artisan.model_dump(), req.product.model_dump()
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"등록 실패: {e}") from e
+    except Exception:
+        # 원래 예외 메시지(e)를 그대로 detail에 담아 클라이언트에 돌려주고 있었다
+        # (보안 리서치 중 발견) — DB 연결 정보 등 예외 문자열에 내부 구조가 섞여
+        # 나갈 수 있다. 서버 로그에만 전체 스택을 남기고, 응답은 고정 문구로 돌린다.
+        logger.exception("상품 등록 실패")
+        raise HTTPException(
+            status_code=500, detail="상품 등록에 실패했습니다."
+        ) from None
     return ProductUpsertResponse(product_id=req.product.product_id, embedded=embedded)
 
 
@@ -144,8 +150,11 @@ def update_product(product_id: int, req: ProductUpdateRequest):
         re_embedded = products_service.update_product(product_id, req.product)
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"수정 실패: {e}") from e
+    except Exception:
+        logger.exception("상품 수정 실패")
+        raise HTTPException(
+            status_code=500, detail="상품 수정에 실패했습니다."
+        ) from None
     return ProductUpdateResponse(product_id=product_id, re_embedded=re_embedded)
 
 
@@ -154,8 +163,11 @@ def delete_product(product_id: int):
     """상품 삭제."""
     try:
         deleted = products_service.delete_product(product_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"삭제 실패: {e}") from e
+    except Exception:
+        logger.exception("상품 삭제 실패")
+        raise HTTPException(
+            status_code=500, detail="상품 삭제에 실패했습니다."
+        ) from None
     if not deleted:
         raise HTTPException(status_code=404, detail=f"product_id {product_id} 없음")
     return ProductDeleteResponse(product_id=product_id, deleted=deleted)
@@ -232,6 +244,7 @@ def chat(
         requests.exceptions.RequestException,
         ValueError,
         psycopg2.OperationalError,
+        OSError,
     ):
         # llm.py의 chat_json은 Ollama에 requests.post(timeout=...)로 붙는다 — 응답
         # 지연·타임아웃·연결 실패가 여기서 그대로 예외로 올라오는데, 잡지 않으면
@@ -246,9 +259,16 @@ def chat(
         # model_validate_json이 각각 json.JSONDecodeError·pydantic.ValidationError를
         # 던진다(SGLang의 outlines 그래마 백엔드로 실측 확인 — response_format을
         # 보내도 특정 프롬프트에서 조용히 무시하고 일반 텍스트를 반환하는 경우가
-        # 있었다). 둘 다 ValueError의 서브클래스라 여기서 같이 잡힌다. 세션 상태는
-        # 이번 턴에 확정된 게 없으니 session_store.set()을 안 거치고 바로 안내 문구만
-        # 돌려준다 — 다음 요청은 그대로 이전 상태를 이어서 쓴다.
+        # 있었다). 둘 다 ValueError의 서브클래스라 여기서 같이 잡힌다.
+        # OSError도 같이 잡는 이유(보안 리서치 중 발견): app/pipeline/embedding.py의
+        # embed_query()는 DB·LLM 호출과 달리 자체 try/except가 전혀 없다(A담당 파일이라
+        # 거기는 안 건드림) — 임베딩 모델 파일이 없거나(배포 시 볼륨 마운트 실패 등)
+        # 로딩이 깨지면 보통 OSError로 올라온다(sentence-transformers 공식 GitHub
+        # 이슈들에서도 모델 파일 누락·버전 불일치가 흔한 실패 유형으로 보고됨). 이것만
+        # 빠져 있으면 DB·LLM 장애는 친절한 안내 문구로 넘어가는데 임베딩 장애만 FastAPI
+        # 기본 500으로 나가는 비대칭이 생긴다. 세션 상태는 이번 턴에 확정된 게 없으니
+        # session_store.set()을 안 거치고 바로 안내 문구만 돌려준다 — 다음 요청은 그대로
+        # 이전 상태를 이어서 쓴다.
         logger.exception("AI 응답 지연 또는 실패")
         return ChatResponse(
             reply="지금 답변이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
