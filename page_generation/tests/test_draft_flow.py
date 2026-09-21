@@ -206,6 +206,42 @@ def test_service_exposes_draft_ready_and_approval_is_the_only_final_render():
         raise AssertionError("same approval key with different copy must be rejected")
 
 
+def test_backend_job_uses_same_generation_id_for_approved_callback():
+    executor = ControlledExecutor()
+    renderer = FinalRenderer()
+    pipeline = DetailPagePipeline(
+        analyzer=FakeAnalyzer(),
+        renderer=renderer,
+        backend=FinalBackend(),
+        options=GenerationOptions(),
+        id_factory=lambda: "analysis-generation",
+    )
+    service = DetailPageJobService(
+        pipeline=pipeline,
+        executor=executor,
+        repository=MemoryJobRepository(),
+    )
+
+    accepted = service.submit(
+        valid_png(),
+        "image/png",
+        product_id="product-42",
+        options=GenerationOptions(source_generation_id="42"),
+        idempotency_key="create-42",
+    )
+    executor.run_all()
+    draft = service.get(accepted.job_id).draft
+
+    final = service.approve_draft(
+        accepted.job_id,
+        draft.draft,
+        product_id="product-42",
+        idempotency_key="approve-42",
+    )
+
+    assert final.generation_id == "42"
+
+
 def test_create_idempotency_returns_same_job_and_rejects_conflict():
     pipeline = DetailPagePipeline(
         analyzer=FakeAnalyzer(), renderer=FinalRenderer(), backend=object()

@@ -158,6 +158,7 @@ class DetailPageJobService:
         idempotency_key: str | None = None,
         status_path_prefix: str = "/api/v1/ai/detail-page-jobs",
     ) -> AiFeAcceptedResponse:
+        resolved_options = options or self.default_options
         all_images = ((source_image, source_mime_type),) + additional_source_images
         if len(all_images) > self.max_source_images:
             raise InvalidImageError("Too many source images")
@@ -176,7 +177,7 @@ class DetailPageJobService:
             source_image=source_image,
             source_mime_type=source_mime_type,
             additional_source_images=additional_source_images,
-            options=options or self.default_options,
+            options=resolved_options,
             user_hints=user_hints or UserHintsDto(),
             product_id=product_id,
             source_asset_id=source_asset_id,
@@ -199,13 +200,18 @@ class DetailPageJobService:
         if self.repository.count_active() >= self.max_pending_generations:
             raise CapacityExceededError("AI job capacity has been reached")
         job_id = str(uuid.uuid4())
+        generation_id = (
+            resolved_options.source_generation_id
+            if product_id is not None and resolved_options.source_generation_id
+            else str(uuid.uuid4())
+        )
         job = JobRecord(
             job_id=job_id,
             request_id=resolved_request_id,
-            generation_id=str(uuid.uuid4()),
+            generation_id=generation_id,
             source_image=source_image,
             source_mime_type=source_mime_type,
-            options=options or self.default_options,
+            options=resolved_options,
             product_id=product_id,
             source_asset_id=source_asset_id,
             user_hints=user_hints or UserHintsDto(),
@@ -272,7 +278,11 @@ class DetailPageJobService:
             )
 
         resolved_request_id = request_id or str(uuid.uuid4())
-        generation_id = f"{job_id}-approval-{hashlib.sha256(resolved_key.encode()).hexdigest()[:16]}"
+        generation_id = (
+            job.generation_id
+            if job.product_id and job.generation_id
+            else f"{job_id}-approval-{hashlib.sha256(resolved_key.encode()).hexdigest()[:16]}"
+        )
         merged_profile = draft.to_profile(job.draft_profile)
         pipeline_result = self.pipeline.run(
             job_id=job_id,

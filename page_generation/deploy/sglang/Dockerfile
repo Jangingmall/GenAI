@@ -15,13 +15,10 @@ ARG SGLANG_VERSION=0.5.19
 COPY --from=uv /uv /uvx /bin/
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
-
-# npm and npx are relative symlinks in the Node image. Copying those paths
-# directly dereferences them into /usr/local/bin, where npm-cli.js can no
-# longer resolve its ../lib/cli.js dependency. Recreate the links after the
-# npm module has been copied.
-RUN rm -f /usr/local/bin/npm /usr/local/bin/npx \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+# COPY --from follows the source symlink and would turn npm/npx into regular
+# files with broken relative paths in the CUDA image. Recreate the launchers
+# against the copied npm installation with absolute targets.
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # The model path defaults below are HF repository IDs for the single-EC2
@@ -69,8 +66,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Preserve the base image interpreter for SGLang before the service venv is
-# created and placed first on PATH below. A wrapper avoids resolving the
-# service venv's Python when the entrypoint starts the model server.
+# created and placed first on PATH below. The wrapper must exec the interpreter
+# through its /opt/sglang path so Python discovers that environment's packages;
+# a symlink from /usr/local/bin makes Python use the wrong prefix.
 RUN printf '%s\n' '#!/bin/sh' 'exec /opt/sglang/bin/python3 "$@"' \
         > /usr/local/bin/sglang-python \
     && chmod 755 /usr/local/bin/sglang-python
@@ -86,11 +84,16 @@ RUN apt-get update \
 # dependencies without trying to install the repository as a Python package.
 COPY pyproject.toml uv.lock package.json package-lock.json ./
 
+# pyproject.toml intentionally keeps the CPU wheel for Mac/CI and deploy/Dockerfile.
+# This CUDA 13.0.3 + cuDNN 9.14 image replaces it only in the EKS venv.
 RUN pip install --no-cache-dir \
         "sglang[diffusion]==${SGLANG_VERSION}" \
         "bitsandbytes==0.50.2" \
     && uv sync --locked --no-dev --no-install-project --no-cache \
         --python 3.13 \
+    && uv pip uninstall --python /app/.venv/bin/python onnxruntime \
+    && uv pip install --python /app/.venv/bin/python --no-cache \
+        "onnxruntime-gpu==1.29.0" \
     && npm ci --no-audit --no-fund \
     && npx playwright install --with-deps chromium \
     && rm -rf /root/.cache /root/.npm /home/appuser/.cache /home/appuser/.npm \

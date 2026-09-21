@@ -9,6 +9,8 @@ class GenerationOptions(BaseModel):
     image_size: Literal["1K", "2K", "4K"] = "2K"
     # The HTML/CSS detail-page renderer always emits PNG.
     output_mime_type: Literal["image/png"] = "image/png"
+    # Product BE owns the numeric generation identity used by the callback path.
+    source_generation_id: str | None = Field(default=None, min_length=1, max_length=120)
 
 
 class ProductPhotoGenerationOptions(BaseModel):

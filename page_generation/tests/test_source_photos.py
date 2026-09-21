@@ -2,9 +2,11 @@ import builtins
 import hashlib
 import io
 import logging
+import sys
 from dataclasses import replace
 from pathlib import Path
 from threading import Event, Thread
+from types import ModuleType
 
 from PIL import Image, ImageDraw
 
@@ -228,6 +230,74 @@ def test_rembg_cutout_uses_injected_segmenter_and_reuses_one_session():
     source_rgb = Image.open(io.BytesIO(source)).convert("RGB")
     cutout_rgba = Image.open(io.BytesIO(first.rgba_png)).convert("RGBA")
     assert cutout_rgba.getpixel((30, 30))[:3] == source_rgb.getpixel((30, 30))
+
+
+def test_rembg_cutout_falls_back_to_cpu_when_cuda_provider_is_unavailable(
+    monkeypatch, caplog
+):
+    source = _source_fixture()
+    session_calls = []
+    fake_onnxruntime = ModuleType("onnxruntime")
+    fake_onnxruntime.get_available_providers = lambda: [
+        "AzureExecutionProvider",
+        "CPUExecutionProvider",
+    ]
+    fake_rembg = ModuleType("rembg")
+
+    def new_session(model_name, **kwargs):
+        session_calls.append((model_name, kwargs))
+        return object()
+
+    def remove(data, *, session, only_mask):
+        assert data == source
+        assert session is not None
+        assert only_mask is True
+        mask = Image.new("L", (80, 80), 0)
+        ImageDraw.Draw(mask).rectangle((20, 15, 59, 64), fill=255)
+        return _png(mask)
+
+    fake_rembg.new_session = new_session
+    fake_rembg.remove = remove
+    monkeypatch.setitem(sys.modules, "onnxruntime", fake_onnxruntime)
+    monkeypatch.setitem(sys.modules, "rembg", fake_rembg)
+    caplog.set_level(logging.INFO, logger=source_photos.__name__)
+
+    cutout = source_photos.RembgCutoutExtractor().extract(source, "image/png")
+
+    assert cutout is not None
+    assert session_calls == [
+        ("birefnet-general", {"providers": ["CPUExecutionProvider"]})
+    ]
+    assert (
+        "available=['AzureExecutionProvider', 'CPUExecutionProvider'] "
+        "selected=['CPUExecutionProvider']"
+    ) in caplog.text
+
+
+def test_rembg_session_prioritizes_cuda_provider_when_available(monkeypatch):
+    fake_onnxruntime = ModuleType("onnxruntime")
+    fake_onnxruntime.get_available_providers = lambda: [
+        "CPUExecutionProvider",
+        "CUDAExecutionProvider",
+    ]
+    fake_rembg = ModuleType("rembg")
+    session_calls = []
+
+    def new_session(model_name, **kwargs):
+        session_calls.append((model_name, kwargs))
+        return "session"
+
+    fake_rembg.new_session = new_session
+    monkeypatch.setitem(sys.modules, "onnxruntime", fake_onnxruntime)
+    monkeypatch.setitem(sys.modules, "rembg", fake_rembg)
+
+    assert source_photos._create_rembg_session("birefnet-general") == "session"
+    assert session_calls == [
+        (
+            "birefnet-general",
+            {"providers": ["CUDAExecutionProvider", "CPUExecutionProvider"]},
+        )
+    ]
 
 
 def test_rembg_cutout_creates_one_session_when_two_extractions_start_together():

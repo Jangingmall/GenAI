@@ -305,6 +305,28 @@ def test_submit_persists_generation_id_before_background_execution():
     assert repository.get(accepted.job_id).generation_id is not None
 
 
+def test_backend_generation_id_is_preserved_for_product_jobs():
+    executor = ControlledExecutor()
+    repository = MemoryJobRepository()
+    service = DetailPageJobService(
+        pipeline=FakePipeline(),
+        executor=executor,
+        repository=repository,
+    )
+
+    accepted = service.submit(
+        VALID_PNG,
+        "image/png",
+        product_id="product-1",
+        options=GenerationOptions(source_generation_id="42"),
+        idempotency_key="create-42",
+    )
+
+    assert repository.get(accepted.job_id).generation_id == "42"
+    executor.run_all()
+    assert service.get(accepted.job_id).status == "COMPLETED"
+
+
 def test_service_replays_persisted_outbox_on_startup_without_rerender(tmp_path):
     database = tmp_path / "state.sqlite3"
     repository = SQLiteJobRepository(database)
