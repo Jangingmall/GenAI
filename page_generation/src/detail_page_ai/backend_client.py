@@ -176,9 +176,10 @@ class BackendProductClient:
             ) from exc
 
         status_code, body = self._response_parts(response)
+        ack_body = self._unwrap_backend_response(body)
         if 200 <= status_code < 300:
             try:
-                return BeToAiPersistAckDto.model_validate(body)
+                return BeToAiPersistAckDto.model_validate(ack_body)
             except Exception as exc:
                 raise BackendDeliveryError(
                     "Backend returned an invalid persistence response",
@@ -186,9 +187,9 @@ class BackendProductClient:
                     status_code=status_code,
                 ) from exc
         if status_code == 409:
-            body = {**body, "status": "ALREADY_SAVED"}
+            ack_body = {**ack_body, "status": "ALREADY_SAVED"}
             try:
-                return BeToAiPersistAckDto.model_validate(body)
+                return BeToAiPersistAckDto.model_validate(ack_body)
             except Exception as exc:
                 raise BackendDeliveryError(
                     "Backend duplicate response is invalid",
@@ -216,3 +217,10 @@ class BackendProductClient:
         if isinstance(response, TransportResponse):
             return response.status_code, response.body
         return 200, response
+
+    @staticmethod
+    def _unwrap_backend_response(body: dict[str, Any]) -> dict[str, Any]:
+        """Accept Product BE's common ApiResponse envelope and raw ACKs."""
+        if isinstance(body.get("data"), dict) and isinstance(body.get("status"), int):
+            return body["data"]
+        return body

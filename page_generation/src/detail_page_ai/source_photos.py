@@ -110,6 +110,25 @@ class RembgSegmenter(Protocol):
         ...
 
 
+def _create_rembg_session(model_name: str) -> object:
+    """Create a rembg session with CUDA first and a CPU fallback."""
+    import onnxruntime
+    from rembg import new_session
+
+    available_providers = list(onnxruntime.get_available_providers())
+    providers = (
+        ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        if "CUDAExecutionProvider" in available_providers
+        else ["CPUExecutionProvider"]
+    )
+    logger.info(
+        "rembg ONNX Runtime providers: available=%s selected=%s",
+        available_providers,
+        providers,
+    )
+    return new_session(model_name, providers=providers)
+
+
 def _encode_png(image: Image.Image) -> bytes:
     output = io.BytesIO()
     image.save(output, format="PNG", optimize=False, compress_level=9)
@@ -511,9 +530,9 @@ class RembgCutoutExtractor:
         # Creating the session remains lazy: the first real extraction populates
         # rembg's ~/.u2net/birefnet-general.onnx cache (rembg 2.0.69), while later
         # extracts reuse this same session object.
-        from rembg import new_session, remove
+        from rembg import remove
 
-        self._session_factory = self._session_factory or new_session
+        self._session_factory = self._session_factory or _create_rembg_session
         self._segmenter = self._segmenter or remove
 
     @staticmethod

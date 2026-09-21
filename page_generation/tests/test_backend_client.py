@@ -12,8 +12,14 @@ from local_detail_page_ai.factory import _UnconfiguredBackend
 
 
 class FakeHttpTransport:
-    def __init__(self):
+    def __init__(self, response=None):
         self.request = None
+        self.response = response or {
+            "generation_id": "generation-1",
+            "product_id": "product-1",
+            "status": "SAVED",
+            "saved_at": "2026-08-26T08:01:12Z",
+        }
 
     def post_multipart(self, url, fields, files, headers, timeout):
         self.request = {
@@ -23,12 +29,7 @@ class FakeHttpTransport:
             "headers": headers,
             "timeout": timeout,
         }
-        return {
-            "generation_id": "generation-1",
-            "product_id": "product-1",
-            "status": "SAVED",
-            "saved_at": "2026-08-26T08:01:12Z",
-        }
+        return self.response
 
 
 def make_request() -> AiToBePersistRequestDto:
@@ -131,6 +132,31 @@ def test_persist_sends_metadata_and_image_as_separate_parts():
     assert transport.request["files"]["detail_page_image"]["data"] == b"png"
     assert transport.request["files"]["detail_page_image"]["filename"] == "generation-1.png"
     assert transport.request["headers"]["Authorization"] == "Bearer secret"
+
+
+def test_persist_unwraps_backend_api_response_envelope():
+    transport = FakeHttpTransport(
+        response={
+            "success": True,
+            "status": 200,
+            "data": {
+                "generation_id": "generation-1",
+                "product_id": "product-1",
+                "status": "SAVED",
+                "saved_at": "2026-08-26T08:01:12Z",
+            },
+        }
+    )
+    client = BackendProductClient(url="https://backend.example", transport=transport)
+
+    ack = client.persist(
+        make_request(),
+        GeneratedImage(data=b"png", mime_type="image/png", width=1024, height=4096),
+    )
+
+    assert ack.generation_id == "generation-1"
+    assert ack.product_id == "product-1"
+    assert ack.status == "SAVED"
 
 
 def test_persist_serializes_react_document_with_contract_aliases():

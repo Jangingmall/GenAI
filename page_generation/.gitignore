@@ -17,3 +17,6 @@ __pycache__/
 node_modules/
 .DS_Store
 .orchestration/
+
+# SQLite in-memory 세션 찌꺼기
+:memory:*
