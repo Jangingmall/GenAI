@@ -99,7 +99,7 @@ jobs:
     name: Docker validation ${{ matrix.service }}
     if: github.event_name == 'pull_request' && needs.test.result == 'success'
     needs: test
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.service == 'chatbot-api' && 'ubuntu-24.04' || format('codebuild-jangin-genai-runner-{0}-{1}', github.run_id, github.run_attempt) }}
     strategy:
       fail-fast: false
       matrix:
@@ -133,10 +133,8 @@ jobs:
         run: docker buildx build --check --platform linux/amd64 --file "$DOCKERFILE" "$CONTEXT"
 
       # page-generation과 chatbot-llm 둘 다 lmsysorg/sglang 베이스 이미지를 써서 10 GiB를
-      # 넘는 대형 이미지다. 세 서비스 모두 같은 패턴(디스크 부족하면 전체 빌드는 건너뛰고
-      # 문법 검사 결과만 남김)이 필요해 matrix.min-free-gib 하나로 통일했다.
+      # 넘는 대형 이미지다. CodeBuild 러너에서도 용량 부족은 검증 실패로 처리한다.
       - name: Check PR build capacity
-        id: capacity
         env:
           REQUIRED_GIB: ${{ matrix.min-free-gib }}
           SERVICE: ${{ matrix.service }}
@@ -149,17 +147,14 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$free_gib" -lt "$REQUIRED_GIB" ]; then
             {
-              printf '| Full image build | `skipped: larger runner required` |\n'
-              printf '\n> **Warning:** full %s image build was skipped because this runner has less than %s GiB free.\n' "$SERVICE" "$REQUIRED_GIB"
+              printf '| Full image build | `failed: insufficient free storage` |\n'
+              printf '\n> **Error:** full %s image build cannot run because this runner has less than %s GiB free.\n' "$SERVICE" "$REQUIRED_GIB"
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning::${SERVICE} full build skipped; it needs at least ${REQUIRED_GIB} GiB free, but this runner has ${free_gib} GiB."
-            printf 'full_build=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "::error::${SERVICE} requires at least ${REQUIRED_GIB} GiB free, but the runner has ${free_gib} GiB."
+            exit 1
           fi
-          printf 'full_build=true\n' >> "$GITHUB_OUTPUT"
 
       - name: Build image without push
-        if: steps.capacity.outputs.full_build == 'true'
         env:
           CONTEXT: ${{ matrix.context }}
           DOCKERFILE: ${{ matrix.dockerfile }}
@@ -172,7 +167,7 @@ jobs:
     concurrency:
       group: genai-publish-${{ github.sha }}-${{ matrix.service }}
       cancel-in-progress: false
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.service == 'chatbot-api' && 'ubuntu-24.04' || format('codebuild-jangin-genai-runner-{0}-{1}', github.run_id, github.run_attempt) }}
     permissions:
       contents: read
       id-token: write
@@ -183,12 +178,12 @@ jobs:
           - service: page-generation
             context: ./page_generation
             dockerfile: ./page_generation/deploy/sglang/Dockerfile
-            repository: jangin-ai/sglang
+            repository: jangin-ai/page-generation
             min-free-gib: 35
           - service: chatbot-api
             context: ./chat_bot
             dockerfile: ./chat_bot/Dockerfile
-            repository: jangin-ai/ollama
+            repository: jangin-ai/chatbot-api
             min-free-gib: 10
           - service: chatbot-llm
             context: ./chat_bot/deploy/sglang
