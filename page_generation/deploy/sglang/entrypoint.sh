@@ -19,19 +19,23 @@ if [[ -d "$IMAGE_MODEL_PATH" ]]; then
     image_model_is_local=1
 fi
 
+# 텍스트·비전 모델은 transformers 규약이라 config.json 이 루트에 있고, 이미지 확산
+# 모델은 diffusers 규약이라 model_index.json 이 루트에 있다. 둘을 같은 파일로 검사하면
+# 정상적인 확산 모델을 불완전하다고 판정한다.
 validate_local_model() {
     local model_role="$1"
     local model_path="$2"
+    local marker="$3"
 
-    if [[ -d "$model_path" && ! -f "$model_path/config.json" ]]; then
-        echo "ERROR: ${model_role}_MODEL_PATH=${model_path} 는 디렉터리지만 config.json 이 없습니다." >&2
+    if [[ -d "$model_path" && ! -f "$model_path/$marker" ]]; then
+        echo "ERROR: ${model_role}_MODEL_PATH=${model_path} 는 디렉터리지만 ${marker} 이 없습니다." >&2
         echo "       S3 동기화가 끝나기 전에 파드가 뜬 것일 수 있습니다." >&2
         return 1
     fi
 }
 
-validate_local_model "TEXT" "$TEXT_MODEL_PATH"
-validate_local_model "IMAGE" "$IMAGE_MODEL_PATH"
+validate_local_model "TEXT" "$TEXT_MODEL_PATH" "config.json"
+validate_local_model "IMAGE" "$IMAGE_MODEL_PATH" "model_index.json"
 
 text_command=(
     sglang-python -m sglang.launch_server

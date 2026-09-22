@@ -181,11 +181,11 @@ def test_same_hash_injects_the_same_selected_layout_sequence():
         assert f"{index}. {block_type} → {variant}" in prompt
 
 
-def test_image_generation_enabled_sample_contains_only_usage_scene_archetypes():
+def test_image_generation_enabled_sample_contains_usage_scene_and_gallery_archetypes():
     from detail_page_ai.layout_archetypes import select_layout_archetypes
 
     selected = select_layout_archetypes(
-        "0" * 60 + "0143",
+        f"{3:064x}",
         UserHintsDto(),
         count=4,
         image_generation_enabled=True,
@@ -193,6 +193,7 @@ def test_image_generation_enabled_sample_contains_only_usage_scene_archetypes():
 
     assert selected
     assert all("usage_scene" in archetype["sequence"] for archetype in selected)
+    assert all("gallery" in archetype["sequence"] for archetype in selected)
 
 
 def test_image_generation_disabled_sample_preserves_existing_seeded_selection():
@@ -213,7 +214,27 @@ def test_image_generation_disabled_sample_preserves_existing_seeded_selection():
     ]
 
 
-def test_image_generation_enabled_falls_back_when_usage_pool_is_empty(monkeypatch):
+def test_image_generation_enabled_falls_back_to_usage_pool_when_gallery_pool_is_empty(monkeypatch):
+    from detail_page_ai import layout_archetypes
+
+    candidates = [
+        {"id": "usage-only-a", "sequence": ["hero", "usage_scene"]},
+        {"id": "usage-only-b", "sequence": ["hero", "usage_scene", "closing"]},
+        {"id": "gallery-only", "sequence": ["hero", "gallery"]},
+    ]
+    monkeypatch.setattr(layout_archetypes, "LAYOUT_ARCHETYPES", candidates)
+
+    enabled = layout_archetypes.select_layout_archetypes(
+        "usage-fallback-seed", UserHintsDto(), count=2, image_generation_enabled=True
+    )
+
+    assert {archetype["id"] for archetype in enabled} == {
+        "usage-only-a",
+        "usage-only-b",
+    }
+
+
+def test_image_generation_enabled_falls_back_to_all_candidates_when_usage_pool_is_empty(monkeypatch):
     from detail_page_ai import layout_archetypes
 
     candidates = [
@@ -256,6 +277,7 @@ def test_enabled_layout_sample_is_reproducible_and_usage_archetype_varies_by_see
 
     assert first == second
     assert all("usage_scene" in archetype["sequence"] for archetype in first)
+    assert all("gallery" in archetype["sequence"] for archetype in first)
     assert len(usage_archetype_ids) >= 3
 
 

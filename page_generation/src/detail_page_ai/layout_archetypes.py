@@ -61,7 +61,14 @@ def select_layout_archetypes(
             for archetype in candidates
             if "usage_scene" in archetype.get("sequence", [])
         ]
-        if usage_candidates:
+        usage_gallery_candidates = [
+            archetype
+            for archetype in usage_candidates
+            if "gallery" in archetype.get("sequence", [])
+        ]
+        if usage_gallery_candidates:
+            candidates = usage_gallery_candidates
+        elif usage_candidates:
             candidates = usage_candidates
     rng = random.Random(image_sha256)
     selected = rng.sample(candidates, k=min(count, len(candidates)))
