@@ -54,8 +54,11 @@ def test_local_paths_omit_revisions_and_enable_hub_offline(tmp_path: Path) -> No
     image_model = tmp_path / "flux"
     text_model.mkdir()
     image_model.mkdir()
+    # 텍스트·비전은 transformers 규약(config.json), 이미지 확산은 diffusers
+    # 규약(model_index.json)이다. 배포 모델 circulus/FLUX.2-klein-9B-bnb-4bit 의
+    # 루트에는 config.json 이 없다.
     (text_model / "config.json").write_text("{}", encoding="utf-8")
-    (image_model / "config.json").write_text("{}", encoding="utf-8")
+    (image_model / "model_index.json").write_text("{}", encoding="utf-8")
 
     result = run_entrypoint(
         text_model=str(text_model),
@@ -99,3 +102,23 @@ def test_local_model_without_config_fails_before_startup(tmp_path: Path) -> None
     assert f"TEXT_MODEL_PATH={text_model}" in result.stderr
     assert "config.json" in result.stderr
     assert "S3" in result.stderr
+
+
+def test_local_diffusion_model_is_checked_with_model_index(tmp_path: Path) -> None:
+    """확산 모델은 config.json 이 아니라 model_index.json 으로 판정한다."""
+    text_model = tmp_path / "qwen"
+    image_model = tmp_path / "flux"
+    text_model.mkdir()
+    image_model.mkdir()
+    (text_model / "config.json").write_text("{}", encoding="utf-8")
+    # config.json 만 있고 model_index.json 이 없으면 불완전한 확산 모델이다.
+    (image_model / "config.json").write_text("{}", encoding="utf-8")
+
+    result = run_entrypoint(
+        text_model=str(text_model),
+        image_model=str(image_model),
+    )
+
+    assert result.returncode != 0
+    assert f"IMAGE_MODEL_PATH={image_model}" in result.stderr
+    assert "model_index.json" in result.stderr
