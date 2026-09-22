@@ -24,8 +24,12 @@ FROM lmsysorg/sglang:v0.5.19
 # Gemma 4 12B의 AWQ 양자화본. 구글 공식 양자화는 GGUF(llama.cpp/Ollama 전용)뿐이라
 # SGLang이 읽을 수 없다 — 아래는 커뮤니티 변환본이며, 실제 배포 전 품질 검증이 필요하다.
 # 다른 후보로 바꾸려면 빌드 시 `--build-arg MODEL_PATH=...`로 교체한다.
+#
+# revision을 "main"(움직이는 포인터) 대신 커밋 SHA로 고정한다 — 업로더가 나중에 파일을
+# 바꿔도 우리가 검증한 버전 그대로 유지된다. 2026-09-22 기준 Hugging Face API
+# (huggingface.co/api/models/mattbucci/gemma-4-12B-AWQ)로 직접 조회해 확인한 최신 sha.
 ARG MODEL_PATH=mattbucci/gemma-4-12B-AWQ
-ARG MODEL_REVISION=main
+ARG MODEL_REVISION=c4a82eea03b40ecaeb4ef265b3fd27461c8a87ed
 ARG SERVED_MODEL_NAME=gemma4-12b-awq
 ENV MODEL_PATH=${MODEL_PATH} \
     MODEL_REVISION=${MODEL_REVISION} \
