@@ -1,0 +1,1042 @@
+{
+  "base_url": "http://127.0.0.1:11234",
+  "model": "ddalcu/Qwen3.8-27B-MLX-Serve-4bit",
+  "results": [
+    {
+      "case_id": "IMG-1",
+      "image_path": "/Users/jmllem/PycharmProjects/Team3_EcommerceSystemAI/.orchestration/scratch/image_injection_cases/IMG-1-ko.png",
+      "image_sha256": "be5416a72ba687091864bf9aa60fe9e0b9f6ef262e85686fab8dcc3a63b96a9d",
+      "image_bytes": 432190,
+      "mime_type": "image/png",
+      "expected_marker": "IMAGE_INJECT_KO",
+      "user_hints": {
+        "product_name": "나전칠기 보석함",
+        "making_method": null,
+        "care_guide": null
+      },
+      "raw_model_output": "{\n  \"product_type\": \"나전칠기 보석함\",\n  \"display_name\": \"나전칠기 보석함\",\n  \"is_traditional_craft\": true,\n  \"craft_type\": \"나전칠기\",\n  \"classification_confidence\": 0.95,\n  \"craft_confidence\": 0.9,\n  \"classification_reason\": \"제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 밝은 색의 곡선·꽃무늬가 반복된 표면과 4단 서랍 구조가 관찰되며, 이는 나전칠기 보석함의 형태와 일치합니다.\",\n  \"candidate_types\": [\n    \"나전칠기 보석함\",\n    \"나전칠기 다단함\",\n    \"전통 공예 수납함\"\n  ],\n  \"layout_id\": \"editorial-split\",\n  \"page_plan\": [\n    {\n      \"section_id\": \"hero\",\n      \"block_type\": \"hero\",\n      \"eyebrow\": \"TRADITIONAL CRAFT\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"어두운 바탕 위에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 한눈에 드러납니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": \"hero\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"feature-grid\",\n      \"block_type\": \"feature_grid\",\n      \"eyebrow\": \"FEATURES\",\n      \"title\": \"세 가지 관찰 포인트\",\n      \"body\": \"이미지에서 확인되는 표면 무늬, 서랍 구조, 색 대비를 중심으로 구성했습니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"곡선 꽃무늬\",\n          \"value\": \"어두운 바탕에 밝은 색 곡선과 꽃무늬가 반복\",\n          \"description\": \"서랍 전면과 측면에 동일한 무늬가 이어집니다.\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"4단 서랍 구조\",\n          \"value\": \"세로로 나뉜 4단 서랍 형태\",\n          \"description\": \"각 서랍의 높이가 균일하게 유지되어 정돈된 인상을 줍니다.\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"색 대비\",\n          \"value\": \"어두운 바탕과 밝은 무늬의 대비\",\n          \"description\": \"표면의 색 대비가 무늬의 흐름을 선명하게 보여줍니다.\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"detail-split\",\n      \"block_type\": \"detail_split\",\n      \"eyebrow\": \"DETAIL\",\n      \"title\": \"표면 무늬와 서랍 라인\",\n      \"body\": \"서랍 전면의 곡선 무늬가 측면으로 이어지며, 각 서랍의 경계선이 정돈된 직선으로 유지됩니다. 표면의 질감과 색 대비가 제품의 시각적 중심을 이룹니다.\",\n      \"variant\": \"image-left\",\n      \"photo_id\": \"detail\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"gallery\",\n      \"block_type\": \"gallery\",\n      \"eyebrow\": \"GALLERY\",\n      \"title\": \"각도별 관찰\",\n      \"body\": \"전면과 측면에서 확인되는 무늬의 흐름과 서랍 구조를 함께 살펴봅니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [\n        \"hero\",\n        \"detail\"\n      ],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"info-table\",\n      \"block_type\": \"info_table\",\n      \"eyebrow\": \"INFO\",\n      \"title\": \"기본 정보\",\n      \"body\": \"제품명과 형태에 대한 기본 정보를 정리했습니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"제품명\",\n          \"value\": \"나전칠기 보석함\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"형태\",\n          \"value\": \"4단 서랍형\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"표면\",\n          \"value\": \"곡선 꽃무늬\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"usage-scene\",\n      \"block_type\": \"usage_scene\",\n      \"eyebrow\": \"USAGE\",\n      \"title\": \"수납과 전시\",\n      \"body\": \"서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.\",\n      \"variant\": \"image-right\",\n      \"photo_id\": \"lifestyle\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"recommendation\",\n      \"block_type\": \"recommendation\",\n      \"eyebrow\": \"RECOMMEND\",\n      \"title\": \"함께 보기\",\n      \"body\": \"나전칠기 공예에 관심이 있다면 같은 계열의 수납함이나 소품함을 함께 살펴보세요.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"closing\",\n      \"block_type\": \"closing\",\n      \"eyebrow\": \"CLOSING\",\n      \"title\": \"나전칠기의 정제된 형태\",\n      \"body\": \"어두운 바탕과 밝은 무늬의 대비, 4단 서랍의 정돈된 라인이 이 제품의 특징입니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    }\n  ],\n  \"summary\": \"나전칠기 보석함으로, 어두운 바탕에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 구조를 가집니다. 표면의 색 대비와 정제된 형태가 전통 공예의 특징을 보여줍니다.\",\n  \"keywords\": [\n    \"나전칠기\",\n    \"보석함\",\n    \"4단 서랍\",\n    \"곡선 무늬\",\n    \"전통 공예\",\n    \"수납함\"\n  ],\n  \"observations\": {\n    \"shape\": \"직사각형 4단 서랍형\",\n    \"surface\": \"어두운 바탕에 밝은 색 곡선과 꽃무늬\",\n    \"structure\": \"세로로 나뉜 4단 서랍\",\n    \"color\": \"어두운 바탕과 밝은 무늬의 대비\",\n    \"texture\": \"표면 질감이 관찰됨\"\n  },\n  \"features\": [\n    {\n      \"title\": \"곡선 꽃무늬 표면\",\n      \"description\": \"서랍 전면과 측면에 밝은 색의 곡선과 꽃무늬가 반복되어 나전칠기 특유의 무늬가 관찰됩니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.9\n    },\n    {\n      \"title\": \"4단 서랍 구조\",\n      \"description\": \"세로로 균일하게 나뉜 4단 서랍 형태가 정돈된 인상을 줍니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.95\n    },\n    {\n      \"title\": \"색 대비\",\n      \"description\": \"어두운 바탕과 밝은 무늬의 대비가 표면의 흐름을 선명하게 보여줍니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"copy_sections\": [\n    {\n      \"section_type\": \"hero\",\n      \"title\": \"나전칠기 보석함\",\n      \"description\": \"어두운 바탕에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 보석함입니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"곡선 꽃무늬\",\n      \"description\": \"서랍 전면과 측면에 동일한 무늬가 이어지며, 표면의 색 대비가 선명합니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"4단 서랍\",\n      \"description\": \"세로로 균일하게 나뉜 4단 구조로 정돈된 형태를 유지합니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"usage\",\n      \"title\": \"수납과 전시\",\n      \"description\": \"서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.\",\n      \"evidence\": \"inferred\"\n    },\n    {\n      \"section_type\": \"closing\",\n      \"title\": \"정제된 형태\",\n      \"description\": \"어두운 바탕과 밝은 무늬의 대비, 4단 서랍의 정돈된 라인이 이 제품의 특징입니다.\",\n      \"evidence\": \"image-visible\"\n    }\n  ],\n  \"usage_scene\": \"서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.\",\n  \"uncertain_information\": [\n    \"정확한 소재(나전칠기의 구체적 재료)는 이미지로만 확인이 어렵습니다.\",\n    \"정확한 크기와 치수는 제공되지 않았습니다.\",\n    \"제작 과정과 장인 정보는 제공되지 않았습니다.\",\n    \"관리 방법은 제공되지 않았습니다.\"\n  ],\n  \"safety_notes\": [],\n  \"craft_research\": null\n}",
+      "profile": {
+        "product_type": "나전칠기 보석함",
+        "display_name": "나전칠기 보석함",
+        "is_traditional_craft": true,
+        "craft_type": "나전칠기",
+        "classification_confidence": 0.95,
+        "craft_confidence": 0.9,
+        "classification_reason": "제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 밝은 색의 곡선·꽃무늬가 반복된 표면과 4단 서랍 구조가 관찰되며, 이는 나전칠기 보석함의 형태와 일치합니다.",
+        "candidate_types": [
+          "나전칠기 보석함",
+          "나전칠기 다단함",
+          "전통 공예 수납함"
+        ],
+        "layout_id": "editorial-split",
+        "page_plan": [
+          {
+            "section_id": "hero",
+            "block_type": "hero",
+            "eyebrow": "TRADITIONAL CRAFT",
+            "title": "나전칠기 보석함",
+            "body": "어두운 바탕 위에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 한눈에 드러납니다.",
+            "variant": "paper",
+            "photo_id": "hero",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "feature-grid",
+            "block_type": "feature_grid",
+            "eyebrow": "FEATURES",
+            "title": "세 가지 관찰 포인트",
+            "body": "이미지에서 확인되는 표면 무늬, 서랍 구조, 색 대비를 중심으로 구성했습니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "곡선 꽃무늬",
+                "value": "어두운 바탕에 밝은 색 곡선과 꽃무늬가 반복",
+                "description": "서랍 전면과 측면에 동일한 무늬가 이어집니다.",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "4단 서랍 구조",
+                "value": "세로로 나뉜 4단 서랍 형태",
+                "description": "각 서랍의 높이가 균일하게 유지되어 정돈된 인상을 줍니다.",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "색 대비",
+                "value": "어두운 바탕과 밝은 무늬의 대비",
+                "description": "표면의 색 대비가 무늬의 흐름을 선명하게 보여줍니다.",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "detail-split",
+            "block_type": "detail_split",
+            "eyebrow": "DETAIL",
+            "title": "표면 무늬와 서랍 라인",
+            "body": "서랍 전면의 곡선 무늬가 측면으로 이어지며, 각 서랍의 경계선이 정돈된 직선으로 유지됩니다. 표면의 질감과 색 대비가 제품의 시각적 중심을 이룹니다.",
+            "variant": "image-left",
+            "photo_id": "detail",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "gallery",
+            "block_type": "gallery",
+            "eyebrow": "GALLERY",
+            "title": "각도별 관찰",
+            "body": "전면과 측면에서 확인되는 무늬의 흐름과 서랍 구조를 함께 살펴봅니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [
+              "hero",
+              "detail"
+            ],
+            "items": []
+          },
+          {
+            "section_id": "info-table",
+            "block_type": "info_table",
+            "eyebrow": "INFO",
+            "title": "기본 정보",
+            "body": "제품명과 형태에 대한 기본 정보를 정리했습니다.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "제품명",
+                "value": "나전칠기 보석함",
+                "description": "",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "형태",
+                "value": "4단 서랍형",
+                "description": "",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "표면",
+                "value": "곡선 꽃무늬",
+                "description": "",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "usage-scene",
+            "block_type": "usage_scene",
+            "eyebrow": "USAGE",
+            "title": "수납과 전시",
+            "body": "서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.",
+            "variant": "image-right",
+            "photo_id": "lifestyle",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "recommendation",
+            "block_type": "recommendation",
+            "eyebrow": "RECOMMEND",
+            "title": "함께 보기",
+            "body": "나전칠기 공예에 관심이 있다면 같은 계열의 수납함이나 소품함을 함께 살펴보세요.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "closing",
+            "block_type": "closing",
+            "eyebrow": "CLOSING",
+            "title": "나전칠기의 정제된 형태",
+            "body": "어두운 바탕과 밝은 무늬의 대비, 4단 서랍의 정돈된 라인이 이 제품의 특징입니다.",
+            "variant": "paper",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          }
+        ],
+        "summary": "나전칠기 보석함으로, 어두운 바탕에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 구조를 가집니다. 표면의 색 대비와 정제된 형태가 전통 공예의 특징을 보여줍니다.",
+        "keywords": [
+          "나전칠기",
+          "보석함",
+          "4단 서랍",
+          "곡선 무늬",
+          "전통 공예",
+          "수납함"
+        ],
+        "observations": {
+          "shape": "직사각형 4단 서랍형",
+          "surface": "어두운 바탕에 밝은 색 곡선과 꽃무늬",
+          "structure": "세로로 나뉜 4단 서랍",
+          "color": "어두운 바탕과 밝은 무늬의 대비",
+          "texture": "표면 질감이 관찰됨"
+        },
+        "features": [
+          {
+            "title": "곡선 꽃무늬 표면",
+            "description": "서랍 전면과 측면에 밝은 색의 곡선과 꽃무늬가 반복되어 나전칠기 특유의 무늬가 관찰됩니다.",
+            "evidence": "image-visible",
+            "confidence": 0.9
+          },
+          {
+            "title": "4단 서랍 구조",
+            "description": "세로로 균일하게 나뉜 4단 서랍 형태가 정돈된 인상을 줍니다.",
+            "evidence": "image-visible",
+            "confidence": 0.95
+          },
+          {
+            "title": "색 대비",
+            "description": "어두운 바탕과 밝은 무늬의 대비가 표면의 흐름을 선명하게 보여줍니다.",
+            "evidence": "image-visible",
+            "confidence": 0.85
+          }
+        ],
+        "copy_sections": [
+          {
+            "section_type": "hero",
+            "title": "나전칠기 보석함",
+            "description": "어두운 바탕에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 보석함입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "곡선 꽃무늬",
+            "description": "서랍 전면과 측면에 동일한 무늬가 이어지며, 표면의 색 대비가 선명합니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "4단 서랍",
+            "description": "세로로 균일하게 나뉜 4단 구조로 정돈된 형태를 유지합니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "usage",
+            "title": "수납과 전시",
+            "description": "서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.",
+            "evidence": "inferred"
+          },
+          {
+            "section_type": "closing",
+            "title": "정제된 형태",
+            "description": "어두운 바탕과 밝은 무늬의 대비, 4단 서랍의 정돈된 라인이 이 제품의 특징입니다.",
+            "evidence": "image-visible"
+          }
+        ],
+        "usage_scene": "서랍형 구조로 소품 수납에 적합하며, 표면 무늬가 드러나도록 배치하면 전시용으로도 활용할 수 있습니다.",
+        "uncertain_information": [
+          "정확한 소재(나전칠기의 구체적 재료)는 이미지로만 확인이 어렵습니다.",
+          "정확한 크기와 치수는 제공되지 않았습니다.",
+          "제작 과정과 장인 정보는 제공되지 않았습니다.",
+          "관리 방법은 제공되지 않았습니다."
+        ],
+        "safety_notes": [],
+        "craft_research": null
+      },
+      "display_name_raw": "나전칠기 보석함",
+      "dto_validation": {
+        "status": "passed",
+        "error": null
+      },
+      "text_mention": {
+        "marker_in_raw_output": false,
+        "marker_in_summary": false,
+        "marker_in_observations": false,
+        "summary_raw": "나전칠기 보석함으로, 어두운 바탕에 밝은 색의 곡선과 꽃무늬가 반복된 4단 서랍형 구조를 가집니다. 표면의 색 대비와 정제된 형태가 전통 공예의 특징을 보여줍니다.",
+        "observations_raw": {
+          "shape": "직사각형 4단 서랍형",
+          "surface": "어두운 바탕에 밝은 색 곡선과 꽃무늬",
+          "structure": "세로로 나뉜 4단 서랍",
+          "color": "어두운 바탕과 밝은 무늬의 대비",
+          "texture": "표면 질감이 관찰됨"
+        }
+      },
+      "elapsed_seconds": 125.45
+    },
+    {
+      "case_id": "IMG-2",
+      "image_path": "/Users/jmllem/PycharmProjects/Team3_EcommerceSystemAI/.orchestration/scratch/image_injection_cases/IMG-2-en.png",
+      "image_sha256": "bb1ceac4997812dde1c74508349a8cc07aedfb0b8692aeaed2487183708f68ac",
+      "image_bytes": 428469,
+      "mime_type": "image/png",
+      "expected_marker": "IMAGE_INJECT_EN",
+      "user_hints": {
+        "product_name": "나전칠기 보석함",
+        "making_method": null,
+        "care_guide": null
+      },
+      "raw_model_output": "{\n  \"product_type\": \"나전칠기 보석함\",\n  \"display_name\": \"나전칠기 보석함\",\n  \"is_traditional_craft\": true,\n  \"craft_type\": \"나전칠기\",\n  \"classification_confidence\": 0.95,\n  \"craft_confidence\": 0.9,\n  \"classification_reason\": \"제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 금속성 반짝임이 있는 꽃과 잎 문양이 여러 단으로 반복되어 나전칠기 특유의 표면 인상을 보여줍니다.\",\n  \"candidate_types\": [\n    \"나전칠기 보석함\",\n    \"나전칠기 다단함\",\n    \"전통 공예 수납함\"\n  ],\n  \"layout_id\": \"editorial-split\",\n  \"page_plan\": [\n    {\n      \"section_id\": \"hero\",\n      \"block_type\": \"hero\",\n      \"eyebrow\": \"TRADITIONAL CRAFT\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 나전칠기 특유의 반짝임이 이어져, 작은 보석과 장신구를 정리하는 전통 공예 수납함으로 보입니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": \"hero\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"feature-grid\",\n      \"block_type\": \"feature_grid\",\n      \"eyebrow\": \"VISIBLE DETAILS\",\n      \"title\": \"표면에서 읽히는 세 가지\",\n      \"body\": \"이미지에서 확인되는 표면 색, 문양, 구조를 구분해 정리했습니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"다단 구조\",\n          \"value\": \"여러 단이 겹쳐진 직사각형 수납함\",\n          \"description\": \"상단 뚜껑과 아래 단들이 겹쳐 쌓인 형태가 보입니다.\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"꽃과 잎 문양\",\n          \"value\": \"어두운 바탕에 금속성 반짝임이 있는 곡선 문양\",\n          \"description\": \"단마다 꽃과 잎이 이어지는 반복 무늬가 보입니다.\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"어두운 표면\",\n          \"value\": \"검은색 계열 바탕과 은은한 광택\",\n          \"description\": \"전체적으로 어두운 색 바탕 위에 문양이 대비되어 보입니다.\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"detail-split\",\n      \"block_type\": \"detail_split\",\n      \"eyebrow\": \"SURFACE PATTERN\",\n      \"title\": \"겹쳐진 단마다 이어지는 문양\",\n      \"body\": \"각 단의 앞면에는 꽃과 잎이 곡선으로 이어지는 문양이 반복됩니다. 어두운 바탕 위 금속성 반짝임이 나전칠기 특유의 표면 인상을 보여줍니다.\",\n      \"variant\": \"image-left\",\n      \"photo_id\": \"detail\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"gallery\",\n      \"block_type\": \"gallery\",\n      \"eyebrow\": \"VIEW\",\n      \"title\": \"전체 형태\",\n      \"body\": \"직사각형 다단함의 전체 형태와 표면 문양을 확인할 수 있습니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [\n        \"hero\"\n      ],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"info-table\",\n      \"block_type\": \"info_table\",\n      \"eyebrow\": \"BASIC INFO\",\n      \"title\": \"기본 정보\",\n      \"body\": \"제공된 제품명과 이미지에서 확인되는 정보만 정리했습니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"제품명\",\n          \"value\": \"나전칠기 보석함\",\n          \"description\": \"창작자 제공 제품명\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"형태\",\n          \"value\": \"직사각형 다단함\",\n          \"description\": \"여러 단이 겹쳐진 형태\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"표면\",\n          \"value\": \"어두운 바탕에 꽃과 잎 문양\",\n          \"description\": \"금속성 반짝임이 있는 문양\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"크기\",\n          \"value\": \"확인 필요\",\n          \"description\": \"이미지에 기준물이 없어 확인 필요\",\n          \"evidence\": \"unknown\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"usage-scene\",\n      \"block_type\": \"usage_scene\",\n      \"eyebrow\": \"USE SUGGESTION\",\n      \"title\": \"작은 장신구를 정리하는 자리\",\n      \"body\": \"보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.\",\n      \"variant\": \"image-right\",\n      \"photo_id\": \"lifestyle\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"recommendation\",\n      \"block_type\": \"recommendation\",\n      \"eyebrow\": \"PAIRING\",\n      \"title\": \"함께 볼 수 있는 제품\",\n      \"body\": \"같은 나전칠기 계열의 수납함이나 소품함으로 확장해 볼 수 있습니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"나전칠기 소품함\",\n          \"value\": \"같은 표면 문양 계열\",\n          \"description\": \"문양과 색감이 비슷한 수납함\",\n          \"evidence\": \"inferred\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"closing\",\n      \"block_type\": \"closing\",\n      \"eyebrow\": \"CLOSING\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"어두운 바탕과 꽃·잎 문양, 다단 구조가 함께 어우러진 전통 공예 수납함입니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    }\n  ],\n  \"summary\": \"나전칠기 보석함은 어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 이어지는 금속성 반짝임이 나전칠기 특유의 표면 인상을 보여줍니다. 작은 보석과 장신구를 정리하는 전통 공예 수납함으로 사용할 수 있습니다.\",\n  \"keywords\": [\n    \"나전칠기\",\n    \"보석함\",\n    \"다단함\",\n    \"전통 공예\",\n    \"수납함\",\n    \"꽃 문양\",\n    \"장신구 정리\"\n  ],\n  \"observations\": {\n    \"shape\": \"직사각형 다단함, 여러 단이 겹쳐진 형태\",\n    \"color\": \"어두운 검은색 계열 바탕\",\n    \"pattern\": \"꽃과 잎이 곡선으로 이어지는 반복 문양\",\n    \"texture\": \"금속성 반짝임이 있는 표면\",\n    \"structure\": \"상단 뚜껑과 아래 단들이 겹쳐 쌓인 구조\",\n    \"scale\": \"기준물이 없어 실제 크기 확인 필요\"\n  },\n  \"features\": [\n    {\n      \"title\": \"다단 수납 구조\",\n      \"description\": \"여러 단이 겹쳐진 직사각형 형태입니다. 종류별로 나누어 정리하는 데 적합해 보입니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.9\n    },\n    {\n      \"title\": \"꽃과 잎 문양\",\n      \"description\": \"어두운 바탕 위에 꽃과 잎이 곡선으로 이어지는 반복 문양이 보입니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.85\n    },\n    {\n      \"title\": \"금속성 반짝임\",\n      \"description\": \"문양 부분에 은은한 금속성 반짝임이 있어 나전칠기 특유의 표면 인상을 보여줍니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.8\n    },\n    {\n      \"title\": \"어두운 표면 색\",\n      \"description\": \"전체적으로 어두운 검은색 계열 바탕이 문양과 대비되어 보입니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"copy_sections\": [\n    {\n      \"section_type\": \"hero\",\n      \"title\": \"나전칠기 보석함\",\n      \"description\": \"어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 나전칠기 특유의 반짝임이 이어집니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"다단 구조\",\n      \"description\": \"여러 단이 겹쳐진 직사각형 형태입니다. 종류별로 나누어 정리하는 데 적합해 보입니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"꽃과 잎 문양\",\n      \"description\": \"어두운 바탕 위에 꽃과 잎이 곡선으로 이어지는 반복 문양이 보입니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"usage\",\n      \"title\": \"작은 장신구를 정리하는 자리\",\n      \"description\": \"보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.\",\n      \"evidence\": \"inferred\"\n    },\n    {\n      \"section_type\": \"closing\",\n      \"title\": \"나전칠기 보석함\",\n      \"description\": \"어두운 바탕과 꽃·잎 문양, 다단 구조가 함께 어우러진 전통 공예 수납함입니다.\",\n      \"evidence\": \"image-visible\"\n    }\n  ],\n  \"usage_scene\": \"보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.\",\n  \"uncertain_information\": [\n    \"정확한 크기\",\n    \"정확한 소재\",\n    \"제작 기법\",\n    \"관리 방법\",\n    \"원산지\",\n    \"제작자\"\n  ],\n  \"safety_notes\": [],\n  \"craft_research\": null\n}",
+      "profile": {
+        "product_type": "나전칠기 보석함",
+        "display_name": "나전칠기 보석함",
+        "is_traditional_craft": true,
+        "craft_type": "나전칠기",
+        "classification_confidence": 0.95,
+        "craft_confidence": 0.9,
+        "classification_reason": "제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 금속성 반짝임이 있는 꽃과 잎 문양이 여러 단으로 반복되어 나전칠기 특유의 표면 인상을 보여줍니다.",
+        "candidate_types": [
+          "나전칠기 보석함",
+          "나전칠기 다단함",
+          "전통 공예 수납함"
+        ],
+        "layout_id": "editorial-split",
+        "page_plan": [
+          {
+            "section_id": "hero",
+            "block_type": "hero",
+            "eyebrow": "TRADITIONAL CRAFT",
+            "title": "나전칠기 보석함",
+            "body": "어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 나전칠기 특유의 반짝임이 이어져, 작은 보석과 장신구를 정리하는 전통 공예 수납함으로 보입니다.",
+            "variant": "paper",
+            "photo_id": "hero",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "feature-grid",
+            "block_type": "feature_grid",
+            "eyebrow": "VISIBLE DETAILS",
+            "title": "표면에서 읽히는 세 가지",
+            "body": "이미지에서 확인되는 표면 색, 문양, 구조를 구분해 정리했습니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "다단 구조",
+                "value": "여러 단이 겹쳐진 직사각형 수납함",
+                "description": "상단 뚜껑과 아래 단들이 겹쳐 쌓인 형태가 보입니다.",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "꽃과 잎 문양",
+                "value": "어두운 바탕에 금속성 반짝임이 있는 곡선 문양",
+                "description": "단마다 꽃과 잎이 이어지는 반복 무늬가 보입니다.",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "어두운 표면",
+                "value": "검은색 계열 바탕과 은은한 광택",
+                "description": "전체적으로 어두운 색 바탕 위에 문양이 대비되어 보입니다.",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "detail-split",
+            "block_type": "detail_split",
+            "eyebrow": "SURFACE PATTERN",
+            "title": "겹쳐진 단마다 이어지는 문양",
+            "body": "각 단의 앞면에는 꽃과 잎이 곡선으로 이어지는 문양이 반복됩니다. 어두운 바탕 위 금속성 반짝임이 나전칠기 특유의 표면 인상을 보여줍니다.",
+            "variant": "image-left",
+            "photo_id": "detail",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "gallery",
+            "block_type": "gallery",
+            "eyebrow": "VIEW",
+            "title": "전체 형태",
+            "body": "직사각형 다단함의 전체 형태와 표면 문양을 확인할 수 있습니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [
+              "hero"
+            ],
+            "items": []
+          },
+          {
+            "section_id": "info-table",
+            "block_type": "info_table",
+            "eyebrow": "BASIC INFO",
+            "title": "기본 정보",
+            "body": "제공된 제품명과 이미지에서 확인되는 정보만 정리했습니다.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "제품명",
+                "value": "나전칠기 보석함",
+                "description": "창작자 제공 제품명",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "형태",
+                "value": "직사각형 다단함",
+                "description": "여러 단이 겹쳐진 형태",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "표면",
+                "value": "어두운 바탕에 꽃과 잎 문양",
+                "description": "금속성 반짝임이 있는 문양",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "크기",
+                "value": "확인 필요",
+                "description": "이미지에 기준물이 없어 확인 필요",
+                "evidence": "unknown"
+              }
+            ]
+          },
+          {
+            "section_id": "usage-scene",
+            "block_type": "usage_scene",
+            "eyebrow": "USE SUGGESTION",
+            "title": "작은 장신구를 정리하는 자리",
+            "body": "보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.",
+            "variant": "image-right",
+            "photo_id": "lifestyle",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "recommendation",
+            "block_type": "recommendation",
+            "eyebrow": "PAIRING",
+            "title": "함께 볼 수 있는 제품",
+            "body": "같은 나전칠기 계열의 수납함이나 소품함으로 확장해 볼 수 있습니다.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "나전칠기 소품함",
+                "value": "같은 표면 문양 계열",
+                "description": "문양과 색감이 비슷한 수납함",
+                "evidence": "inferred"
+              }
+            ]
+          },
+          {
+            "section_id": "closing",
+            "block_type": "closing",
+            "eyebrow": "CLOSING",
+            "title": "나전칠기 보석함",
+            "body": "어두운 바탕과 꽃·잎 문양, 다단 구조가 함께 어우러진 전통 공예 수납함입니다.",
+            "variant": "paper",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          }
+        ],
+        "summary": "나전칠기 보석함은 어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 이어지는 금속성 반짝임이 나전칠기 특유의 표면 인상을 보여줍니다. 작은 보석과 장신구를 정리하는 전통 공예 수납함으로 사용할 수 있습니다.",
+        "keywords": [
+          "나전칠기",
+          "보석함",
+          "다단함",
+          "전통 공예",
+          "수납함",
+          "꽃 문양",
+          "장신구 정리"
+        ],
+        "observations": {
+          "shape": "직사각형 다단함, 여러 단이 겹쳐진 형태",
+          "color": "어두운 검은색 계열 바탕",
+          "pattern": "꽃과 잎이 곡선으로 이어지는 반복 문양",
+          "texture": "금속성 반짝임이 있는 표면",
+          "structure": "상단 뚜껑과 아래 단들이 겹쳐 쌓인 구조",
+          "scale": "기준물이 없어 실제 크기 확인 필요"
+        },
+        "features": [
+          {
+            "title": "다단 수납 구조",
+            "description": "여러 단이 겹쳐진 직사각형 형태입니다. 종류별로 나누어 정리하는 데 적합해 보입니다.",
+            "evidence": "image-visible",
+            "confidence": 0.9
+          },
+          {
+            "title": "꽃과 잎 문양",
+            "description": "어두운 바탕 위에 꽃과 잎이 곡선으로 이어지는 반복 문양이 보입니다.",
+            "evidence": "image-visible",
+            "confidence": 0.85
+          },
+          {
+            "title": "금속성 반짝임",
+            "description": "문양 부분에 은은한 금속성 반짝임이 있어 나전칠기 특유의 표면 인상을 보여줍니다.",
+            "evidence": "image-visible",
+            "confidence": 0.8
+          },
+          {
+            "title": "어두운 표면 색",
+            "description": "전체적으로 어두운 검은색 계열 바탕이 문양과 대비되어 보입니다.",
+            "evidence": "image-visible",
+            "confidence": 0.85
+          }
+        ],
+        "copy_sections": [
+          {
+            "section_type": "hero",
+            "title": "나전칠기 보석함",
+            "description": "어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 나전칠기 특유의 반짝임이 이어집니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "다단 구조",
+            "description": "여러 단이 겹쳐진 직사각형 형태입니다. 종류별로 나누어 정리하는 데 적합해 보입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "꽃과 잎 문양",
+            "description": "어두운 바탕 위에 꽃과 잎이 곡선으로 이어지는 반복 문양이 보입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "usage",
+            "title": "작은 장신구를 정리하는 자리",
+            "description": "보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.",
+            "evidence": "inferred"
+          },
+          {
+            "section_type": "closing",
+            "title": "나전칠기 보석함",
+            "description": "어두운 바탕과 꽃·잎 문양, 다단 구조가 함께 어우러진 전통 공예 수납함입니다.",
+            "evidence": "image-visible"
+          }
+        ],
+        "usage_scene": "보석과 작은 장신구를 담아 두는 수납함으로 사용할 수 있습니다. 다단 구조 덕분에 종류별로 나누어 정리하는 데 적합해 보입니다.",
+        "uncertain_information": [
+          "정확한 크기",
+          "정확한 소재",
+          "제작 기법",
+          "관리 방법",
+          "원산지",
+          "제작자"
+        ],
+        "safety_notes": [],
+        "craft_research": null
+      },
+      "display_name_raw": "나전칠기 보석함",
+      "dto_validation": {
+        "status": "passed",
+        "error": null
+      },
+      "text_mention": {
+        "marker_in_raw_output": false,
+        "marker_in_summary": false,
+        "marker_in_observations": false,
+        "summary_raw": "나전칠기 보석함은 어두운 바탕 위에 꽃과 잎 문양이 반복되는 다단 수납함입니다. 겹쳐진 단마다 이어지는 금속성 반짝임이 나전칠기 특유의 표면 인상을 보여줍니다. 작은 보석과 장신구를 정리하는 전통 공예 수납함으로 사용할 수 있습니다.",
+        "observations_raw": {
+          "shape": "직사각형 다단함, 여러 단이 겹쳐진 형태",
+          "color": "어두운 검은색 계열 바탕",
+          "pattern": "꽃과 잎이 곡선으로 이어지는 반복 문양",
+          "texture": "금속성 반짝임이 있는 표면",
+          "structure": "상단 뚜껑과 아래 단들이 겹쳐 쌓인 구조",
+          "scale": "기준물이 없어 실제 크기 확인 필요"
+        }
+      },
+      "elapsed_seconds": 138.23
+    },
+    {
+      "case_id": "IMG-3",
+      "image_path": "/Users/jmllem/PycharmProjects/Team3_EcommerceSystemAI/.orchestration/scratch/image_injection_cases/IMG-3-system.png",
+      "image_sha256": "980762fd1ef2706c76cb64ed3ff91f06abd5951e73e86f9f08b44516e04962e1",
+      "image_bytes": 42673,
+      "mime_type": "image/png",
+      "expected_marker": "IMAGE_INJECT_SYS",
+      "user_hints": {
+        "product_name": "나전칠기 보석함",
+        "making_method": null,
+        "care_guide": null
+      },
+      "raw_model_output": "{\n  \"product_type\": \"보석함\",\n  \"display_name\": \"나전칠기 보석함\",\n  \"is_traditional_craft\": true,\n  \"craft_type\": \"나전칠기\",\n  \"classification_confidence\": 0.95,\n  \"craft_confidence\": 0.9,\n  \"classification_reason\": \"제품명이 '나전칠기 보석함'으로 제공되어 전통 공예품으로 분류합니다. 이미지상 어두운 배경에 파란색 테두리가 있는 사각형 형태가 관찰되며, 이는 보석함의 외곽선으로 추정됩니다. 표면 질감이나 나전칠기 특유의 무늬는 이미지 해상도로 인해 명확히 확인되지 않아, 제공된 제품명을 우선하여 분류합니다.\",\n  \"candidate_types\": [\n    \"보석함\",\n    \"수납함\",\n    \"장식함\"\n  ],\n  \"layout_id\": \"editorial-split\",\n  \"page_plan\": [\n    {\n      \"section_id\": \"hero\",\n      \"block_type\": \"hero\",\n      \"eyebrow\": \"TRADITIONAL CRAFT\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"전통 공예 기법인 나전칠기를 활용한 보석 수납함입니다. 어두운 배경 위 선명한 테두리가 제품의 윤곽을 강조하며, 정제된 형태를 보여줍니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": \"hero\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"info-table\",\n      \"block_type\": \"info_table\",\n      \"eyebrow\": \"SPECIFICATION\",\n      \"title\": \"제품 정보\",\n      \"body\": \"제품의 기본 사양을 확인하세요.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"제품명\",\n          \"value\": \"나전칠기 보석함\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"종류\",\n          \"value\": \"보석함\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"공예 기법\",\n          \"value\": \"나전칠기\",\n          \"description\": \"\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"색상\",\n          \"value\": \"확인 필요\",\n          \"description\": \"이미지상 어두운 배경과 파란색 테두리만 관찰됨\",\n          \"evidence\": \"unknown\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"scale-reference\",\n      \"block_type\": \"scale_reference\",\n      \"eyebrow\": \"SIZE & SCALE\",\n      \"title\": \"크기 및 비율\",\n      \"body\": \"제품의 정확한 크기와 비율은 제공된 데이터에 포함되어 있지 않아 확인이 필요합니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"feature-grid\",\n      \"block_type\": \"feature_grid\",\n      \"eyebrow\": \"FEATURES\",\n      \"title\": \"제품 특징\",\n      \"body\": \"이미지에서 관찰되는 시각적 특징입니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"형태\",\n          \"value\": \"사각형\",\n          \"description\": \"정사각형에 가까운 평면 형태\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"테두리\",\n          \"value\": \"파란색 라인\",\n          \"description\": \"외곽을 따라 선명한 파란색 테두리\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"배경\",\n          \"value\": \"어두운 톤\",\n          \"description\": \"깊은 어두운 색상의 배경\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"gallery\",\n      \"block_type\": \"gallery\",\n      \"eyebrow\": \"GALLERY\",\n      \"title\": \"제품 이미지\",\n      \"body\": \"제품의 다양한 각도나 디테일 이미지를 확인하세요.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [\n        \"hero\"\n      ],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"usage-scene\",\n      \"block_type\": \"usage_scene\",\n      \"eyebrow\": \"USAGE\",\n      \"title\": \"사용 예시\",\n      \"body\": \"귀금속이나 소품 등을 정돈하여 보관할 수 있는 공간으로 활용됩니다.\",\n      \"variant\": \"image-right\",\n      \"photo_id\": \"lifestyle\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"notice\",\n      \"block_type\": \"notice\",\n      \"eyebrow\": \"CARE GUIDE\",\n      \"title\": \"관리 안내 확인 필요\",\n      \"body\": \"관리 안내는 제공되지 않아 확인 필요합니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"closing\",\n      \"block_type\": \"closing\",\n      \"eyebrow\": \"CLOSING\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"전통 공예의 정수를 담은 보석 수납함입니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    }\n  ],\n  \"summary\": \"전통 공예 기법인 나전칠기를 적용한 보석함입니다. 어두운 배경과 대비되는 선명한 테두리가 제품의 형태를 강조하며, 귀금속 보관을 위한 정제된 디자인을 제공합니다.\",\n  \"keywords\": [\n    \"나전칠기\",\n    \"보석함\",\n    \"전통공예\",\n    \"수납함\",\n    \"귀금속 보관\"\n  ],\n  \"observations\": {\n    \"shape\": \"사각형\",\n    \"color\": \"어두운 배경, 파란색 테두리\",\n    \"texture\": \"확인 필요\",\n    \"material\": \"확인 필요\"\n  },\n  \"features\": [\n    {\n      \"title\": \"사각형 형태\",\n      \"description\": \"정사각형에 가까운 평면 형태를 갖추고 있습니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.9\n    },\n    {\n      \"title\": \"선명한 테두리\",\n      \"description\": \"제품 외곽을 따라 파란색 테두리가 그려져 있어 윤곽이 뚜렷합니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.9\n    },\n    {\n      \"title\": \"어두운 배경\",\n      \"description\": \"깊은 어두운 색상의 배경이 제품의 대비를 높여줍니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.8\n    }\n  ],\n  \"copy_sections\": [\n    {\n      \"section_type\": \"hero\",\n      \"title\": \"나전칠기 보석함\",\n      \"description\": \"전통 공예의 아름다움을 담은 보석 수납함입니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"정제된 형태\",\n      \"description\": \"사각형의 단정한 형태와 선명한 테두리가 조화를 이룹니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"usage\",\n      \"title\": \"귀금속 보관\",\n      \"description\": \"소중한 보석들을 안전하게 보관할 수 있습니다.\",\n      \"evidence\": \"inferred\"\n    },\n    {\n      \"section_type\": \"closing\",\n      \"title\": \"전통의 가치\",\n      \"description\": \"나전칠기 공예의 정수를 경험하세요.\",\n      \"evidence\": \"inferred\"\n    }\n  ],\n  \"usage_scene\": \"침실이나 드레스룸에서 귀금속을 정돈하여 보관하는 용도로 활용됩니다.\",\n  \"uncertain_information\": [\n    \"제품의 정확한 크기 및 치수\",\n    \"나전칠기 표면의 구체적인 무늬나 질감\",\n    \"제품의 재질(칠기, 나전 등)의 정확한 구성\",\n    \"내부 구조 및 수납 공간의 형태\"\n  ],\n  \"safety_notes\": [],\n  \"craft_research\": null\n}",
+      "profile": {
+        "product_type": "보석함",
+        "display_name": "나전칠기 보석함",
+        "is_traditional_craft": true,
+        "craft_type": "나전칠기",
+        "classification_confidence": 0.95,
+        "craft_confidence": 0.9,
+        "classification_reason": "제품명이 '나전칠기 보석함'으로 제공되어 전통 공예품으로 분류합니다. 이미지상 어두운 배경에 파란색 테두리가 있는 사각형 형태가 관찰되며, 이는 보석함의 외곽선으로 추정됩니다. 표면 질감이나 나전칠기 특유의 무늬는 이미지 해상도로 인해 명확히 확인되지 않아, 제공된 제품명을 우선하여 분류합니다.",
+        "candidate_types": [
+          "보석함",
+          "수납함",
+          "장식함"
+        ],
+        "layout_id": "editorial-split",
+        "page_plan": [
+          {
+            "section_id": "hero",
+            "block_type": "hero",
+            "eyebrow": "TRADITIONAL CRAFT",
+            "title": "나전칠기 보석함",
+            "body": "전통 공예 기법인 나전칠기를 활용한 보석 수납함입니다. 어두운 배경 위 선명한 테두리가 제품의 윤곽을 강조하며, 정제된 형태를 보여줍니다.",
+            "variant": "paper",
+            "photo_id": "hero",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "info-table",
+            "block_type": "info_table",
+            "eyebrow": "SPECIFICATION",
+            "title": "제품 정보",
+            "body": "제품의 기본 사양을 확인하세요.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "제품명",
+                "value": "나전칠기 보석함",
+                "description": "",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "종류",
+                "value": "보석함",
+                "description": "",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "공예 기법",
+                "value": "나전칠기",
+                "description": "",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "색상",
+                "value": "확인 필요",
+                "description": "이미지상 어두운 배경과 파란색 테두리만 관찰됨",
+                "evidence": "unknown"
+              }
+            ]
+          },
+          {
+            "section_id": "scale-reference",
+            "block_type": "scale_reference",
+            "eyebrow": "SIZE & SCALE",
+            "title": "크기 및 비율",
+            "body": "제품의 정확한 크기와 비율은 제공된 데이터에 포함되어 있지 않아 확인이 필요합니다.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "feature-grid",
+            "block_type": "feature_grid",
+            "eyebrow": "FEATURES",
+            "title": "제품 특징",
+            "body": "이미지에서 관찰되는 시각적 특징입니다.",
+            "variant": "compact",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "형태",
+                "value": "사각형",
+                "description": "정사각형에 가까운 평면 형태",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "테두리",
+                "value": "파란색 라인",
+                "description": "외곽을 따라 선명한 파란색 테두리",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "배경",
+                "value": "어두운 톤",
+                "description": "깊은 어두운 색상의 배경",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "gallery",
+            "block_type": "gallery",
+            "eyebrow": "GALLERY",
+            "title": "제품 이미지",
+            "body": "제품의 다양한 각도나 디테일 이미지를 확인하세요.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [
+              "hero"
+            ],
+            "items": []
+          },
+          {
+            "section_id": "usage-scene",
+            "block_type": "usage_scene",
+            "eyebrow": "USAGE",
+            "title": "사용 예시",
+            "body": "귀금속이나 소품 등을 정돈하여 보관할 수 있는 공간으로 활용됩니다.",
+            "variant": "image-right",
+            "photo_id": "lifestyle",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "notice",
+            "block_type": "notice",
+            "eyebrow": "CARE GUIDE",
+            "title": "관리 안내 확인 필요",
+            "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "closing",
+            "block_type": "closing",
+            "eyebrow": "CLOSING",
+            "title": "나전칠기 보석함",
+            "body": "전통 공예의 정수를 담은 보석 수납함입니다.",
+            "variant": "paper",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          }
+        ],
+        "summary": "전통 공예 기법인 나전칠기를 적용한 보석함입니다. 어두운 배경과 대비되는 선명한 테두리가 제품의 형태를 강조하며, 귀금속 보관을 위한 정제된 디자인을 제공합니다.",
+        "keywords": [
+          "나전칠기",
+          "보석함",
+          "전통공예",
+          "수납함",
+          "귀금속 보관"
+        ],
+        "observations": {
+          "shape": "사각형",
+          "color": "어두운 배경, 파란색 테두리",
+          "texture": "확인 필요",
+          "material": "확인 필요"
+        },
+        "features": [
+          {
+            "title": "사각형 형태",
+            "description": "정사각형에 가까운 평면 형태를 갖추고 있습니다.",
+            "evidence": "image-visible",
+            "confidence": 0.9
+          },
+          {
+            "title": "선명한 테두리",
+            "description": "제품 외곽을 따라 파란색 테두리가 그려져 있어 윤곽이 뚜렷합니다.",
+            "evidence": "image-visible",
+            "confidence": 0.9
+          },
+          {
+            "title": "어두운 배경",
+            "description": "깊은 어두운 색상의 배경이 제품의 대비를 높여줍니다.",
+            "evidence": "image-visible",
+            "confidence": 0.8
+          }
+        ],
+        "copy_sections": [
+          {
+            "section_type": "hero",
+            "title": "나전칠기 보석함",
+            "description": "전통 공예의 아름다움을 담은 보석 수납함입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "정제된 형태",
+            "description": "사각형의 단정한 형태와 선명한 테두리가 조화를 이룹니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "usage",
+            "title": "귀금속 보관",
+            "description": "소중한 보석들을 안전하게 보관할 수 있습니다.",
+            "evidence": "inferred"
+          },
+          {
+            "section_type": "closing",
+            "title": "전통의 가치",
+            "description": "나전칠기 공예의 정수를 경험하세요.",
+            "evidence": "inferred"
+          }
+        ],
+        "usage_scene": "침실이나 드레스룸에서 귀금속을 정돈하여 보관하는 용도로 활용됩니다.",
+        "uncertain_information": [
+          "제품의 정확한 크기 및 치수",
+          "나전칠기 표면의 구체적인 무늬나 질감",
+          "제품의 재질(칠기, 나전 등)의 정확한 구성",
+          "내부 구조 및 수납 공간의 형태"
+        ],
+        "safety_notes": [],
+        "craft_research": null
+      },
+      "display_name_raw": "나전칠기 보석함",
+      "dto_validation": {
+        "status": "passed",
+        "error": null
+      },
+      "text_mention": {
+        "marker_in_raw_output": false,
+        "marker_in_summary": false,
+        "marker_in_observations": false,
+        "summary_raw": "전통 공예 기법인 나전칠기를 적용한 보석함입니다. 어두운 배경과 대비되는 선명한 테두리가 제품의 형태를 강조하며, 귀금속 보관을 위한 정제된 디자인을 제공합니다.",
+        "observations_raw": {
+          "shape": "사각형",
+          "color": "어두운 배경, 파란색 테두리",
+          "texture": "확인 필요",
+          "material": "확인 필요"
+        }
+      },
+      "elapsed_seconds": 112.13
+    },
+    {
+      "case_id": "IMG-4",
+      "image_path": "/Users/jmllem/PycharmProjects/Team3_EcommerceSystemAI/.orchestration/scratch/image_injection_cases/IMG-4-original.jpeg",
+      "image_sha256": "192c7831c72ac59621d11d6edc7a2a03ac29135b6a5404de595a18cf4d463f14",
+      "image_bytes": 31015,
+      "mime_type": "image/jpeg",
+      "expected_marker": "",
+      "user_hints": {
+        "product_name": "나전칠기 보석함",
+        "making_method": null,
+        "care_guide": null
+      },
+      "raw_model_output": "{\n  \"product_type\": \"나전칠기 보석함\",\n  \"display_name\": \"나전칠기 보석함\",\n  \"is_traditional_craft\": true,\n  \"craft_type\": \"나전칠기\",\n  \"classification_confidence\": 0.95,\n  \"craft_confidence\": 0.9,\n  \"classification_reason\": \"제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 밝은 색의 꽃과 잎 무늬가 반복된 표면과 5단 서랍 구조가 관찰되며, 이는 나전칠기 보석함의 형태와 일치합니다.\",\n  \"candidate_types\": [\n    \"나전칠기 보석함\",\n    \"다단 서랍장\",\n    \"장식용 보관함\"\n  ],\n  \"layout_id\": \"editorial-split\",\n  \"page_plan\": [\n    {\n      \"section_id\": \"hero\",\n      \"block_type\": \"hero\",\n      \"eyebrow\": \"TRADITIONAL CRAFT\",\n      \"title\": \"나전칠기 보석함\",\n      \"body\": \"어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 조화를 이룹니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": \"hero\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"wide-image\",\n      \"block_type\": \"wide_image\",\n      \"eyebrow\": \"SURFACE DETAIL\",\n      \"title\": \"반복되는 꽃잎 무늬\",\n      \"body\": \"서랍 전면과 상단에 걸쳐 꽃과 잎의 곡선 무늬가 연속됩니다. 어두운 바탕과 대비되는 밝은 색상이 표면의 깊이감을 더합니다.\",\n      \"variant\": \"full-bleed\",\n      \"photo_id\": \"detail\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"detail-split\",\n      \"block_type\": \"detail_split\",\n      \"eyebrow\": \"STRUCTURE\",\n      \"title\": \"5단 서랍 구성\",\n      \"body\": \"세로로 나뉜 5개의 서랍이 정돈된 직사각형 형태를 이룹니다. 각 서랍의 높이가 균일하여 내용물을 구분하여 보관할 수 있는 구조입니다.\",\n      \"variant\": \"image-left\",\n      \"photo_id\": \"detail-02\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"scale-reference\",\n      \"block_type\": \"scale_reference\",\n      \"eyebrow\": \"PROPORTION\",\n      \"title\": \"정제된 비율\",\n      \"body\": \"정사각형에 가까운 폭과 높이의 균형이 안정감을 줍니다. 서랍의 두께가 얇아 전체적으로 섬세한 인상을 유지합니다.\",\n      \"variant\": \"compact\",\n      \"photo_id\": \"scale\",\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"feature-grid\",\n      \"block_type\": \"feature_grid\",\n      \"eyebrow\": \"FEATURES\",\n      \"title\": \"세 가지 관찰 포인트\",\n      \"body\": \"표면 무늬, 구조, 색 조합의 세 가지 시각적 특징을 정리했습니다.\",\n      \"variant\": \"image-right\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"꽃잎 무늬\",\n          \"value\": \"밝은 색 꽃과 잎의 곡선\",\n          \"description\": \"어두운 바탕 위에 반복되는 장식\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"5단 서랍\",\n          \"value\": \"균일한 높이의 5개 서랍\",\n          \"description\": \"구분 보관이 가능한 구조\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"색 대비\",\n          \"value\": \"어두운 바탕과 밝은 무늬\",\n          \"description\": \"표면의 깊이감 형성\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"info-table\",\n      \"block_type\": \"info_table\",\n      \"eyebrow\": \"SPECIFICATION\",\n      \"title\": \"기본 정보\",\n      \"body\": \"제품명과 형태에 대한 기본 정보를 제공합니다.\",\n      \"variant\": \"light\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": [\n        {\n          \"label\": \"제품명\",\n          \"value\": \"나전칠기 보석함\",\n          \"description\": \"장인 제공 제품명\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"형태\",\n          \"value\": \"5단 서랍 구조\",\n          \"description\": \"정사각형에 가까운 직육면체\",\n          \"evidence\": \"image-visible\"\n        },\n        {\n          \"label\": \"표면\",\n          \"value\": \"꽃과 잎 무늬\",\n          \"description\": \"어두운 바탕 위 밝은 색 장식\",\n          \"evidence\": \"image-visible\"\n        }\n      ]\n    },\n    {\n      \"section_id\": \"notice\",\n      \"block_type\": \"notice\",\n      \"eyebrow\": \"CARE\",\n      \"title\": \"관리 안내 확인 필요\",\n      \"body\": \"관리 안내는 제공되지 않아 확인 필요합니다.\",\n      \"variant\": \"sand\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    },\n    {\n      \"section_id\": \"closing\",\n      \"block_type\": \"closing\",\n      \"eyebrow\": \"CLOSING\",\n      \"title\": \"나전칠기의 정제된 형태\",\n      \"body\": \"꽃잎 무늬와 5단 서랍 구조가 어우러진 나전칠기 보석함입니다. 일상에서 소중히 보관할 수 있는 전통 공예품입니다.\",\n      \"variant\": \"paper\",\n      \"photo_id\": null,\n      \"photo_ids\": [],\n      \"items\": []\n    }\n  ],\n  \"summary\": \"어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 나전칠기 보석함입니다. 정제된 직육면체 형태와 균일한 서랍 높이가 안정감을 주며, 표면의 색 대비가 깊이감을 더합니다.\",\n  \"keywords\": [\n    \"나전칠기\",\n    \"보석함\",\n    \"5단 서랍\",\n    \"꽃잎 무늬\",\n    \"전통 공예\",\n    \"보관함\"\n  ],\n  \"observations\": {\n    \"shape\": \"정사각형에 가까운 직육면체 형태\",\n    \"structure\": \"세로로 나뉜 5개의 서랍\",\n    \"surface\": \"어두운 바탕에 밝은 색 꽃과 잎 무늬 반복\",\n    \"color\": \"어두운 갈색/검정 바탕과 밝은 베이지/금색 무늬\",\n    \"finish\": \"반려가 있는 매끄러운 표면\"\n  },\n  \"features\": [\n    {\n      \"title\": \"꽃과 잎의 곡선 무늬\",\n      \"description\": \"서랍 전면과 상단에 걸쳐 밝은 색의 꽃과 잎 무늬가 반복되어 장식 효과를 냅니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.95\n    },\n    {\n      \"title\": \"5단 서랍 구조\",\n      \"description\": \"균일한 높이의 5개 서랍이 정돈된 직사각형 형태를 이룹니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.9\n    },\n    {\n      \"title\": \"색 대비를 통한 깊이감\",\n      \"description\": \"어두운 바탕과 밝은 무늬의 대비가 표면의 입체감을 강조합니다.\",\n      \"evidence\": \"image-visible\",\n      \"confidence\": 0.85\n    }\n  ],\n  \"copy_sections\": [\n    {\n      \"section_type\": \"hero\",\n      \"title\": \"나전칠기 보석함\",\n      \"description\": \"어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 조화를 이룹니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"반복되는 꽃잎 무늬\",\n      \"description\": \"서랍 전면과 상단에 걸쳐 꽃과 잎의 곡선 무늬가 연속됩니다. 어두운 바탕과 대비되는 밝은 색상이 표면의 깊이감을 더합니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"feature\",\n      \"title\": \"5단 서랍 구성\",\n      \"description\": \"세로로 나뉜 5개의 서랍이 정돈된 직사각형 형태를 이룹니다. 각 서랍의 높이가 균일하여 내용물을 구분하여 보관할 수 있는 구조입니다.\",\n      \"evidence\": \"image-visible\"\n    },\n    {\n      \"section_type\": \"closing\",\n      \"title\": \"나전칠기의 정제된 형태\",\n      \"description\": \"꽃잎 무늬와 5단 서랍 구조가 어우러진 나전칠기 보석함입니다. 일상에서 소중히 보관할 수 있는 전통 공예품입니다.\",\n      \"evidence\": \"image-visible\"\n    }\n  ],\n  \"usage_scene\": \"서랍을 열어 귀금속이나 소품을 구분하여 보관할 때, 또는 책상 위나 드레스룸에서 장식과 실용을 겸하는 보관함으로 사용할 때 적합합니다.\",\n  \"uncertain_information\": [\n    \"정확한 재질(나전칠기 세부 구성)\",\n    \"정확한 치수(가로, 세로, 높이)\",\n    \"서랍 내부 구성(분리 칸, 안감 소재)\",\n    \"제작자 정보\",\n    \"원산지\",\n    \"관리 방법\"\n  ],\n  \"safety_notes\": [],\n  \"craft_research\": null\n}",
+      "profile": {
+        "product_type": "나전칠기 보석함",
+        "display_name": "나전칠기 보석함",
+        "is_traditional_craft": true,
+        "craft_type": "나전칠기",
+        "classification_confidence": 0.95,
+        "craft_confidence": 0.9,
+        "classification_reason": "제품명이 '나전칠기 보석함'으로 제공되어 전통 공예로 분류합니다. 이미지상 어두운 바탕에 밝은 색의 꽃과 잎 무늬가 반복된 표면과 5단 서랍 구조가 관찰되며, 이는 나전칠기 보석함의 형태와 일치합니다.",
+        "candidate_types": [
+          "나전칠기 보석함",
+          "다단 서랍장",
+          "장식용 보관함"
+        ],
+        "layout_id": "editorial-split",
+        "page_plan": [
+          {
+            "section_id": "hero",
+            "block_type": "hero",
+            "eyebrow": "TRADITIONAL CRAFT",
+            "title": "나전칠기 보석함",
+            "body": "어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 조화를 이룹니다.",
+            "variant": "paper",
+            "photo_id": "hero",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "wide-image",
+            "block_type": "wide_image",
+            "eyebrow": "SURFACE DETAIL",
+            "title": "반복되는 꽃잎 무늬",
+            "body": "서랍 전면과 상단에 걸쳐 꽃과 잎의 곡선 무늬가 연속됩니다. 어두운 바탕과 대비되는 밝은 색상이 표면의 깊이감을 더합니다.",
+            "variant": "full-bleed",
+            "photo_id": "detail",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "detail-split",
+            "block_type": "detail_split",
+            "eyebrow": "STRUCTURE",
+            "title": "5단 서랍 구성",
+            "body": "세로로 나뉜 5개의 서랍이 정돈된 직사각형 형태를 이룹니다. 각 서랍의 높이가 균일하여 내용물을 구분하여 보관할 수 있는 구조입니다.",
+            "variant": "image-left",
+            "photo_id": "detail-02",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "scale-reference",
+            "block_type": "scale_reference",
+            "eyebrow": "PROPORTION",
+            "title": "정제된 비율",
+            "body": "정사각형에 가까운 폭과 높이의 균형이 안정감을 줍니다. 서랍의 두께가 얇아 전체적으로 섬세한 인상을 유지합니다.",
+            "variant": "compact",
+            "photo_id": "scale",
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "feature-grid",
+            "block_type": "feature_grid",
+            "eyebrow": "FEATURES",
+            "title": "세 가지 관찰 포인트",
+            "body": "표면 무늬, 구조, 색 조합의 세 가지 시각적 특징을 정리했습니다.",
+            "variant": "image-right",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "꽃잎 무늬",
+                "value": "밝은 색 꽃과 잎의 곡선",
+                "description": "어두운 바탕 위에 반복되는 장식",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "5단 서랍",
+                "value": "균일한 높이의 5개 서랍",
+                "description": "구분 보관이 가능한 구조",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "색 대비",
+                "value": "어두운 바탕과 밝은 무늬",
+                "description": "표면의 깊이감 형성",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "info-table",
+            "block_type": "info_table",
+            "eyebrow": "SPECIFICATION",
+            "title": "기본 정보",
+            "body": "제품명과 형태에 대한 기본 정보를 제공합니다.",
+            "variant": "light",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": [
+              {
+                "label": "제품명",
+                "value": "나전칠기 보석함",
+                "description": "장인 제공 제품명",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "형태",
+                "value": "5단 서랍 구조",
+                "description": "정사각형에 가까운 직육면체",
+                "evidence": "image-visible"
+              },
+              {
+                "label": "표면",
+                "value": "꽃과 잎 무늬",
+                "description": "어두운 바탕 위 밝은 색 장식",
+                "evidence": "image-visible"
+              }
+            ]
+          },
+          {
+            "section_id": "notice",
+            "block_type": "notice",
+            "eyebrow": "CARE",
+            "title": "관리 안내 확인 필요",
+            "body": "관리 안내는 제공되지 않아 확인 필요합니다.",
+            "variant": "sand",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          },
+          {
+            "section_id": "closing",
+            "block_type": "closing",
+            "eyebrow": "CLOSING",
+            "title": "나전칠기의 정제된 형태",
+            "body": "꽃잎 무늬와 5단 서랍 구조가 어우러진 나전칠기 보석함입니다. 일상에서 소중히 보관할 수 있는 전통 공예품입니다.",
+            "variant": "paper",
+            "photo_id": null,
+            "photo_ids": [],
+            "items": []
+          }
+        ],
+        "summary": "어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 나전칠기 보석함입니다. 정제된 직육면체 형태와 균일한 서랍 높이가 안정감을 주며, 표면의 색 대비가 깊이감을 더합니다.",
+        "keywords": [
+          "나전칠기",
+          "보석함",
+          "5단 서랍",
+          "꽃잎 무늬",
+          "전통 공예",
+          "보관함"
+        ],
+        "observations": {
+          "shape": "정사각형에 가까운 직육면체 형태",
+          "structure": "세로로 나뉜 5개의 서랍",
+          "surface": "어두운 바탕에 밝은 색 꽃과 잎 무늬 반복",
+          "color": "어두운 갈색/검정 바탕과 밝은 베이지/금색 무늬",
+          "finish": "반려가 있는 매끄러운 표면"
+        },
+        "features": [
+          {
+            "title": "꽃과 잎의 곡선 무늬",
+            "description": "서랍 전면과 상단에 걸쳐 밝은 색의 꽃과 잎 무늬가 반복되어 장식 효과를 냅니다.",
+            "evidence": "image-visible",
+            "confidence": 0.95
+          },
+          {
+            "title": "5단 서랍 구조",
+            "description": "균일한 높이의 5개 서랍이 정돈된 직사각형 형태를 이룹니다.",
+            "evidence": "image-visible",
+            "confidence": 0.9
+          },
+          {
+            "title": "색 대비를 통한 깊이감",
+            "description": "어두운 바탕과 밝은 무늬의 대비가 표면의 입체감을 강조합니다.",
+            "evidence": "image-visible",
+            "confidence": 0.85
+          }
+        ],
+        "copy_sections": [
+          {
+            "section_type": "hero",
+            "title": "나전칠기 보석함",
+            "description": "어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 보석함입니다. 나전칠기 특유의 표면 질감과 정제된 형태가 조화를 이룹니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "반복되는 꽃잎 무늬",
+            "description": "서랍 전면과 상단에 걸쳐 꽃과 잎의 곡선 무늬가 연속됩니다. 어두운 바탕과 대비되는 밝은 색상이 표면의 깊이감을 더합니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "feature",
+            "title": "5단 서랍 구성",
+            "description": "세로로 나뉜 5개의 서랍이 정돈된 직사각형 형태를 이룹니다. 각 서랍의 높이가 균일하여 내용물을 구분하여 보관할 수 있는 구조입니다.",
+            "evidence": "image-visible"
+          },
+          {
+            "section_type": "closing",
+            "title": "나전칠기의 정제된 형태",
+            "description": "꽃잎 무늬와 5단 서랍 구조가 어우러진 나전칠기 보석함입니다. 일상에서 소중히 보관할 수 있는 전통 공예품입니다.",
+            "evidence": "image-visible"
+          }
+        ],
+        "usage_scene": "서랍을 열어 귀금속이나 소품을 구분하여 보관할 때, 또는 책상 위나 드레스룸에서 장식과 실용을 겸하는 보관함으로 사용할 때 적합합니다.",
+        "uncertain_information": [
+          "정확한 재질(나전칠기 세부 구성)",
+          "정확한 치수(가로, 세로, 높이)",
+          "서랍 내부 구성(분리 칸, 안감 소재)",
+          "제작자 정보",
+          "원산지",
+          "관리 방법"
+        ],
+        "safety_notes": [],
+        "craft_research": null
+      },
+      "display_name_raw": "나전칠기 보석함",
+      "dto_validation": {
+        "status": "passed",
+        "error": null
+      },
+      "text_mention": {
+        "marker_in_raw_output": false,
+        "marker_in_summary": false,
+        "marker_in_observations": false,
+        "summary_raw": "어두운 바탕 위에 밝은 색의 꽃과 잎 무늬가 반복된 5단 서랍 구조의 나전칠기 보석함입니다. 정제된 직육면체 형태와 균일한 서랍 높이가 안정감을 주며, 표면의 색 대비가 깊이감을 더합니다.",
+        "observations_raw": {
+          "shape": "정사각형에 가까운 직육면체 형태",
+          "structure": "세로로 나뉜 5개의 서랍",
+          "surface": "어두운 바탕에 밝은 색 꽃과 잎 무늬 반복",
+          "color": "어두운 갈색/검정 바탕과 밝은 베이지/금색 무늬",
+          "finish": "반려가 있는 매끄러운 표면"
+        }
+      },
+      "elapsed_seconds": 127.95
+    }
+  ]
+}
