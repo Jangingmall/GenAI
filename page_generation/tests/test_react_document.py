@@ -464,3 +464,192 @@ def test_build_react_document_does_not_mutate_draft_page_plan(caplog):
     # Warning was logged
     assert "photo_id 'scale' requested by scale_reference block is unavailable; using default photo_id 'hero'" in caplog.text
 
+
+def test_gallery_uses_generated_detail_cuts_when_available_ignoring_model_request():
+    draft = ApprovedDraftDto(
+        product_name="백자 다기 세트",
+        summary="전통 기법으로 빚어낸 백자 다기입니다.",
+        hero_headline="단아한 선의 백자",
+        hero_description="백색의 은은한 광택과 단아한 선이 돋보입니다.",
+        page_plan=[
+            PageBlockDto(
+                section_id="gallery",
+                block_type="gallery",
+                title="상세 컷",
+                body="각도별 디테일을 확인하세요.",
+                photo_ids=["hero"],  # Model gave non-standard photo_ids
+            ),
+        ],
+    )
+    available = {"hero", "detail", "detail-02", "detail-03", "detail-04", "detail-05"}
+    doc = build_react_document_from_draft(draft, available_photo_ids=available)
+
+    image_ids = [
+        node["props"]["image_id"]
+        for root in doc.root
+        for node in _walk(root.model_dump())
+        if node.get("type") == "element" and node.get("tag") == "img"
+    ]
+    assert image_ids == ["detail", "detail-02", "detail-03", "detail-04", "detail-05"]
+
+
+def test_gallery_preserves_model_photo_ids_when_no_generated_cuts_available():
+    draft = ApprovedDraftDto(
+        product_name="백자 다기 세트",
+        summary="전통 기법으로 빚어낸 백자 다기입니다.",
+        hero_headline="단아한 선의 백자",
+        hero_description="백색의 은은한 광택과 단아한 선이 돋보입니다.",
+        page_plan=[
+            PageBlockDto(
+                section_id="gallery",
+                block_type="gallery",
+                title="상세 컷",
+                body="각도별 디테일을 확인하세요.",
+                photo_ids=["hero"],  # Model gave hero, and no generated detail cuts exist
+            ),
+        ],
+    )
+    available = {"hero", "detail"}
+    doc = build_react_document_from_draft(draft, available_photo_ids=available)
+
+    image_ids = [
+        node["props"]["image_id"]
+        for root in doc.root
+        for node in _walk(root.model_dump())
+        if node.get("type") == "element" and node.get("tag") == "img"
+    ]
+    assert image_ids == ["hero"]
+
+
+def test_png_and_react_document_use_same_gallery_photos():
+    import base64
+    import re
+    from detail_page_ai.html_renderer import build_detail_page_html
+    from detail_page_ai.models import ProductPhoto, ProductPhotoSet
+
+    photo_ids = ["hero", "detail", "detail-02", "detail-03", "detail-04", "detail-05"]
+    photos = tuple(
+        ProductPhoto(
+            photo_id=pid,
+            order=i,
+            label=f"Photo {pid}",
+            data=f"raw-photo-data-{pid}".encode(),
+            mime_type="image/png",
+            source_sha256="dummy-sha",
+            product_generated=(pid.startswith("detail-0")),
+            asset_mode="generated_view" if pid.startswith("detail-0") else "source_crop",
+            fidelity_status="GENERATED" if pid.startswith("detail-0") else "VERIFIED",
+        )
+        for i, pid in enumerate(photo_ids, start=1)
+    )
+    photo_set = ProductPhotoSet(photos=photos)
+    available_ids = {p.photo_id for p in photos}
+
+    gallery_block = PageBlockDto(
+        section_id="gallery",
+        block_type="gallery",
+        title="상세 컷",
+        body="각도별 디테일",
+        photo_ids=["hero"],  # Model incorrectly requested only hero
+    )
+
+    draft = ApprovedDraftDto(
+        product_name="백자 다기 세트",
+        summary="전통 기법으로 빚어낸 백자 다기입니다.",
+        hero_headline="단아한 선의 백자",
+        hero_description="백색의 은은한 광택과 단아한 선이 돋보입니다.",
+        page_plan=[gallery_block],
+    )
+    profile = draft.to_profile()
+
+    # 1. HTML rendered for PNG output
+    html = build_detail_page_html(
+        profile,
+        b"dummy-source-bytes",
+        mime_type="image/png",
+        photo_set=photo_set,
+    )
+    gallery_section = html.split('data-section="gallery"', 1)[1].split("</section>", 1)[0]
+    html_img_srcs = re.findall(r'<img[^>]+src="([^"]+)"', gallery_section)
+    html_photo_ids = []
+    for pid in ("detail", "detail-02", "detail-03", "detail-04", "detail-05"):
+        b64_content = base64.b64encode(f"raw-photo-data-{pid}".encode()).decode("ascii")
+        if any(b64_content in src for src in html_img_srcs):
+            html_photo_ids.append(pid)
+
+    # 2. React document output
+    doc = build_react_document_from_draft(draft, available_photo_ids=available_ids)
+    react_photo_ids = [
+        node["props"]["image_id"]
+        for root in doc.root
+        for node in _walk(root.model_dump())
+        if node.get("type") == "element" and node.get("tag") == "img"
+    ]
+
+    # Both render pipelines must reference the exact same 5 photos
+    expected = ["detail", "detail-02", "detail-03", "detail-04", "detail-05"]
+    assert html_photo_ids == expected
+    assert react_photo_ids == expected
+    assert html_photo_ids == react_photo_ids
+
+
+def test_gallery_warning_log_matches_resolved_photos(caplog):
+    # Case 1: Model requested unavailable 'bogus' while generated cuts exist
+    draft = ApprovedDraftDto(
+        product_name="백자 다기 세트",
+        summary="전통 기법으로 빚어낸 백자 다기입니다.",
+        hero_headline="단아한 선의 백자",
+        hero_description="백색의 은은한 광택과 단아한 선이 돋보입니다.",
+        page_plan=[
+            PageBlockDto(
+                section_id="gallery",
+                block_type="gallery",
+                photo_ids=["bogus"],
+            ),
+        ],
+    )
+    available = {"hero", "detail", "detail-02", "detail-03", "detail-04", "detail-05"}
+    with caplog.at_level(logging.WARNING, logger="detail_page_ai.react_document_builder"):
+        doc = build_react_document_from_draft(draft, available_photo_ids=available)
+
+    # Log must accurately reflect that 5 images are used, never falsely claiming 'omitting image'
+    assert "omitting image" not in caplog.text
+    assert "default photo_id None is unavailable" not in caplog.text
+    assert (
+        "gallery block requested ['bogus'] but generated detail cuts are present; "
+        "using ['detail', 'detail-02', 'detail-03', 'detail-04', 'detail-05'] instead"
+    ) in caplog.text
+    assert (
+        "photo_id 'bogus' requested by gallery block is unavailable; "
+        "using ['detail', 'detail-02', 'detail-03', 'detail-04', 'detail-05'] instead"
+    ) in caplog.text
+
+    caplog.clear()
+
+    # Case 2: Model requested available 'hero' while generated cuts exist
+    draft_hero = draft.model_copy(
+        update={
+            "page_plan": [
+                PageBlockDto(
+                    section_id="gallery",
+                    block_type="gallery",
+                    photo_ids=["hero"],
+                )
+            ]
+        }
+    )
+    with caplog.at_level(logging.WARNING, logger="detail_page_ai.react_document_builder"):
+        doc_hero = build_react_document_from_draft(
+            draft_hero, available_photo_ids=available
+        )
+
+    # 'hero' is available so it is not logged as unavailable, but intentional override is logged
+    assert "is unavailable" not in caplog.text
+    assert "omitting image" not in caplog.text
+    assert (
+        "gallery block requested ['hero'] but generated detail cuts are present; "
+        "using ['detail', 'detail-02', 'detail-03', 'detail-04', 'detail-05'] instead"
+    ) in caplog.text
+
+
+

@@ -9,6 +9,11 @@ from typing import Any, Callable
 
 from .dto import PageBlockDto, PageBlockItemDto, ProductProfileDto
 from .models import GeneratedImage, GeneratedSection, ProductPhotoSet
+from .photo_slots import (
+    GALLERY_SLOTS,
+    GENERATED_DETAIL_SLOTS,
+    resolve_gallery_photo_ids,
+)
 from .validation import sanitize_profile_for_render
 
 
@@ -210,7 +215,7 @@ def _default_page_plan(profile: ProductProfileDto) -> tuple[PageBlockDto, ...]:
                 title="색과 형태의 작은 차이",
                 body="서로 다른 디테일을 가까이에서 비교해 보세요.",
                 variant="paper",
-                photo_ids=["detail", "detail-02", "detail-03", "detail-04", "detail-05"],
+                photo_ids=list(GALLERY_SLOTS),
             ),
             PageBlockDto(
                 section_id="usage-scene",
@@ -356,15 +361,8 @@ def _render_page_block(
   <div class="section-heading section-heading--compact"><span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p></div><div class="wide-section__media">{_image_tag(image, alt=f"{product_name} 전체 이미지", class_name="product-image product-image--wide")}</div>
 </section>'''
     if block_type == "gallery":
-        detail_slots = ("detail", "detail-02", "detail-03", "detail-04", "detail-05")
-        if any(
-            photo_id in photo_uris
-            for photo_id in ("detail-02", "detail-03", "detail-04", "detail-05")
-        ):
-            requested = [photo_id for photo_id in detail_slots if photo_id in photo_uris]
-        else:
-            requested = block.photo_ids or list(detail_slots)
-        gallery_uris = tuple(photo_uris[photo_id] for photo_id in requested if photo_id in photo_uris)
+        gallery_ids = resolve_gallery_photo_ids(block.photo_ids, photo_uris)
+        gallery_uris = tuple(photo_uris[photo_id] for photo_id in gallery_ids if photo_id in photo_uris)
         if not gallery_uris:
             gallery_uris = (photo_uris.get("detail", fallback_uri),)
         three, two = _gallery(gallery_uris, product_name)
@@ -514,7 +512,7 @@ def build_detail_page_html(
             not photo.product_generated
             or (photo.photo_id == "lifestyle" and photo.asset_mode == "generated_scene")
             or (
-                photo.photo_id in {"detail-02", "detail-03", "detail-04", "detail-05"}
+                photo.photo_id in GENERATED_DETAIL_SLOTS
                 and photo.asset_mode == "generated_view"
             )
         )

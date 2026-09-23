@@ -11,6 +11,11 @@ from .dto import (
     PageBlockDto,
     PageBlockItemDto,
 )
+from .photo_slots import (
+    GALLERY_SLOTS,
+    GENERATED_DETAIL_SLOTS,
+    resolve_gallery_photo_ids,
+)
 from .react_document import (
     ReactDetailPageDocumentDto,
     ReactElementNodeDto,
@@ -222,6 +227,27 @@ def _photo_ids(
     if available_photo_ids is None:
         if not candidates and default_photo_id:
             candidates = [default_photo_id]
+    elif block.block_type == "gallery":
+        resolved = resolve_gallery_photo_ids(candidates, available_photo_ids)
+        if log_warnings:
+            available_set = set(available_photo_ids)
+            has_generated = any(slot in available_set for slot in GENERATED_DETAIL_SLOTS)
+            if has_generated and candidates != resolved:
+                logger.warning(
+                    "gallery block requested %r but generated detail cuts are present; using %r instead",
+                    candidates,
+                    resolved,
+                )
+            for requested_photo_id in candidates:
+                if requested_photo_id not in available_set:
+                    action = f"using {resolved!r} instead" if resolved else "omitting image"
+                    logger.warning(
+                        "photo_id %r requested by %s block is unavailable; %s",
+                        requested_photo_id,
+                        block.block_type,
+                        action,
+                    )
+        return resolved
     else:
         available = set(available_photo_ids)
         if not candidates:
@@ -264,7 +290,7 @@ def _photo_ids(
     for photo_id in candidates:
         if photo_id and photo_id not in deduplicated:
             deduplicated.append(photo_id)
-    limit = 5 if block.block_type == "gallery" else 1
+    limit = len(GALLERY_SLOTS) if block.block_type == "gallery" else 1
     return deduplicated[:limit]
 
 
