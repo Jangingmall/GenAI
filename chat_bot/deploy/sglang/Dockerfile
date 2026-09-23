@@ -35,6 +35,41 @@ ENV MODEL_PATH=${MODEL_PATH} \
     MODEL_REVISION=${MODEL_REVISION} \
     SERVED_MODEL_NAME=${SERVED_MODEL_NAME}
 
+# SGLang v0.5.19의 알려진 버그를 백포트한다 — Gemma 4 Unified(멀티모달, 우리 모델
+# 포함) 로드 시 "'Gemma4VisionConfig' object has no attribute 'model_patch_size'"로
+# 죽는다. 원인: HfModelConfigParser가 공식 transformers.Gemma4UnifiedConfig 대신
+# 구버전 Gemma4Config로 별칭 처리해서, model_patch_size = patch_size(16) ×
+# pooling_kernel_size(3) = 48을 계산하는 로직 자체가 빠진다(Google 공식·이 모델의
+# config.json 둘 다 patch_size=16, pooling_kernel_size=3 확인함). 공식 수정 PR(아직
+# main에 미병합, 2026-08-11 오픈): https://github.com/sgl-project/sglang/pull/34420
+# 이 이미지(transformers 5.12.1)에서 Gemma4UnifiedConfig import 성공 및 패치 후
+# model_patch_size=48 계산까지 직접 실행해 확인했다. 원본 코드가 바뀌면(예: 다음 SGLang
+# 버전에 상위 PR이 반영되면) 아래 문자열 치환이 실패해 빌드가 멈춘다 — 그때 이 블록을
+# 지우고 버전만 올리면 된다.
+RUN python3 - <<'PY'
+import pathlib
+import sglang.srt.utils.hf_transformers.common as m
+
+path = pathlib.Path(m.__file__)
+text = path.read_text()
+old = '''    from transformers import Gemma4Config as _HFGemma4Config
+
+    class _Gemma4UnifiedConfigAlias(_HFGemma4Config):
+        model_type = "gemma4_unified"
+
+    _CONFIG_REGISTRY["gemma4_unified"] = _Gemma4UnifiedConfigAlias'''
+new = '''    from transformers import Gemma4UnifiedConfig
+
+    _CONFIG_REGISTRY["gemma4_unified"] = Gemma4UnifiedConfig'''
+if old not in text:
+    raise SystemExit(
+        "PR #34420 백포트 실패: 예상한 원본 코드를 못 찾음 — "
+        "SGLang 버전이 바뀌어 이 패치가 이미 반영됐거나 더 이상 안 맞을 수 있음, 직접 확인 필요"
+    )
+path.write_text(text.replace(old, new))
+print(f"PR #34420 백포트 완료: {path}")
+PY
+
 EXPOSE 30000
 
 # 챗봇 API의 app/readiness.py가 SGLang 백엔드 준비 여부를 이 엔드포인트로 확인한다
