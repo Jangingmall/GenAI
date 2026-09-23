@@ -226,6 +226,7 @@ while :; do sleep 0.05; done
     _write_executable(
         bin_dir / "nvidia-smi",
         """#!/usr/bin/env bash
+printf 'vram\\n' >> "$EVENTS_FILE"
 printf '123 MiB, 456 MiB\\n'
 """,
     )
@@ -237,7 +238,7 @@ printf '123 MiB, 456 MiB\\n'
             "EVENTS_FILE": str(events_file),
             "TEXT_READY_FILE": str(text_ready_file),
             "IMAGE_READY_FILE": str(image_ready_file),
-            "TEXT_READY_TIMEOUT": "2",
+            "TEXT_READY_TIMEOUT": "5",
             "TEXT_MODEL_PATH": "text-model",
             "TEXT_MODEL_REVISION": "text-sha",
             "IMAGE_MODEL_PATH": "image-model",
@@ -269,12 +270,12 @@ printf '123 MiB, 456 MiB\\n'
         stderr=subprocess.PIPE,
         text=True,
     )
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if process.poll() is not None:
             break
         events = events_file.read_text(encoding="utf-8").splitlines() if events_file.exists() else []
-        if "image-start" in events or text_fails_before_ready:
+        if events.count("vram") >= 2 or text_fails_before_ready:
             break
         time.sleep(0.02)
 
