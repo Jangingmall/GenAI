@@ -52,6 +52,9 @@ text_command+=(
     --context-length "$TEXT_CONTEXT_LENGTH"
     --trust-remote-code
 )
+if [[ -n "${TEXT_MAX_RUNNING_REQUESTS:-}" ]]; then
+    text_command+=(--max-running-requests "$TEXT_MAX_RUNNING_REQUESTS")
+fi
 
 image_command=(
     sglang serve
@@ -109,22 +112,6 @@ mkdir -p \
     "${CUDA_CACHE_PATH:-/var/lib/detail-page-ai/cache/cuda}" \
     "$(dirname "${SQLITE_PATH:-/var/lib/detail-page-ai/state.sqlite3}")"
 
-echo "Starting SGLang text server on 127.0.0.1:30000" >&2
-if (( text_model_is_local )); then
-    HF_HUB_OFFLINE=1 "${text_command[@]}" &
-else
-    "${text_command[@]}" &
-fi
-text_pid=$!
-
-echo "Starting SGLang image server on 127.0.0.1:30001" >&2
-if (( image_model_is_local )); then
-    HF_HUB_OFFLINE=1 "${image_command[@]}" &
-else
-    "${image_command[@]}" &
-fi
-image_pid=$!
-
 # kill -0 also succeeds for a zombie on Linux. Inspecting /proc lets the
 # watcher notice a crashed server before it can leave the API running alone.
 process_is_running() {
@@ -138,11 +125,103 @@ process_is_running() {
     fi
 }
 
-# Keep the API as PID 1/foreground while this watcher supervises the two
-# background SGLang children. Docker stops the whole container when PID 1
-# exits; explicit child termination also makes local script tests clean.
+log_vram() {
+    local label="$1"
+    local usage
+
+    command -v nvidia-smi >/dev/null 2>&1 || return 0
+    usage="$(nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader 2>/dev/null || true)"
+    [[ -n "$usage" ]] || return 0
+    usage="${usage//$'\n'/; }"
+    printf 'VRAM %s: %s\n' "$label" "$usage" >&2
+}
+
+wait_for_model_ready() {
+    local label="$1"
+    local port="$2"
+    local target_pid="$3"
+    local timeout_seconds="$4"
+    local deadline=$((SECONDS + timeout_seconds))
+    local ready_check
+
+    ready_check='from urllib.request import urlopen; import sys; response=urlopen("http://127.0.0.1:" + sys.argv[1] + "/v1/models", timeout=2); raise SystemExit(0 if response.status == 200 else 1)'
+    while (( SECONDS < deadline )); do
+        if ! process_is_running "$main_pid"; then
+            echo "FastAPI service exited while waiting for SGLang ${label} server" >&2
+            return 1
+        fi
+        if ! process_is_running "$text_pid"; then
+            echo "SGLang text server exited before readiness" >&2
+            return 1
+        fi
+        if (( target_pid != text_pid )) && ! process_is_running "$target_pid"; then
+            echo "SGLang ${label} server exited before readiness" >&2
+            return 1
+        fi
+        if sglang-python -c "$ready_check" "$port" >/dev/null 2>&1; then
+            log_vram "${label}-ready"
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo "Timed out waiting ${timeout_seconds}s for SGLang ${label} server readiness" >&2
+    return 1
+}
+
+text_pid=0
+image_pid=0
 main_pid=$$
+TEXT_READY_TIMEOUT="${TEXT_READY_TIMEOUT:-1800}"
+if ! [[ "$TEXT_READY_TIMEOUT" =~ ^[0-9]+$ ]] || (( TEXT_READY_TIMEOUT < 1 )); then
+    echo "TEXT_READY_TIMEOUT must be a positive integer" >&2
+    exit 1
+fi
+
+echo "Starting SGLang text server on 127.0.0.1:30000" >&2
+if (( text_model_is_local )); then
+    HF_HUB_OFFLINE=1 "${text_command[@]}" &
+else
+    "${text_command[@]}" &
+fi
+text_pid=$!
+
+stop_servers_and_fail() {
+    local reason="$1"
+
+    echo "$reason" >&2
+    kill -TERM "$text_pid" 2>/dev/null || true
+    if (( image_pid > 0 )); then
+        kill -TERM "$image_pid" 2>/dev/null || true
+    fi
+    if process_is_running "$main_pid"; then
+        kill -KILL "$main_pid" 2>/dev/null || true
+    fi
+}
+
+# Keep the API as PID 1/foreground while this background supervisor waits for
+# the text model, starts the image model, and then watches both SGLang children.
+# Docker stops the whole container when PID 1 exits; explicit child termination
+# also makes local script tests clean.
 watch_processes() {
+    if ! wait_for_model_ready "text" 30000 "$text_pid" "$TEXT_READY_TIMEOUT"; then
+        stop_servers_and_fail "SGLang text server did not become ready; stopping container"
+        return
+    fi
+
+    echo "Starting SGLang image server on 127.0.0.1:30001" >&2
+    if (( image_model_is_local )); then
+        HF_HUB_OFFLINE=1 "${image_command[@]}" &
+    else
+        "${image_command[@]}" &
+    fi
+    image_pid=$!
+
+    if ! wait_for_model_ready "image" 30001 "$image_pid" "$TEXT_READY_TIMEOUT"; then
+        stop_servers_and_fail "SGLang image server did not become ready; stopping container"
+        return
+    fi
+
     while process_is_running "$text_pid" \
         && process_is_running "$image_pid" \
         && process_is_running "$main_pid"; do

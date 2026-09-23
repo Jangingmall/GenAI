@@ -37,6 +37,7 @@
 - [`operations/infra-handoff-2026-09-21.md`](operations/infra-handoff-2026-09-21.md): GitHub Actions 변수·ECR push 결과와 챗봇 모델 질문, 자원 요청을 인프라팀에 회신
 - [`operations/infra-handoff-2026-09-22.md`](operations/infra-handoff-2026-09-22.md): CodeBuild·ECR 이름 변경·모델 S3 준비·GPU 검증의 적용 결과와 IAM 차단 보고
 - [`operations/infra-handoff-2026-09-23.md`](operations/infra-handoff-2026-09-23.md): 모델 3종 S3 업로드 경로·SHA256SUMS 해시·검증 결과와 GPU 미검증 상태 회신
+- [`operations/infra-handoff-2026-09-23b.md`](operations/infra-handoff-2026-09-23b.md): Stage 실기동 오류 회신 — 상세페이지 텍스트 서버 캐시 예산 실패 원인(동시 기동)과 수정, 챗봇 LLM 회신 항목·모델명 불일치
 
 ## 아키텍처
 
