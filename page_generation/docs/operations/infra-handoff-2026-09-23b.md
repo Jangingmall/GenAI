@@ -67,6 +67,31 @@ full-attention  16층 × K·V × 4헤드 × 256 × bf16                  = 64 Ki
 위 0.50 행과 맞습니다. **텍스트 서버가 빈 GPU 에서 먼저 초기화된다는 전제**가 entrypoint 에서
 지켜지지 않은 것이 문제였습니다.
 
+### 실행 구성 — 모델·양자화·버전
+
+모델과 버전은 **바뀌지 않았습니다.** 값은 받은 번들의 `config.json` 에서 직접 읽었습니다.
+
+| 역할 | 모델 ID | revision | 양자화 | 가중치 |
+| --- | --- | --- | --- | ---: |
+| 텍스트·비전 | `cyankiwi/Qwen3.8-27B-AWQ-INT4` | `6e134bae811fb5adac50ee042ae5f029ac6779aa` | compressed-tensors `pack-quantized`, INT4 가중치 전용(W4A16), group 32, 비대칭. 일부 linear-attention 투영·비전 타워·MTP·`lm_head` 는 비양자화 | 19.57 GiB |
+| 이미지 | `circulus/FLUX.2-klein-9B-bnb-4bit` | `58c2804f31af12c8888504b96250010c50b55e44` | bitsandbytes 4bit **NF4**, compute bf16 (transformer·text_encoder 모두) | 10.18 GiB |
+| 누끼 | rembg BiRefNet-general (`birefnet-general.onnx`) | — | ONNX | 930 MB |
+
+| 항목 | 값 |
+| --- | --- |
+| 추론 엔진 | `lmsysorg/sglang:v0.5.19` (텍스트 `sglang.launch_server`, 이미지 `sglang serve`) |
+| 모델 번들 | `s3://jangin-prod-s3-models/page-generation/20260923/` (manifest `91f2cb79…`) — 변경 없음 |
+
+기동 명령은 컨테이너에서 `DRY_RUN=1 detail-page-ai-entrypoint` 로 그대로 출력됩니다.
+기존 대비 **인자 변경은 없고**, 바뀐 것은 기동 순서와 아래 두 환경변수뿐입니다.
+
+| 환경변수 | 기본값 | 비고 |
+| --- | --- | --- |
+| `TEXT_READY_TIMEOUT` | `1800` | 신규. 텍스트 서버 준비 대기 한도(초) |
+| `TEXT_MAX_RUNNING_REQUESTS` | 미설정 | 신규. 설정 시에만 `--max-running-requests` 전달 |
+| `TEXT_MEM_FRACTION` | `0.50` | 변경 없음 |
+| `TEXT_CONTEXT_LENGTH` | `8192` | 변경 없음 |
+
 ### 수정
 
 `deploy/sglang/entrypoint.sh` 를 고쳤습니다.
