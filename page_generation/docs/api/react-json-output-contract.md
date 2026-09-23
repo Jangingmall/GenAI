@@ -111,6 +111,20 @@ table, caption, thead, tbody, tr, th, td
 Base64, 파일 경로를 AST에 넣지 않는다. FE가 `photos[]`와 BE asset manifest를 이용해 URL을 해석한다.
 해석되지 않는 image ID가 있으면 게시 전 검증을 실패시킨다.
 
+#### gallery 블록의 사진은 코드가 확정한다
+
+`gallery` 블록만은 모델이 낸 `page_plan[].photo_ids` 를 그대로 쓰지 않는다. 생성 디테일컷
+(`detail-02`~`detail-05`)이 하나라도 있으면 **코드가 `detail`~`detail-05` 중 실재하는 것으로
+덮어쓴다.** 모델이 규약과 다르게 `["hero"]` 같은 값을 내는 일이 실제 실행에서 반복됐고,
+그대로 두면 생성한 사진이 전부 버려지기 때문이다.
+
+이 규칙은 `photo_slots.resolve_gallery_photo_ids` 한 곳에 있고 **PNG 렌더러와
+`react_document` 빌더가 같이 쓴다.** 따라서 판매자가 미리보기 PNG 에서 본 갤러리 사진과
+BE·FE 가 `react_document` 로 받는 갤러리 사진은 항상 같은 집합이다.
+
+BE·FE 관점에서 중요한 점은 **`page_plan` 의 `photo_ids` 가 최종값이 아니라는 것**이다.
+갤러리에 실제로 무엇이 들어갔는지는 `react_document` 의 `imageId` 참조로 판단한다.
+
 ### 4.3 구조화 layout/style
 
 layout은 `stack`, `flex(row|column)`, `grid(columns 1..4)`와 제한된 `gap`, `align`, `wrap`만 사용한다.

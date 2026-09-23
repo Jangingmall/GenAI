@@ -398,6 +398,8 @@ info_table, notice, closing
 
 예시의 `variant`는 허용값 중 하나를 보여주는 예이며, 블록 타입에 따라 고정되는 값이 아니다. 실제 값은 선택된 layout 원형과 모델의 제품별 구성에 따른다.
 
+`gallery` 블록의 `photo_ids`는 모델이 낸 값이 최종값이 아니다. 생성 디테일컷(`detail-02`~`detail-05`)이 있으면 코드가 `detail`~`detail-05` 중 실재하는 것으로 덮어쓴다. 같은 규칙을 PNG 렌더러와 `react_document` 빌더가 함께 쓰므로 두 산출물의 갤러리 사진은 항상 일치한다. **갤러리에 실제로 들어간 사진은 `react_document`의 `imageId` 참조로 판단한다.**
+
 FE와 BE는 허용된 블록 타입만 렌더링하고 모든 텍스트를 HTML escape한다. `html`, `css`, `script` 필드는 허용하지 않는다.
 
 ## 7. AI 결과 계약
