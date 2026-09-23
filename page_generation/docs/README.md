@@ -6,6 +6,9 @@
 > 서버 추론은 SGLang 단일 엔진으로 텍스트 서버(`30000`)와 이미지 확산 서버(`30001`)를 띄우며, Mac 로컬 개발은 MLX Serve를 사용합니다.
 > 서버 GPU에서는 아직 한 번도 실행하지 않았습니다. `hero`는 촬영 원본을 그대로 쓰는 `source_original`, 누끼는 rembg 경로를 사용하며 생성 사진의 별도 참고용 표시는 제거되었습니다.
 
+> 2026-09-23 추가: `gallery` 블록의 사진은 모델이 아니라 **코드가 확정합니다.** 생성 디테일컷이 있으면 `page_plan`의 `photo_ids`를 무시하고 `detail`~`detail-05`로 덮어쓰며, PNG 렌더러와 `react_document` 빌더가 같은 규칙을 씁니다.
+> 따라서 갤러리에 실제로 들어간 사진은 `page_plan`이 아니라 `react_document`의 `imageId` 참조로 판단합니다.
+
 ## API
 
 - [`api/ai-dto-contract.md`](api/ai-dto-contract.md): BE↔AI 방향별 DTO와 이미지 provenance·메타데이터 전달 계약
@@ -15,6 +18,24 @@
 - [`api/react-json-output-contract.md`](api/react-json-output-contract.md): FE용 `react_document` schema v2.0의 구조·렌더링·보안 계약
 - [`../src/detail_page_ai/react_document.py`](../src/detail_page_ai/react_document.py): FE가 소비하는 제한형 React JSON AST DTO 구현
 - [`../src/detail_page_ai/react_document_builder.py`](../src/detail_page_ai/react_document_builder.py): 승인 draft에서 React JSON AST를 결정적으로 조립하는 builder
+
+## BE·인프라 전달 문서
+
+> 아래 문서는 특정 팀과 주고받은 시점 기록입니다. 이후 구현이나 운영 결정이 바뀌어도 당시 요청·근거를 고치지 않습니다.
+
+- [`api/ai-worklist-2026-09-17.md`](api/ai-worklist-2026-09-17.md): BE 협의 결과를 바탕으로 상세페이지 AI가 맡을 수정·계약 대응 작업과 차단 항목
+- [`api/be-ai-integration-negotiation.md`](api/be-ai-integration-negotiation.md): BE·AI·챗봇 사이의 연동 불일치, 생성 이미지·경로·인증 합의 쟁점과 제안
+- [`api/be-handoff-2026-09-17.md`](api/be-handoff-2026-09-17.md): HTTP/1.1·비동기·라우팅·재시도·AWS 주소 등 BE 코드·설정 수정 요청과 근거
+- [`api/be-handoff-2026-09-18.md`](api/be-handoff-2026-09-18.md): BE 1차 반영 후 재연동 결과를 바탕으로 남은 계약·운영 결정과 수정 요청
+- [`api/be-request-2026-09-17.md`](api/be-request-2026-09-17.md): 세 서비스 실측에서 찾은 BE↔AI 통신·비동기·인증·AWS 배포 문제와 요청 목록
+- [`api/be-request-2026-09-18-e2e.md`](api/be-request-2026-09-18-e2e.md): 실제 BE 컨테이너 E2E에서 확인된 승인 흐름·generation ID·multipart·상태 반영 요청
+- [`api/open-decisions-2026-09-17.md`](api/open-decisions-2026-09-17.md): POST /ai/products 응답, 생성 이미지 전달, 내부 인증, 경로 의미·타임아웃에 대한 공동 결정 항목
+- [`operations/be-handoff-2026-09-18b.md`](operations/be-handoff-2026-09-18b.md): status_url 응답 스키마·콜백 경로·데드라인 스케줄러에 대한 BE 전달 회신
+- [`operations/be-handoff-2026-09-21.md`](operations/be-handoff-2026-09-21.md): BE 경유 첫 연동에서 통과한 구간과 S3 설정·오류 응답·승인 시점 관련 요청
+- [`operations/be-handoff-2026-09-22.md`](operations/be-handoff-2026-09-22.md): BE-11 승인·콜백 시점 문제와 31분 데드라인을 비교하고 선택지·결정을 요청한 문서
+- [`operations/ecr-review-2026-09-17.md`](operations/ecr-review-2026-09-17.md): ECR 이미지 분리·태그·OIDC에 대한 동의와 레포 이름·CI·빌드 용량의 차단 사항
+- [`operations/infra-handoff-2026-09-21.md`](operations/infra-handoff-2026-09-21.md): GitHub Actions 변수·ECR push 결과와 챗봇 모델 질문, 자원 요청을 인프라팀에 회신
+- [`operations/infra-handoff-2026-09-22.md`](operations/infra-handoff-2026-09-22.md): CodeBuild·ECR 이름 변경·모델 S3 준비·GPU 검증의 적용 결과와 IAM 차단 보고
 
 ## 아키텍처
 
@@ -36,6 +57,16 @@
 - [`evaluation/metrics-definition.md`](evaluation/metrics-definition.md): 사실성·명료성·상품성·시각품질 4대 축의 평가 지표와 통계 정의
 - [`evaluation/pilot-report-2026-09-09.md`](evaluation/pilot-report-2026-09-09.md): CMA real v1 카테고리별 6건 대상 1차 파일럿 실행 결과와 결함 분석 기록
 - [`../data/evaluation/cma_real_v1/README.md`](../data/evaluation/cma_real_v1/README.md): CC0 표시 기반 실물 60건의 분석·렌더링 입력과 실행·검수 안내
+- [`evaluation/ai-safety-report-2026-09-21.md`](evaluation/ai-safety-report-2026-09-21.md): 할루시네이션·Prompt Injection·편향을 105건 실측으로 검증한 2026-09-21 시점 기록
+- [`evaluation/be-ai-integration-test-2026-09-21.md`](evaluation/be-ai-integration-test-2026-09-21.md): BE를 거친 상세페이지 E2E에서 작업 제출·DRAFT_READY·콜백 경로를 확인하고 S3 설정에서 막힌 2026-09-21 기록
+- [`evaluation/be-integration-test-2026-09-17.md`](evaluation/be-integration-test-2026-09-17.md): BE·AI 양방향 HTTP 연동 실패 원인과 2차 실측 정정을 남긴 2026-09-17 기록
+- [`evaluation/celadon-run-2026-09-23.md`](evaluation/celadon-run-2026-09-23.md): 청자 분청 찻잔에서 생성컷 미사용과 PNG·react_document 사진 구성 불일치를 재현한 기록
+- [`evaluation/container-integration-test-2026-09-17.md`](evaluation/container-integration-test-2026-09-17.md): Ubuntu 컨테이너에서 이미지 빌드·비루트·헬스체크·BE 연동 상태를 확인한 기록
+- [`evaluation/generated-photo-usage-2026-09-23.md`](evaluation/generated-photo-usage-2026-09-23.md): 합죽선 매화선 두 실행에서 gallery 계획은 추가됐지만 생성컷 소비가 되지 않은 현상과 원인 기록
+- [`evaluation/logs/README.md`](evaluation/logs/README.md): 2026-09-17 세 서비스 로컬 연동의 원시 로그 파일 구성과 흐름별 결과 안내
+- [`evaluation/pipeline-run-2026-09-17.md`](evaluation/pipeline-run-2026-09-17.md): 상세페이지 접수부터 분석·승인·렌더까지 이미지 생성 경로를 포함해 끝까지 실행한 기록
+- [`evaluation/reintegration-test-2026-09-18.md`](evaluation/reintegration-test-2026-09-18.md): BE 수정 후 컨테이너 4개를 재연동해 202 응답·DRAFT_READY·콜백·COMPLETED를 확인하고 남은 문제를 기록
+- [`evaluation/three-service-integration-test-2026-09-17.md`](evaluation/three-service-integration-test-2026-09-17.md): BE·챗봇·상세페이지를 함께 기동해 HTTP/2 업그레이드·경로·상품 ID·env 문제를 실측한 기록
 
 ## 데이터·라이선스
 
@@ -46,6 +77,7 @@
 - [`operations/aws-deployment.md`](operations/aws-deployment.md): 로컬 MLX 파이프라인을 AWS 환경으로 이관하고 1건 end-to-end 품질 게이트를 확인하는 운영 가이드
 - [`operations/aws-migration-checklist.md`](operations/aws-migration-checklist.md): AWS 이관에 필요한 준비물·차단 조건·확인 방법을 정리한 실무 체크리스트
 - [`operations/eks-workload-spec.md`](operations/eks-workload-spec.md): EKS 인프라팀 요청에 대한 AI 저장소 workload·자원·검증 상태 답변
+- [`operations/aws-deploy-inventory.md`](operations/aws-deploy-inventory.md): EKS 반입 대상의 통합 이미지·모델 S3→PVC·단일 PVC·Secret·ConfigMap·GPU·프로브·CI 목록
 - [`operations/local-generation-test-report.md`](operations/local-generation-test-report.md): 로컬 상세페이지 생성 smoke test 구성·실행 결과와 미완료 정량 평가 상태
 - [`operations/local-llm.md`](operations/local-llm.md): Mac 로컬 MLX Serve 기반 상세페이지 LLM 실행 경로와 출력 규칙
 - [`operations/orchestration.md`](operations/orchestration.md): cmux 기반 Claude Code 오케스트레이터와 CLI 워커의 멀티 에이전트 운영 규약
@@ -63,11 +95,24 @@
 - [`deliverables/04-inference-api.md`](deliverables/04-inference-api.md): 서비스 API와 텍스트·비전·이미지 모델 추론 API의 층별 구성
 - [`deliverables/05-be-fe-interface.md`](deliverables/05-be-fe-interface.md): BE/FE 통합 인터페이스 정본 문서를 가리키는 canonical link stub
 
+## Phase 산출물
+
+- [`deliverables/phase3/01-implementation-checkpoint.md`](deliverables/phase3/01-implementation-checkpoint.md): 분석·카피와 이미지·렌더링 영역의 1차 구현 상태, 파일럿 실측, 품질 게이트 체크포인트
+- [`deliverables/phase3/02-error-analysis.md`](deliverables/phase3/02-error-analysis.md): 파일럿·다양성 고도화 과정의 11개 장애를 증상·원인·조치·재발 방지로 분석
+- [`deliverables/phase3/03-second-experiment-report.md`](deliverables/phase3/03-second-experiment-report.md): 컷아웃·씬 분기·이미지 파라미터·1~12차 다양성 실험의 수정 전후 결과와 한계
+- [`deliverables/phase3/04-inference-api.md`](deliverables/phase3/04-inference-api.md): FastAPI 서비스 API와 MLX 텍스트·비전·이미지 추론 클라이언트의 요청·응답·설정 계약
+- [`deliverables/phase3/05-be-fe-interface.md`](deliverables/phase3/05-be-fe-interface.md): BE·FE·AI 작업·승인·react_document·오류·멱등성 계약을 가리키는 정본 인터페이스 산출물
+- [`deliverables/phase3/README.md`](deliverables/phase3/README.md): Phase 3 제출 산출물 5종의 구성·원본 위치·문서별 역할 안내
+- [`deliverables/phase4/01-ai-evaluation-report.md`](deliverables/phase4/01-ai-evaluation-report.md): 60건 종단 실행과 사진·레이아웃·테스트·BE 연동을 수치와 정성 근거로 평가
+- [`deliverables/phase4/02-ai-safety-report.md`](deliverables/phase4/02-ai-safety-report.md): 할루시네이션·Prompt Injection·편향 검증 105건의 결과와 자동 사실성 방어의 한계
+- [`deliverables/phase4/03-model-card-and-operations.md`](deliverables/phase4/03-model-card-and-operations.md): 텍스트·이미지·누끼·로컬 모델 카드와 L40S 단일 파드 배포·PVC·프로브·운영 가이드
+- [`deliverables/phase4/README.md`](deliverables/phase4/README.md): Phase 4 평가·안전성·모델 카드 3종의 제출 원칙, 미검증 항목, 핵심 수치 안내
+
 ## 실험 기록
 
 > 아래 실험 기록은 각 차수 당시의 구현·에러·추론 API·BE/FE 영향 사실을 보존하는 시점 기록입니다. 이후 구현이 바뀌어도 수정하지 않습니다.
 
-- [`deliverables/experiments/`](deliverables/experiments/): Round 01~12, 총 12차 × 5종(구현 체크포인트·에러 분석·실험 리포트·추론 API·BE/FE 인터페이스) 60개 기록
+- [`deliverables/experiments/`](deliverables/experiments/): Round 01~13, 총 13차 × 5종(구현 체크포인트·에러 분석·실험 리포트·추론 API·BE/FE 인터페이스) 65개 기록
 
 ## 리팩터링
 
