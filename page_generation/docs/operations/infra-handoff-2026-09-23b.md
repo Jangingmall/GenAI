@@ -110,7 +110,13 @@ full-attention  16층 × K·V × 4헤드 × 256 × bf16                  = 64 Ki
 `failureThreshold × periodSeconds` 를 최소 30분 이상으로 봐 주십시오. 정확한 시간은 새 VRAM
 로그의 시각으로 확인할 수 있습니다.
 
-새 page-generation 이미지 digest 는 이 수정이 GenAI main 에 머지되어 Actions 가 발행한 뒤 확정됩니다. 확정되면 따로 전달드리겠습니다.
+이 수정은 GenAI **#38** 로 main(`6f34883`)에 반영됐고 Actions 가 새 이미지를 발행했습니다.
+
+```
+750240012008.dkr.ecr.ap-northeast-2.amazonaws.com/jangin-ai/page-generation@sha256:7fd3c25005bceb1b00ff0ce4ca235afd78842504bd135a334bf0c752870a55b0
+태그 6f348836b21180d6e7c1d914bfcfedca6282a87f
+https://github.com/Jangingmall/GenAI/actions/runs/35872472179
+```
 
 ### 아직 남은 것 — L40S 시간이 필요합니다
 
@@ -186,6 +192,10 @@ full-attention  16층 × K·V × 4헤드 × 256 × bf16                  = 64 Ki
 없습니다.** `page-generation/20260923/` 은 44개 객체 그대로 있습니다. 의도하신 정리라면 무시하셔도
 됩니다. 다만 저희 9월 23일 회신 문서가 가리키는 챗봇 경로는 이제 존재하지 않습니다.
 
+같은 main 에서 다시 빌드된 chatbot-llm(`6f34883`, `@sha256:80e79cdda3f20300f41f5eae4f21a668dfbd86e000dd81b8bbb0bc07b46f35b5`)
+에도 #37 수정이 들어 있습니다. 두 digest 는 코드가 같고 빌드만 다릅니다. **세 이미지를 `6f34883`
+한 세트로 맞추시는 것**을 권합니다.
+
 남은 것은 **새 digest 로 T4 실제 답변 생성 검증**입니다.
 
 ### 요청 2-3 — 모델 이름이 맞지 않습니다
@@ -217,7 +227,8 @@ AWQ 커널의 T4 지원 여부와 fp16 실행 시 Gemma 계열의 수치 안정�
                    캐시 예산에서 차감됨. 텍스트 서버 준비 후 이미지 서버를 기동하도록 수정
 검증 환경·입력 조건: 미검증 (L40S 필요)
 성공한 실행 명령·환경변수: 미검증
-이미지 digest / Actions URL: GenAI main 머지 후 발행 — 확정 시 전달
+이미지 digest / Actions URL: jangin-ai/page-generation@sha256:7fd3c25005bceb1b00ff0ce4ca235afd78842504bd135a334bf0c752870a55b0
+                            https://github.com/Jangingmall/GenAI/actions/runs/35872472179
 모델 변경 여부 / 새 S3 경로 / manifest SHA-256: 변경 없음
 최대 VRAM / 실제 생성 결과: 미측정
 담당자 / 완료 예정일: 생성형 AI 팀 / L40S 검증 시간 확보 후 당일
