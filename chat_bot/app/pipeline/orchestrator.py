@@ -42,7 +42,7 @@ from app.pipeline.generate import (
     is_all_request,
     is_explain_request,
 )
-from app.pipeline.intent import classify_and_extract
+from app.pipeline.intent import classify_and_extract, mentions_price
 from app.pipeline.llm import chat_json
 from app.pipeline.taxonomy import CATEGORY_LABELS
 from app.run_recommend import recommend as _recommend
@@ -481,10 +481,12 @@ def run(
     # max_price/min_price 중 엉뚱한 칸에 넣는 경우가 있다 — "50만원 이하"로 확정됐던
     # 게 다음 턴엔 이유 없이 min_price에 채워져 "50만원 이상"으로 뒤집혔다.
     # category_changed·color_changed는 이미 "이번 메시지에 실제 신호가 있어야만
-    # 바뀐 걸로 친다"는 원칙인데 가격만 빠져 있었다 — 이번 메시지에 숫자가 아예
-    # 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서 채운 것) 그 값을
-    # 못 믿고 이전 턴 값을 그대로 유지한다.
-    if not any(ch.isdigit() for ch in message):
+    # 바뀐 걸로 친다"는 원칙인데 가격만 빠져 있었다 — 이번 메시지에 가격 언급이
+    # 아예 없으면(가격을 다시 언급한 게 아니라 LLM이 그냥 기억해서 채운 것) 그
+    # 값을 못 믿고 이전 턴 값을 그대로 유지한다. isdigit만 쓰면 "오만원"처럼
+    # 한글로만 쓴 가격을 "언급 없음"으로 오판하므로 mentions_price로 판단한다
+    # (실측 확인된 버그: 한글 가격 표현이 이 isdigit 검사 때문에 무시됐다).
+    if not mentions_price(message):
         new_filters["max_price"] = prev_filters.get("max_price")
         new_filters["min_price"] = prev_filters.get("min_price")
     # max_price·min_price는 0도 유효한 값이라(예: "0원짜리 무료 나눔") None인지로 판단해야
@@ -601,25 +603,43 @@ def run(
     is_repeat = bool(previous_product_ids) and set(raw_product_ids) == set(
         previous_product_ids
     )
-    # 재검색했는데 결과가 0건이면(예: "3만원 아래로"에 맞는 게 없음) 다음 턴이 참조할
-    # candidates·shown_product_ids·query_text는 이전 값을 그대로 들고 간다 — 안 그러면
-    # 곧바로 이어지는 "그중 가장 저렴한 것 설명해줘"·색상 질문 같은 후속 참조가 통째로
-    # 끊긴다(실측 확인: 0건 응답 직후 방금 전까지 보여준 상품 정보까지 다 사라져서
-    # "아직 없어요"로 잘못 답함). 이번 턴 reply·product_ids는 그대로 "못 찾았다"고
-    # 정직하게 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다.
-    search_found_nothing = (
-        did_search and not generated["candidates"] and bool(previous_candidates)
+    # 재검색했는데 화면에 보여줄 게 하나도 없으면(예: "3만원 아래로"에 맞는 게 없어서
+    # candidates 자체가 0건이거나, 후보는 있었지만 LLM이 근거 부족으로 allowed_ids를
+    # 전부 비운 경우) 다음 턴이 참조할 candidates·shown_product_ids·query_text는 이전
+    # 값을 그대로 들고 간다 — 안 그러면 곧바로 이어지는 "그중 가장 저렴한 것
+    # 설명해줘"·색상 질문 같은 후속 참조가 통째로 끊긴다(실측 확인: 응답 직후 방금
+    # 전까지 보여준 상품 정보까지 다 사라져서 "아직 없어요"로 잘못 답함). "검색 후보가
+    # 있었는지"(generated["candidates"])가 아니라 "실제로 화면에 보여줬는지"
+    # (displayed_candidates)로 판단해야 한다 — 후보는 있었는데 전부 제외된 경우도
+    # 화면 기준으론 0건과 같다(실측 확인된 버그: candidates 기준으론 이 경우를
+    # 놓쳐 이전 표시 상태가 그대로 지워졌다). 이번 턴 reply·product_ids는 그대로
+    # "못 찾았다"고 정직하게 답한다 — 되돌리는 건 다음 턴이 볼 내부 상태뿐이다.
+    nothing_displayed = (
+        did_search
+        and not generated["displayed_candidates"]
+        and bool(previous_candidates)
     )
     return {
         "reply": generated["reply"],
         "intent": contact1["intent"],
         "product_ids": [] if is_repeat else raw_product_ids,
         "suggestions": generated["suggestions"],
-        # build_reply가 종목 대조까지 마친 뒤 돌려준 candidates를 쓴다 — search_and_rank의
-        # 원본(미필터링) 출력을 그대로 넘기면, 이번 턴에 걸러낸 다른 종목 후보가 다음 턴
-        # narrow_down 재사용에서 그대로 다시 나타난다(실측 확인).
+        # build_reply가 실제로 화면에 보여준 것만 골라 돌려준 displayed_candidates를
+        # 쓴다 — 종목 필터만 거친 candidates(화면에 안 보인 것 포함)를 그대로 넘기면
+        # (원래 버그) "몇 번째 설명해줘" 같은 다음 턴 순번 참조가 화면에 없던 상품을
+        # 가리킬 수 있다(실측 확인). search_and_rank의 원본(미필터링) 출력을 그대로
+        # 넘기지 않는 이유도 같다 — 이번 턴에 걸러낸 다른 종목 후보가 다음 턴
+        # narrow_down 재사용에서 그대로 다시 나타나면 안 된다.
+        #
+        # is_repeat(카드 억제)일 때도 previous_candidates를 쓴다 — 실측 확인된 버그:
+        # 세트는 직전과 같아도(그래서 카드를 다시 안 띄웠어도) LLM이 이번엔 다른
+        # 순서로 allowed_ids를 뱉으면(예: [1,2]→[2,1]) displayed_candidates 순서가
+        # 화면에 실제로 찍힌 순서와 어긋난다. 화면을 다시 안 그린 턴은 순서도
+        # 화면 그대로(previous_candidates) 유지해야 다음 턴 "몇 번째"가 안 어긋난다.
         "candidates": (
-            previous_candidates if search_found_nothing else generated["candidates"]
+            previous_candidates
+            if nothing_displayed or is_repeat
+            else generated["displayed_candidates"]
         ),
         "filters": contact1["filters"],
         # 카드 억제 여부와 무관하게 "실제로 관련된 상품이 뭔지"는 그대로 넘긴다 — 다음
@@ -627,7 +647,7 @@ def run(
         # 빈 배열을 기준으로 삼으면) 아무것도 안 바뀌었는데도 다음 턴에 카드가 다시
         # 뜨는 역효과가 난다.
         "shown_product_ids": (
-            previous_product_ids if search_found_nothing else raw_product_ids
+            previous_product_ids if nothing_displayed else raw_product_ids
         ),
         # 실제로 검색에 쓰인 최종 query_text만 다음 턴 previous_query_text로 넘긴다 —
         # 후보를 재사용해 검색을 안 한 턴(did_search=False)의 query_text는 검색에
@@ -643,7 +663,7 @@ def run(
         # 0건이지만) 새 종목을 다음 턴 참조용으로 남겨야 한다.
         "query_text": (
             (previous_query_text or "")
-            if search_found_nothing and not category_changed
+            if nothing_displayed and not category_changed
             else (contact1["query_text"] if did_search else (previous_query_text or ""))
         ),
     }

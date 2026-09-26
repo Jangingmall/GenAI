@@ -548,10 +548,18 @@ def build_reply(
         "reply": output.reply,
         "product_ids": allowed,
         "suggestions": _cap_suggestions(output.suggestions),
-        # 종목 대조를 통과한 후보 목록 — narrow_down 재사용(orchestrator.previous_candidates)의
-        # 다음 턴 재료가 된다. 여기서 안 걸러진 채로 넘기면(원래 A의 미필터링 출력을 그대로
-        # 재사용하면) 이번 턴에 걸러진 다른 종목 후보가 다음 턴에 그대로 재등장한다(실측 확인).
+        # 종목 대조를 통과한 후보 목록(화면에 실제로 보여준 것 여부와 무관, 최대 3개) —
+        # orchestrator.search_found_nothing 판정("재검색이 정말 0건이었는지")에만 쓴다.
+        # 다음 턴 재료(previous_candidates)로는 아래 displayed_candidates를 써야 한다.
         "candidates": candidates,
+        # allowed_ids(화면에 카드로 실제 보여준 상품)만, 그 순서 그대로 담은 목록 —
+        # narrow_down 재사용·"몇 번째" 후속 질문(orchestrator.previous_candidates)의
+        # 다음 턴 재료가 된다. 위 candidates를 그대로 넘기면(원래 버그) 종목 대조는
+        # 통과했지만 화면엔 안 보인 상품을, "몇 번째 설명해줘" 순번이 가리킬 수
+        # 있었다(실측 확인: 카드 1개만 보였는데 화면에 없던 상품을 설명함).
+        "displayed_candidates": [
+            c for pid in allowed for c in candidates if c["product_id"] == pid
+        ],
     }
 
 
