@@ -113,8 +113,8 @@ jobs:
             dockerfile: ./chat_bot/Dockerfile
             min-free-gib: 10
           - service: chatbot-llm
-            context: ./chat_bot/deploy/sglang
-            dockerfile: ./chat_bot/deploy/sglang/Dockerfile
+            context: ./chat_bot/deploy/ollama
+            dockerfile: ./chat_bot/deploy/ollama/Dockerfile
             min-free-gib: 35
 
     steps:
@@ -132,8 +132,10 @@ jobs:
           DOCKERFILE: ${{ matrix.dockerfile }}
         run: docker buildx build --check --platform linux/amd64 --file "$DOCKERFILE" "$CONTEXT"
 
-      # page-generation과 chatbot-llm 둘 다 lmsysorg/sglang 베이스 이미지를 써서 10 GiB를
-      # 넘는 대형 이미지다. CodeBuild 러너에서도 용량 부족은 검증 실패로 처리한다.
+      # page-generation은 lmsysorg/sglang 베이스 이미지, chatbot-llm은 ollama/ollama
+      # 베이스에 gemma4:12b 모델을 빌드 시점에 구워 넣어서 둘 다 10 GiB를 넘는 대형
+      # 이미지다(2026-09-28 SGLang→Ollama 전환 — T4 공유 메모리 한도 문제로 SGLang
+      # 서빙 불가 확인). CodeBuild 러너에서도 용량 부족은 검증 실패로 처리한다.
       - name: Check PR build capacity
         env:
           REQUIRED_GIB: ${{ matrix.min-free-gib }}
@@ -186,8 +188,8 @@ jobs:
             repository: jangin-ai/chatbot-api
             min-free-gib: 10
           - service: chatbot-llm
-            context: ./chat_bot/deploy/sglang
-            dockerfile: ./chat_bot/deploy/sglang/Dockerfile
+            context: ./chat_bot/deploy/ollama
+            dockerfile: ./chat_bot/deploy/ollama/Dockerfile
             repository: jangin-ai/chatbot-llm
             min-free-gib: 35
 
