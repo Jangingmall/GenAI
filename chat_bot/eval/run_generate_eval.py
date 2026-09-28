@@ -19,7 +19,7 @@ from app.pipeline.llm import chat_json
 from eval.generate_grading import grade_l1, grade_l2
 
 _DIR = Path(__file__).resolve().parent
-_MODEL = "gemma2:9b"
+_MODEL = "gemma4:12b"
 
 
 def _no_prices(ids):

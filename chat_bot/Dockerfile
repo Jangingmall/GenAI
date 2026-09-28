@@ -30,7 +30,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 실패한다(Stage /ai/chat 500 원인). 그래서 CPU 빌드를 2.5.1로 올린다.
 # (필요 시 더 최신 CPU 빌드로 올려도 되지만, transformers/sentence-transformers와
 #  호환되는 조합인지 반드시 확인할 것.)
-ARG TORCH_VERSION=2.5.1
+#
+# 2.5.1 → 2.6.0으로 추가 상향(2026-09-28, 같은 날 재배포 검증 중 발견): torch.load의
+# pickle 역직렬화 취약점 때문에 torch 2.6 미만은 weights_only=True를 줘도 구형
+# pickle 포맷(.bin) 가중치 로딩 자체를 거부한다. safetensors 포맷이면 이 제한이
+# 없지만, BAAI/bge-m3는 safetensors를 배포하지 않고 pytorch_model.bin만 제공해
+# (HF 레포 직접 확인함) 포맷 전환으로는 우회 불가 — torch 버전을 올리는 것 외에
+# 다른 방법이 없다.
+ARG TORCH_VERSION=2.6.0
 RUN pip install --no-cache-dir --timeout 300 --retries 5 \
         torch==${TORCH_VERSION} \
         --index-url https://download.pytorch.org/whl/cpu
