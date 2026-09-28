@@ -2,7 +2,7 @@
 #
 # 구조:
 #   [이 컨테이너]  FastAPI 앱 + BGE-M3 임베딩 실행  (포트 8000)
-#   [별도]        gemma4 LLM (SGLang)             ← 환경변수 SGLANG_HOST로 연결
+#   [별도]        gemma4 LLM (Ollama)             ← 환경변수 OLLAMA_HOST로 연결
 #   [별도]        PostgreSQL + pgvector           ← 환경변수 DB_* 로 연결
 #
 # 모델(BGE-M3): 인프라가 S3 → 볼륨으로 마운트해준다.
@@ -24,10 +24,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ── PyTorch: CPU 전용 빌드 설치 ────────────────────────────────────────────
 # PyPI 기본 torch(리눅스)는 CUDA 런타임을 통째로 포함해 수 GB에 달한다.
 # BGE-M3는 CPU로 돌리므로 CPU 전용 인덱스에서 설치해 이미지 용량을 크게 줄인다.
-# requirements.txt 에 torch 가 있어도, 여기서 먼저 설치되면 아래 단계에서
-# "이미 충족됨"으로 건너뛴다. torch 버전이 핀 고정돼 있으면 TORCH_VERSION 을
-# 그 버전과 동일하게 맞춰 빌드하면 된다. (예: --build-arg TORCH_VERSION=2.3.1)
-ARG TORCH_VERSION=2.3.1
+#
+# ⚠️ 버전 주의: sentence-transformers가 끌어오는 최신 transformers는 torch>=2.5를
+# 요구한다. torch 2.3.1로 고정하면 임베딩 모델 로딩이 "PyTorch 2.5 이상 필요"로
+# 실패한다(Stage /ai/chat 500 원인). 그래서 CPU 빌드를 2.5.1로 올린다.
+# (필요 시 더 최신 CPU 빌드로 올려도 되지만, transformers/sentence-transformers와
+#  호환되는 조합인지 반드시 확인할 것.)
+ARG TORCH_VERSION=2.5.1
 RUN pip install --no-cache-dir --timeout 300 --retries 5 \
         torch==${TORCH_VERSION} \
         --index-url https://download.pytorch.org/whl/cpu
