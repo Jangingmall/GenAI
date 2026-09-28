@@ -214,7 +214,7 @@ def test_run_narrow_down_treats_zero_price_as_new_filter():
             "color": [],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [5], "suggestions": []},
     )
     fresh = [
         {"product_id": 5, "name": "무료 나눔 도자기", "score": 0.5, "evidence": {}}
@@ -249,7 +249,7 @@ def test_run_narrow_down_ignores_price_refilled_into_wrong_field_without_digit_i
             "color": [],
             "query_text": "옹기",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [221], "suggestions": []},
     )
     previous = [
         {"product_id": 221, "name": "옹기토 젓갈독", "score": 0.9, "evidence": {}}
@@ -275,6 +275,49 @@ def test_run_narrow_down_ignores_price_refilled_into_wrong_field_without_digit_i
     )
 
     assert result["candidates"] == previous
+
+
+def test_run_narrow_down_korean_number_word_price_triggers_fresh_search():
+    """실측 확인된 버그: "오만원 아래로"처럼 아라비아 숫자 없이 한글로만 쓴 가격도
+    isdigit 검사만 쓰면 "숫자 없음 = 가격 언급 없음"으로 오판돼, LLM이 정확히 뽑은
+    새 가격(50000)이 이전 턴 가격(300000)으로 도로 덮어써졌다. 위
+    test_run_narrow_down_ignores_price_refilled_into_wrong_field_without_digit_in_message와
+    반대로, 이번엔 진짜 새 가격 조건이므로 재검색이 일어나야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 50000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={"reply": "ok", "allowed_ids": [38], "suggestions": []},
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    fresh = [{"product_id": 38, "name": "백자 대접", "score": 0.7, "evidence": {}}]
+    seen = {}
+
+    def spy_search_and_rank(contact1, top_k=3):
+        seen["called"] = True
+        return fresh
+
+    result = rr.run(
+        "오만원 아래로 보여줘",
+        chat=chat,
+        search_and_rank=spy_search_and_rank,
+        previous_candidates=previous,
+        previous_filters={
+            "max_price": 300000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": None,
+        },
+        **_NO_DB,
+    )
+
+    assert seen.get("called") is True
+    assert result["candidates"] == fresh
 
 
 def test_run_narrow_down_reuses_when_filter_unchanged_from_previous_turn():
@@ -384,7 +427,7 @@ def test_run_narrow_down_ignores_gift_theme_change_for_new_filter_check():
             "color": [],
             "query_text": "옹기 가격대",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [834], "suggestions": []},
     )
     previous = [
         {"product_id": 834, "name": "옹기 항아리", "score": 0.9, "evidence": {}}
@@ -425,7 +468,7 @@ def test_run_narrow_down_with_new_filter_triggers_fresh_search():
             "color": [],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [38], "suggestions": []},
     )
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     fresh = [{"product_id": 38, "name": "백자 대접", "score": 0.7, "evidence": {}}]
@@ -463,7 +506,11 @@ def test_run_narrow_down_price_filter_keeps_previously_shown_matching_candidate(
             "color": [],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={
+            "reply": "ok",
+            "allowed_ids": [78, 802, 68],
+            "suggestions": [],
+        },
     )
     previous = [
         {"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}},
@@ -505,7 +552,7 @@ def test_run_narrow_down_color_filter_keeps_previously_shown_matching_candidate(
             "color": ["WHITE"],
             "query_text": "도자기",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [78], "suggestions": []},
     )
     previous = [
         {"product_id": 78, "name": "백자 찻잔", "score": 0.9, "evidence": {}},
@@ -546,7 +593,7 @@ def test_run_narrow_down_category_change_triggers_fresh_search():
             "color": [],
             "query_text": "목공예로 보여줘",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [466], "suggestions": []},
     )
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     fresh = [{"product_id": 466, "name": "소나무 의자", "score": 0.7, "evidence": {}}]
@@ -837,7 +884,7 @@ def test_run_returns_fresh_candidates_when_no_previous_given():
             "color": [],
             "query_text": "그중 저렴한 것",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [1], "suggestions": []},
     )
     fresh = [{"product_id": 1, "name": "옹기 항아리", "score": 0.5, "evidence": {}}]
     search_and_rank = _fake_search_and_rank(fresh)
@@ -884,6 +931,49 @@ def test_run_narrow_down_new_filter_with_zero_results_preserves_previous_context
     )
 
     assert result["reply"] == "3만 원 이하로는 찾지 못했어요."
+    assert result["product_ids"] == []
+    assert result["candidates"] == previous
+    assert result["shown_product_ids"] == [78]
+    assert result["query_text"] == "찻잔 있나요"
+
+
+def test_run_narrow_down_all_candidates_excluded_preserves_previous_context():
+    """실측 확인된 버그(Codex 리뷰): 위 테스트와 달리 이번엔 재검색 자체는 후보를
+    찾았다(candidates가 비지 않음) — 다만 LLM이 근거 부족으로 allowed_ids를 전부
+    비웠다. 기존 코드는 "검색 후보가 있었다"는 이유만으로 search_found_nothing을
+    false로 판정해 이전 표시 상태를 빈 배열로 덮어썼다 — 화면엔 카드가 하나도 안
+    떴는데, 다음 턴 "아까 상품 설명해줘"가 previous_candidates를 잃어버렸다. "검색
+    후보 유무"가 아니라 "실제로 화면에 보여준 게 있는지"로 판단해야 한다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": 30000,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "3만 원 이하로 확신할 만한 상품은 확인되지 않습니다.",
+            "allowed_ids": [],
+            "suggestions": [],
+        },
+    )
+    previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
+    found_but_excluded = [
+        {"product_id": 900, "name": "저가 도자기", "score": 0.4, "evidence": {}}
+    ]
+
+    result = rr.run(
+        "3만원 아래로 보여줘",
+        chat=chat,
+        search_and_rank=_fake_search_and_rank(found_but_excluded),
+        previous_candidates=previous,
+        previous_product_ids=[78],
+        previous_query_text="찻잔 있나요",
+        **_NO_DB,
+    )
+
     assert result["product_ids"] == []
     assert result["candidates"] == previous
     assert result["shown_product_ids"] == [78]
@@ -980,7 +1070,49 @@ def test_run_suppresses_product_ids_when_identical_to_previous_turn():
     assert result["product_ids"] == []
     # 화면엔 안 띄워도 "실제로 관련된 상품이 뭔지"는 다음 턴 비교를 위해 그대로 넘긴다.
     assert result["shown_product_ids"] == [1, 2, 6]
+    # 카드를 다시 안 그렸으니(is_repeat) 화면엔 여전히 직전 순서 그대로 보인다 —
+    # candidates도 그 순서(previous)를 유지해야 한다.
+    assert result["candidates"] == previous
     assert result["reply"] == "가격 정보는 확인되지 않습니다."
+
+
+def test_run_suppressed_repeat_keeps_previous_order_even_if_llm_reorders():
+    """실측 확인된 버그(Codex 리뷰): 세트는 직전과 같아 카드를 다시 안 띄웠는데
+    (is_repeat), LLM이 이번엔 allowed_ids를 다른 순서로([6, 1, 2]) 뱉으면
+    displayed_candidates 순서가 그 순서를 따라간다 — 화면엔 여전히 이전 순서
+    그대로 보이는데, 다음 턴 "몇 번째 설명해줘"는 바뀐 순서를 기준으로 삼아
+    어긋난다."""
+    chat = _sequenced_chat(
+        intent_payload={
+            "intent": "narrow_down",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기",
+        },
+        generate_payload={
+            "reply": "가격 정보는 확인되지 않습니다.",
+            "allowed_ids": [6, 1, 2],
+            "suggestions": [],
+        },
+    )
+    previous = [
+        {"product_id": 1, "name": "A", "score": 0.9, "evidence": {}},
+        {"product_id": 2, "name": "B", "score": 0.8, "evidence": {}},
+        {"product_id": 6, "name": "C", "score": 0.7, "evidence": {}},
+    ]
+
+    result = rr.run(
+        "가격대 확인해줘",
+        chat=chat,
+        previous_candidates=previous,
+        previous_product_ids=[1, 2, 6],
+        **_NO_DB,
+    )
+
+    assert result["product_ids"] == []
+    assert result["candidates"] == previous
 
 
 def test_run_does_not_suppress_when_narrowed_to_subset():
@@ -1295,6 +1427,50 @@ _CANDIDATES_3 = [
     },
     {"product_id": 6, "name": "분청 화병", "evidence": {"artisan_input": "문양 새김"}},
 ]
+
+
+def test_run_ordinal_explain_after_partial_display_targets_shown_product():
+    """실측 확인된 버그(Codex 리뷰): 검색은 3개를 찾았는데 LLM이 근거 부족 등의
+    이유로 화면엔 1개(product_id=2)만 카드로 보여줬다. 그 상태에서 "첫 번째
+    설명해줘"라고 하면, 화면엔 카드가 1개뿐이니 그 1개를 가리켜야 한다 — 종목
+    필터만 거친 원래 후보 목록([1,2,3])의 첫 번째(product_id=1, 화면에 안 보인
+    상품)를 가리키면 안 된다."""
+    candidates_from_search = [
+        {"product_id": 1, "name": "화면에 안 보인 상품", "score": 0.9, "evidence": {}},
+        {"product_id": 2, "name": "화면에 보인 상품", "score": 0.85, "evidence": {}},
+        {"product_id": 3, "name": "화면에 안 보인 상품2", "score": 0.8, "evidence": {}},
+    ]
+    turn1_chat = _sequenced_chat(
+        intent_payload={
+            "intent": "product_search",
+            "max_price": None,
+            "min_price": None,
+            "gift_theme": [],
+            "color": [],
+            "query_text": "도자기 추천해줘",
+        },
+        generate_payload={
+            "reply": "이 상품을 추천합니다.",
+            "allowed_ids": [2],
+            "suggestions": [],
+        },
+    )
+    turn1 = rr.run(
+        "도자기 추천해줘",
+        chat=turn1_chat,
+        search_and_rank=_fake_search_and_rank(candidates_from_search),
+        **_NO_DB,
+    )
+    assert turn1["product_ids"] == [2]
+    assert turn1["candidates"] == [candidates_from_search[1]]
+
+    turn2 = rr.run(
+        "첫 번째 설명해줘",
+        chat=_explain_chat("화면에 보인 상품은 이런 특징이 있습니다."),
+        previous_candidates=turn1["candidates"],
+        **_NO_DB,
+    )
+    assert turn2["product_ids"] == [2]
 
 
 def test_run_explain_request_single_candidate_skips_disambiguation():
@@ -1714,7 +1890,7 @@ def test_run_wants_reason_with_category_change_does_not_explain_stale_candidates
             "color": [],
             "query_text": "금속 공예품 추천해줄래?",
         },
-        generate_payload={"reply": "ok", "allowed_ids": [], "suggestions": []},
+        generate_payload={"reply": "ok", "allowed_ids": [466], "suggestions": []},
     )
     previous = [{"product_id": 78, "name": "청자 찻잔", "score": 0.9, "evidence": {}}]
     fresh = [{"product_id": 466, "name": "은장도", "score": 0.7, "evidence": {}}]

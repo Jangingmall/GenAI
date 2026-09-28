@@ -445,6 +445,42 @@ def test_build_reply_drops_id_not_in_candidates():
     assert result["product_ids"] == [1]
 
 
+def test_build_reply_displayed_candidates_matches_allowed_ids_only():
+    """실측 확인된 버그: candidates(종목 필터만 거친 후보, 최대 3개)를 그대로
+    orchestrator.previous_candidates로 넘기면, 화면엔 카드 1개만 보였는데 다음 턴
+    "첫 번째 설명해줘"가 candidates[0](화면에 없던 상품)을 가리킬 수 있었다.
+    displayed_candidates는 반드시 allowed_ids(화면에 실제로 보여준 것)만, 그
+    순서 그대로 담아야 한다."""
+    candidates = [
+        {"product_id": 1, "name": "첫 번째 후보", "evidence": {}},
+        {"product_id": 2, "name": "두 번째 후보", "evidence": {}},
+        {"product_id": 3, "name": "세 번째 후보", "evidence": {}},
+    ]
+    payload = {
+        "reply": "이 상품을 추천합니다.",
+        "allowed_ids": [2],
+        "suggestions": [],
+    }
+    result = gen.build_reply(
+        "선물 추천해줘",
+        candidates,
+        "product_search",
+        chat=_fake_chat(payload),
+        **_NO_DB,
+    )
+    assert result["product_ids"] == [2]
+    assert result["displayed_candidates"] == [candidates[1]]
+
+
+def test_build_reply_displayed_candidates_empty_when_nothing_allowed():
+    candidates = [{"product_id": 1, "name": "후보", "evidence": {}}]
+    payload = {"reply": "확인되지 않습니다.", "allowed_ids": [], "suggestions": []}
+    result = gen.build_reply(
+        "아무거나", candidates, "product_search", chat=_fake_chat(payload), **_NO_DB
+    )
+    assert result["displayed_candidates"] == []
+
+
 def test_build_reply_calls_chat_with_think_false_by_default():
     """think 기본값은 False다 — thinking을 지원하는 모델(qwen3·gemma4)이 실제로 쓰이지
     않는 한, thinking을 켤 이유가 없다(gemma4는 오히려 응답이 8배 느려지고 타임아웃까지

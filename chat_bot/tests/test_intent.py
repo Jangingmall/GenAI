@@ -63,6 +63,48 @@ def test_price_to_won_plain_digit_string():
 
 
 # ---------------------------------------------------------------------------
+# _mentions_price — orchestrator가 "이번 메시지에 가격을 실제로 말했는지" 판단할 때
+# 쓴다(순수 아라비아 숫자 isdigit 검사만으로는 "오만원"처럼 한글로만 쓴 가격을 놓친다).
+# ---------------------------------------------------------------------------
+
+
+def test_mentions_price_true_for_arabic_digit():
+    assert it.mentions_price("5만원 이하로 보여줘") is True
+
+
+def test_mentions_price_true_for_korean_number_word():
+    """실측 확인된 버그: "오만원"처럼 아라비아 숫자가 하나도 없는 한글 가격
+    표현은 isdigit 검사를 통과 못 해 "가격 언급 없음"으로 오판됐다."""
+    assert it.mentions_price("오만원 이하 도자기") is True
+
+
+def test_mentions_price_true_for_bare_won_unit_word():
+    assert it.mentions_price("만원짜리 있어요?") is True
+
+
+def test_mentions_price_true_for_korean_number_word_with_space():
+    """실측 확인된 버그(Codex 리뷰): "오만원"(붙여쓰기)은 잡지만 "오만 원"(띄어쓰기)은
+    단위와 "원" 사이 공백 때문에 놓쳤다."""
+    assert it.mentions_price("오만 원 이하 도자기") is True
+
+
+def test_mentions_price_false_for_no_price_mention():
+    assert it.mentions_price("그럼 다른 재질도 볼 수 있을까요?") is False
+
+
+def test_mentions_price_false_for_i_man_idiom():
+    """ "이만"은 "그럼 이만 가볼게요"처럼 가격과 무관한 인사말로도 흔히 쓰인다 —
+    "숫자+만" 패턴만 보면 이런 문장도 가격 언급으로 오판할 위험이 있다."""
+    assert it.mentions_price("그럼 이만 가볼게요") is False
+
+
+def test_mentions_price_false_for_material_word_containing_won():
+    """ "원목"(재질명)처럼 "원" 글자가 들어간 단어까지 가격 언급으로 오판하면
+    안 된다 — 반드시 "숫자/단위 + 원" 형태의 가격 표현만 잡아야 한다."""
+    assert it.mentions_price("원목 재질로 보여주세요") is False
+
+
+# ---------------------------------------------------------------------------
 # _to_contact1의 query_text 덮어쓰기 — product_search·gift_recommendation은
 # LLM이 뭘 뽑든 원문(message)으로 코드에서 확정한다(검색팀 실측: 축약·수식어
 # 제거 없이 원문 그대로 넘길 때 임베딩 검색이 가장 잘 됨 — 프롬프트 판단에

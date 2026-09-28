@@ -104,6 +104,29 @@ def _price_to_won(text_or_num) -> int | None:
     return int(num_match.group()) if num_match else None
 
 
+_WON_PRICE_WORD_RE = re.compile(
+    # 단위와 "원" 사이에 공백이 있는 표기("오만 원")도 실측 확인됐다 — 단위 바로
+    # 뒤에 오는 공백 한 칸까지 허용한다.
+    "|".join(rf"{unit}\s?원" for unit, _ in _WON_UNIT_MULTIPLIERS)
+)
+
+
+def mentions_price(message: str) -> bool:
+    """이번 메시지에 가격을 실제로 언급했는지 판단한다.
+
+    orchestrator가 "이번 턴에 가격을 새로 말했는지"를 isdigit만으로 검사하면
+    "오만원"처럼 아라비아 숫자 없이 한글로만 쓴 가격 표현을 놓친다(실측 확인된
+    버그: 새로 말한 가격이 "언급 없음"으로 오판돼 이전 턴 값으로 덮어써졌다).
+    "만원"·"천원"처럼 단위+원 형태는 그 자체로 완결된 가격 표현이라(예: "만원짜리
+    있어요?") 앞에 숫자가 없어도 잡는다 — 대신 "원목"처럼 "원"만 들어간 무관한
+    단어나 "이만 가볼게요"(인사말) 같은 오탐은 피하도록 반드시 단위+원 형태만
+    본다.
+    """
+    if any(ch.isdigit() for ch in message):
+        return True
+    return bool(_WON_PRICE_WORD_RE.search(message))
+
+
 _MIN_PRICE_WORDS = ("이상", "부터", "넘는", "넘게", "초과")
 _MAX_PRICE_WORDS = (
     "이하",
