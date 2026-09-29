@@ -8,6 +8,7 @@ uvicorn>=0.30
 httpx>=0.27
 requests>=2.31
 pydantic>=2.9
+prometheus-fastapi-instrumentator>=7.0
 
 # DB · 벡터
 psycopg2-binary>=2.9

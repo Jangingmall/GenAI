@@ -48,6 +48,7 @@ import psycopg2
 import requests
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
 from app import products_service, readiness, session_store
@@ -101,6 +102,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="미담 AI 추천 챗봇", version="0.1.0", lifespan=lifespan)
+
+# 인프라가 PodMonitor로 긁어가는 Grafana 연동용 — GET /metrics를 Prometheus 형식으로 노출.
+Instrumentator().instrument(app).expose(app)
 
 
 # ── /ai/health, /ai/products — 상품 등록·수정·삭제 ──────────────────────
