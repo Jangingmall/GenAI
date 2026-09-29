@@ -44,7 +44,7 @@ PYTHONPATH=src .venv/bin/python scripts/setup_real_eval_dataset.py --validate
 5. 렌더링 영역은 해당 실물의 생성 초안을 사람이 검수·저장한 뒤 실제 draft_id와 승인 DTO로 승인 API를 호출한다. JSONL metadata는 생성 단계용이며 승인 API에 그대로 전송할 수 없다.
 6. 렌더링 PNG를 디코딩하고 글자 잘림·실물 형태 변형을 검수한다. `react_document` schema/tree/image reference gate도 실행별로 기록한다. 이 사진들은 단일 시점이므로 다각도 정확성 검증은 N/A로 보고한다.
 
-API 호출/모델 평가/렌더링은 수집 스크립트가 실행하지 않는다. 비용 발생 없이 데이터만 세팅한다. 지표는 [정의서](../../../docs/evaluation/metrics-definition.md)를 따른다. 성공률은 실패를 포함한 전체 시도 수와 영역별 분모를 함께 기록한다.
+API 호출/모델 평가/렌더링은 수집 스크립트가 실행하지 않는다. 비용 발생 없이 데이터만 세팅한다. 지표는 [정의서](../../../docs/phase2/metrics-definition.md)를 따른다. 성공률은 실패를 포함한 전체 시도 수와 영역별 분모를 함께 기록한다.
 
 ## 출처·권리·정제
 

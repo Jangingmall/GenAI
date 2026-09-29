@@ -7,8 +7,8 @@
 > 초안 42/저장 9/승인 9건으로 영역별 50~200건 요건 미충족.
 > 사람 정답·라이선스 증빙·실제 모델 성능 측정은 미완료다.
 > 본문의 자동 검사 목록은 평가 요구사항이며 실행 결과가 아니다. 2026-09-08부터 구현된 React JSON 출력 계약 검사도 포함한다.
-> [보완 계획](../../docs/data/collection-license-cleaning-plan.md)과
-> [지표 정의](../../docs/evaluation/metrics-definition.md)를 따른다.
+> [보완 계획](../../docs/phase2/collection-license-cleaning-plan.md)과
+> [지표 정의](../../docs/phase2/metrics-definition.md)를 따른다.
 
 버전: `0.1.0`  
 스키마: `detail-page-eval-v1`  
