@@ -33,6 +33,7 @@
 - [`operations/be-handoff-2026-09-18b.md`](operations/be-handoff-2026-09-18b.md): status_url 응답 스키마·콜백 경로·데드라인 스케줄러에 대한 BE 전달 회신
 - [`operations/be-handoff-2026-09-21.md`](operations/be-handoff-2026-09-21.md): BE 경유 첫 연동에서 통과한 구간과 S3 설정·오류 응답·승인 시점 관련 요청
 - [`operations/be-handoff-2026-09-22.md`](operations/be-handoff-2026-09-22.md): BE-11 승인·콜백 시점 문제와 31분 데드라인을 비교하고 선택지·결정을 요청한 문서
+- [`operations/be-handoff-2026-09-29.md`](operations/be-handoff-2026-09-29.md): 승인 재요청 409 신설·콜백 4xx 재시도 중단·중복 콜백 가능성과 BE 확인 요청 3건
 - [`operations/ecr-review-2026-09-17.md`](operations/ecr-review-2026-09-17.md): ECR 이미지 분리·태그·OIDC에 대한 동의와 레포 이름·CI·빌드 용량의 차단 사항
 - [`operations/infra-handoff-2026-09-21.md`](operations/infra-handoff-2026-09-21.md): GitHub Actions 변수·ECR push 결과와 챗봇 모델 질문, 자원 요청을 인프라팀에 회신
 - [`operations/infra-handoff-2026-09-22.md`](operations/infra-handoff-2026-09-22.md): CodeBuild·ECR 이름 변경·모델 S3 준비·GPU 검증의 적용 결과와 IAM 차단 보고
