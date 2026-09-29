@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Literal, Protocol
+from typing import Callable, Literal, Protocol
 
 from .dto import (
     AiBePersistAck,
@@ -33,6 +33,17 @@ def _now() -> datetime:
 
 class LeaseOwnershipError(RuntimeError):
     """Raised when a stale or unclaimed worker tries to commit state."""
+
+
+class IdempotencyKeyAlreadyExists(ValueError):
+    """A job already owns the product-scoped idempotency key."""
+
+
+def _idempotency_scope_key(product_id: str | None, idempotency_key: str | None) -> str | None:
+    if idempotency_key is None:
+        return None
+    # JSON preserves the distinction between a missing product and an empty ID.
+    return json.dumps([product_id, idempotency_key], ensure_ascii=False, separators=(",", ":"))
 
 
 def _encode_bytes(data: bytes) -> str:
@@ -64,6 +75,8 @@ class JobRecord:
     request_fingerprint: str | None = None
     approval_idempotency_key: str | None = None
     approval_fingerprint: str | None = None
+    approval_state: Literal["IN_PROGRESS", "FAILED", "COMPLETED"] | None = None
+    approval_attempt_id: str | None = None
     approval_be_ack: AiBePersistAck | None = None
     approval_backend_delivery_pending: bool = False
     approval_warning: str | None = None
@@ -84,6 +97,15 @@ class JobRepository(Protocol):
     ) -> None:
         ...
 
+    def update(
+        self,
+        job_id: str,
+        change: Callable[[JobRecord], JobRecord | None],
+        worker_id: str | None = None,
+        lease_seconds: int = 300,
+    ) -> JobRecord:
+        ...
+
     def get(self, job_id: str) -> JobRecord:
         ...
 
@@ -93,6 +115,9 @@ class JobRepository(Protocol):
         ...
 
     def count_active(self) -> int:
+        ...
+
+    def list_in_progress_approvals(self) -> list[str]:
         ...
 
     def recover_interrupted(self) -> list[str]:
@@ -138,6 +163,8 @@ def _serialize_job(record: JobRecord) -> str:
         "request_fingerprint": record.request_fingerprint,
         "approval_idempotency_key": record.approval_idempotency_key,
         "approval_fingerprint": record.approval_fingerprint,
+        "approval_state": record.approval_state,
+        "approval_attempt_id": record.approval_attempt_id,
         "approval_be_ack": record.approval_be_ack.model_dump(mode="json") if record.approval_be_ack else None,
         "approval_backend_delivery_pending": record.approval_backend_delivery_pending,
         "approval_warning": record.approval_warning,
@@ -185,6 +212,12 @@ def _deserialize_job(value: str) -> JobRecord:
         request_fingerprint=payload.get("request_fingerprint"),
         approval_idempotency_key=payload.get("approval_idempotency_key"),
         approval_fingerprint=payload.get("approval_fingerprint"),
+        approval_state=payload.get("approval_state") or (
+            "COMPLETED"
+            if payload.get("approval_idempotency_key") and payload.get("result")
+            else None
+        ),
+        approval_attempt_id=payload.get("approval_attempt_id"),
         approval_be_ack=(
             AiBePersistAck.model_validate(payload["approval_be_ack"])
             if payload.get("approval_be_ack") is not None
@@ -205,6 +238,7 @@ def _deserialize_job(value: str) -> JobRecord:
 class MemoryJobRepository:
     def __init__(self):
         self._records: dict[str, JobRecord] = {}
+        self._idempotency_index: dict[str, str] = {}
         self._claimed: dict[str, str] = {}
         self._lock = Lock()
 
@@ -212,7 +246,12 @@ class MemoryJobRepository:
         with self._lock:
             if record.job_id in self._records:
                 raise ValueError(f"Job already exists: {record.job_id}")
+            scope = _idempotency_scope_key(record.product_id, record.idempotency_key)
+            if scope is not None and scope in self._idempotency_index:
+                raise IdempotencyKeyAlreadyExists(scope)
             self._records[record.job_id] = copy.deepcopy(record)
+            if scope is not None:
+                self._idempotency_index[scope] = record.job_id
 
     def save(
         self,
@@ -220,16 +259,46 @@ class MemoryJobRepository:
         worker_id: str | None = None,
         lease_seconds: int = 300,
     ) -> None:
+        self.update(
+            record.job_id,
+            lambda current: record,
+            worker_id=worker_id,
+            lease_seconds=lease_seconds,
+        )
+
+    def update(
+        self,
+        job_id: str,
+        change: Callable[[JobRecord], JobRecord | None],
+        worker_id: str | None = None,
+        lease_seconds: int = 300,
+    ) -> JobRecord:
         del lease_seconds
         with self._lock:
-            if record.job_id not in self._records:
-                raise KeyError(record.job_id)
-            owner = self._claimed.get(record.job_id)
+            if job_id not in self._records:
+                raise KeyError(job_id)
+            owner = self._claimed.get(job_id)
             if owner != worker_id:
-                raise LeaseOwnershipError(record.job_id)
-            self._records[record.job_id] = copy.deepcopy(record)
-            if record.status in {"COMPLETED", "FAILED", "DRAFT_READY"}:
-                self._claimed.pop(record.job_id, None)
+                raise LeaseOwnershipError(job_id)
+            original = self._records[job_id]
+            snapshot = copy.deepcopy(original)
+            updated = change(snapshot) or snapshot
+            if updated.job_id != job_id:
+                raise ValueError("Job identity cannot change")
+            old_scope = _idempotency_scope_key(original.product_id, original.idempotency_key)
+            new_scope = _idempotency_scope_key(updated.product_id, updated.idempotency_key)
+            if new_scope != old_scope and new_scope is not None:
+                existing = self._idempotency_index.get(new_scope)
+                if existing is not None and existing != job_id:
+                    raise IdempotencyKeyAlreadyExists(new_scope)
+            self._records[job_id] = copy.deepcopy(updated)
+            if old_scope is not None and old_scope != new_scope:
+                self._idempotency_index.pop(old_scope, None)
+            if new_scope is not None:
+                self._idempotency_index[new_scope] = job_id
+            if updated.status in {"COMPLETED", "FAILED", "DRAFT_READY"}:
+                self._claimed.pop(job_id, None)
+            return copy.deepcopy(updated)
 
     def get(self, job_id: str) -> JobRecord:
         with self._lock:
@@ -241,13 +310,11 @@ class MemoryJobRepository:
     def find_by_idempotency(
         self, product_id: str | None, idempotency_key: str
     ) -> JobRecord | None:
+        scope = _idempotency_scope_key(product_id, idempotency_key)
         with self._lock:
-            for record in self._records.values():
-                if (
-                    record.product_id == product_id
-                    and record.idempotency_key == idempotency_key
-                ):
-                    return copy.deepcopy(record)
+            job_id = self._idempotency_index.get(scope)
+            if job_id is not None:
+                return copy.deepcopy(self._records[job_id])
         return None
 
     def count_active(self) -> int:
@@ -255,6 +322,14 @@ class MemoryJobRepository:
             return sum(
                 record.status not in {"COMPLETED", "FAILED", "DRAFT_READY"}
                 for record in self._records.values()
+            )
+
+    def list_in_progress_approvals(self) -> list[str]:
+        with self._lock:
+            return sorted(
+                record.job_id
+                for record in self._records.values()
+                if record.approval_state == "IN_PROGRESS" and record.result is None
             )
 
     def recover_interrupted(self) -> list[str]:
@@ -309,6 +384,7 @@ class SQLiteJobRepository:
         self.path = Path(path).expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS detail_page_jobs (
@@ -316,27 +392,64 @@ class SQLiteJobRepository:
                     status TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     payload_json TEXT NOT NULL,
+                    idempotency_scope_key TEXT,
                     worker_id TEXT,
                     lease_until TEXT
                 )
                 """
             )
+            self._ensure_column(connection, "detail_page_jobs", "idempotency_scope_key", "TEXT")
             self._ensure_column(connection, "detail_page_jobs", "worker_id", "TEXT")
             self._ensure_column(connection, "detail_page_jobs", "lease_until", "TEXT")
+            rows = connection.execute(
+                "SELECT job_id, payload_json FROM detail_page_jobs "
+                "WHERE idempotency_scope_key IS NULL"
+            ).fetchall()
+            for job_id, payload_json in rows:
+                payload = json.loads(payload_json)
+                scope = _idempotency_scope_key(
+                    payload.get("product_id"), payload.get("idempotency_key")
+                )
+                if scope is not None:
+                    connection.execute(
+                        "UPDATE detail_page_jobs SET idempotency_scope_key = ? WHERE job_id = ?",
+                        (scope, job_id),
+                    )
+            duplicate = connection.execute(
+                "SELECT idempotency_scope_key, COUNT(*) FROM detail_page_jobs "
+                "WHERE idempotency_scope_key IS NOT NULL "
+                "GROUP BY idempotency_scope_key HAVING COUNT(*) > 1 LIMIT 1"
+            ).fetchone()
+            if duplicate is not None:
+                raise ValueError(
+                    "Duplicate idempotency keys in existing jobs; migration requires manual resolution"
+                )
+            connection.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS detail_page_jobs_idempotency_scope_idx "
+                "ON detail_page_jobs(idempotency_scope_key)"
+            )
 
     def create(self, record: JobRecord) -> None:
+        scope = _idempotency_scope_key(record.product_id, record.idempotency_key)
         try:
             with self._connect() as connection:
                 connection.execute(
-                    "INSERT INTO detail_page_jobs(job_id, status, updated_at, payload_json) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO detail_page_jobs"
+                    "(job_id, status, updated_at, payload_json, idempotency_scope_key) "
+                    "VALUES (?, ?, ?, ?, ?)",
                     (
                         record.job_id,
                         record.status,
                         record.updated_at.isoformat(),
                         _serialize_job(record),
+                        scope,
                     ),
                 )
         except sqlite3.IntegrityError as exc:
+            if scope is not None and self.find_by_idempotency(
+                record.product_id, record.idempotency_key
+            ) is not None:
+                raise IdempotencyKeyAlreadyExists(scope) from exc
             raise ValueError(f"Job already exists: {record.job_id}") from exc
 
     def save(
@@ -345,52 +458,66 @@ class SQLiteJobRepository:
         worker_id: str | None = None,
         lease_seconds: int = 300,
     ) -> None:
-        now = _now()
-        renewed_until = datetime.fromtimestamp(
-            now.timestamp() + lease_seconds, tz=timezone.utc
-        ).isoformat()
+        self.update(
+            record.job_id,
+            lambda current: record,
+            worker_id=worker_id,
+            lease_seconds=lease_seconds,
+        )
+
+    def update(
+        self,
+        job_id: str,
+        change: Callable[[JobRecord], JobRecord | None],
+        worker_id: str | None = None,
+        lease_seconds: int = 300,
+    ) -> JobRecord:
         with self._connect() as connection:
-            terminal = record.status in {"COMPLETED", "FAILED", "DRAFT_READY"}
-            if worker_id is None:
-                cursor = connection.execute(
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT payload_json, worker_id, lease_until FROM detail_page_jobs WHERE job_id = ?",
+                (job_id,),
+            ).fetchone()
+            if row is None:
+                raise KeyError(job_id)
+            payload_json, current_owner, lease_until = row
+            now = _now()
+            if current_owner != worker_id or (
+                worker_id is not None
+                and (lease_until is None or lease_until <= now.isoformat())
+            ):
+                raise LeaseOwnershipError(job_id)
+            snapshot = _deserialize_job(payload_json)
+            updated = change(snapshot) or snapshot
+            if updated.job_id != job_id:
+                raise ValueError("Job identity cannot change")
+            scope = _idempotency_scope_key(updated.product_id, updated.idempotency_key)
+            terminal = updated.status in {"COMPLETED", "FAILED", "DRAFT_READY"}
+            renewed_until = datetime.fromtimestamp(
+                now.timestamp() + lease_seconds, tz=timezone.utc
+            ).isoformat()
+            try:
+                connection.execute(
                     """
                     UPDATE detail_page_jobs
                     SET status = ?, updated_at = ?, payload_json = ?,
-                        worker_id = NULL, lease_until = NULL
-                    WHERE job_id = ? AND worker_id IS NULL
+                        idempotency_scope_key = ?,
+                        worker_id = ?, lease_until = ?
+                    WHERE job_id = ?
                     """,
                     (
-                        record.status,
-                        record.updated_at.isoformat(),
-                        _serialize_job(record),
-                        record.job_id,
+                        updated.status,
+                        updated.updated_at.isoformat(),
+                        _serialize_job(updated),
+                        scope,
+                        None if terminal else worker_id,
+                        None if terminal or worker_id is None else renewed_until,
+                        job_id,
                     ),
                 )
-            else:
-                cursor = connection.execute(
-                    """
-                    UPDATE detail_page_jobs
-                    SET status = ?, updated_at = ?, payload_json = ?,
-                        worker_id = CASE WHEN ? THEN NULL ELSE worker_id END,
-                        lease_until = CASE WHEN ? THEN NULL ELSE ? END
-                    WHERE job_id = ? AND worker_id = ? AND lease_until > ?
-                    """,
-                    (
-                        record.status,
-                        record.updated_at.isoformat(),
-                        _serialize_job(record),
-                        terminal,
-                        terminal,
-                        renewed_until,
-                        record.job_id,
-                        worker_id,
-                        now.isoformat(),
-                    ),
-                )
-            if cursor.rowcount != 1:
-                if self._exists(connection, record.job_id):
-                    raise LeaseOwnershipError(record.job_id)
-                raise KeyError(record.job_id)
+            except sqlite3.IntegrityError as exc:
+                raise IdempotencyKeyAlreadyExists(scope or "") from exc
+            return updated
 
     def get(self, job_id: str) -> JobRecord:
         with self._connect() as connection:
@@ -405,18 +532,13 @@ class SQLiteJobRepository:
     def find_by_idempotency(
         self, product_id: str | None, idempotency_key: str
     ) -> JobRecord | None:
+        scope = _idempotency_scope_key(product_id, idempotency_key)
         with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT payload_json FROM detail_page_jobs"
-            ).fetchall()
-        for (payload_json,) in rows:
-            record = _deserialize_job(payload_json)
-            if (
-                record.product_id == product_id
-                and record.idempotency_key == idempotency_key
-            ):
-                return record
-        return None
+            row = connection.execute(
+                "SELECT payload_json FROM detail_page_jobs WHERE idempotency_scope_key = ?",
+                (scope,),
+            ).fetchone()
+        return _deserialize_job(row[0]) if row else None
 
     def count_active(self) -> int:
         with self._connect() as connection:
@@ -425,6 +547,18 @@ class SQLiteJobRepository:
                    WHERE status NOT IN ('COMPLETED', 'FAILED', 'DRAFT_READY')"""
             ).fetchone()
         return int(row[0]) if row else 0
+
+    def list_in_progress_approvals(self) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT job_id, payload_json FROM detail_page_jobs"
+            ).fetchall()
+        return [
+            job_id
+            for job_id, payload_json in rows
+            if (payload := json.loads(payload_json)).get("approval_state") == "IN_PROGRESS"
+            and payload.get("result") is None
+        ]
 
     def recover_interrupted(self) -> list[str]:
         return self.claim_recoverable(f"recovery-{uuid.uuid4()}")
@@ -553,7 +687,9 @@ class SQLiteJobRepository:
         return sqlite3.connect(self.path, timeout=30)
 
 
-OutboxStatus = Literal["PENDING", "DELIVERING", "DELIVERED", "FAILED"]
+OutboxStatus = Literal[
+    "PENDING", "DELIVERING", "DELIVERED", "FAILED", "PERMANENT_FAILED"
+]
 
 
 @dataclass(slots=True)
@@ -586,7 +722,12 @@ class DeliveryOutbox(Protocol):
     def mark_delivered(self, generation_id: str, worker_id: str) -> None:
         ...
 
-    def mark_failed(self, generation_id: str, error: str, worker_id: str) -> None:
+    def mark_failed(
+        self, generation_id: str, error: str, worker_id: str, *, retryable: bool = True
+    ) -> None:
+        ...
+
+    def configure_retry_limit(self, max_attempts: int) -> None:
         ...
 
     def claim(
@@ -703,6 +844,13 @@ class MemoryDeliveryOutbox:
     def __init__(self):
         self._records: dict[str, OutboxRecord] = {}
         self._lock = Lock()
+        self.max_delivery_attempts = 8
+
+    def configure_retry_limit(self, max_attempts: int) -> None:
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be at least 1")
+        with self._lock:
+            self.max_delivery_attempts = max_attempts
 
     def enqueue(self, request, image, error: str) -> None:
         with self._lock:
@@ -734,7 +882,11 @@ class MemoryDeliveryOutbox:
         del lease_seconds
         with self._lock:
             record = self._records.get(generation_id)
-            if record is None or record.status not in {"PENDING", "FAILED"}:
+            if (
+                record is None
+                or record.status not in {"PENDING", "FAILED"}
+                or record.attempts >= self.max_delivery_attempts
+            ):
                 return None
             record.status = "DELIVERING"
             record.attempts += 1
@@ -748,6 +900,7 @@ class MemoryDeliveryOutbox:
                 generation_id
                 for generation_id, record in self._records.items()
                 if record.status in {"PENDING", "FAILED"}
+                and record.attempts < self.max_delivery_attempts
             )
 
     def mark_delivered(self, generation_id: str, worker_id: str) -> None:
@@ -760,12 +913,14 @@ class MemoryDeliveryOutbox:
             record.worker_id = None
             record.updated_at = _now()
 
-    def mark_failed(self, generation_id: str, error: str, worker_id: str) -> None:
+    def mark_failed(
+        self, generation_id: str, error: str, worker_id: str, *, retryable: bool = True
+    ) -> None:
         with self._lock:
             record = self._required(generation_id)
             if record.status != "DELIVERING" or record.worker_id != worker_id:
                 raise LeaseOwnershipError(generation_id)
-            record.status = "FAILED"
+            record.status = "FAILED" if retryable else "PERMANENT_FAILED"
             record.last_error = error
             record.worker_id = None
             record.updated_at = _now()
@@ -796,6 +951,7 @@ class SQLiteDeliveryOutbox:
     def __init__(self, path: str | Path):
         self.path = Path(path).expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.max_delivery_attempts = 8
         with self._connect() as connection:
             connection.execute(
                 """
@@ -813,6 +969,11 @@ class SQLiteDeliveryOutbox:
             )
             self._ensure_column(connection, "delivery_outbox", "worker_id", "TEXT")
             self._ensure_column(connection, "delivery_outbox", "lease_until", "TEXT")
+
+    def configure_retry_limit(self, max_attempts: int) -> None:
+        if max_attempts < 1:
+            raise ValueError("max_attempts must be at least 1")
+        self.max_delivery_attempts = max_attempts
 
     def enqueue(self, request, image, error: str) -> None:
         now = _now().isoformat()
@@ -861,6 +1022,7 @@ class SQLiteDeliveryOutbox:
                 SET status = 'DELIVERING', attempts = attempts + 1,
                     worker_id = ?, lease_until = ?, updated_at = ?
                 WHERE generation_id = ?
+                  AND attempts < ?
                   AND (
                     status IN ('PENDING', 'FAILED')
                     OR (
@@ -874,6 +1036,7 @@ class SQLiteDeliveryOutbox:
                     lease_until,
                     now.isoformat(),
                     generation_id,
+                    self.max_delivery_attempts,
                     now.isoformat(),
                 ),
             )
@@ -895,14 +1058,16 @@ class SQLiteDeliveryOutbox:
             rows = connection.execute(
                 """
                 SELECT generation_id FROM delivery_outbox
-                WHERE status IN ('PENDING', 'FAILED')
-                   OR (
+                WHERE attempts < ? AND (
+                    status IN ('PENDING', 'FAILED')
+                    OR (
                      status = 'DELIVERING'
                      AND (worker_id IS NULL OR lease_until IS NULL OR lease_until <= ?)
-                   )
+                    )
+                )
                 ORDER BY generation_id
                 """,
-                (now,),
+                (self.max_delivery_attempts, now),
             ).fetchall()
         return [row[0] for row in rows]
 
@@ -914,18 +1079,21 @@ class SQLiteDeliveryOutbox:
             worker_id=worker_id,
         )
 
-    def mark_failed(self, generation_id: str, error: str, worker_id: str) -> None:
+    def mark_failed(
+        self, generation_id: str, error: str, worker_id: str, *, retryable: bool = True
+    ) -> None:
         now = _now()
         with self._connect() as connection:
             cursor = connection.execute(
                 """
                 UPDATE delivery_outbox
-                SET status = 'FAILED', last_error = ?, updated_at = ?,
+                SET status = ?, last_error = ?, updated_at = ?,
                     worker_id = NULL, lease_until = NULL
                 WHERE generation_id = ? AND status = 'DELIVERING'
                   AND worker_id = ? AND lease_until > ?
                 """,
                 (
+                    "FAILED" if retryable else "PERMANENT_FAILED",
                     error,
                     now.isoformat(),
                     generation_id,
@@ -995,9 +1163,9 @@ class SQLiteDeliveryOutbox:
                 """
                 SELECT MIN(lease_until) FROM delivery_outbox
                 WHERE status = 'DELIVERING' AND lease_until IS NOT NULL
-                  AND lease_until > ?
+                  AND lease_until > ? AND attempts < ?
                 """,
-                (now.isoformat(),),
+                (now.isoformat(), self.max_delivery_attempts),
             ).fetchone()
         if row is None or row[0] is None:
             return None

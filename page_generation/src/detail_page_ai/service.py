@@ -19,6 +19,7 @@ from .dto import (
 from .pipeline import DetailPagePipeline, DraftPipelineResult, PipelineResult
 from .leases import LeaseHeartbeat
 from .persistence import (
+    IdempotencyKeyAlreadyExists,
     JobRecord,
     JobRepository,
     LeaseOwnershipError,
@@ -29,6 +30,10 @@ from .validation import InvalidImageError, ProfileValidationError, validate_sour
 
 class IdempotencyConflictError(ValueError):
     """The same idempotency key was reused for a different request."""
+
+
+class ApprovalInProgressError(ValueError):
+    """Another attempt currently owns approval of this draft."""
 
 
 class CapacityExceededError(RuntimeError):
@@ -94,12 +99,26 @@ class DetailPageJobService:
             pipeline, "max_total_input_bytes", 120 * 1024 * 1024
         )
         self.max_delivery_attempts = max_delivery_attempts
+        if hasattr(self.pipeline.outbox, "configure_retry_limit"):
+            self.pipeline.outbox.configure_retry_limit(max_delivery_attempts)
         self.require_decodable_images = (
             require_decodable_images
             if require_decodable_images is not None
             else getattr(pipeline, "require_decodable_images", False)
         )
         self.default_options = getattr(pipeline, "options", None) or GenerationOptions()
+        # ponytail: assumes one process per database. A second process starting
+        # against the same SQLite file would release the first one's live render
+        # and allow a duplicate. Before scaling out, release only approvals whose
+        # owner lease has expired instead of every IN_PROGRESS record.
+        for approval_job_id in self.repository.list_in_progress_approvals():
+            def release_interrupted(job: JobRecord) -> None:
+                if job.approval_state == "IN_PROGRESS" and job.result is None:
+                    job.approval_state = "FAILED"
+                    job.approval_attempt_id = None
+                    job.updated_at = datetime.now(timezone.utc)
+
+            self.repository.update(approval_job_id, release_interrupted)
         for recovered_job_id in self.repository.claim_recoverable(
             self.worker_id, lease_seconds=self.lease_seconds
         ):
@@ -117,22 +136,26 @@ class DetailPageJobService:
                         self._run_job, recovered_job_id, True, self.worker_id
                     )
                 else:
-                    recovered_job.status = "COMPLETED"
-                    recovered_job.progress = 100
-                    recovered_job.error = (
-                        None
-                        if outbox_record.status == "DELIVERED"
-                        else ErrorDto(
-                            code="AI_BE_DELIVERY_FAILED",
-                            message="Backend delivery is pending",
-                            retryable=True,
-                            request_id=recovered_job.request_id,
-                            generation_id=recovered_job.generation_id,
+                    def finish_recovered(job: JobRecord) -> None:
+                        job.result = recovered_job.result
+                        job.status = "COMPLETED"
+                        job.progress = 100
+                        job.error = (
+                            None
+                            if outbox_record.status == "DELIVERED"
+                            else ErrorDto(
+                                code="AI_BE_DELIVERY_FAILED",
+                                message="Backend delivery is pending",
+                                retryable=outbox_record.status != "PERMANENT_FAILED",
+                                request_id=job.request_id,
+                                generation_id=job.generation_id,
+                            )
                         )
-                    )
-                    recovered_job.updated_at = datetime.now(timezone.utc)
-                    self.repository.save(
-                        recovered_job,
+                        job.updated_at = datetime.now(timezone.utc)
+
+                    self.repository.update(
+                        recovered_job_id,
+                        finish_recovered,
                         worker_id=self.worker_id,
                         lease_seconds=self.lease_seconds,
                     )
@@ -219,7 +242,25 @@ class DetailPageJobService:
             idempotency_key=resolved_idempotency_key,
             request_fingerprint=request_fingerprint,
         )
-        self.repository.create(job)
+        try:
+            self.repository.create(job)
+        except IdempotencyKeyAlreadyExists:
+            existing = self.repository.find_by_idempotency(
+                product_id, resolved_idempotency_key
+            )
+            if existing is None:
+                raise
+            if existing.request_fingerprint != request_fingerprint:
+                raise IdempotencyConflictError(
+                    "Idempotency key is already used for a different request"
+                )
+            return AiFeAcceptedResponse(
+                job_id=existing.job_id,
+                request_id=existing.request_id,
+                status="QUEUED",
+                status_url=f"{status_path_prefix.rstrip('/')}/{existing.job_id}",
+                created_at=existing.created_at,
+            )
         self.executor.submit(self._run_job, job_id)
         return AiFeAcceptedResponse(
             job_id=job_id,
@@ -254,21 +295,38 @@ class DetailPageJobService:
         source_asset_id: str | None = None,
     ) -> PipelineResult:
         """Render one approved draft and persist the idempotent final result."""
-        job = self.repository.get(job_id)
-        if job.draft is None or job.draft_profile is None:
-            raise ValueError("Draft is not ready for approval")
         resolved_key = idempotency_key or request_id or f"approval:{job_id}"
-        fingerprint = self._approval_fingerprint(draft, options or job.options)
-        if job.approval_idempotency_key is not None:
-            if (
-                job.approval_idempotency_key != resolved_key
-                or job.approval_fingerprint != fingerprint
-            ):
-                raise IdempotencyConflictError(
-                    "Approval idempotency key is already used for a different request"
-                )
-            if job.result is None:
-                raise ValueError("Approval is already in progress")
+        attempt_id = str(uuid.uuid4())
+        already_completed = False
+
+        def reserve(job: JobRecord) -> None:
+            nonlocal already_completed
+            if job.draft is None or job.draft_profile is None:
+                raise ValueError("Draft is not ready for approval")
+            fingerprint = self._approval_fingerprint(draft, options or job.options)
+            if job.approval_state in {"IN_PROGRESS", "COMPLETED"} or job.result is not None:
+                if (
+                    job.approval_idempotency_key != resolved_key
+                    or job.approval_fingerprint != fingerprint
+                ):
+                    raise IdempotencyConflictError(
+                        "Approval idempotency key is already used for a different request"
+                    )
+                if job.approval_state == "IN_PROGRESS":
+                    raise ApprovalInProgressError("Approval is already in progress")
+                already_completed = True
+                return
+            job.approval_idempotency_key = resolved_key
+            job.approval_fingerprint = fingerprint
+            job.approval_state = "IN_PROGRESS"
+            job.approval_attempt_id = attempt_id
+            job.approval_be_ack = None
+            job.approval_backend_delivery_pending = False
+            job.approval_warning = None
+            job.updated_at = datetime.now(timezone.utc)
+
+        job = self.repository.update(job_id, reserve)
+        if already_completed:
             return PipelineResult(
                 generation_id=job.result.generation_id,
                 fe_result=job.result,
@@ -277,38 +335,70 @@ class DetailPageJobService:
                 warning=job.approval_warning,
             )
 
-        resolved_request_id = request_id or str(uuid.uuid4())
-        generation_id = (
-            job.generation_id
-            if job.product_id and job.generation_id
-            else f"{job_id}-approval-{hashlib.sha256(resolved_key.encode()).hexdigest()[:16]}"
+        try:
+            resolved_request_id = request_id or str(uuid.uuid4())
+            generation_id = (
+                job.generation_id
+                if job.product_id and job.generation_id
+                else f"{job_id}-approval-{hashlib.sha256(resolved_key.encode()).hexdigest()[:16]}"
+            )
+            merged_profile = draft.to_profile(job.draft_profile)
+            pipeline_result = self.pipeline.run(
+                job_id=job_id,
+                request_id=resolved_request_id,
+                source_image=job.source_image,
+                source_mime_type=job.source_mime_type,
+                options=options or job.options,
+                additional_source_images=job.additional_source_images,
+                profile_override=merged_profile,
+                generation_id=generation_id,
+                product_id=product_id or job.product_id,
+                source_asset_id=source_asset_id or job.source_asset_id,
+            )
+
+            def finish(current: JobRecord) -> None:
+                if (
+                    current.approval_state != "IN_PROGRESS"
+                    or current.approval_attempt_id != attempt_id
+                ):
+                    raise ApprovalInProgressError("Approval is already in progress")
+                if current.approval_be_ack is None:
+                    current.approval_be_ack = pipeline_result.be_ack
+                    current.approval_backend_delivery_pending = (
+                        pipeline_result.backend_delivery_pending
+                    )
+                    current.approval_warning = pipeline_result.warning
+                current.approval_state = "COMPLETED"
+                current.approval_attempt_id = None
+                current.result = pipeline_result.fe_result
+                current.error = None
+                current.status = "COMPLETED"
+                current.progress = 100
+                current.updated_at = datetime.now(timezone.utc)
+
+            completed = self.repository.update(job_id, finish)
+        except Exception:
+            def release_failed(current: JobRecord) -> None:
+                if (
+                    current.approval_state == "IN_PROGRESS"
+                    and current.approval_attempt_id == attempt_id
+                ):
+                    current.approval_state = "FAILED"
+                    current.approval_attempt_id = None
+                    current.updated_at = datetime.now(timezone.utc)
+
+            self.repository.update(job_id, release_failed)
+            raise
+
+        if completed.approval_backend_delivery_pending:
+            self._schedule_delivery_retry(pipeline_result.generation_id)
+        return PipelineResult(
+            generation_id=pipeline_result.generation_id,
+            fe_result=completed.result,
+            be_ack=completed.approval_be_ack,
+            backend_delivery_pending=completed.approval_backend_delivery_pending,
+            warning=completed.approval_warning,
         )
-        merged_profile = draft.to_profile(job.draft_profile)
-        pipeline_result = self.pipeline.run(
-            job_id=job_id,
-            request_id=resolved_request_id,
-            source_image=job.source_image,
-            source_mime_type=job.source_mime_type,
-            options=options or job.options,
-            additional_source_images=job.additional_source_images,
-            profile_override=merged_profile,
-            generation_id=generation_id,
-            product_id=product_id or job.product_id,
-            source_asset_id=source_asset_id or job.source_asset_id,
-        )
-        job = self.repository.get(job_id)
-        job.approval_idempotency_key = resolved_key
-        job.approval_fingerprint = fingerprint
-        job.approval_be_ack = pipeline_result.be_ack
-        job.approval_backend_delivery_pending = pipeline_result.backend_delivery_pending
-        job.approval_warning = pipeline_result.warning
-        job.result = pipeline_result.fe_result
-        job.error = None
-        job.status = "COMPLETED"
-        job.progress = 100
-        job.updated_at = datetime.now(timezone.utc)
-        self.repository.save(job)
-        return pipeline_result
 
     def save_draft(
         self,
@@ -318,31 +408,39 @@ class DetailPageJobService:
         expected_version: int | None = None,
     ) -> AiFeDraftResultDto:
         """Persist creator edits and return only structured JSON for preview rendering."""
-        job = self.repository.get(job_id)
-        if job.draft_profile is None or job.draft is None:
+        snapshot = self.repository.get(job_id)
+        if snapshot.draft_profile is None or snapshot.draft is None:
             raise ValueError("Draft is not ready")
-        if job.result is not None:
-            raise ValueError("Completed drafts cannot be edited")
-        if expected_version is not None and expected_version != job.draft.version:
-            raise DraftVersionConflictError("Draft version is stale")
-        profile = draft.to_profile(job.draft_profile)
+        profile = draft.to_profile(snapshot.draft_profile)
         rebuilt = self.pipeline.build_editable_draft(
-            job_id=job.job_id,
-            generation_id=job.generation_id or self.pipeline.id_factory(),
-            source_image=job.source_image,
-            source_mime_type=job.source_mime_type,
+            job_id=snapshot.job_id,
+            generation_id=snapshot.generation_id or self.pipeline.id_factory(),
+            source_image=snapshot.source_image,
+            source_mime_type=snapshot.source_mime_type,
             profile=profile,
             approved_draft=draft,
-            source_asset_id=job.source_asset_id or job.draft.source_asset_id,
+            source_asset_id=snapshot.source_asset_id or snapshot.draft.source_asset_id,
         )
-        rebuilt.fe_draft = rebuilt.fe_draft.model_copy(
-            update={"version": job.draft.version + 1}
-        )
-        job.draft = rebuilt.fe_draft
-        job.draft_profile = rebuilt.profile
-        job.updated_at = datetime.now(timezone.utc)
-        self.repository.save(job)
-        return rebuilt.fe_draft
+
+        def save(current: JobRecord) -> None:
+            if current.draft_profile is None or current.draft is None:
+                raise ValueError("Draft is not ready")
+            if current.approval_state == "IN_PROGRESS":
+                raise ValueError("Draft cannot be saved while approval is in progress")
+            if current.approval_state == "COMPLETED" or current.result is not None:
+                raise ValueError("Completed drafts cannot be edited")
+            if (
+                current.draft.version != snapshot.draft.version
+                or (expected_version is not None and expected_version != current.draft.version)
+            ):
+                raise DraftVersionConflictError("Draft version is stale")
+            current.draft = rebuilt.fe_draft.model_copy(
+                update={"version": current.draft.version + 1}
+            )
+            current.draft_profile = rebuilt.profile
+            current.updated_at = datetime.now(timezone.utc)
+
+        return self.repository.update(job_id, save).draft
 
     def get_backend(self, job_id: str) -> AiToBeStatusResponseDto:
         job = self.repository.get(job_id)
@@ -406,15 +504,17 @@ class DetailPageJobService:
                         generation_id=job.generation_id,
                     )
                     heartbeat.ensure_active()
-                    job = self.repository.get(job_id)
-                    job.draft = draft_result.fe_draft
-                    job.draft_profile = draft_result.profile
-                    job.status = "DRAFT_READY"
-                    job.progress = 100
-                    job.error = None
-                    job.updated_at = datetime.now(timezone.utc)
-                    self.repository.save(
-                        job,
+                    def finish_draft(current: JobRecord) -> None:
+                        current.draft = draft_result.fe_draft
+                        current.draft_profile = draft_result.profile
+                        current.status = "DRAFT_READY"
+                        current.progress = 100
+                        current.error = None
+                        current.updated_at = datetime.now(timezone.utc)
+
+                    self.repository.update(
+                        job_id,
+                        finish_draft,
                         worker_id=owner,
                         lease_seconds=self.lease_seconds,
                     )
@@ -431,14 +531,16 @@ class DetailPageJobService:
                         request_id=job.request_id,
                         generation_id=pipeline_result.generation_id,
                     )
-                job = self.repository.get(job_id)
-                job.result = pipeline_result.fe_result
-                job.error = error
-                job.status = "COMPLETED"
-                job.progress = 100
-                job.updated_at = datetime.now(timezone.utc)
-                self.repository.save(
-                    job,
+                def finish_result(current: JobRecord) -> None:
+                    current.result = pipeline_result.fe_result
+                    current.error = error
+                    current.status = "COMPLETED"
+                    current.progress = 100
+                    current.updated_at = datetime.now(timezone.utc)
+
+                self.repository.update(
+                    job_id,
+                    finish_result,
                     worker_id=owner,
                     lease_seconds=self.lease_seconds,
                 )
@@ -471,19 +573,25 @@ class DetailPageJobService:
     def _retry_delivery(self, generation_id: str) -> None:
         try:
             outbox_record = self.pipeline.outbox.get(generation_id)
-            self.pipeline.retry_backend_delivery(generation_id)
+            ack = self.pipeline.retry_backend_delivery(generation_id)
         except KeyError:
             return
-        except BackendDeliveryError:
-            self._schedule_delivery_retry(generation_id)
+        except BackendDeliveryError as exc:
+            if exc.retryable:
+                self._schedule_delivery_retry(generation_id)
             return
         try:
-            job = self.repository.get(outbox_record.request.job_id)
+            def mark_delivered(job: JobRecord) -> None:
+                job.error = None
+                if job.approval_idempotency_key is not None:
+                    job.approval_be_ack = ack
+                    job.approval_backend_delivery_pending = False
+                    job.approval_warning = None
+                job.updated_at = datetime.now(timezone.utc)
+
+            self.repository.update(outbox_record.request.job_id, mark_delivered)
         except KeyError:
             return
-        job.error = None
-        job.updated_at = datetime.now(timezone.utc)
-        self.repository.save(job)
 
     def _schedule_active_outbox_replay(self) -> None:
         delay = self.pipeline.outbox.seconds_until_retryable()
@@ -494,12 +602,15 @@ class DetailPageJobService:
 
     def _schedule_delivery_retry(self, generation_id: str) -> None:
         try:
-            attempts = self.pipeline.outbox.get(generation_id).attempts
+            record = self.pipeline.outbox.get(generation_id)
         except KeyError:
             return
-        if attempts >= self.max_delivery_attempts:
+        if record.status == "DELIVERING":
+            self._schedule_active_outbox_replay()
             return
-        delay = min(300.0, float(2 ** max(0, min(attempts - 1, 8))))
+        if record.status != "FAILED" or record.attempts >= self.max_delivery_attempts:
+            return
+        delay = min(300.0, float(2 ** max(0, min(record.attempts - 1, 8))))
         self.retry_scheduler.schedule(delay, self._retry_delivery, generation_id)
 
     def _replay_due_outbox_deliveries(self) -> None:
@@ -517,13 +628,15 @@ class DetailPageJobService:
         error: ErrorDto | None = None,
         worker_id: str | None = None,
     ) -> None:
-        job = self.repository.get(job_id)
-        job.status = status
-        job.progress = progress
-        job.error = error
-        job.updated_at = datetime.now(timezone.utc)
-        self.repository.save(
-            job,
+        def apply_status(job: JobRecord) -> None:
+            job.status = status
+            job.progress = progress
+            job.error = error
+            job.updated_at = datetime.now(timezone.utc)
+
+        self.repository.update(
+            job_id,
+            apply_status,
             worker_id=worker_id,
             lease_seconds=self.lease_seconds,
         )

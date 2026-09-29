@@ -4,7 +4,12 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .models import AssetMode, FidelityStatus, GenerationOptions, PhotoTransform
+from .models import (
+    AssetMode,
+    FidelityStatus,
+    GenerationOptions as GenerationOptions,
+    PhotoTransform,
+)
 from .react_document import ReactDetailPageDocumentDto
 
 
