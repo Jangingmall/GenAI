@@ -2,17 +2,18 @@
 
 상태: 2026-09-09 갱신 (초안). 아래 수치는 측정된 성능이 아닌 제안 목표다.
 현재 데이터는 실제 공개 이미지 `cma_real_v1`과 기존 통합 fixture를 분리해 관리한다.
-2026-09-09에 `cma_real_v1` 6개 카테고리 각 1건(총 6건) 파일럿 실행을 완료했으나, 60건 전체 평가는 아직 미실행 상태다.
+2026-09-09에 `cma_real_v1` 6개 카테고리 각 1건(총 6건) 파일럿 실행을 완료했다 ([파일럿 보고서](pilot-report-2026-09-09.md), 2026-09-09).
+이후 10차에서 같은 입력군의 60건 모델 실행을 60/60건 완료했다 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11).
 자세한 파일럿 실행 기록과 결함 분석은 [2026-09-09 파일럿 평가 1차 실행 결과 보고서](pilot-report-2026-09-09.md)를 참고한다.
-최근 4B 생성 2건은 pipeline smoke test이며 정량 평가 결과가 아니다.
+2026-09-08에 기록된 4B 생성 2건은 pipeline smoke test이며 정량 평가 결과가 아니다 ([로컬 생성 테스트 기록](../operations/local-generation-test-report.md), 2026-09-08).
 FE 구조 출력은 제한형 `react_document` JSON AST를 기준으로 평가하고, `page_plan`은 모델·편집·하위 호환 입력으로만 집계한다.
 
 ## 1. 영역과 집계
 
 | 영역 | 1차 목표 | 현재 데이터·실행 상태 | 판정 |
 |---|---:|---:|---|
-| 분석·카피 | 60 | `cma_real_v1` 분석 입력 60; 파일럿 6건 완료 (60건 전체 일괄 실행은 미실행) | 파일럿 6건 완료, 60건 전체 평가 미실행 |
-| 이미지·렌더링 | 60 | `cma_real_v1` 렌더링 준비 60; 파일럿 6건 완료 (60건 전체 일괄 실행은 미실행) | 파일럿 6건 완료, 60건 전체 평가 미실행 |
+| 분석·카피 | 60 | `cma_real_v1` 분석 입력 60; 파일럿 6건 완료 ([파일럿 보고서](pilot-report-2026-09-09.md), 2026-09-09); 10차에서 60건 전수 실행 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11) | 모델 실행 60/60건 완료 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11) |
+| 이미지·렌더링 | 60 | `cma_real_v1` 렌더링 입력 60; 파일럿 6건 완료 ([파일럿 보고서](pilot-report-2026-09-09.md), 2026-09-09); 10차에서 이미지 생성 포함 60건 전수 실행 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11) | 모델 실행 60/60건 완료 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11) |
 | API·상태·안전 | 60 | 기존 fixture 60(초안 42/저장 9/승인 9); 전용 set 없음 | 전용 50건 미확보 |
 
 구조 출력 계약은 모든 영역의 공통 자동 gate로 적용한다. `react_document`의 유효성은 별도
@@ -21,9 +22,12 @@ FE 구조 출력은 제한형 `react_document` JSON AST를 기준으로 평가�
 영역별 건수는 고유 입력/요청 시퀀스 기준이다. 동일 사례의 여러 지표 측정은 사례 수를 늘리지 않는다.
 기존 3개 상품 반복 fixture를 독립 상품 60건으로 보고하지 않는다. `cma_real_v1`은
 60개 실물 object로 구성된 별도 평가 입력이며, 6개 카테고리 각 10건이다.
-`cma_real_v1`의 파일럿 6건은 실행되었으나 사람 라벨 및 60건 전체 배치는 아직 pending/미실행이며, 전체 모델 실행 전까지 성능 수치의 분모로 사용하지 않는다.
+`cma_real_v1`의 모델 실행은 10차에 60/60건 완료됐다 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11).
+권리 최종 확인은 마지막 데이터 점검에서 대기 상태로 기록됐으며, 이후 승인 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+사람 정답 라벨도 당시 승인 대기였고, 이후 완료 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+사람 검수 점수는 수집되지 않았으므로, 60건 실행 성공을 사람 평가 성능이나 게시 승인으로 해석하지 않는다 ([Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22).
 
-### 현재 smoke test 기록
+### 2026-09-08 당시 smoke test 기록 ([로컬 생성 테스트 기록](../operations/local-generation-test-report.md), 2026-09-08)
 
 최근 `Gemma 12B + Flux2 Klein 4B` 조합으로 2건을 실행했다. `숨의잔`은 10섹션·774×4,341,
 부채는 10섹션·774×4,202로 생성됐으며 각각 Flux 생성 참고 컷 5장을 포함한다. 이 두 건은
@@ -86,8 +90,11 @@ P0/P1 위반 1건, 거절 자산 누출, 승인 전 게시, 근거 없는 핵심
 
 ## 5. 남은 데이터 작업
 
-[수집·권리·정제 계획](../data/collection-license-cleaning-plan.md)에 따라 `cma_real_v1`의
-권리·라벨 검수와 실제 Gemma/Flux 실행, 결과표 작성이 필요하다. API·상태·안전 영역은 별도
-고유 요청 50건 이상을 추가해야 한다. 기존 [60건 fixture](../../data/evaluation/detail_page_eval_60.jsonl)는
+`cma_real_v1`의 최종 권리 확인은 마지막 데이터 점검에서 대기 상태로 기록됐으며, 이후 완료 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+사람 정답 라벨 승인도 당시 대기 상태였으며, 이후 완료 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+모델 실행은 10차에서 60/60건 완료됐고 결과는 Phase 4 기능 평가 보고서에 정리됐다 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11; [Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22).
+사람 검수 점수는 수집되지 않았다 ([Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22).
+API·상태·안전 영역은 별도 고유 요청 50건 이상을 추가해야 한다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+기존 [60건 fixture](../../data/evaluation/detail_page_eval_60.jsonl)는
 스키마·회귀 준비에 사용하고, 공개 이미지 [CMA real v1](../../data/evaluation/cma_real_v1/README.md)은
 분석·렌더링 평가 입력으로 사용한다.

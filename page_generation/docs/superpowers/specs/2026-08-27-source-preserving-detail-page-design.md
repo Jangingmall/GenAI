@@ -6,8 +6,8 @@
 > 승인 draft에서 조립한 `react_document` schema v2.0 제한 AST다. `page_plan`은 입력/호환
 > 계획으로 유지하고, React AST는 `imageId` 자산 참조·허용 tag/tree·safe URL 검증을 통과한
 > 뒤 FE/BE 경계로 전달한다. 상세 필드와 전달 위치는 [BE/FE 연동 명세](../../api/be-fe-ai-integration-spec.md)를 따른다.
-> 이 문서에 남아 있는 Bedrock 예시는 당시 확장 설계이며, 현재 실행 경로는 로컬 Gemma + Flux2
-> MLX Serve다. 외부 provider는 현재 활성 계약에 포함하지 않는다.
+> 본문의 Bedrock·Gemma 모델명은 당시 설계 기록이며, 현재 로컬 기본 분석 모델은 MLX Serve의 `ddalcu/Qwen3.8-27B-MLX-Serve-4bit`다 ([로컬 LLM 경로](../../operations/local-llm.md), 2026-09-17).
+> 현재 로컬 기본 이미지 모델은 `mlx-community/flux2-klein-9b-4bit`이며, 외부 provider는 활성 계약에 포함하지 않는다 ([로컬 LLM 경로](../../operations/local-llm.md), 2026-09-17).
 
 ## 1. 목적
 

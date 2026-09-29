@@ -90,6 +90,7 @@
 
 ## 산출물
 
+- [`deliverables/README.md`](deliverables/README.md): 기존 문서 전체를 과정의 Phase 1~4 로 나눈 안내 (공통·제외 문서 포함)
 - [`deliverables-audit.md`](deliverables-audit.md): 산출물의 충족 여부·수정 사항·남은 작업 점검 결과
 - [`deliverables/01-implementation-checkpoint.md`](deliverables/01-implementation-checkpoint.md): AI 영역 1·2의 1차 구현 체크포인트와 근거 산출물 기준
 - [`deliverables/02-error-analysis.md`](deliverables/02-error-analysis.md): 상세페이지 AI 시스템 개발·평가 과정의 에러 분석 보고서
