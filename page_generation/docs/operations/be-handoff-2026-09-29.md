@@ -2,7 +2,7 @@
 
 - 작성: 2026-09-29 · 생성형 AI 팀 (상세페이지 생성)
 - AI 반영: GenAI [#45](https://github.com/Jangingmall/GenAI/pull/45) (작업 저장소 `377f1b5`)
-- BE 대조 기준: `Jangingmall/backend` `develop` `26dbd2b` (2026-09-29)
+- BE 대조 기준: `Jangingmall/backend` `develop` `dc26619` (2026-09-29)
 
 > 이 문서에서 BE 동작에 대한 설명은 **BE 코드를 읽고 확인한 것**입니다. 연동 테스트로 확인한 것은 아닙니다.
 
@@ -12,7 +12,7 @@
 
 | # | 내용 | BE 조치 |
 | --- | --- | --- |
-| 1 | 렌더 도중 같은 승인을 다시 보내면 **409 "Approval is already in progress"** 가 새로 옵니다 | **필요** — 409 를 실패로 처리하지 말아 주세요 |
+| 1 | 렌더 도중 같은 승인을 다시 보내면 **409 "Approval is already in progress"** 가 새로 옵니다 | 불필요 — BE 는 승인을 재시도하지 않아 받을 일이 없습니다. 대신 **승인 타임아웃 300초** 확인 |
 | 2 | 콜백에 **409·429 가 아닌 4xx** 로 응답하면 AI 가 **더 이상 재시도하지 않습니다** | **확인** — 일시적 오류는 5xx·429 로 응답하는지 |
 | 3 | 같은 결과가 두 번 콜백될 수 있습니다 | 불필요 — BE 가 이미 막고 있습니다 |
 | 4 | **BE-11 (승인·콜백 시점)** | 불필요 — BE 9/28 변경으로 풀린 것으로 보입니다. **확정만 해 주세요** |
@@ -39,11 +39,33 @@ HTTP 409
 | 렌더 완료 후 같은 승인 재요청 | 200 (저장된 결과) | 200 (저장된 결과) — 같음 |
 | 같은 멱등키에 다른 내용 | 409 "Idempotency key conflict" | 409 "Idempotency key conflict" — 같음 |
 
-### BE 에 부탁드리는 것
+### BE 에서는 평소 흐름에 영향이 없습니다
 
-- **"Approval is already in progress" 409 는 실패가 아닙니다.** 잠시 뒤 **같은 멱등키·같은 내용**으로 다시 보내면 완료된 결과(200)를 받습니다
-- 같은 409 라도 `"Idempotency key conflict"` 는 진짜 충돌입니다. **`detail` 로 구분**해 주세요
-- BE 의 승인 호출 타임아웃이 렌더 시간(수 분)보다 짧아서 재요청하는 구조라면 이 응답을 받게 됩니다
+BE 코드를 확인해 보니 `RestAiContentClient.approveRender` 는 승인을 **재시도 없이 한 번만** 보냅니다.
+그래서 이 409 는 **BE 가 같은 승인을 다시 보낼 때만** 나오고, 지금 흐름에서는 받을 일이 없습니다.
+나중에 재시도를 넣으신다면, 이 409 는 실패가 아니라 "잠시 뒤 다시 보내면 완료 결과를 받는다"는 뜻입니다.
+같은 409 라도 `"Idempotency key conflict"` 는 진짜 충돌이니 **`detail` 로 구분**해 주세요.
+
+### 대신 확인이 필요한 것 — 승인 호출 타임아웃 300초
+
+`application-prod.yml` 의 `ai.timeout-seconds` 가 **300초**이고, 승인 호출에도 이 값이 그대로 걸립니다.
+
+- 승인 호출은 **렌더가 끝나야** 응답이 돌아옵니다(사진 생성 + 페이지 캡처)
+- **L40S 에서의 렌더 시간은 아직 측정하지 못했습니다.** 로컬(Apple Silicon) 기준 분석+렌더 전체가 평균 254초였습니다
+- 렌더가 300초를 넘으면 BE 쪽 호출은 타임아웃 예외로 끝나지만, **AI 는 렌더를 계속해서 콜백으로 `COMPLETED` 를 보냅니다.**
+  BE 코드로는 이 경우 **결과가 정상 반영됩니다.**
+  - `ContentService.triggerAiRenderIfDraftReady` 가 예외를 잡아 로그(`AI 렌더 승인 요청 실패`)만 남깁니다.
+    콘텐츠 승인은 그대로 커밋되고 generation 은 `DRAFT_READY` 로 남습니다
+  - `GenerationDeadlineScheduler` 는 `QUEUED` 만 실패 처리하므로 `DRAFT_READY` 는 실패로 바뀌지 않습니다
+  - 이후 도착한 콜백을 `completeWithImages` 가 받아 `complete()` 로 `COMPLETED` 로 바꿉니다(상태 제한 없음)
+- 그래서 확인이 필요한 것은 두 가지입니다
+  - 타임아웃 때 남는 `AI 렌더 승인 요청 실패` 로그는 실제 실패가 아닙니다. 이 로그에 알람을 걸어 두셨다면 참고해 주세요
+  - `ContentService.approve` 가 `@Transactional` 이라 승인 호출을 기다리는 동안(최대 300초) DB 트랜잭션이 열려 있습니다.
+    이 부분이 괜찮은지는 BE 에서 판단해 주세요
+- 참고로 `.env.example` 의 `AI_TIMEOUT_SECONDS=30` 은 `application-local.yml` 에서만 쓰입니다. 로컬에서 이 값을 그대로 쓰면
+  승인이 30초 만에 타임아웃됩니다. 운영(`application-prod.yml`)은 300 고정이라 영향이 없습니다
+
+GPU 에서 렌더 시간을 측정하면 이 값이 충분한지 알려 드리겠습니다.
 
 ---
 
@@ -74,8 +96,9 @@ BE 응답에 따라 재시도 여부를 정합니다. 이번에 **재시도하�
 **일시적인 문제는 5xx 또는 429 로 응답해 주세요.** 예를 들어 DB 가 잠깐 바쁘거나 S3 업로드가 일시적으로
 실패한 경우를 4xx 로 응답하면, AI 는 영구 실패로 보고 다시 보내지 않습니다.
 
-`completeWithImages` 에서 generation 을 못 찾으면 `NotFoundException` 이 납니다. 이게 **404** 로 나간다면
-AI 는 재시도하지 않습니다. generation 이 **아직 커밋되기 전**에 콜백이 도착하는 경우가 있을 수 있다면 알려 주세요.
+`completeWithImages` 에서 generation 을 못 찾으면 `NotFoundException` 이 나고, `GlobalExceptionHandler` 가
+이를 `ErrorCode.NOT_FOUND` 로 **404** 응답합니다. 이 경우 AI 는 재시도하지 않습니다.
+generation 이 **아직 커밋되기 전**에 콜백이 도착하는 경우가 있을 수 있다면 알려 주세요.
 
 ---
 
@@ -163,6 +186,6 @@ AI 쪽도 맞물립니다. 상태 조회 응답의 `status` 에 `DRAFT_READY` �
 
 ## 6. 회신 부탁드립니다
 
-1. **승인 409** — BE 가 승인 호출에서 `"Approval is already in progress"` 409 를 받으면 재시도로 처리할 수 있나요?
+1. **승인 타임아웃** — 1절의 코드 해석(타임아웃 뒤에도 콜백으로 `COMPLETED` 복구)이 맞는지, 승인 호출 동안 트랜잭션이 열려 있는 것이 괜찮은지 확인해 주세요.
 2. **콜백 응답 코드** — 콜백 처리 중 일시적 오류를 4xx 로 돌려주는 경우가 있나요? 특히 generation 을 못 찾을 때 404 가 나가나요?
 3. **BE-11** — 9/28 의 폴링 방식이 확정 결정인지, 그리고 Stage 연동 테스트 일정을 알려 주세요.
