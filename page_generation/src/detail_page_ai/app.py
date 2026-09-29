@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
+from starlette.concurrency import run_in_threadpool
 
 from .ai_dto import (
     AiToBeAcceptedResponseDto,
@@ -30,6 +31,7 @@ from .fe_dto import (
     AiFeResultResponseDto,
 )
 from .service import (
+    ApprovalInProgressError,
     CapacityExceededError,
     DetailPageJobService,
     DraftVersionConflictError,
@@ -295,7 +297,8 @@ async def approve_detail_page(
     except Exception as exc:
         raise HTTPException(status_code=503, detail="AI service is unavailable") from exc
     try:
-        pipeline_result = service.pipeline.run(
+        pipeline_result = await run_in_threadpool(
+            service.pipeline.run,
             job_id=f"approved-{uuid.uuid4()}",
             request_id=request_id or str(uuid.uuid4()),
             source_image=image_bytes,
@@ -411,7 +414,8 @@ async def save_internal_detail_page_draft(
     """Persist creator edits while keeping the preview as restricted React JSON."""
     _require_internal_auth(x_ai_internal_token)
     try:
-        return get_service().save_draft(
+        return await run_in_threadpool(
+            get_service().save_draft,
             job_id,
             request.draft,
             expected_version=request.version,
@@ -451,7 +455,8 @@ async def approve_internal_detail_page(
         if hasattr(service, "approve_draft"):
             if not request.draft_id:
                 raise ValueError("draft_id is required for internal approval")
-            pipeline_result = service.approve_draft(
+            pipeline_result = await run_in_threadpool(
+                service.approve_draft,
                 request.draft_id,
                 request.draft,
                 request_id=request.request_id,
@@ -467,7 +472,8 @@ async def approve_internal_detail_page(
                 raise ValueError("product_image is required for legacy approval")
             image_bytes = await _read_primary_source_image(product_image)
             additional_source_images = await _read_additional_source_images(product_images)
-            pipeline_result = service.pipeline.run(
+            pipeline_result = await run_in_threadpool(
+                service.pipeline.run,
                 job_id=f"approved-{uuid.uuid4()}",
                 request_id=request.request_id or str(uuid.uuid4()),
                 source_image=image_bytes,
@@ -478,6 +484,8 @@ async def approve_internal_detail_page(
                 product_id=request.product_id,
                 source_asset_id=request.source_asset_id,
             )
+    except ApprovalInProgressError as exc:
+        raise HTTPException(status_code=409, detail="Approval is already in progress") from exc
     except IdempotencyConflictError as exc:
         raise HTTPException(status_code=409, detail="Idempotency key conflict") from exc
     except KeyError as exc:
@@ -523,8 +531,11 @@ async def save_detail_page_draft(
     _legacy_demo: None = Depends(_require_legacy_demo_api),
 ):
     try:
-        return get_service().save_draft(
-            job_id, request.draft, expected_version=request.version
+        return await run_in_threadpool(
+            get_service().save_draft,
+            job_id,
+            request.draft,
+            expected_version=request.version,
         )
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Draft not found") from exc

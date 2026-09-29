@@ -525,7 +525,7 @@ source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 �
 | `400` | 이미지·JSON·옵션 형식 오류 |
 | `401` | 내부 토큰 오류 |
 | `404` | 작업 또는 draft 없음 |
-| `409` | 멱등키 충돌 또는 draft 버전 충돌 |
+| `409` | 멱등키 충돌, draft 버전 충돌, 또는 승인 렌더 진행 중 (`detail` 로 구분) |
 | `413` | 이미지 개수·용량 초과 |
 | `429` | AI 처리 용량 초과 |
 | `503` | AI 설정 또는 서비스 불가 |
@@ -534,6 +534,9 @@ source_original은 hero 대표 이미지에 촬영 원본을 손대지 않고 �
 
 - 같은 `Idempotency-Key`와 같은 payload는 기존 작업·결과를 재사용한다.
 - 같은 키에 다른 payload를 보내면 `409`다.
+- **승인 렌더가 진행 중일 때** 같은 승인을 다시 보내면 `409 {"detail": "Approval is already in progress"}` 다.
+  실패가 아니다. 잠시 뒤 같은 요청을 다시 보내면 완료된 결과를 받는다. 멱등키 충돌(`"Idempotency key conflict"`)과는
+  `detail` 로 구분한다. (2026-09-29 추가 — 이전에는 첫 렌더가 끝날 때까지 응답이 지연됐다)
 - BE 저장 중복은 `ALREADY_SAVED`로 처리한다.
 - 결과 매칭 키는 `product_id`, `job_id`, `generation_id`다.
 

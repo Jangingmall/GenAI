@@ -13,7 +13,6 @@ from .dto import (
     AiFeDraftPreviewDto,
     AiFeDraftResultDto,
     AiFeProductSummaryDto,
-    AiFeStatusResponse,
     FeDetailPageSectionDto,
     FeProductPhotoDto,
     GenerationMetadataDto,
@@ -24,7 +23,7 @@ from .dto import (
     ApprovedDraftDto,
     UserHintsDto,
 )
-from .models import GeneratedImage, GenerationOptions, ProductPhotoSet
+from .models import GenerationOptions, ProductPhotoSet
 from .leases import LeaseHeartbeat
 from .ports import (
     BackendSink,
@@ -450,7 +449,10 @@ class DetailPagePipeline:
                 except BackendDeliveryError as exc:
                     heartbeat.ensure_active()
                     self.outbox.mark_failed(
-                        generation_id, str(exc), delivery_owner
+                        generation_id,
+                        str(exc),
+                        delivery_owner,
+                        retryable=exc.retryable,
                     )
                     return PipelineResult(
                         generation_id=generation_id,
@@ -650,7 +652,10 @@ class DetailPagePipeline:
                 except BackendDeliveryError as exc:
                     heartbeat.ensure_active()
                     self.outbox.mark_failed(
-                        generation_id, str(exc), delivery_owner
+                        generation_id,
+                        str(exc),
+                        delivery_owner,
+                        retryable=exc.retryable,
                     )
                     raise
                 heartbeat.ensure_active()

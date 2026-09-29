@@ -180,9 +180,10 @@ def test_service_persists_actual_stage_order():
             super().__init__()
             self.saved_statuses = []
 
-        def save(self, record, worker_id=None, lease_seconds=300):
+        def update(self, job_id, change, worker_id=None, lease_seconds=300):
+            record = super().update(job_id, change, worker_id, lease_seconds)
             self.saved_statuses.append(record.status)
-            super().save(record, worker_id, lease_seconds)
+            return record
 
     executor = ControlledExecutor()
     repository = RecordingRepository()
