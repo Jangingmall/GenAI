@@ -29,10 +29,10 @@ def test_project_assets_docs_and_generated_outputs_are_grouped():
         ROOT / "deploy/sglang/Dockerfile",
         ROOT / "deploy/sglang/entrypoint.sh",
         ROOT / "deploy/docker/sglang-diffusion.Dockerfile",
-        ROOT / "docs/api/ai-dto-contract.md",
-        ROOT / "docs/api/ai-fe-io-spec.md",
-        ROOT / "docs/operations/local-llm.md",
-        ROOT / "docs/references/product-photography.md",
+        ROOT / "docs/phase3/api/ai-dto-contract.md",
+        ROOT / "docs/phase3/api/ai-fe-io-spec.md",
+        ROOT / "docs/phase4/operations/local-llm.md",
+        ROOT / "docs/internal/product-photography.md",
         ROOT / "tests/fixtures/full60",
         ROOT / "tests/fixtures/images-2",
     ]
@@ -87,7 +87,7 @@ def test_runtime_references_use_canonical_paths():
         ROOT / "scripts/browser/test_draft_preview.mjs",
         ROOT / "scripts/browser/test_input_page.mjs",
         ROOT / "web/ai_draft_preview.js",
-        ROOT / "docs/operations/local-llm.md",
+        ROOT / "docs/phase4/operations/local-llm.md",
     ]
     legacy_references = (
         "images.jpeg",

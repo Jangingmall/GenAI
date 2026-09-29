@@ -38,7 +38,7 @@ src/          운영 파이프라인과 로컬 LLM 파이프라인
 web/          AI 입력·상세페이지 미리보기 화면
 scripts/      실행·렌더링·브라우저 테스트 스크립트
 tests/        Python 구조·도메인 테스트
-docs/         API·운영·참고 문서 ([문서 안내](docs/README.md))
+docs/         Phase 1~4별 산출물·계약·운영 문서 ([문서 안내](docs/README.md))
 generated/    샘플·실험·미리보기·검증 결과
 .local/       모델·SQLite·로컬 런타임 상태
 ```
@@ -72,7 +72,7 @@ FE 구조 출력은 [`src/detail_page_ai/react_document.py`](src/detail_page_ai/
 
 ## 로컬 실행 (Mac · MLX Serve)
 
-이 절은 Mac 로컬 개발 구성에만 해당합니다. 서버 운영 구성은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)의 SGLang 경로를 사용합니다.
+이 절은 Mac 로컬 개발 구성에만 해당합니다. 서버 운영 구성은 [Ubuntu 배포 가이드](docs/phase4/operations/ubuntu-deployment.md)의 SGLang 경로를 사용합니다.
 
 ```bash
 cp local.env.example .env
@@ -163,8 +163,8 @@ API와 DB는 이 AI 저장소의 구현 범위가 아닙니다.
 
 내부 API는 `AI_INTERNAL_AUTH_TOKEN`과 `X-AI-Internal-Token`을 사용합니다. 로컬 데모 페이지는
 BE가 없으므로 기존 `/api/v1/ai/*` direct 경로를 호환용으로 사용합니다. 자세한 DTO는
-[`docs/api/ai-dto-contract.md`](docs/api/ai-dto-contract.md)를, FE React JSON 상세 계약은
-[`docs/api/react-json-output-contract.md`](docs/api/react-json-output-contract.md)를 참고합니다.
+[`docs/phase3/api/ai-dto-contract.md`](docs/phase3/api/ai-dto-contract.md)를, FE React JSON 상세 계약은
+[`docs/phase3/api/react-json-output-contract.md`](docs/phase3/api/react-json-output-contract.md)를 참고합니다.
 
 ### React JSON 출력
 
@@ -187,7 +187,7 @@ QUEUED → ANALYZING → EXTRACTING → DRAFT_READY
 → RENDERING → DELIVERING → COMPLETED | FAILED
 ```
 
-FE·BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-dto-contract.md), FE 화면 명세는 [`docs/api/ai-fe-io-spec.md`](docs/api/ai-fe-io-spec.md), 로컬 모델 실행은 [`docs/operations/local-llm.md`](docs/operations/local-llm.md), 전체 설계·평가·안전성 기준은 [`docs/architecture/ai-architecture-and-safety.md`](docs/architecture/ai-architecture-and-safety.md)를 참고합니다.
+FE·BE·AI 경계 계약은 [`docs/phase3/api/ai-dto-contract.md`](docs/phase3/api/ai-dto-contract.md), FE 화면 명세는 [`docs/phase3/api/ai-fe-io-spec.md`](docs/phase3/api/ai-fe-io-spec.md), 로컬 모델 실행은 [`docs/phase4/operations/local-llm.md`](docs/phase4/operations/local-llm.md), 전체 설계·평가·안전성 기준은 [`docs/common/ai-architecture-and-safety.md`](docs/common/ai-architecture-and-safety.md)를 참고합니다.
 
 ## 로컬 영속성
 
@@ -200,11 +200,11 @@ FE·BE·AI 경계 계약은 [`docs/api/ai-dto-contract.md`](docs/api/ai-dto-cont
 - BE 실패 결과는 재시작 후에도 같은 `generation_id`로 재전송
 - URL을 제공하는 운영 자산 저장소에서는 `RESPONSE_ASSET_MODE=url`로 Base64 중복을 제거
 
-Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준으로 하고, 서버 운영은 Ubuntu Docker Compose와 SGLang 모델 서버를 기준으로 합니다. BE 적재 URL은 선택적으로 사용할 수 있으며, 외부 모델 API·검색 API·클라우드 credential은 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/operations/local-generation-test-report.md`](docs/operations/local-generation-test-report.md)에 정리되어 있고, 이미지 생성 기본값은 두 경로 모두 9B 모델입니다.
+Mac 로컬 개발은 로컬 파일/SQLite와 MLX Serve 모델 서버를 기준으로 하고, 서버 운영은 Ubuntu Docker Compose와 SGLang 모델 서버를 기준으로 합니다. BE 적재 URL은 선택적으로 사용할 수 있으며, 외부 모델 API·검색 API·클라우드 credential은 호출하지 않습니다. Flux2 Klein 4B 전용 endpoint를 사용한 실제 2건 생성 기록은 [`docs/phase3/runs/local-generation-test-report.md`](docs/phase3/runs/local-generation-test-report.md)에 정리되어 있고, 이미지 생성 기본값은 두 경로 모두 9B 모델입니다.
 
 ## 서버 배포 (Ubuntu · SGLang)
 
-서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. EKS 배포를 위해 단일 GPU에서 3개 서비스를 통합 실행하는 단일 컨테이너 이미지(`deploy/sglang/Dockerfile`, `deploy/sglang/entrypoint.sh`) 구성도 함께 제공합니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/operations/ubuntu-deployment.md)를 따릅니다.
+서버 운영은 AWS EC2 `g6e.xlarge`(NVIDIA L40S 48GB, Ubuntu) 단일 호스트에서 Docker Compose로 `detail-page-ai`(CPU 전용, `8000`), `sglang-text`(Qwen 텍스트·비전, `30000`), `sglang-image`(FLUX 이미지 생성·편집, `30001`)를 구동하는 SGLang 확정 구성입니다. EKS 배포를 위해 단일 GPU에서 3개 서비스를 통합 실행하는 단일 컨테이너 이미지(`deploy/sglang/Dockerfile`, `deploy/sglang/entrypoint.sh`) 구성도 함께 제공합니다. 텍스트 모델은 `cyankiwi/Qwen3.8-27B-AWQ-INT4`를 `qwen-text`로, 이미지 모델은 `circulus/FLUX.2-klein-9B-bnb-4bit`를 `flux-klein`으로 노출하며, AI 서비스는 `LOCAL_TEXT_PROVIDER=sglang`, `LOCAL_IMAGE_PROVIDER=sglang`, `BACKGROUND_PROVIDER=sglang`과 해당 공개 모델명을 사용합니다. 자세한 기동·헬스체크·메모리 예산은 [Ubuntu 배포 가이드](docs/phase4/operations/ubuntu-deployment.md)를 따릅니다.
 
 현재 Mac 로컬에서 `docker compose -f deploy/docker-compose.yml config`, 서비스 이미지 arm64 빌드·기동·healthy 상태와 amd64 빌드는 확인했지만, **서버 GPU 에서는 아직 한 번도 실행되지 않았으며**, 두 SGLang 프로세스 동시 적재·4bit 파이프라인·편집 품질·처리 시간은 첫 배포 실측을 통해 확인해야 합니다.
 
@@ -241,8 +241,8 @@ npm run render:detail-page -- \
 - **품질 게이트**:
   - `scripts/check_cutout_fidelity.py`: 원본 대비 컷아웃 제품 픽셀 보존율(fidelity) 검증 (심각 손실 또는 산출물 누락 발생 시 종료 코드 1)
   - `scripts/check_scene_direction_coverage.py`: 카테고리별 배경 씬 연출 분기 매핑 및 기본값·오분류 검증 (기본값 또는 오분류 발생 시 종료 코드 1)
-- **사람 검수**: `scripts/build_review_sheet.py`로 4대 축(사실성·명료성·상품성·시각품질) 검수 CSV 시트 생성, 평가 기준은 [`docs/evaluation/human-review-guide.md`](docs/evaluation/human-review-guide.md)
-- **실행 기록**: 1차 파일럿 결과는 [`docs/evaluation/pilot-report-2026-09-09.md`](docs/evaluation/pilot-report-2026-09-09.md)에 기록
+- **사람 검수**: `scripts/build_review_sheet.py`로 4대 축(사실성·명료성·상품성·시각품질) 검수 CSV 시트 생성, 평가 기준은 [`docs/phase2/human-review-guide.md`](docs/phase2/human-review-guide.md)
+- **실행 기록**: 1차 파일럿 결과는 [`docs/phase3/runs/pilot-report-2026-09-09.md`](docs/phase3/runs/pilot-report-2026-09-09.md)에 기록
 
 ## 테스트
 

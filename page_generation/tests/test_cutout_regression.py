@@ -28,7 +28,7 @@ from detail_page_ai.source_photos import SolidBackgroundCutoutExtractor
 
 PILOT_DIR = PROJECT_ROOT / "generated/evaluation/full60-20260910-204433"
 RUN_INDEX = PILOT_DIR / "run_index.json"
-BASELINE_JSON = PROJECT_ROOT / "docs/evaluation/cutout-baseline-metrics.json"
+BASELINE_JSON = PROJECT_ROOT / "docs/phase4/evaluation/cutout-baseline-metrics.json"
 
 
 def test_diagnose_rejection_corner_non_uniform() -> None:

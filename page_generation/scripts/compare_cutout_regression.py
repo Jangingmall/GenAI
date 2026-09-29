@@ -6,7 +6,7 @@ Directly invokes SolidBackgroundCutoutExtractor across the evaluation image data
   1. Cutout execution rate and breakdown of rejection reasons.
   2. Erosion risk (measuring product body damage, internal holes, discarded pixels).
   3. Background remnant ratio (measuring edge touches and enclosed loops).
-  4. Ground truth alignment against docs/evaluation/cutout-ground-truth.md.
+  4. Ground truth alignment against docs/phase4/evaluation/cutout-ground-truth.md.
   5. Side-by-side comparison between baseline and candidate runs (identifying
      IMPROVED, REGRESSED, and UNCHANGED cases at the case_id level).
 """
