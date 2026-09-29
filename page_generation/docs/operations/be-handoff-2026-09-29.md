@@ -2,7 +2,7 @@
 
 - 작성: 2026-09-29 · 생성형 AI 팀 (상세페이지 생성)
 - AI 반영: GenAI [#45](https://github.com/Jangingmall/GenAI/pull/45) (작업 저장소 `377f1b5`)
-- BE 대조 기준: `Jangingmall/backend` `develop` `26dbd2b` (2026-09-29)
+- BE 대조 기준: `Jangingmall/backend` `develop` `dc26619` (2026-09-29)
 
 > 이 문서에서 BE 동작에 대한 설명은 **BE 코드를 읽고 확인한 것**입니다. 연동 테스트로 확인한 것은 아닙니다.
 
@@ -53,8 +53,15 @@ BE 코드를 확인해 보니 `RestAiContentClient.approveRender` 는 승인을 
 - 승인 호출은 **렌더가 끝나야** 응답이 돌아옵니다(사진 생성 + 페이지 캡처)
 - **L40S 에서의 렌더 시간은 아직 측정하지 못했습니다.** 로컬(Apple Silicon) 기준 분석+렌더 전체가 평균 254초였습니다
 - 렌더가 300초를 넘으면 BE 쪽 호출은 타임아웃 예외로 끝나지만, **AI 는 렌더를 계속해서 콜백으로 `COMPLETED` 를 보냅니다.**
-  BE 가 이 타임아웃 예외를 받았을 때 generation 을 어떻게 처리하는지 확인해 주세요. 실패로 표시하더라도
-  이후 도착하는 콜백이 `COMPLETED` 로 덮어쓰는지(`complete()` 에 상태 제한이 없어 덮어쓸 것으로 보입니다)도 함께 봐 주세요
+  BE 코드로는 이 경우 **결과가 정상 반영됩니다.**
+  - `ContentService.triggerAiRenderIfDraftReady` 가 예외를 잡아 로그(`AI 렌더 승인 요청 실패`)만 남깁니다.
+    콘텐츠 승인은 그대로 커밋되고 generation 은 `DRAFT_READY` 로 남습니다
+  - `GenerationDeadlineScheduler` 는 `QUEUED` 만 실패 처리하므로 `DRAFT_READY` 는 실패로 바뀌지 않습니다
+  - 이후 도착한 콜백을 `completeWithImages` 가 받아 `complete()` 로 `COMPLETED` 로 바꿉니다(상태 제한 없음)
+- 그래서 확인이 필요한 것은 두 가지입니다
+  - 타임아웃 때 남는 `AI 렌더 승인 요청 실패` 로그는 실제 실패가 아닙니다. 이 로그에 알람을 걸어 두셨다면 참고해 주세요
+  - `ContentService.approve` 가 `@Transactional` 이라 승인 호출을 기다리는 동안(최대 300초) DB 트랜잭션이 열려 있습니다.
+    이 부분이 괜찮은지는 BE 에서 판단해 주세요
 - 참고로 `.env.example` 의 `AI_TIMEOUT_SECONDS=30` 은 `application-local.yml` 에서만 쓰입니다. 로컬에서 이 값을 그대로 쓰면
   승인이 30초 만에 타임아웃됩니다. 운영(`application-prod.yml`)은 300 고정이라 영향이 없습니다
 
@@ -89,8 +96,9 @@ BE 응답에 따라 재시도 여부를 정합니다. 이번에 **재시도하�
 **일시적인 문제는 5xx 또는 429 로 응답해 주세요.** 예를 들어 DB 가 잠깐 바쁘거나 S3 업로드가 일시적으로
 실패한 경우를 4xx 로 응답하면, AI 는 영구 실패로 보고 다시 보내지 않습니다.
 
-`completeWithImages` 에서 generation 을 못 찾으면 `NotFoundException` 이 납니다. 이게 **404** 로 나간다면
-AI 는 재시도하지 않습니다. generation 이 **아직 커밋되기 전**에 콜백이 도착하는 경우가 있을 수 있다면 알려 주세요.
+`completeWithImages` 에서 generation 을 못 찾으면 `NotFoundException` 이 나고, `GlobalExceptionHandler` 가
+이를 `ErrorCode.NOT_FOUND` 로 **404** 응답합니다. 이 경우 AI 는 재시도하지 않습니다.
+generation 이 **아직 커밋되기 전**에 콜백이 도착하는 경우가 있을 수 있다면 알려 주세요.
 
 ---
 
@@ -178,6 +186,6 @@ AI 쪽도 맞물립니다. 상태 조회 응답의 `status` 에 `DRAFT_READY` �
 
 ## 6. 회신 부탁드립니다
 
-1. **승인 타임아웃** — `approveRender` 가 300초 타임아웃으로 끝났을 때 generation 을 어떻게 처리하나요? 이후 도착하는 `COMPLETED` 콜백으로 정상 복구되나요?
+1. **승인 타임아웃** — 1절의 코드 해석(타임아웃 뒤에도 콜백으로 `COMPLETED` 복구)이 맞는지, 승인 호출 동안 트랜잭션이 열려 있는 것이 괜찮은지 확인해 주세요.
 2. **콜백 응답 코드** — 콜백 처리 중 일시적 오류를 4xx 로 돌려주는 경우가 있나요? 특히 generation 을 못 찾을 때 404 가 나가나요?
 3. **BE-11** — 9/28 의 폴링 방식이 확정 결정인지, 그리고 Stage 연동 테스트 일정을 알려 주세요.
