@@ -2,7 +2,10 @@
 
 > 2026-09-08 최신화: 이 문서의 지표는 제안 목표다. 측정 결과와 배포 승인으로 해석하지 않는다.
 > 계산·분모·표본 한계는 [평가 지표 정의서](../evaluation/metrics-definition.md)를 우선한다.
-> 실제 공개 실물 입력은 `cma_real_v1` 60건으로 세팅했지만, 현재는 파일·decode·hash·라이선스 표시 검증까지만 완료했고 권리 최종 확인과 사람 정답 라벨은 대기 중이다.
+> 실제 공개 실물 입력 `cma_real_v1` 60건은 파일·decode·hash·라이선스 표시 검증을 거쳤고 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08), 10차에서 모델 실행 60/60건을 완료했다 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11).
+> 권리 최종 확인은 마지막 데이터 점검에서 대기 상태로 기록됐으며, 이후 승인 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+> 사람 정답 라벨도 당시 승인 대기였고, 이후 완료 근거는 확인 필요다 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08).
+> 사람 검수 점수는 수집되지 않았다 ([Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22).
 > 기존 `detail_page_eval_60`은 3상품 기반 통합·회귀 fixture다. 총 60건은 50~200건 범위에 있지만 영역별 50~200건을 충족하지 않으며, 일반화 성능의 독립 holdout으로 사용하지 않는다.
 
 ## 정책 적용 범위 정정
@@ -52,7 +55,7 @@ GENERATED는 픽셀 보존 검증 성공을 의미하지 않는다. 허용 슬�
 
 | 데이터셋 | 구성 | 현재 확인 상태 | 사용 목적 |
 |---|---|---|---|
-| `cma_real_v1` | 공개 실물 JPEG 60건, 6개 영역 각 10건, `analysis_60.jsonl`·`rendering_60.jsonl` | 파일·decode·SHA-256·라이선스 표시 검증 통과; 권리 최종 확인·사람 라벨·모델 실행 대기 | 실제 이미지 일반화 평가의 후보 입력 |
+| `cma_real_v1` | 공개 실물 JPEG 60건, 6개 영역 각 10건, `analysis_60.jsonl`·`rendering_60.jsonl` | 모델 실행: 60/60건 완료 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11); 권리 최종 확인: 마지막 점검에서 대기, 이후 완료 근거 확인 필요 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08); 사람 정답 라벨: 마지막 점검에서 대기, 이후 완료 근거 확인 필요 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08); 사람 검수 점수: 없음 ([Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22) | 실제 이미지 일반화 평가의 후보 입력 |
 | `detail_page_eval_60` | 3상품 기반 60건: `draft_generation` 42, `draft_save` 9, `approval_render` 9 | 구조·계약·상태·멱등성 회귀에 사용 | 통합·회귀 테스트 |
 
 `cma_real_v1`은 프로젝트 파일 기준으로 기존 fixture와 분리되어 있지만, 공개 모델의 사전학습

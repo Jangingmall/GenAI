@@ -373,7 +373,7 @@ Browser :4173 → FastAPI :8000 → SQLite/파일 저장소
 
 | 입력군 | 건수·구성 | 현재 상태 | 용도 |
 |---|---|---|---|
-| `cma_real_v1` | 공개 실물 JPEG 60건, 6개 영역 각 10건 | 파일·decode·hash·라이선스 표시 검증 완료; 권리 최종 확인·사람 라벨·모델 실행 대기 | 분석·렌더링 평가 후보 |
+| `cma_real_v1` | 공개 실물 JPEG 60건, 6개 영역 각 10건 | 모델 실행: 60/60건 완료 ([10차 실험 보고서](../deliverables/experiments/round-10/03-experiment-report.md), 2026-09-11); 권리 최종 확인: 마지막 점검에서 대기, 이후 완료 근거 확인 필요 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08); 사람 정답 라벨: 마지막 점검에서 대기, 이후 완료 근거 확인 필요 ([수집·권리·정제 계획](../data/collection-license-cleaning-plan.md), 2026-09-08); 사람 검수 점수: 없음 ([Phase 4 기능 평가](../deliverables/phase4/01-ai-evaluation-report.md), 2026-09-22) | 분석·렌더링 평가 후보 |
 | `detail_page_eval_60` | 3상품 fixture, 42/9/9 단계 분할 | 계약·상태·멱등성 회귀용 | 통합 회귀 |
 
 60건 CMA 입력은 총량 기준 50~200건 범위지만 영역별 50~200건 목표에는 미달한다. 두 최신

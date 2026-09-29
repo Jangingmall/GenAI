@@ -8,9 +8,9 @@
 
 > [!IMPORTANT]
 > **현재 확정 운영 경로와 EKS 현황 (정본 사실 기록)**:
-> 1. **확정된 운영 경로**: 단일 호스트(AWS EC2 `g6e.xlarge`, 1x NVIDIA L40S 48GB, Ubuntu) + `docker compose` 기반 3개 서비스(`detail-page-ai`, `sglang-text`, `sglang-image`) 공존 구성이다.
-> 2. **EKS 현황 (미결정 상태)**: 현재 저장소에는 EKS 전용 산출물(Deployment/Service/PVC 매니페스트, Helm 차트, ECR 푸시 스크립트 등)이 전무하며, EKS 배포 경로는 아직 확정되지 않은 **미결정 상태**이다. 본 문서의 EKS 관련 서술(단일 파드 + EBS PVC, HPA 제약 등)은 **"EKS로 갈 경우의 설계안"**으로 정리·보존한다.
-> 3. **검증 상태 (과장 금지)**: 로컬 단위 테스트 358개 통과, `docker compose -f deploy/docker-compose.yml config` 유효성, `detail-page-ai` 서비스 컨테이너 arm64 빌드·기동·healthy 확인 및 amd64 빌드 확인은 완료되었다. 그러나 **GPU 에서는 한 번도 실행되지 않았다.** 두 모델 동시 적재, 4-bit 파이프라인 로딩, 편집 품질, 처리 시간 모두 미검증 상태이며 첫 배포 실측을 통해 확인해야 한다.
+> 1. **Compose 설계 기준**: 단일 호스트(AWS EC2 `g6e.xlarge`, 1x NVIDIA L40S 48GB, Ubuntu)에서 `docker compose`로 3개 서비스(`detail-page-ai`, `sglang-text`, `sglang-image`)를 공존시키는 구성을 문서화했다 ([AWS 이관 체크리스트](aws-migration-checklist.md), 2026-09-16). 이는 GPU 추론 성공 기록이 아니다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
+> 2. **EKS Stage 및 운영 전환 상태**: EKS용 `deploy/sglang/Dockerfile`의 `linux/amd64` 이미지는 빌드됐고 컨테이너의 import·`DRY_RUN`·FastAPI `/health`까지 확인됐다 ([EKS 워크로드 사양](eks-workload-spec.md), 2026-09-18). Stage EKS 기동은 시도됐으나 동시 시작으로 텍스트 서버 캐시 예산이 음수가 됐고, 텍스트 서버 준비 후 이미지 서버를 시작하도록 수정한 새 이미지가 발행됐다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23). 이 기록만으로 EKS 운영 전환 확정 여부는 확인할 수 없다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
+> 3. **검증 상태**: 이미지 빌드와 Stage 기동 시도는 확인되지만, 수정본의 L40S 재기동과 GPU에서의 두 모델 동시 적재·상세페이지 추론 성공·편집 품질·처리 시간은 아직 확인되지 않았다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
 
 > [!NOTE]
 > **성능 수치 기준선 (로컬 베이스라인 vs AWS)**:  
@@ -40,7 +40,7 @@
 ### 갭 1. Apple Silicon 전용 MLX Serve 종속성 — [해소됨]
 - **초기 현상**: MLX Serve는 macOS/Apple Silicon 전용 프레임워크로, AWS EC2 Linux CUDA 환경에서는 바이너리가 실행되지 않았다.
 - **해소 상태 및 근거**: Linux CUDA 호환 SGLang v0.5.19 서빙 스택으로 전면 교체 확정되었다. 텍스트 분석용 `sglang-text`(포트 30000)와 이미지 생성·편집용 `sglang-image`(포트 30001)를 Docker Compose로 구성 완료했다.
-- **남은 확인 사항**: 로컬 Compose 설정 검증은 완료되었으나, **GPU 환경에서 실제로 컨테이너를 기동한 이력은 없다.** 첫 배포 시 L40S 인스턴스에서의 실기동 및 VRAM 분할 동작을 확인해야 한다.
+- **남은 확인 사항**: 2026-09-23 Stage EKS에서 GPU 컨테이너 기동을 시도했지만 텍스트 서버 캐시 예산 오류로 완주하지 못했고, 기동 순서 수정 후 L40S 재검증은 남아 있다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
 
 ### 갭 2. 가중치 포맷 불일치 — [해소됨]
 - **초기 현상**: 로컬 가중치(`ddalcu/Qwen3.8-27B-MLX-Serve-4bit`, `mlx-community/flux2-klein-9b-4bit`)는 MLX 전용 포맷이었다.
@@ -78,9 +78,10 @@
 
 ## 4. 운영 및 이관 경로
 
-### 확정 운영 경로: 단일 g6e.xlarge + Docker Compose (단일 호스트 공존)
+### Compose 설계 기준: 단일 g6e.xlarge + Docker Compose (단일 호스트 공존)
 
-현재 프로젝트에서 확정 및 검증된 운영 경로는 단일 AWS EC2 `g6e.xlarge` 인스턴스 상에서 Docker Compose로 3개 서비스를 구동하는 방식이다.
+이 절은 단일 AWS EC2 `g6e.xlarge` 인스턴스에서 Docker Compose로 3개 서비스를 구동하는 설계와 로컬 구성 검증을 설명한다 ([AWS 이관 체크리스트](aws-migration-checklist.md), 2026-09-16).
+2026-09-23 Stage EKS 기동 시도와 수정은 별도 경로이며, 어느 쪽도 GPU 추론 완주가 확인된 운영 배포로 기록되지 않았다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
 
 ```text
 [Host: AWS EC2 g6e.xlarge (1x NVIDIA L40S 48GB, Ubuntu)]
@@ -97,12 +98,12 @@
 
 ---
 
-### EKS 로 갈 경우의 설계안 (현재 미결정 상태)
+### EKS Stage 기동 시도와 운영 전환 검토
 
 > [!IMPORTANT]
 > **EKS 현황 사실 명시 (4가지 기술 차이)**:  
-> 현재 저장소에는 EKS 전용 산출물(Deployment/Service/PVC 매니페스트, Helm 차트, ECR 푸시 스크립트 등)이 전무하며, EKS 배포 경로는 **미결정 상태**이다.  
-> EKS로 전환하기 위해서는 다음 4가지 핵심 차이점이 반드시 해결되어야 한다:
+> EKS용 `linux/amd64` 이미지는 2026-09-18에 빌드됐고, 2026-09-23 Stage에서 기동을 시도했다 ([EKS 워크로드 사양](eks-workload-spec.md), 2026-09-18; [Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23). 동시 시작에 따른 텍스트 서버 캐시 예산 오류를 수정한 뒤의 GPU 추론 성공은 아직 확인되지 않았으며, 운영 전환 결정도 확인 필요다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
+> 다음 4가지는 당시 EKS 전환 설계에서 정리한 기술 차이이며, Stage 매니페스트에 실제 반영됐는지는 확인 필요다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23):
 > 1. **K8s probe 매핑 (`deploy/Dockerfile` HEALTHCHECK 무시)**: K8s는 `deploy/Dockerfile`의 `HEALTHCHECK` 지시자를 무시하므로 매니페스트에 probe를 직접 정의해야 한다. 현재 FastAPI에는 전용 헬스체크 엔드포인트(`GET /health`, readiness용 `GET /health/ready`, 200 OK)가 이미 구현되어 있으므로 K8s의 `httpGet` probe로 바로 매핑할 수 있다.
 > 2. **GPU 1장·2파드 분할 불가**: 표준 K8s NVIDIA device plugin은 컨테이너 단위 배타적 GPU 할당을 수행하므로, GPU 1장을 2개 파드가 나눠 쓸 수 없다. 단일 노드에서 구동하려면 GPU 타임슬라이싱/MPS 설정이 필요하거나, 두 SGLang 추론 프로세스를 단일 파드 내 멀티 컨테이너/통합 스크립트로 묶는 파드 설계가 필요하다.
 > 3. **모델 캐시 스토리지 전환**: 도커 볼륨 `huggingface-cache`를 K8s 환경에 맞게 PVC(ReadWriteMany 또는 대용량 EBS)나 S3 동기화 init 컨테이너 방식으로 전환해야 한다.
@@ -340,12 +341,12 @@ python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluatio
 - 모든 게이트 스크립트가 `exit code 0` ([PASS])을 반환해야 프로덕션 배포가 승인된다.
 - **참고**: 사진 정책 변경(참고용 워터마크 영구 제거, `product_generated` 메타데이터 구분)에 따라 과거의 `scripts/check_reference_label.py`는 삭제되었으며 품질 게이트 목록에서 제외되었다.
 
-### (C) 첫 GPU 배포 실측 체크리스트 (검증 상태 과장 금지)
+### (C) GPU 추론 최초 성공 검증 체크리스트 (검증 상태 과장 금지)
 
 > [!IMPORTANT]
-> **GPU 미실행 사실 명시**:  
-> 현재 코드베이스는 로컬 CPU/macOS 환경에서 358개 테스트를 통과하고 컨테이너 빌드를 마쳤으나, **실제 GPU 환경에서는 한 번도 실행된 적이 없다.**  
-> 첫 GPU 배포 시 아래 항목들을 반드시 실측하여 기록해야 한다:
+> **GPU 추론 성공 미확인**:
+> `linux/amd64` 이미지 빌드는 확인됐고 Stage EKS 기동도 시도됐지만, 텍스트 서버 캐시 예산 오류가 발생했다 ([EKS 워크로드 사양](eks-workload-spec.md), 2026-09-18; [Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23). 기동 순서 수정 후 두 모델의 준비 완료와 상세페이지 생성 성공은 아직 검증되지 않았다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23).
+> 다음 L40S 재검증에서 아래 항목들을 실측해야 한다 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23):
 > - [ ] **두 모델 동시 상주 적재**: L40S 48GB에서 `sglang-text`와 `sglang-image` 동시 기동 시 OOM 없이 정상 기동되는지 확인
 > - [ ] **4-bit 파이프라인 로딩 시간**: bitsandbytes 4-bit 양자화된 FLUX.2 Klein 9B 파이프라인 로딩 성공 여부 및 소요 시간
 > - [ ] **VRAM 점유율 실측**: 정적 선점 후 여유 버퍼가 예상대로 약 12 GiB 수준으로 유지되는지 `nvidia-smi` 실측
@@ -361,8 +362,8 @@ python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluatio
 
 | 항목 | 결정 필요 내용 | 결정/승인 주체 | 현 상태 및 리스크 |
 |---|---|---|---|
-| **GPU 인스턴스 승인** | EC2 `g6e.xlarge` (L40S 48GB; 온디맨드 기준 시간당 약 $1.8 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 예산 및 온디맨드 쿼터 할당 | **인프라 / FinOps 팀** | 결정 필요 (미승인 시 T4/A10G로 강제되어 OOM 발생; 실제 단가 검증이 승인 조건에 포함됨) |
-| **EKS 전환 여부 및 매니페스트 구축** | 현재 확정된 Docker Compose 운영 대비 EKS 전환 필요성 검토 및 K8s 매니페스트/GPU 분할 아키텍처 수립 | **인프라 / DevOps 팀** | 미결정 상태 (현재 EKS 전용 매니페스트 전무) |
+| **GPU 인스턴스 승인** | EC2 `g6e.xlarge` (L40S 48GB; 온디맨드 기준 시간당 약 $1.8 [미검증 참고값 — 리전·계약·시점별 상이, 인프라팀 확인 필요]) 예산 및 온디맨드 쿼터 할당 | **인프라 / FinOps 팀** | Stage L40S 기동 시도는 확인; 운영 인스턴스 예산·승인 여부는 확인 필요 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23) |
+| **EKS 운영 전환 여부 및 Stage 재검증** | Stage 기동 시도 뒤 텍스트 서버 기동 순서를 수정했으며, 수정본의 L40S 준비 완료·추론 성공과 운영 채택 여부 확인 필요 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23) | **인프라 / DevOps 팀** | 이미지 빌드 완료 ([EKS 워크로드 사양](eks-workload-spec.md), 2026-09-18); Stage 시도·수정 완료, GPU 추론 및 운영 전환 미확인 ([Stage 실기동 회신](infra-handoff-2026-09-23b.md), 2026-09-23) |
 | **FLUX 모델 상업 라이선스 확인** | 원본 FLUX.2-klein-9B의 Non-Commercial 라이선스 조건과 채택된 커뮤니티 4bit 양자화본의 상업 서비스 허용 범위 확인 | **관리자 / 법무팀** | 확인 필요 (필요 시 Apache 2.0 라이선스의 FLUX.2-klein-4B 대안 전환 검토) |
 | **BE 엔드포인트** | 운영/스테이징 `BACKEND_URL` 주소 및 인증 시크릿 발급 | **상품 백엔드(BE) 팀** | 미확정 시 outbox 배달 불가 |
 | **프런트엔드 오리진** | `AI_CORS_ORIGINS`에 등록할 정식 웹 서비스 도메인 목록 | **프런트엔드(FE) 팀** | 미확정 시 브라우저 CORS 차단 |
