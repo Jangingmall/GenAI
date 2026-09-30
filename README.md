@@ -21,7 +21,7 @@ midam/
 ├── chat_bot/            # AI 추천 챗봇
 ├── docs/                # 규칙 문서
 ├── page_generation/     # AI 상세페이지 생성
-├── .gitignore            
+├── .gitignore
 ├── README.md
 ```
 
@@ -47,7 +47,7 @@ midam/
 │         ▼                                    ▼              │
 │   [챗봇 AI 서버]                      [상세페이지 AI 서버]      │
 │    의도분류→검색→랭킹→생성            이미지분석→카피→렌더(PNG)   │
-│         │ reply+products                     │ PNG+메타데이터   │
+│         │ reply+product_ids                  │ PNG+메타데이터   │
 │         ▼                                    ▼              │
 │    응답 반환                          결과 저장 API로 전달       │
 └──────────────────────────────────────────────────────────┘
@@ -84,12 +84,16 @@ midam/
 | 구분 | 챗봇 추천 | 상세페이지 생성 |
 | :--- | :--- | :--- |
 | 서버 | FastAPI | FastAPI |
-| LLM | Qwen3 8B (Ollama, 로컬) * | 외부 AI API (예: Gemini) |
-| 임베딩 | BGE-M3 (1024차원) * | — |
-| 검색 | pgvector + BM25(Kiwi) + RRF | — |
+| 생성 LLM | **gemma4 12B** (Ollama, GGUF) | **Qwen3.8-27B** (텍스트·비전, SGLang, AWQ INT4) |
+| 이미지 생성 | — | **FLUX.2-klein-9B** (SGLang, 4bit) |
+| 배경 제거(누끼) | — | **rembg BiRefNet** (ONNX) |
+| 임베딩 | **BGE-M3** (1024차원, CPU) | — |
+| 검색 | pgvector + BM25(Kiwi) + RRF, 유사도 컷 τ | — |
 | DB | PostgreSQL 17 + pgvector | (상품 백엔드 DB 사용) |
- 
-> \* 챗봇 모델은 후보이며 목데이터 평가 후 확정한다.
+| 배포·GPU | AWS EKS · NVIDIA T4 16GB | AWS EKS · NVIDIA L40S 48GB |
+
+> 모델은 자체 호스팅한다. 챗봇은 Ollama, 상세페이지는 SGLang으로 서빙하며 외부 생성 API는
+> 사용하지 않는다. 모델 가중치는 이미지에 포함하지 않고 S3 → PVC로 마운트한다(§6 참고).
 
 ---
 
@@ -102,16 +106,19 @@ midam/
 **파이프라인 (5단계)**
 ```
 자연어 입력
- → ① 의도분류·조건추출 (LLM)      가격·상황·취향 파악
- → ② 쿼리 임베딩                  자연어 → 벡터
- → ③ 하이브리드 검색              벡터 + BM25 + RRF, 가격 필터, 유사도 컷
- → ④ 등급 가중 랭킹               유사도 × 공인 등급, 최대 3개
- → ⑤ 근거 기반 생성 (LLM)         추천 이유·후속 질문 생성
- → 응답 { reply, intent, products, suggestions }
+ → ① 의도분류·조건추출 (gemma4)   가격·상황·취향 파악, 하드필터 추출
+ → ② 쿼리 임베딩 (BGE-M3)          자연어 → 1024차원 벡터
+ → ③ 하이브리드 검색              벡터 + BM25 + RRF, 가격 필터, 유사도 컷 τ
+ → ④ 등급 가중 랭킹               유사도 + 공인 등급 가중, 최대 3개
+ → ⑤ 근거 기반 생성 (gemma4)      추천 응답·후속 질문 생성
+ → 응답 { reply, intent, product_ids, suggestions }
 ```
 
 - **응답 방식:** 동기 (요청 → 즉시 응답)
-- **구동:** 완전 로컬 (MacBook M4) — 외부 API·클라우드 미사용
+- **구동:** 로컬 개발(MacBook M4) → **AWS EKS(T4) 배포.** LLM은 Ollama로 gemma4를,
+  임베딩(BGE-M3)은 API 컨테이너에서 CPU로 구동한다.
+- **정직성:** evidence(장인 서술·인증 등급)에 없는 사실은 지어내지 않고 "확인되지 않음"으로
+  답한다. 억지 추천은 유사도 컷으로 빈 결과 처리한다.
 
 ### 3-2. 상세페이지 생성 (`page_generation/`)
 
@@ -120,8 +127,8 @@ midam/
 않은 사실은 지어내지 않는다. 원본 제품 사진은 재생성하지 않고 원본을 보존한다.
 
 - **응답 방식:** 비동기 (작업 생성 → 상태 폴링 → 완료)
-- **구동:** 이미지 분석·생성에 **외부 AI API 활용** (예: Gemini).
-
+- **구동:** **자체 호스팅 모델을 SGLang(L40S)으로 서빙** — 텍스트·비전(Qwen3.8-27B),
+  이미지 생성(FLUX.2-klein-9B), 배경 제거(rembg BiRefNet). 외부 생성 API는 사용하지 않는다.
 
 ### 공유 지점
 두 기능은 **같은 입력**을 쓴다 — 장인이 상품 등록 시 쓴 자유서술(제작 이야기·관리법)이
@@ -139,24 +146,33 @@ midam/
 ```
 FE → BE : 소비자 자연어 메시지
 BE → AI : { session_id, message, history? }      # 원문 그대로, 조건 추출은 AI가
-AI → BE : { reply, intent, products[], suggestions[] }
-                products = [{ product_id, reason }]  (최대 3개)
-BE → FE : reply + 카드(상품 상세 + reason)          # BE가 product_id로 상세 조립
+AI → BE : { reply, intent, product_ids[], suggestions[] }   # product_ids = 정수 배열(최대 3개)
+BE → FE : reply + 카드(상품 상세)                   # BE가 product_id로 상세 조립
 ```
-> AI는 상품 상세(이미지·가격 등)를 반환하지 않는다. `product_id`와 `reason`만 넘기고,
-> 백엔드가 자기 DB에서 상세를 조립한다.
+> AI는 상품 상세(이미지·가격 등)를 반환하지 않는다. `product_ids`(정수 배열)와 공유 `reply`만
+> 넘기고, 백엔드가 자기 DB에서 상세를 조립한다. (상품별 개별 reason은 만들지 않는다 —
+> 공유 reply 한 줄 + 후속 질문(explain)으로 처리)
+
+**공개 엔드포인트(백엔드, Stage `api.stg.midam.store`)**
+```
+세션 생성 : POST /api/chatbot/sessions
+메시지    : POST /api/chatbot/sessions/{sessionId}/messages   본문 {"content":"전통 공예 선물 추천해줘"}
+```
+AI 내부 엔드포인트: `POST /ai/chat`, `POST/PUT/DELETE /ai/products`, `GET /ai/health`, `GET /ai/ready`
 
 ### 4-2. 상품 동기화 흐름 (백엔드 → 챗봇 AI)
 ```
 상품 등록/수정/삭제 시 백엔드가 챗봇 AI에 전달
-  → AI DB 저장 → 임베딩 (저장 후 임베딩)
+  → AI DB 저장 → 임베딩 (저장 후 임베딩, upsert)
 전달 데이터: 장인 정보 + 상품 정보(제작 이야기·관리법 포함)
 ```
+> 기존 ON_SALE 상품 일괄 적재(backfill)는 백엔드가 `syncPublishedProductToAi()`를
+> 순회 실행하는 일회성 Job으로 처리한다(AI `/ai/products`가 수신).
 
 ### 4-3. 상세페이지 생성 흐름 (비동기)
 ```
-FE → BE : 이미지 + 상품 설명
-BE → AI : 작업 생성 (POST detail-page-jobs)
+FE → BE : 이미지 + 상품 설명(작품명·제작 과정·관리 방법)
+BE → AI : 작업 생성  (POST /api/content/products/{productId}/generations)
 AI      : QUEUED → ANALYZING → ... → RENDERING → COMPLETED
 BE      : 상태 폴링으로 진행 확인
 AI → BE : 최종 결과(PNG·메타데이터)를 백엔드 저장 API로 전달
@@ -165,20 +181,43 @@ AI → BE : 최종 결과(PNG·메타데이터)를 백엔드 저장 API로 전�
 ### 4-4. 세션·대화 이력 (챗봇)
 - 세션 관리·대화 이력 저장은 **백엔드 담당.** 챗봇 AI는 무상태(stateless).
 - 멀티턴이 필요하면 백엔드가 최근 대화(history)를 함께 넘긴다.
+- 단, narrow_down("그중 더 싼 거") 판단용 내부 캐시(candidates·filters)는 챗봇 AI가
+  session_id로 임시 보관한다(TTL 30분).
 
 ### 4-5. 응답 규약 (챗봇)
-- 추천 응답은 항상 `{ reply, intent, products[], suggestions[] }` 구조.
-- 검색 결과가 없어도 에러가 아니다 — `products: []` + 안내 `reply`로 정상 응답.
+- 추천 응답은 항상 `{ reply, intent, product_ids[], suggestions[] }` 구조.
+- 검색 결과가 없어도 에러가 아니다 — `product_ids: []` + 안내 `reply`로 정상 응답.
 
 ---
 
 ## 5. 개발 환경 & 협업
 
-- **공통:** MacBook M4.
-- **구동 방식은 기능마다 다름:** 챗봇은 완전 로컬, 상세페이지는 일부 외부 AI API 활용.
+- **로컬 개발:** MacBook M4. (챗봇은 Ollama, 상세페이지는 MLX로 로컬 구동)
+- **배포:** 두 기능 모두 **AWS EKS**에 컨테이너로 배포 (자체 호스팅 모델, 외부 생성 API 미사용).
 - 각 폴더는 **자체 가상환경** 을 갖는다 (기능별 의존성 분리). 저장소에 포함하지 않는다.
 - 협업 규칙: **`GIT_GUIDE.md`**(브랜치·커밋·PR), **`CODE_STYLE.md`**(스타일·네이밍).
   - `main` 직접 커밋 금지, `feat/`·`fix/` 브랜치 → PR 병합.
   - `.env`·가상환경·모델 캐시는 커밋하지 않는다.
 
 ---
+
+## 6. 배포 & 인프라
+
+- **환경:** AWS EKS (Stage 도메인 `api.stg.midam.store`)
+- **GPU 배치:** 챗봇 = NVIDIA T4 16GB / 상세페이지 = NVIDIA L40S 48GB
+- **챗봇 Pod 구성:** API 컨테이너(FastAPI + BGE-M3, CPU) + LLM 컨테이너(Ollama + gemma4, GPU).
+  GPU는 LLM 컨테이너에만 할당한다.
+- **상세페이지 Pod 구성:** 단일 컨테이너에서 SGLang 텍스트·이미지 서버 + FastAPI를 함께 구동.
+- **컨테이너 이미지(ECR):** `jangin-ai/chatbot-api`, `jangin-ai/chatbot-llm`, `jangin-ai/page-generation`
+- **모델 배포:** 가중치는 이미지에 포함하지 않고 **S3(`jangin-{env}-s3-models`) → PVC 마운트.**
+  컨테이너는 마운트된 로컬 경로만 읽는다.
+- **CI/CD:** GitHub Actions(OIDC로 ECR push, 커밋 SHA 태그). 대용량 GPU 이미지는
+  디스크 여유를 위해 **AWS CodeBuild 러너**에서 빌드한다.
+- **헬스/레디니스:** 챗봇 `GET /ai/ready`(DB·임베딩 파일·LLM 확인), 상세페이지 `GET /health/ready`.
+
+### 주의 사항
+- **챗봇 임베딩은 torch ≥ 2.6 필요** — BGE-M3가 `.bin`(pickle) 가중치만 제공하고,
+  transformers가 CVE-2025-32434로 torch 2.6 미만에서는 `.bin` 로딩을 거부한다.
+  검증 조합: `torch==2.6.0 / transformers==5.17.0 / sentence-transformers==6.1.0`.
+- **상세페이지 이미지 모델(FLUX) 라이선스** — 원본이 비상업 라이선스(FLUX NCL) 계열이라
+  상업 이용 범위 확인이 필요하다.
