@@ -182,3 +182,36 @@ def test_internal_routes_fail_closed_when_token_is_not_configured(monkeypatch):
         )
 
     assert caught.value.status_code == 503
+
+
+def test_every_route_is_health_internal_or_a_disabled_demo_route():
+    # Security check (SAST F-1): a new route without the internal token or the
+    # demo-API switch should fail here rather than ship unauthenticated.
+    import inspect
+
+    from fastapi.routing import APIRoute
+
+    for route in app_module.app.routes:
+        if not isinstance(route, APIRoute) or route.path.startswith("/health"):
+            continue
+        if route.path.startswith("/internal/"):
+            assert "_require_internal_auth(" in inspect.getsource(route.endpoint), route.path
+        else:
+            dependencies = [dependency.call for dependency in route.dependant.dependencies]
+            assert app_module._require_legacy_demo_api in dependencies, route.path
+
+
+def test_unauthenticated_requests_are_refused(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(
+        app_module,
+        "get_settings",
+        lambda: SimpleNamespace(ai_internal_auth_token="secret", enable_legacy_demo_api=False),
+    )
+    client = TestClient(app_module.app)
+
+    assert client.get("/api/v1/ai/detail-page-jobs/job-1").status_code == 404
+    assert client.get("/internal/v1/ai/detail-page-jobs/job-1").status_code == 401
+    wrong = {"X-AI-Internal-Token": "wrong"}
+    assert client.get("/internal/v1/ai/detail-page-jobs/job-1", headers=wrong).status_code == 401

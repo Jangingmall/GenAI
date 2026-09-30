@@ -85,7 +85,7 @@ def diagnose_rejection(
     for multiplier in (1, 2, 4):
         tolerance = extractor.background_tolerance * multiplier
         candidate_mask = extractor._connected_foreground_mask(source, background, tolerance)
-        alpha_values = list(candidate_mask.getdata())
+        alpha_values = list(candidate_mask.get_flattened_data())
         foreground_ratio = sum(value > 0 for value in alpha_values) / (width * height)
         if foreground_ratio <= extractor.max_foreground_ratio:
             break
@@ -102,7 +102,7 @@ def diagnose_rejection(
     if bbox is None:
         return ("BBOX_NONE", "마스크 바운딩 박스 없음(전경 소실)", max_dev)
 
-    foreground_count = sum(value > 0 for value in mask.getdata())
+    foreground_count = sum(value > 0 for value in mask.get_flattened_data())
     foreground_ratio = foreground_count / (width * height)
     if foreground_ratio < extractor.min_foreground_ratio:
         return (

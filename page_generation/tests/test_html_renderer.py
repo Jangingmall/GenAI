@@ -771,3 +771,18 @@ def test_html_detail_page_renderer_captures_built_html_as_generated_image(tmp_pa
     assert result.sections[0].section_id == "hero"
     assert result.sections[0].data == b"hero-png"
     assert result.sections[0].width == 774
+
+
+@pytest.mark.parametrize("filename", ["../secret.png", "/etc/passwd", "..", "sub/section.png"])
+def test_section_manifest_cannot_read_outside_sections_dir(tmp_path, filename):
+    # Security check (SAST F-3): the capture manifest's file names are checked
+    # before any file is opened, so they cannot leave the sections directory.
+    from detail_page_ai.html_renderer import HtmlTemplateError, _load_section_assets
+
+    sections = tmp_path / "sections"
+    sections.mkdir()
+    (tmp_path / "secret.png").write_bytes(b"\x89PNG secret")
+    (sections / "manifest.json").write_text(json.dumps({"sections": [{"file": filename, "section_id": "x"}]}))
+
+    with pytest.raises(HtmlTemplateError):
+        _load_section_assets(sections)

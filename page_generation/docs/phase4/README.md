@@ -50,6 +50,7 @@
 | [`operations/aws-migration-checklist.md`](operations/aws-migration-checklist.md) | AWS 이관에 필요한 준비물·차단 조건·확인 방법을 정리한 실무 체크리스트 | 상시 |
 | [`operations/eks-workload-spec.md`](operations/eks-workload-spec.md) | EKS 인프라팀 요청에 대한 AI 저장소 workload·자원·검증 상태 답변 | 상시 |
 | [`operations/local-llm.md`](operations/local-llm.md) | Mac 로컬 MLX Serve 기반 상세페이지 LLM 실행 경로와 출력 규칙 | 상시 |
+| [`operations/security-response-2026-09-30.md`](operations/security-response-2026-09-30.md) | 사이버 보안팀 보안조치요구서(SAST F-1·F-3·F-4·F-7, SCA 21건)에 대한 확인 근거·조치·재검 결과 회신 | 시점 |
 | [`operations/server-memory-estimate.md`](operations/server-memory-estimate.md) | Apple Silicon 로컬 MLX 통합 메모리 예상과 서버 메모리 문서 참조 | 상시 |
 | [`operations/sglang-serving-research.md`](operations/sglang-serving-research.md) | AWS g6e.xlarge 한 장의 L40S에서 텍스트·확산 SGLang 2프로세스를 공존시키기 위한 운영 조사 | 시점 |
 | [`operations/ubuntu-deployment.md`](operations/ubuntu-deployment.md) | Ubuntu g6e.xlarge에서 detail-page-ai와 SGLang 2개 추론 서버를 Docker Compose로 배포하는 가이드 | 상시 |
