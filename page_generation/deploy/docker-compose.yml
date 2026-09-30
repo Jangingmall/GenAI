@@ -47,7 +47,7 @@ services:
       --host 0.0.0.0
       --port 30000
       --mem-fraction-static ${TEXT_MEM_FRACTION:-0.50}
-      --context-length ${TEXT_CONTEXT_LENGTH:-8192}
+      --context-length ${TEXT_CONTEXT_LENGTH:-16384}
       --trust-remote-code
     deploy:
       resources:

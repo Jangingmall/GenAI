@@ -149,9 +149,9 @@
 | **고정 커밋 (Revision)** | `6e134bae811fb5adac50ee042ae5f029ac6779aa` | `58c2804f31af12c8888504b96250010c50b55e44` |
 | **공개 모델명 (`--served-model-name`)** | `qwen-text` | `flux-klein` |
 | **서비스 포트** | **30000** | **30001** |
-| **기동 명령어 및 주요 인자** | `python3 -m sglang.launch_server`<br>`--model-path cyankiwi/Qwen3.8-27B-AWQ-INT4`<br>`--revision 6e134bae811fb5adac50ee042ae5f029ac6779aa`<br>`--served-model-name qwen-text`<br>`--host 0.0.0.0 --port 30000`<br>`--mem-fraction-static 0.50`<br>`--context-length 8192`<br>`--trust-remote-code` | `sglang serve`<br>`--model-path circulus/FLUX.2-klein-9B-bnb-4bit`<br>`--revision 58c2804f31af12c8888504b96250010c50b55e44`<br>`--served-model-name flux-klein`<br>`--host 0.0.0.0 --port 30001`<br>`--num-gpus 1`<br>`--dit-cpu-offload false`<br>`--text-encoder-cpu-offload false` |
+| **기동 명령어 및 주요 인자** | `python3 -m sglang.launch_server`<br>`--model-path cyankiwi/Qwen3.8-27B-AWQ-INT4`<br>`--revision 6e134bae811fb5adac50ee042ae5f029ac6779aa`<br>`--served-model-name qwen-text`<br>`--host 0.0.0.0 --port 30000`<br>`--mem-fraction-static 0.50`<br>`--context-length 16384`<br>`--trust-remote-code` | `sglang serve`<br>`--model-path circulus/FLUX.2-klein-9B-bnb-4bit`<br>`--revision 58c2804f31af12c8888504b96250010c50b55e44`<br>`--served-model-name flux-klein`<br>`--host 0.0.0.0 --port 30001`<br>`--num-gpus 1`<br>`--dit-cpu-offload false`<br>`--text-encoder-cpu-offload false` |
 | **헬스체크 엔드포인트** | `GET http://127.0.0.1:30000/v1/models` (200 OK) | `GET http://127.0.0.1:30001/v1/models` (200 OK)<br>*(주의: 확산 서버에는 `/health` 엔드포인트 없음)* |
-| **주요 런타임 옵션 사유** | `--mem-fraction-static 0.50`: 48GB 중 약 24GB를 텍스트 모델 가중치(19.6 GiB) 및 8192 컨텍스트 KV 캐시 풀로 선점하여 확산 모델 VRAM 여유 보장 | `--dit-cpu-offload false --text-encoder-cpu-offload false`: SGLang 기본값인 CPU 오프로드를 꺼서 4-bit 텍스트 인코더를 GPU에 상주시키고 호스트 RAM 압박 방지 |
+| **주요 런타임 옵션 사유** | `--mem-fraction-static 0.50`: 48GB 중 약 24GB를 텍스트 모델 가중치(19.6 GiB) 및 KV 캐시 풀로 선점하여 확산 모델 VRAM 여유 보장 | `--dit-cpu-offload false --text-encoder-cpu-offload false`: SGLang 기본값인 CPU 오프로드를 꺼서 4-bit 텍스트 인코더를 GPU에 상주시키고 호스트 RAM 압박 방지 |
 
 ---
 
@@ -159,7 +159,7 @@
 
 | 항목 | 점유 VRAM | 산출 근거 및 비고 |
 |---|---:|---|
-| `sglang-text` 가중치 및 KV 캐시 선점 | 약 22.35~24.0 GiB | `cyankiwi/Qwen3.8-27B-AWQ-INT4` 가중치 19.60 GiB, `--mem-fraction-static 0.50`, 8192 컨텍스트 풀 |
+| `sglang-text` 가중치 및 KV 캐시 선점 | 약 22.35~24.0 GiB | `cyankiwi/Qwen3.8-27B-AWQ-INT4` 가중치 19.60 GiB, `--mem-fraction-static 0.50`, KV 풀 약 1.77만 토큰(계산값) |
 | `sglang-image` 가중치 및 파이프라인 | 약 10.20 GiB | `circulus/FLUX.2-klein-9B-bnb-4bit` (트랜스포머 4.36 + 텍스트 인코더 5.66 + VAE 0.16 GiB) |
 | 순수 가중치 합계 | 약 29.80 GiB | 텍스트 가중치(19.60 GiB) + 이미지 파이프라인 가중치(10.20 GiB) |
 | **정적 점유 합계 (선점+가중치)** | **약 32.55 GiB** | 텍스트 선점(22.35 GiB) + 이미지 가중치(10.20 GiB) 기준 (44.70 GiB 중 약 72.8% 점유) |
@@ -260,7 +260,7 @@ ai-service는 파일 기반의 두 가지 영속성 저장소를 사용한다.
 | `TEXT_MODEL_REVISION` | `6e134bae811fb5adac50ee042ae5f029ac6779aa` | 텍스트 모델 가중치 버전 커밋 고정값 |
 | `TEXT_SERVED_MODEL_NAME` | `qwen-text` | 텍스트 추론 서버 공개 모델명 (`--served-model-name`) |
 | `TEXT_MEM_FRACTION` | `0.50` | 텍스트 서버 정적 VRAM 선점 비율 (48GB 중 약 24GB 할당) |
-| `TEXT_CONTEXT_LENGTH` | `8192` | 텍스트 모델 최대 컨텍스트 길이 (KV 캐시 상한) |
+| `TEXT_CONTEXT_LENGTH` | `16384` | 텍스트 모델 최대 컨텍스트 길이. 분석 입력(프롬프트·스키마·사진)이 약 9.3천 토큰이고 출력 최대 4096토큰이라 8192로는 부족하다 (2026-09-30 Stage) |
 | `IMAGE_MODEL_PATH` | `circulus/FLUX.2-klein-9B-bnb-4bit` | 이미지 확산 추론 모델 가중치 저장소 (Hugging Face) |
 | `IMAGE_MODEL_REVISION` | `58c2804f31af12c8888504b96250010c50b55e44` | 이미지 모델 가중치 버전 커밋 고정값 |
 | `IMAGE_SERVED_MODEL_NAME` | `flux-klein` | 이미지 추론 서버 공개 모델명 (`--served-model-name`) |

@@ -310,3 +310,18 @@ def test_text_failure_before_ready_does_not_start_image(tmp_path: Path) -> None:
     assert "text-start" in events
     assert "image-start" not in events
     assert "text server" in stderr
+
+
+def test_default_text_context_fits_the_analysis_request() -> None:
+    # Stage 2026-09-30: the analysis request (prompt + JSON schema + one 1280px
+    # photo) was 9307 input tokens, plus up to 4096 output tokens, and SGLang
+    # rejected it at 8192. The image ENV and the entrypoint default must agree.
+    result = run_entrypoint(
+        text_model="cyankiwi/Qwen3.8-27B-AWQ-INT4",
+        image_model="circulus/FLUX.2-klein-9B-bnb-4bit",
+    )
+
+    text_line, _ = command_lines(result)
+    assert "--context-length 16384" in text_line
+    dockerfile = (ROOT / "deploy/sglang/Dockerfile").read_text()
+    assert "TEXT_CONTEXT_LENGTH=16384" in dockerfile
