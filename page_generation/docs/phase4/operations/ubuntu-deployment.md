@@ -117,7 +117,7 @@ chmod 600 .env  # 비밀값이 포함되므로 권한 제한
 | **`TEXT_MODEL_PATH`** | `cyankiwi/Qwen3.8-27B-AWQ-INT4` | 텍스트 모델 가중치 체크포인트 경로 (HF 다운로드 대상) |
 | **`TEXT_SERVED_MODEL_NAME`**| `qwen-text` | 텍스트 서버 공개 모델명 (`--served-model-name`) |
 | **`TEXT_MEM_FRACTION`** | `0.50` | 텍스트 VRAM 정적 할당 비율 (**인스턴스에서 측정 후 확정**) |
-| **`TEXT_CONTEXT_LENGTH`**| `8192` | KV 캐시 상한 제어를 위한 컨텍스트 길이 |
+| **`TEXT_CONTEXT_LENGTH`**| `16384` | 텍스트 요청 1건의 최대 길이. 분석 입력 약 9.3천 + 출력 최대 4096토큰 (2026-09-30 Stage에서 8192 초과 확인) |
 | **`IMAGE_MODEL_PATH`** | `circulus/FLUX.2-klein-9B-bnb-4bit` | 이미지 모델 체크포인트 경로 (**관리자 결정 9B 4bit 파이프라인**) |
 | **`IMAGE_SERVED_MODEL_NAME`**| `flux-klein` | 확산 서버 공개 모델명 (`--served-model-name`, 클라이언트 요청 model과 일치 필수) |
 | **`HF_TOKEN`** | `""` | Hugging Face 토큰 (현재 4bit 저장소는 비게이트라 불필요, 원본 BFL 9B 사용 시 필수) |
@@ -311,7 +311,7 @@ rembg 누끼 모델은 `uv.lock` 이 rembg 버전(2.0.69)을 고정하므로 받
 
 - **VRAM 분할 및 여유분 계산 (L40S 가용 44.70 GiB 기준)**:
   - **텍스트 서버 (`sglang-text`)**: 정적 선점 22.35 GiB (`--mem-fraction-static 0.50`)
-    - 가중치 19.60 GiB + 컨텍스트 8192 토큰용 KV 캐시 풀 약 2.75 GiB
+    - 가중치 19.60 GiB + KV 캐시 풀 약 2.75 GiB (요청 1건 최대 16384 토큰)
   - **확산 서버 (`sglang-image`)**: 약 10.2 GiB
     - 트랜스포머 4.36 GiB + 텍스트 인코더 5.66 GiB + VAE 0.16 GiB
   - **GPU 순수 가중치 합계**: $19.60 + 10.18 = \mathbf{29.78\text{ GiB}}$ (텍스트 정적 선점 기준으로는 $22.35 + 10.18 = \mathbf{32.53\text{ GiB}}$)

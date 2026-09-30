@@ -111,7 +111,7 @@ K8s Secret으로 안전하게 주입하며, 이미지나 저장소 코드에 절
 | `LOCAL_TEXT_URL` | `http://127.0.0.1:30000` | 기본값 (생략 가능) | 우리 | 준비됨 |
 | `LOCAL_IMAGE_URL` | `http://127.0.0.1:30001` | 기본값 (생략 가능) | 우리 | 준비됨 |
 | `TEXT_MEM_FRACTION` | `0.50` (VRAM 정적 선점률) | ConfigMap / 기본값 | 우리 | 준비됨 |
-| `TEXT_CONTEXT_LENGTH` | `8192` | ConfigMap / 기본값 | 우리 | 준비됨 |
+| `TEXT_CONTEXT_LENGTH` | `16384` | ConfigMap / 기본값 | 우리 | 준비됨 (2026-09-30 8192→16384, 분석 입력 9307토큰) |
 | `AI_CORS_ORIGINS` | 주입 불필요 (BE 서버 간 통신이므로 기본값 유지) | - | - | 준비됨 |
 
 ---
