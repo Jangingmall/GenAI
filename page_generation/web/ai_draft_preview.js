@@ -172,15 +172,34 @@ function buildPreviewHtml() {
 function renderFeatureFields() {
   featureFields.replaceChildren();
   draft.features.forEach((feature, index) => {
+    // Built with DOM APIs so edited feature text is only ever set as a value,
+    // never parsed as HTML.
     const wrapper = document.createElement("div");
     wrapper.className = "feature-field";
-    wrapper.innerHTML = `<label for="feature-title-${index}"><span class="feature-field__number">0${index + 1}</span>특징 제목</label><input id="feature-title-${index}" type="text" maxlength="80" value="${escapeHtml(feature.title)}"><textarea id="feature-description-${index}" rows="2" maxlength="300" aria-label="특징 ${index + 1} 설명">${escapeHtml(feature.description)}</textarea>`;
+    const label = document.createElement("label");
+    label.htmlFor = `feature-title-${index}`;
+    const number = document.createElement("span");
+    number.className = "feature-field__number";
+    number.textContent = `0${index + 1}`;
+    label.append(number, "특징 제목");
+    const input = document.createElement("input");
+    input.id = `feature-title-${index}`;
+    input.type = "text";
+    input.maxLength = 80;
+    input.value = String(feature.title);
+    const textarea = document.createElement("textarea");
+    textarea.id = `feature-description-${index}`;
+    textarea.rows = 2;
+    textarea.maxLength = 300;
+    textarea.setAttribute("aria-label", `특징 ${index + 1} 설명`);
+    textarea.value = String(feature.description);
+    wrapper.append(label, input, textarea);
     featureFields.append(wrapper);
-    wrapper.querySelector("input").addEventListener("input", (event) => {
+    input.addEventListener("input", (event) => {
       draft.features[index].title = event.target.value;
       scheduleRender();
     });
-    wrapper.querySelector("textarea").addEventListener("input", (event) => {
+    textarea.addEventListener("input", (event) => {
       draft.features[index].description = event.target.value;
       scheduleRender();
     });

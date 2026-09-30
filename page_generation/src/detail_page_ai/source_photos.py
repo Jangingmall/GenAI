@@ -189,7 +189,7 @@ class SolidBackgroundCutoutExtractor:
             candidate_mask = self._connected_foreground_mask(
                 source, background, tolerance
             )
-            alpha_values = list(candidate_mask.getdata())
+            alpha_values = list(candidate_mask.get_flattened_data())
             foreground_ratio = sum(value > 0 for value in alpha_values) / (width * height)
             # A higher tolerance is useful only when the initial foreground is
             # implausibly large.  Frame contact alone must never trigger it:
@@ -206,7 +206,7 @@ class SolidBackgroundCutoutExtractor:
         bbox = mask.getbbox()
         if bbox is None:
             return None
-        foreground_count = sum(value > 0 for value in mask.getdata())
+        foreground_count = sum(value > 0 for value in mask.get_flattened_data())
         foreground_ratio = foreground_count / (width * height)
         if not self.min_foreground_ratio <= foreground_ratio <= self.max_foreground_ratio:
             return None
@@ -307,7 +307,7 @@ class SolidBackgroundCutoutExtractor:
             source, background, self.background_tolerance * 4
         )
         tolerant_mask = self._refine_mask(tolerant_mask)
-        tolerant_foreground_count = sum(value > 0 for value in tolerant_mask.getdata())
+        tolerant_foreground_count = sum(value > 0 for value in tolerant_mask.get_flattened_data())
         if tolerant_foreground_count == 0:
             return mask
         tolerant_ratio = tolerant_foreground_count / (source.width * source.height)
@@ -381,7 +381,7 @@ class SolidBackgroundCutoutExtractor:
                 if 0 <= neighbor_x < width and 0 <= neighbor_y < height:
                     enqueue_if_candidate(neighbor_x, neighbor_y)
 
-        values = list(mask.getdata())
+        values = list(mask.get_flattened_data())
         shadow_fade_alpha = 40
         for index in range(width * height):
             if not reachable_background[index] or not values[index]:
@@ -490,7 +490,7 @@ class RembgCutoutExtractor:
         mask = mask.point(
             lambda alpha: alpha if alpha >= self.visible_alpha_threshold else 0
         )
-        foreground_count = sum(value > 0 for value in mask.getdata())
+        foreground_count = sum(value > 0 for value in mask.get_flattened_data())
         foreground_ratio = foreground_count / (source.width * source.height)
         if not self.min_foreground_ratio <= foreground_ratio <= self.max_foreground_ratio:
             return None

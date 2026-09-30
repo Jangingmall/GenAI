@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 import pytest
 
@@ -43,3 +44,19 @@ def test_local_store_rejects_unsafe_category(tmp_path):
 
     with pytest.raises(ValueError, match="category"):
         store.put(b"data", "image/png", "../outside")
+
+
+def test_record_pointing_outside_store_is_refused(tmp_path):
+    # Security check (SAST F-3): even a tampered metadata record cannot make
+    # get() read a file outside the store root.
+    store = LocalFileAssetStore(tmp_path / "store")
+    stored = store.put(b"inside", "image/png", "photo")
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(b"inside")
+    metadata = store._metadata_path(stored.asset_id)
+    record = json.loads(metadata.read_text())
+    record["location"] = str(outside)
+    metadata.write_text(json.dumps(record))
+
+    with pytest.raises(KeyError):
+        store.get(stored.asset_id)

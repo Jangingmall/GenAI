@@ -34,6 +34,7 @@ await new Promise((resolveServer) => server.listen(4174, "127.0.0.1", resolveSer
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  const XSS_PAYLOAD = `"><img src=x onerror="window.__xss=1">`;
   let approvalRequestBody = "";
   await page.route("http://127.0.0.1:4174/api/v1/ai/detail-page-jobs/job-json", async (route) => {
     await route.fulfill({
@@ -65,7 +66,7 @@ try {
             hero_headline: "문양의 깊이",
             hero_description: "이미지에서 확인되는 특징입니다.",
             usage_scene: "서재 선반 위",
-            features: [],
+            features: [{ title: XSS_PAYLOAD, description: XSS_PAYLOAD }],
             keywords: ["나전"],
             layout_id: "editorial-split",
           },
@@ -111,6 +112,26 @@ try {
   const updated = await page.frameLocator("#preview-frame").locator(".intro-band h2").innerText();
   if (updated !== "장인의 시간이 머무는 문양") {
     throw new Error(`preview did not update: ${updated}`);
+  }
+  // Security check (SAST F-7): feature text from the draft and text typed by the
+  // seller must stay text, both in the editor fields and in the rendered preview.
+  const payload = XSS_PAYLOAD;
+  if ((await page.locator("#feature-description-0").inputValue()) !== payload) {
+    throw new Error("feature description from the draft did not keep the raw text");
+  }
+  await page.locator("#feature-title-0").fill(`${payload} `);
+  await page.locator("#feature-title-0").fill(payload);
+  await page.waitForTimeout(300);
+  const injected = await page.evaluate(() => ({
+    fired: window.__xss === 1,
+    editorImages: document.querySelectorAll("#feature-fields img").length,
+  }));
+  const previewInjected = await page.frameLocator("#preview-frame").locator("img[src='x']").count();
+  if (injected.fired || injected.editorImages !== 0 || previewInjected !== 0) {
+    throw new Error(`feature text was parsed as HTML: ${JSON.stringify({ ...injected, previewInjected })}`);
+  }
+  if ((await page.locator("#feature-title-0").inputValue()) !== payload) {
+    throw new Error("feature title did not keep the raw text");
   }
   await page.setViewportSize({ width: 691, height: 1000 });
   const narrowPreview = await page.locator("#preview-frame").evaluate((node) => {
