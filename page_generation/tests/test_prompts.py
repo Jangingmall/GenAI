@@ -687,7 +687,8 @@ def test_usage_context_background_prompt_does_not_leak_product_terms_to_flux():
     assert "찻잔" not in prompt
     assert "차기 세트" not in prompt
     assert "금속 공예품" not in prompt
-    assert "empty interior background plate" in prompt
+    assert "empty interior background photograph" in prompt
+    assert "background plate" not in prompt
 
 
 def test_generated_usage_scene_prompt_matches_reference_like_real_scene():

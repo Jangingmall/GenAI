@@ -15,6 +15,7 @@ from .photo_slots import (
     resolve_gallery_photo_ids,
 )
 from .validation import sanitize_profile_for_render
+from .react_document import palette_swatch_color
 
 
 class HtmlTemplateError(RuntimeError):
@@ -300,6 +301,8 @@ def _block_image(
 def _block_items(block: PageBlockDto, profile: ProductProfileDto) -> tuple[PageBlockItemDto, ...]:
     if block.items:
         return tuple(block.items)
+    if block.block_type != "feature_grid":
+        return ()
     return tuple(
         PageBlockItemDto(
             label=feature.title,
@@ -382,7 +385,7 @@ def _render_page_block(
     if block_type == "palette":
         image = _block_image(block, photo_uris, fallback_uri, fallback_photo_id="packshot")
         palette_items = "\n".join(
-            f'''<li><span class="palette-swatch palette-swatch--{item_index % 4}"></span><strong>{_escape(item.label)}</strong><span>{_escape(item.value or item.description)}</span></li>'''
+            f'''<li><span class="palette-swatch palette-swatch--{item_index % 4}" style="background-color: {palette_swatch_color(item.value, item_index)}"></span><strong>{_escape(item.label)}</strong><span>{_escape(item.value or item.description)}</span></li>'''
             for item_index, item in enumerate(items)
         )
         return f'''<section class="palette-section{variant}" data-section="{section_id}" data-section-title="색과 표면">
@@ -410,8 +413,9 @@ def _render_page_block(
         notices = "\n".join(
             f"<li>{_escape(item.value or item.description or item.label)}</li>" for item in items
         )
+        notice_list = f"<ul>{notices}</ul>" if notices else ""
         return f'''<section class="notice-section{variant}" data-section="{section_id}" data-section-title="안내">
-  <span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p><ul>{notices}</ul>
+  <span class="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{body}</p>{notice_list}
 </section>'''
     if block_type == "closing":
         return f'''<section class="closing-section{variant}" data-section="{section_id}" data-section-title="마무리">

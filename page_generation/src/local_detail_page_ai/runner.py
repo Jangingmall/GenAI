@@ -52,7 +52,7 @@ class MlxServeBackgroundGenerator:
             ),
             negative_prompt=(
                 "product, duplicate product, box, cabinet, vessel, container, person, "
-                "hand, text, logo, label, watermark, infographic"
+                "hand, plate, dish, bowl, cup, cutlery, tray, text, logo, label, watermark, infographic"
             ),
             width=width,
             height=height,

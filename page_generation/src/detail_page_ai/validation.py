@@ -1,10 +1,21 @@
-from .dto import PageBlockDto, PageBlockItemDto, ProductProfileDto
+import re
+import unicodedata
+
+from .dto import PageBlockDto, PageBlockItemDto, ProductProfileDto, UserHintsDto
 
 
 SUPPORTED_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 JPEG_SIGNATURE = b"\xff\xd8\xff"
 WEBP_SIGNATURE = b"RIFF"
+_MAX_SELLER_SUBJECT_PREFIX_CHARS = 8
+_RELATED_PRODUCT_PITCH = re.compile(
+    r"(?<!\w)(?:다른|관련|연관|유사(?:한)?|비슷한)\s*"
+    r"(?:(?:전통|수공예)\s*)?(?:상품|제품|공예품|작품)"
+    r"|\b(?:other|related|similar)\s+"
+    r"(?:(?:traditional|handmade)\s+)?(?:products?|items?|crafts?)\b",
+    re.IGNORECASE,
+)
 
 
 class ValidationError(ValueError):
@@ -346,7 +357,76 @@ def ensure_editorial_page_plan(profile: ProductProfileDto) -> ProductProfileDto:
     return profile.model_copy(update={"page_plan": plan[:13] + [closing] if len(plan) > 14 else plan})
 
 
-def sanitize_profile_for_render(profile: ProductProfileDto) -> ProductProfileDto:
+def sanitize_page_plan(blocks: list[PageBlockDto]) -> list[PageBlockDto]:
+    """Keep staging ideas, but omit empty or unbacked related-product pitches."""
+    safe = []
+    for block in blocks:
+        block = PageBlockDto.model_validate(block)
+        if block.block_type == "recommendation":
+            # Match direct references within each field; never bridge a staging
+            # heading (e.g. "추천 연출") to a product noun in another field.
+            copy_fragments = [
+                block.eyebrow, block.title, block.body,
+                *(text for item in block.items for text in (item.label, item.value, item.description)),
+            ]
+            related_products = any(
+                _RELATED_PRODUCT_PITCH.search(text) for text in copy_fragments
+            )
+            if not block.items or related_products:
+                continue
+        safe.append(block)
+    return safe
+
+
+def _seller_confirmed_statements(user_hints: UserHintsDto | None) -> set[str]:
+    statements = set()
+    if user_hints:
+        for value in user_hints.model_dump(exclude_none=True).values():
+            statements.add(_normalize_statement(value))
+        statements.update(_seller_instruction_statements(user_hints))
+    return statements - {""}
+
+
+def _seller_instruction_statements(user_hints: UserHintsDto | None) -> set[str]:
+    """Only making/care sentences may confirm a warning with an added subject."""
+    statements = set()
+    if user_hints:
+        for value in (user_hints.making_method, user_hints.care_guide):
+            if value:
+                statements.update(
+                    _normalize_statement(part) for part in _split_statements(value)
+                )
+    return statements - {""}
+
+
+def _has_seller_subject_prefix(statement: str, instructions: set[str]) -> bool:
+    for instruction in instructions:
+        # The seller sentence must end the warning; added claims after it stay unknown.
+        if not statement.endswith(instruction):
+            continue
+        prefix = statement[:-len(instruction)]
+        if not prefix.endswith(" "):
+            continue
+        subject = prefix.rstrip()
+        if (
+            len(subject.replace(" ", "")) <= _MAX_SELLER_SUBJECT_PREFIX_CHARS
+            and re.fullmatch(r"[\w· -]+(?:은|는|이|가|을|를)", subject)
+        ):
+            return True
+    return False
+
+
+def _split_statements(value: str) -> list[str]:
+    return [part for part in re.split(r"(?<=[.!?。！？])\s+|\n+", value) if part.strip()]
+
+
+def _normalize_statement(value: str) -> str:
+    return " ".join(unicodedata.normalize("NFKC", value).split()).rstrip(" .!?。！？")
+
+
+def sanitize_profile_for_render(
+    profile: ProductProfileDto, *, user_hints: UserHintsDto | None = None,
+) -> ProductProfileDto:
     """Keep uncertain model claims out of customer-facing selling copy."""
     safe_features = [
         feature for feature in profile.features if feature.evidence == "image-visible"
@@ -361,11 +441,27 @@ def sanitize_profile_for_render(profile: ProductProfileDto) -> ProductProfileDto
         for item in [*profile.features, *profile.copy_sections]
         if getattr(item, "evidence", "image-visible") != "image-visible"
     ]
-    warnings = list(dict.fromkeys([*profile.uncertain_information, *rejected]))
+    confirmed = _seller_confirmed_statements(user_hints)
+    instructions = _seller_instruction_statements(user_hints)
+
+    def confirmed_statement(value: str) -> bool:
+        statement = _normalize_statement(value)
+        return statement in confirmed or _has_seller_subject_prefix(statement, instructions)
+
+    def unconfirmed(value: str) -> bool:
+        if _normalize_statement(value) in confirmed:
+            return False
+        return not all(confirmed_statement(part) for part in _split_statements(value))
+
+    warnings = list(dict.fromkeys(
+        value for value in [*profile.uncertain_information, *rejected] if unconfirmed(value)
+    ))
     return profile.model_copy(
         update={
             "features": safe_features,
             "copy_sections": safe_copy_sections,
             "uncertain_information": warnings[:12],
+            "safety_notes": [value for value in profile.safety_notes if unconfirmed(value)],
+            "page_plan": sanitize_page_plan(profile.page_plan),
         }
     )

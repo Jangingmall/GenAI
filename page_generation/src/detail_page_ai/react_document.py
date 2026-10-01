@@ -25,6 +25,15 @@ _HEX_COLOR_PATTERN = re.compile(
     r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
 )
 _SAFE_COLOR_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9 -]{0,30}$")
+_PALETTE_FALLBACK_COLORS = ("#8E9A9C", "#ECEDEE", "#C6D9DC", "#414954")
+
+
+def palette_swatch_color(value: str, index: int) -> str:
+    """Resolve the same safe hex or existing index color for HTML and React."""
+    value = value.strip()
+    if _HEX_COLOR_PATTERN.fullmatch(value):
+        return value
+    return _PALETTE_FALLBACK_COLORS[index % len(_PALETTE_FALLBACK_COLORS)]
 
 
 def _validate_color(value: str | None) -> str | None:

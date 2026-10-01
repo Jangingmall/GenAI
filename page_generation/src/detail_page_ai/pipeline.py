@@ -198,7 +198,7 @@ class DetailPagePipeline:
             )
         if profile_override is None:
             profile = ensure_editorial_page_plan(profile)
-        profile = sanitize_profile_for_render(profile)
+        profile = sanitize_profile_for_render(profile, user_hints=user_hints)
         approved_draft = ApprovedDraftDto.from_profile(profile)
         emit("EXTRACTING", 30)
         emit("GENERATING_BACKGROUNDS", 45)
@@ -540,7 +540,7 @@ class DetailPagePipeline:
             )
 
         profile = ensure_editorial_page_plan(profile)
-        profile = sanitize_profile_for_render(profile)
+        profile = sanitize_profile_for_render(profile, user_hints=user_hints)
         emit("EXTRACTING", 60)
         generation_id = generation_id or self.id_factory()
         approved_draft = ApprovedDraftDto.from_profile(profile)
@@ -552,6 +552,7 @@ class DetailPagePipeline:
             profile=profile,
             approved_draft=approved_draft,
             source_asset_id=resolved_source_asset_id,
+            user_hints=user_hints,
         )
 
     def build_editable_draft(
@@ -564,9 +565,11 @@ class DetailPagePipeline:
         profile: ProductProfileDto,
         approved_draft: ApprovedDraftDto,
         source_asset_id: str | None = None,
+        user_hints: UserHintsDto | None = None,
     ) -> DraftPipelineResult:
         """Rebuild the JSON draft after creator edits without AI or PNG work."""
-        profile = sanitize_profile_for_render(profile)
+        profile = sanitize_profile_for_render(profile, user_hints=user_hints)
+        approved_draft = approved_draft.model_copy(update={"page_plan": profile.page_plan})
         preview_photo_set = ProductPhotoSet()
         react_document = build_react_document_from_draft(approved_draft)
         source_hash = hashlib.sha256(source_image).hexdigest()

@@ -4,12 +4,35 @@ import base64
 import binascii
 import json
 import uuid
+from io import BytesIO
 from typing import Any, Protocol
 from urllib import error, request
 
 
 class LocalModelError(RuntimeError):
     """Raised when a local model server returns an unusable response."""
+
+
+def _prepare_edit_image(source_image: bytes, source_mime_type: str) -> tuple[bytes, str]:
+    """Normalize model input only; provenance still refers to the original bytes."""
+    if not source_image:
+        raise ValueError("source_image must not be empty")
+    if not source_mime_type.startswith("image/"):
+        raise ValueError("source_mime_type must be an image MIME type")
+    if source_mime_type in {"image/png", "image/jpeg"}:
+        return source_image, source_mime_type
+
+    from PIL import Image, ImageOps, UnidentifiedImageError
+
+    try:
+        with Image.open(BytesIO(source_image)) as source:
+            image = ImageOps.exif_transpose(source)
+            image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
+            output = BytesIO()
+            image.save(output, format="PNG")
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("source image could not be decoded for editing") from exc
+    return output.getvalue(), "image/png"
 
 
 class JsonTransport(Protocol):
@@ -259,10 +282,7 @@ class MlxServeImageClient:
     ) -> bytes:
         """Edit one source image while keeping its visible arrangement as a reference."""
         del width, height
-        if not source_image:
-            raise ValueError("source_image must not be empty")
-        if not source_mime_type.startswith("image/"):
-            raise ValueError("source_mime_type must be an image MIME type")
+        source_image, source_mime_type = _prepare_edit_image(source_image, source_mime_type)
         # MLX Serve's multipart adapter translates edits into its JSON image
         # generation schema and does not carry steps/strength through. Use that
         # schema directly so both values arrive as JSON numbers. The current
@@ -359,10 +379,7 @@ class SglangImageClient:
     ) -> bytes:
         """Edit one source image through SGLang's multipart image edit route."""
         del strength  # SGLang's edit handler has no strength form field.
-        if not source_image:
-            raise ValueError("source_image must not be empty")
-        if not source_mime_type.startswith("image/"):
-            raise ValueError("source_mime_type must be an image MIME type")
+        source_image, source_mime_type = _prepare_edit_image(source_image, source_mime_type)
         fields: dict[str, Any] = {
             "model": self.model,
             "prompt": prompt,
