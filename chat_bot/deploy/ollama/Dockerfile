@@ -54,7 +54,7 @@ RUN ollama serve & \
     ollama pull "${OLLAMA_MODEL}" && \
     pkill ollama
 
-COPY deploy/ollama/entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 11434
