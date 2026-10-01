@@ -653,3 +653,31 @@ def test_gallery_warning_log_matches_resolved_photos(caplog):
 
 
 
+
+
+def test_section_colors_match_the_png_design_tokens():
+    # Stage 2026-10-01: sections drawn from the React document were beige
+    # rgb(246, 242, 236) (#F6F2EC) while the PNG used web/detail_page.css's
+    # cool tokens. Expected values are the computed colors of the HTML page.
+    variants = {
+        "paper": ("#FFFFFF", "#121B29"),
+        "light": ("#FAFBFC", "#121B29"),
+        "sand": ("#EFF1F1", "#121B29"),
+        "dark": ("#121B29", "#FFFFFF"),
+    }
+    blocks = [
+        PageBlockDto(section_id=f"split-{variant}", block_type="detail_split", variant=variant, title="제목")
+        for variant in variants
+    ] + [PageBlockDto(section_id="features", block_type="feature_grid", variant="paper", title="특징",
+                      items=[PageBlockItemDto(label="결", value="손으로 깎은 대나무")])]
+    draft = ApprovedDraftDto(product_name="합죽선", summary="부채", hero_headline="합죽선",
+                             hero_description="부채", page_plan=blocks)
+
+    payload = build_react_document_from_draft(draft).model_dump(by_alias=True, exclude_none=True)
+    sections = {node["id"].split("-", 2)[2].removesuffix("-root"): _style(node) for node in payload["root"]}
+
+    for variant, (background, color) in variants.items():
+        assert sections[f"split-{variant}"]["backgroundColor"] == background
+        assert sections[f"split-{variant}"]["color"] == color
+    assert sections["features"]["backgroundColor"] == "#C6D9DC"
+    assert "#F6F2EC" not in str(payload)
