@@ -166,6 +166,17 @@
 | **동적 여유 버퍼 (런타임 활성화 버퍼)** | **약 12.15 GiB** | 이미지 생성 스파이크 및 텍스트 활성화 텐서 처리용 여유 공간 |
 | **권장 인스턴스** | **EC2 `g6e.xlarge`** | **NVIDIA L40S 48GB 1장 (물리 48GB, 실가용 약 44.70 GiB)** |
 
+> [!WARNING]
+> **Stage 실측 (2026-10-01) — 위 예산과 다르다**: 두 서버 기동 후 여유는 12 GiB가 아니라 **3.5 GiB**였고, 요청을 받으면서 **3.5 MiB**까지 줄어 누끼(rembg BiRefNet, onnxruntime CUDA)가 `CUBLAS failure 3`, 텍스트 서버 이미지 전처리가 CUDA OOM으로 실패했다 (렌더 39건 전부 500).
+>
+> | 프로세스 | 예산 | 실측 | 차이 원인 |
+> |---|---:|---:|---|
+> | `sglang-text` | 22.35 GiB | 25.85 GiB | prefill CUDA 그래프 1.87 GB, CUDA 컨텍스트 등 정적 선점 밖 사용 |
+> | `sglang-image` | 10.20 GiB | 15.82 GiB | 기동 워밍업 생성(`warmup_mode=server`)의 활성화 메모리를 PyTorch가 계속 보유 |
+> | FastAPI (rembg) | — | 1.79 GiB + 추론 | 예산에 없었음 |
+>
+> 조치: 텍스트 서버 `--disable-prefill-cuda-graph`(−1.87 GB, 기동 −4.6분), `--image-processor-backend pil`(전처리를 CPU로), rembg CUDA 세션 `arena_extend_strategy=kSameAsRequested`·`cudnn_conv_algo_search=HEURISTIC`. 효과는 Stage 재배포 후 DCGM(`DCGM_FI_DEV_FB_FREE`)으로 확인한다. 호스트 RAM도 Pod 한도 24 GiB 중 21.6 GiB를 써서 CPU 오프로드는 쓸 수 없다.
+
 > [!NOTE]
 > **호스트 RAM 압박 해소**:  
 > 확산 서버에서 CPU 오프로드를 끄고(`--dit-cpu-offload false --text-encoder-cpu-offload false`) GPU에 파이프라인을 전량 상주시키므로, `g6e.xlarge`의 호스트 시스템 메모리(32 GiB)에 대용량 가중치가 오프로드되어 발생하는 스왑 및 OOM 위험이 없다.
@@ -347,9 +358,9 @@ python scripts/check_scene_direction_coverage.py --pilot-dir generated/evaluatio
 > **GPU 추론 성공 미확인**:
 > `linux/amd64` 이미지 빌드는 확인됐고 Stage EKS 기동도 시도됐지만, 텍스트 서버 캐시 예산 오류가 발생했다 ([EKS 워크로드 사양](eks-workload-spec.md), 2026-09-18; [Stage 실기동 회신](../infra-handoffs/infra-handoff-2026-09-23b.md), 2026-09-23). 기동 순서 수정 후 두 모델의 준비 완료와 상세페이지 생성 성공은 아직 검증되지 않았다 ([Stage 실기동 회신](../infra-handoffs/infra-handoff-2026-09-23b.md), 2026-09-23).
 > 다음 L40S 재검증에서 아래 항목들을 실측해야 한다 ([Stage 실기동 회신](../infra-handoffs/infra-handoff-2026-09-23b.md), 2026-09-23):
-> - [ ] **두 모델 동시 상주 적재**: L40S 48GB에서 `sglang-text`와 `sglang-image` 동시 기동 시 OOM 없이 정상 기동되는지 확인
+> - [x] **두 모델 동시 상주 적재**: L40S 48GB에서 `sglang-text`와 `sglang-image` 동시 기동 시 OOM 없이 정상 기동되는지 확인 — 2026-10-01 Stage 기동 성공 (요청 처리 중 OOM은 위 경고 참고)
 > - [ ] **4-bit 파이프라인 로딩 시간**: bitsandbytes 4-bit 양자화된 FLUX.2 Klein 9B 파이프라인 로딩 성공 여부 및 소요 시간
-> - [ ] **VRAM 점유율 실측**: 정적 선점 후 여유 버퍼가 예상대로 약 12 GiB 수준으로 유지되는지 `nvidia-smi` 실측
+> - [x] **VRAM 점유율 실측**: 정적 선점 후 여유 버퍼가 예상대로 약 12 GiB 수준으로 유지되는지 `nvidia-smi` 실측 — 2026-10-01 실측 3.5 GiB (위 경고)
 > - [ ] **텍스트·비전 분석 처리 시간**: Qwen3.8-27B-AWQ-INT4의 이미지 분석 및 JSON 출력 레이턴시 측정
 > - [ ] **이미지 생성·편집 처리 시간**: FLUX.2 Klein 9B bnb-4bit의 생성(JSON) 및 편집(multipart) 품질과 1건당 소요 시간
 > - [ ] **End-to-End 전체 소요 시간**: 1건당 처리 시간이 로컬 기준선(평균 226초) 대비 어느 수준인지 실측 확정

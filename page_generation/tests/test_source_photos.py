@@ -295,7 +295,18 @@ def test_rembg_session_prioritizes_cuda_provider_when_available(monkeypatch):
     assert session_calls == [
         (
             "birefnet-general",
-            {"providers": ["CUDAExecutionProvider", "CPUExecutionProvider"]},
+            {
+                "providers": [
+                    (
+                        "CUDAExecutionProvider",
+                        {
+                            "arena_extend_strategy": "kSameAsRequested",
+                            "cudnn_conv_algo_search": "HEURISTIC",
+                        },
+                    ),
+                    "CPUExecutionProvider",
+                ]
+            },
         )
     ]
 

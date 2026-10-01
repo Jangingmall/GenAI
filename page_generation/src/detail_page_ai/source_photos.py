@@ -116,8 +116,15 @@ def _create_rembg_session(model_name: str) -> object:
     from rembg import new_session
 
     available_providers = list(onnxruntime.get_available_providers())
+    # The GPU is shared with both SGLang servers: grow the arena only by what
+    # is requested and skip cuDNN's exhaustive search, which allocates large
+    # trial workspaces.
+    cuda_provider = (
+        "CUDAExecutionProvider",
+        {"arena_extend_strategy": "kSameAsRequested", "cudnn_conv_algo_search": "HEURISTIC"},
+    )
     providers = (
-        ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        [cuda_provider, "CPUExecutionProvider"]
         if "CUDAExecutionProvider" in available_providers
         else ["CPUExecutionProvider"]
     )

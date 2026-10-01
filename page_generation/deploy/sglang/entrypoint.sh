@@ -51,6 +51,12 @@ text_command+=(
     --mem-fraction-static "$TEXT_MEM_FRACTION"
     --context-length "$TEXT_CONTEXT_LENGTH"
     --trust-remote-code
+    # Stage 2026-10-01: text + image servers left 3.5 MiB of the L40S free, so
+    # the cutout model and image preprocessing hit CUDA OOM. The prefill graphs
+    # took 1.87 GB (and 4.6 min to capture) for one request at a time, and the
+    # torchvision image processor allocates on the GPU; keep both off the GPU.
+    --disable-prefill-cuda-graph
+    --image-processor-backend pil
 )
 if [[ -n "${TEXT_MAX_RUNNING_REQUESTS:-}" ]]; then
     text_command+=(--max-running-requests "$TEXT_MAX_RUNNING_REQUESTS")

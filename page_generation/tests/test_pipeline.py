@@ -877,3 +877,41 @@ def test_pipeline_resolves_dangling_page_plan_photo_id_to_actual_photo(caplog):
     assert len(scale_warnings) == 1
 
 
+
+
+def test_drafts_and_renders_run_one_at_a_time():
+    # Stage 2026-10-01: two renders and a draft overlapped on one L40S and ran
+    # out of GPU memory. The analysis, cutout and image models must see one job
+    # at a time.
+    import threading
+    import time
+
+    pipeline = make_pipeline()
+    real_analyze = pipeline.analyzer.analyze
+    active = []
+    overlaps = []
+
+    def slow_analyze(*args, **kwargs):
+        active.append(1)
+        overlaps.append(len(active))
+        time.sleep(0.2)
+        active.pop()
+        return real_analyze(*args, **kwargs)
+
+    pipeline.analyzer.analyze = slow_analyze
+    calls = [
+        lambda: pipeline.run("job-a", "request-a", VALID_PNG, "image/png"),
+        lambda: pipeline.run("job-b", "request-b", VALID_PNG, "image/png"),
+        lambda: pipeline.create_draft(
+            job_id="job-c", request_id="request-c",
+            source_image=VALID_PNG, source_mime_type="image/png",
+        ),
+    ]
+    threads = [threading.Thread(target=call) for call in calls]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert len(overlaps) == 3
+    assert max(overlaps) == 1

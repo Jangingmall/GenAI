@@ -1,5 +1,9 @@
 import base64
+import functools
 import hashlib
+import logging
+import threading
+import time
 import uuid
 from dataclasses import dataclass, replace
 from typing import Callable, Literal
@@ -71,6 +75,30 @@ class DraftPipelineResult:
     fe_draft: AiFeDraftResultDto
 
 
+logger = logging.getLogger(__name__)
+
+
+def _one_job_at_a_time(method):
+    """Run drafts and renders one at a time.
+
+    The analysis, cutout and image models share one GPU (an L40S on Stage) and
+    each keeps the memory it touched. Two jobs at once ran out of GPU memory, so
+    a job waits here for the previous one instead.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        job_id = kwargs.get("job_id", args[0] if args else None)
+        started = time.monotonic()
+        with self._model_lock:
+            waited = time.monotonic() - started
+            if waited >= 1:
+                logger.warning("job %s waited %.1fs for the previous job", job_id, waited)
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class DetailPagePipeline:
     def __init__(
         self,
@@ -126,7 +154,9 @@ class DetailPagePipeline:
         self.max_source_images = max_source_images
         self.max_total_input_bytes = max_total_input_bytes
         self.require_decodable_images = require_decodable_images
+        self._model_lock = threading.RLock()
 
+    @_one_job_at_a_time
     def run(
         self,
         job_id: str,
@@ -478,6 +508,7 @@ class DetailPagePipeline:
             backend_delivery_pending=False,
         )
 
+    @_one_job_at_a_time
     def create_draft(
         self,
         job_id: str,

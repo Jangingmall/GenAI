@@ -325,3 +325,16 @@ def test_default_text_context_fits_the_analysis_request() -> None:
     assert "--context-length 16384" in text_line
     dockerfile = (ROOT / "deploy/sglang/Dockerfile").read_text()
     assert "TEXT_CONTEXT_LENGTH=16384" in dockerfile
+
+
+def test_text_server_keeps_prefill_graphs_and_image_preprocessing_off_the_gpu() -> None:
+    # Stage 2026-10-01: the L40S had 3.5 MiB free, so the cutout model and the
+    # text server's image preprocessing failed with CUDA OOM.
+    result = run_entrypoint(
+        text_model="cyankiwi/Qwen3.8-27B-AWQ-INT4",
+        image_model="circulus/FLUX.2-klein-9B-bnb-4bit",
+    )
+
+    text_line, _ = command_lines(result)
+    assert "--disable-prefill-cuda-graph" in text_line
+    assert "--image-processor-backend pil" in text_line
