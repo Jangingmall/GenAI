@@ -39,16 +39,22 @@ _DEFAULT_PHOTO_BY_BLOCK = {
 
 _IMAGE_BLOCK_TYPES = set(_DEFAULT_PHOTO_BY_BLOCK) | {"gallery"}
 
+# Section colors follow web/detail_page.css, so a page drawn from the React
+# document matches the PNG (the computed colors were read from the rendered
+# HTML for every block type and variant). An earlier warm palette (#F6F2EC
+# paper, #EEE5D8 sand, #242424 dark) never matched the PNG.
 _VARIANT_COLORS = {
-    "paper": ("#F6F2EC", "#222222"),
-    "light": ("#F7F7F5", "#222222"),
-    "sand": ("#EEE5D8", "#222222"),
-    "dark": ("#242424", "#F7F4EE"),
-    "image-left": ("#F7F7F5", "#222222"),
-    "image-right": ("#F7F7F5", "#222222"),
-    "full-bleed": ("#E8E5DF", "#222222"),
-    "compact": ("#FAFAF8", "#222222"),
+    "paper": ("#FFFFFF", "#121B29"),        # --bg-default
+    "light": ("#FAFBFC", "#121B29"),        # --bg-subtle
+    "sand": ("#EFF1F1", "#121B29"),         # --surface-sand
+    "dark": ("#121B29", "#FFFFFF"),         # --fill-neutral-impact
+    "image-left": ("#FFFFFF", "#121B29"),
+    "image-right": ("#FFFFFF", "#121B29"),
+    "full-bleed": ("#121B29", "#FFFFFF"),
+    "compact": ("#FFFFFF", "#121B29"),
 }
+# The feature grid is jade (--fill-jade) unless it is light or sand.
+_FEATURE_GRID_COLORS = ("#C6D9DC", "#121B29")
 
 _CARD_COLORS = {
     "paper": ("#E6EEEF", "#222222"),
@@ -206,10 +212,12 @@ def _layout_for_block(block_type: str) -> ReactLayoutPropsDto:
     return ReactLayoutPropsDto(display="stack", gap=24, align="stretch")
 
 
-def _section_style(variant: str) -> ReactStylePropsDto:
+def _section_style(block_type: str, variant: str) -> ReactStylePropsDto:
     background_color, color = _VARIANT_COLORS.get(
         variant, _VARIANT_COLORS["paper"]
     )
+    if block_type == "feature_grid" and variant not in {"light", "sand"}:
+        background_color, color = _FEATURE_GRID_COLORS
     return ReactStylePropsDto(
         background_color=background_color,
         color=color,
@@ -765,7 +773,7 @@ def _build_block(
         props=ReactElementPropsDto(
             variant=block.variant,
             layout=_layout_for_block(block.block_type),
-            style=_section_style(block.variant),
+            style=_section_style(block.block_type, block.variant),
         ),
         children=children,
     )
