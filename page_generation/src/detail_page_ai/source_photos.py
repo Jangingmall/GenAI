@@ -1,3 +1,4 @@
+import functools
 import hashlib
 import io
 import logging
@@ -560,11 +561,22 @@ class RembgCutoutExtractor:
         return image.convert("L")
 
 
+@functools.cache
+def _shared_rembg_extractor() -> RembgCutoutExtractor:
+    """One BiRefNet session per process for the generator and the validator.
+
+    On the CPU each session keeps several GiB: measured with two sessions the
+    process grew to 28.7 GiB over two jobs (past the Stage pod's 24 GiB limit),
+    and with one shared session it stayed at 15.8 GiB.
+    """
+    return RembgCutoutExtractor()
+
+
 class ProductFidelityValidator:
     def __init__(
         self, extractor: CutoutExtractor | None = None
     ) -> None:
-        self.extractor = extractor or RembgCutoutExtractor()
+        self.extractor = extractor or _shared_rembg_extractor()
 
     def validate(
         self,
@@ -736,7 +748,7 @@ class SourcePreservingProductPhotoGenerator:
         if not 0 <= max_generated_photos <= 12:
             raise ValueError("max_generated_photos must be between 0 and 12")
         self.asset_store = asset_store or MemoryAssetStore()
-        self.extractor = extractor or RembgCutoutExtractor()
+        self.extractor = extractor or _shared_rembg_extractor()
         self.background_generator = background_generator
         self.usage_scene_generator = usage_scene_generator
         self.detail_view_generator = detail_view_generator
