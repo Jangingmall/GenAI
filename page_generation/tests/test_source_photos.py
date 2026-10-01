@@ -1450,3 +1450,12 @@ def test_fidelity_validator_rejects_forged_source_hash_and_composite_pixels():
         )
         == "REJECTED"
     )
+
+
+def test_default_generator_and_validator_share_one_cutout_session():
+    # Two CPU BiRefNet sessions grew the process to 28.7 GiB over two jobs;
+    # the Stage pod limit is 24 GiB.
+    generator = source_photos.SourcePreservingProductPhotoGenerator()
+    validator = source_photos.ProductFidelityValidator()
+
+    assert generator.extractor is validator.extractor

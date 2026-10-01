@@ -178,6 +178,8 @@
 > 1차 조치 (GenAI `7a06247`): 텍스트 서버 `--disable-prefill-cuda-graph`, `--image-processor-backend pil`(전처리를 CPU로), 초안·렌더를 한 번에 하나씩 실행. Stage 실측: 두 서버 기동 후 여유 3.5 → **5.7 GiB**, 텍스트 서버 기동 8.0 → 7.4분(prefill 대신 decode 그래프 캡처가 245초 걸려 단축은 작다). 그래도 BiRefNet(1024×1024, fp32) 추론 중 onnxruntime이 822 MB 버퍼를 할당하지 못해 렌더가 계속 500이었다.
 >
 > 2차 조치: **누끼를 CPU에서 실행**한다 (`REMBG_USE_CUDA=1`일 때만 GPU). Pod RAM working set은 9.3 / 24 GiB라 CPU 누끼(사내 실측 최대 RSS 12.9 GiB)를 담을 수 있다. SGLang이 표시한 "in use 21.6 GiB"는 모델 파일 페이지 캐시를 포함한 값이다. 누끼 1장은 4 vCPU에서 약 50~60초로 예상한다.
+>
+> 3차 조치: 사진 생성기와 품질 검증기가 누끼 세션을 **하나만 공유**한다. 로컬 측정(사진 1장, 2작업): 세션 2개면 프로세스가 19.3 → 28.7 GiB로 계속 늘었고, 1개면 15.8 GiB에서 멈췄다. CPU 메모리 풀을 끄면 상주는 12.9 GiB로 줄지만 순간 최대가 17.3 GiB로 커져 쓰지 않는다. Stage 예상 최대는 약 21~24 GiB로 Pod 한도(24 GiB)에 가깝다.
 
 > [!NOTE]
 > **호스트 RAM 압박 해소**:  
