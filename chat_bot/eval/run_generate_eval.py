@@ -19,7 +19,9 @@ from app.pipeline.llm import chat_json
 from eval.generate_grading import grade_l1, grade_l2
 
 _DIR = Path(__file__).resolve().parent
-_MODEL = "gemma4:12b"
+# 실배포 모델(app/config.py LLM_MODEL 기본값)과 맞춘다 — 2026-10-01 메모리 이슈로
+# gemma4:12b에서 gemma2:9b로 임시 하향(docs/model-selection-comparison.md 참고).
+_MODEL = "gemma2:9b"
 
 
 def _no_prices(ids):

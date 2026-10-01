@@ -61,10 +61,17 @@ class Settings:
 
     # --- Ollama ---
     OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
-    # 30건 평가셋에서 qwen3:8b보다 사실왜곡률(13.3%→0%)·인젝션방어율(50%→100%)이 크게 앞서고
-    # 더 빠르다(p50 24.2s→18.6s) — eval/reports/gemma2-9b-think.json 실측 근거. 종목 모순
-    # 케이스(b27) 1건은 아직 못 잡아 tests/test_generate.py에 xfail로 남겨뒀다(알려진 한계).
-    LLM_MODEL = os.environ.get("LLM_MODEL", "gemma4:12b")
+    # 과거 30건 평가셋에서 qwen3:8b보다 사실왜곡률(13.3%→0%)·인젝션방어율(50%→100%)이
+    # 크게 앞서고 더 빨라(p50 24.2s→18.6s) gemma2:9b를 채택했었다(근거:
+    # docs/model-selection-comparison.md). 이후 gemma4:12b로 올라갔는데, 최신 28건
+    # 평가셋으로 재측정해보면 gemma4:12b가 모든 지표(사실왜곡·인젝션방어·의도분류·속도)
+    # 에서 gemma2:9b보다 우수하다 — 즉 품질만 보면 gemma4:12b가 맞다.
+    # 지금 gemma2:9b로 다시 내린 건 품질 때문이 아니라, gemma4:12b가 T4 GPU 노드의
+    # 메모리 한도(10Gi)를 기본 사용량만으로 거의 다 채워(7.8GB) 동시 요청 시 OOM이
+    # 재현됐기 때문이다(임시 조치) — gemma2:9b는 그보다 가벼워(5.4GB) 여유를 번다.
+    # 종목 모순 케이스(b27) 1건은 gemma2:9b가 아직 못 잡아 tests/test_generate.py에
+    # xfail로 남아있다(알려진 한계).
+    LLM_MODEL = os.environ.get("LLM_MODEL", "gemma2:9b")
 
     # --- LLM 백엔드 선택 ---
     # "ollama"(기본) 또는 "mlx-serve". gemma4:12b-mlx를 Ollama의 MLX 프리뷰로 띄워보니
