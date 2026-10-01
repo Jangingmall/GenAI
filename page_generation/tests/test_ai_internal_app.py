@@ -194,11 +194,35 @@ def test_every_route_is_health_internal_or_a_disabled_demo_route():
     for route in app_module.app.routes:
         if not isinstance(route, APIRoute) or route.path.startswith("/health"):
             continue
+        if route.path == "/metrics":
+            # Prometheus scrape target: counts and latencies only, no request data.
+            continue
         if route.path.startswith("/internal/"):
             assert "_require_internal_auth(" in inspect.getsource(route.endpoint), route.path
         else:
             dependencies = [dependency.call for dependency in route.dependant.dependencies]
             assert app_module._require_legacy_demo_api in dependencies, route.path
+
+
+def test_metrics_are_exposed_in_prometheus_format_with_route_templates(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    monkeypatch.setattr(
+        app_module,
+        "get_settings",
+        lambda: SimpleNamespace(ai_internal_auth_token="secret", enable_legacy_demo_api=False),
+    )
+    client = TestClient(app_module.app)
+    client.get("/internal/v1/ai/detail-page-jobs/job-metrics-1")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "text/plain" in response.headers["content-type"]
+    assert "# HELP http_requests_total" in response.text
+    # Job IDs must not become label values (one series per route, not per job).
+    assert 'handler="/internal/v1/ai/detail-page-jobs/{job_id}"' in response.text
+    assert "job-metrics-1" not in response.text
 
 
 def test_unauthenticated_requests_are_refused(monkeypatch):
