@@ -1,5 +1,6 @@
 from typing import Annotated
 import hmac
+import os
 import uuid
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
@@ -552,3 +553,8 @@ def run() -> None:
     import uvicorn
 
     uvicorn.run("detail_page_ai.app:app", host="0.0.0.0", port=8000, reload=False)
+    # The entrypoint stops the API with TERM when a model server dies (SIGKILL
+    # cannot reach PID 1); exit non-zero so the container shows as failed.
+    marker = os.environ.get("MODEL_FAILURE_MARKER")
+    if marker and os.path.exists(marker):
+        raise SystemExit(1)

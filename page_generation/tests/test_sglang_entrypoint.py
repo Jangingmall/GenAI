@@ -1,4 +1,5 @@
 import os
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -160,7 +161,7 @@ def _write_executable(path: Path, contents: str) -> None:
 
 
 def _run_fake_runtime(
-    tmp_path: Path, *, text_fails_before_ready: bool = False
+    tmp_path: Path, *, text_fails_before_ready: bool = False, text_dies_after_ready: bool = False
 ) -> tuple[int, list[str], str]:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
@@ -186,6 +187,7 @@ if [[ "${1:-}" == "-c" ]]; then
 fi
 if [[ "${1:-}" == "-m" ]]; then
     printf 'text-start\\n' >> "$EVENTS_FILE"
+    printf '%s\\n' "$$" > "$TEXT_PID_FILE"
     if [[ "${FAIL_TEXT:-0}" == "1" ]]; then
         exit 7
     fi
@@ -219,7 +221,7 @@ while :; do sleep 0.05; done
         """#!/usr/bin/env bash
 set -eu
 printf 'api-start\\n' >> "$EVENTS_FILE"
-trap 'exit 0' TERM INT
+trap 'printf "api-term\\n" >> "$EVENTS_FILE"; [[ -e "$MODEL_FAILURE_MARKER" ]] && exit 1; exit 0' TERM INT
 while :; do sleep 0.05; done
 """,
     )
@@ -237,6 +239,8 @@ printf '123 MiB, 456 MiB\\n'
             "PATH": f"{bin_dir}:{env['PATH']}",
             "EVENTS_FILE": str(events_file),
             "TEXT_READY_FILE": str(text_ready_file),
+            "TEXT_PID_FILE": str(tmp_path / "text.pid"),
+            "MODEL_FAILURE_MARKER": str(tmp_path / "model-server-failed"),
             "IMAGE_READY_FILE": str(image_ready_file),
             "TEXT_READY_TIMEOUT": "5",
             "TEXT_MODEL_PATH": "text-model",
@@ -279,6 +283,12 @@ printf '123 MiB, 456 MiB\\n'
             break
         time.sleep(0.02)
 
+    if text_dies_after_ready and process.poll() is None:
+        os.kill(int((tmp_path / "text.pid").read_text()), signal.SIGKILL)
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            pass
     if process.poll() is None and not text_fails_before_ready:
         process.terminate()
     try:
@@ -338,3 +348,14 @@ def test_text_server_keeps_prefill_graphs_and_image_preprocessing_off_the_gpu() 
     text_line, _ = command_lines(result)
     assert "--disable-prefill-cuda-graph" in text_line
     assert "--image-processor-backend pil" in text_line
+
+
+def test_model_server_death_stops_the_api_with_term(tmp_path: Path) -> None:
+    # Stage 2026-10-01: the text server died, but the supervisor's SIGKILL to
+    # the API (PID 1 in the container) is dropped by the kernel, so the pod
+    # stayed NotReady instead of restarting. The API must get TERM.
+    returncode, events, stderr = _run_fake_runtime(tmp_path, text_dies_after_ready=True)
+
+    assert "SGLang text server exited; stopping container" in stderr
+    assert "api-term" in events
+    assert returncode != 0
