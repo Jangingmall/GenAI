@@ -23,6 +23,13 @@ from app.config import settings
 
 _DEFAULT_TIMEOUT_SECONDS = 180
 
+# app/readiness.py와 deploy/ollama/entrypoint.sh도 이 값을 알아야 한다 — 사전 로딩·준비
+# 확인이 실제 호출과 다른 num_ctx를 쓰면, 모델이 로딩됐는데도 준비 확인이 기대하는
+# context 길이와 달라 계속 "준비 안 됨"으로 남는 문제가 생긴다(Codex 검증에서 지적).
+# entrypoint.sh는 셸 스크립트라 이 상수를 직접 import 못 하므로 숫자를 그대로
+# 복사해뒀다 — 이 값을 바꾸면 entrypoint.sh도 같이 바꿔야 한다.
+OLLAMA_NUM_CTX = 16384
+
 # 연결 실패(Ollama 재시작 중 등)만 짧은 backoff로 자동 재시도하고, 읽기 타임아웃(연결은
 # 됐지만 생성이 느려서 시간 초과)은 재시도하지 않는다 — 이미 느린 생성을 그대로 다시
 # 기다리게 하면 대기 시간만 배로 늘 뿐 성공 확률이 오르지 않는다(read=0). POST는
@@ -110,7 +117,7 @@ def _chat_ollama(
         "options": {
             "temperature": 0.3,
             "seed": 42,
-            "num_ctx": 16384,
+            "num_ctx": OLLAMA_NUM_CTX,
         },
         "stream": False,
     }

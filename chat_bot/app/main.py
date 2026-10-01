@@ -42,11 +42,12 @@ cache_store를 전부 주입 가능한 인자로 받게 설계돼 있다 — 그
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import asynccontextmanager
 
 import psycopg2
 import requests
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
@@ -85,6 +86,25 @@ _default_cache_lookup = _constant(semantic_cache.lookup)
 _default_cache_store = _constant(semantic_cache.store)
 
 logger = logging.getLogger(__name__)
+
+# LLM 사이드카만 재시작됐을 때(파드 전체 재시작이 아니라서 lifespan의 1회성 warmup은
+# 다시 안 돎) 재예열이 전혀 안 걸리던 문제(Stage 실측, 2026-10-01) — /ai/chat에서
+# LLM·DB·임베딩 장애를 감지하면 백그라운드로 재예열을 건다. 장애가 몇 분간 이어지면
+# 매 요청마다 또 거는 건 낭비(이미 메모리가 부족해 재시작된 상황에 부담을 더함)라
+# 쿨다운을 둔다.
+_last_rewarmup_attempt = 0.0
+_REWARMUP_COOLDOWN_SECONDS = 30
+
+
+def _background_rewarmup(**kwargs) -> None:
+    # lifespan()의 최초 warmup과 같은 이유로 예외를 삼킨다 — LLM이 아직도 안 죽어있어
+    # 재예열 자체가 실패해도(흔한 경우: 사이드카가 막 재시작되는 중) 백그라운드 태스크
+    # 예외가 그대로 새면 FastAPI가 로그에 스택트레이스를 남기는 수준을 넘어, 응답을 이미
+    # 보낸 뒤라도 요청 처리 전체가 비정상 종료될 수 있다(TestClient로 실측 확인).
+    try:
+        orchestrator.warmup(**kwargs)
+    except Exception:
+        logger.exception("백그라운드 재예열 실패 — 다음 쿨다운 뒤 재시도")
 
 
 @asynccontextmanager
@@ -214,6 +234,7 @@ class ChatResponse(BaseModel):
 @app.post("/ai/chat", response_model=ChatResponse)
 def chat(
     request: ChatRequest,
+    background_tasks: BackgroundTasks,
     # Depends를 기본값에 쓰는 건 ruff(B008)가 일반 함수 호출과 구분 못 해 걸리는
     # FastAPI 공식 의존성 주입 패턴이다 — 실제로는 매 요청마다 FastAPI가 호출해준다.
     chat_fn=Depends(_default_chat),
@@ -274,6 +295,19 @@ def chat(
         # session_store.set()을 안 거치고 바로 안내 문구만 돌려준다 — 다음 요청은 그대로
         # 이전 상태를 이어서 쓴다.
         logger.exception("AI 응답 지연 또는 실패")
+
+        global _last_rewarmup_attempt
+        now = time.monotonic()
+        if now - _last_rewarmup_attempt > _REWARMUP_COOLDOWN_SECONDS:
+            _last_rewarmup_attempt = now
+            background_tasks.add_task(
+                _background_rewarmup,
+                chat=chat_fn,
+                search_and_rank=search_and_rank,
+                fetch_prices=fetch_prices,
+                fetch_artisans=fetch_artisans,
+            )
+
         return ChatResponse(
             reply="지금 답변이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
             intent="general_chat",

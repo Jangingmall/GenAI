@@ -133,6 +133,50 @@ def test_chat_returns_friendly_reply_on_llm_timeout():
     assert "다시 시도" in body["reply"]
 
 
+def test_chat_schedules_background_rewarmup_after_llm_failure(monkeypatch):
+    """LLM 사이드카만 재시작됐을 때(앱 전체가 재시작되는 게 아니라서 lifespan의
+    1회성 warmup은 다시 안 돈다) — 실패를 감지한 요청이 백그라운드로 재예열을 걸어야
+    다음 요청부터라도 프롬프트 캐시가 식은 상태(10~25초 추가 지연)를 피한다."""
+    rewarmup_calls = []
+    monkeypatch.setattr(main, "_last_rewarmup_attempt", 0.0)
+    monkeypatch.setattr(
+        main.orchestrator, "warmup", lambda **kw: rewarmup_calls.append(kw)
+    )
+
+    def timeout_chat(messages, schema, *, think, model=None):
+        raise requests.exceptions.Timeout("연결 시간 초과")
+
+    _override(chat=timeout_chat, search_and_rank=lambda contact1, top_k=3: [])
+
+    response = client.post(
+        "/ai/chat", json={"session_id": "s1", "message": "찻잔 있나요", "history": []}
+    )
+
+    assert response.status_code == 200
+    assert len(rewarmup_calls) == 1
+
+
+def test_chat_rewarmup_is_debounced_on_repeated_failures(monkeypatch):
+    """LLM이 몇 분째 계속 죽어있으면, 실패할 때마다 재예열을 또 거는 건 낭비다 — 이미
+    메모리가 부족해서 재시작된 상황에 추가 부담을 줄 수 있다. 짧은 시간 안의 반복
+    실패는 한 번만 재예열 시도해야 한다."""
+    rewarmup_calls = []
+    monkeypatch.setattr(main, "_last_rewarmup_attempt", 0.0)
+    monkeypatch.setattr(
+        main.orchestrator, "warmup", lambda **kw: rewarmup_calls.append(kw)
+    )
+
+    def timeout_chat(messages, schema, *, think, model=None):
+        raise requests.exceptions.Timeout("연결 시간 초과")
+
+    _override(chat=timeout_chat, search_and_rank=lambda contact1, top_k=3: [])
+
+    client.post("/ai/chat", json={"session_id": "s1", "message": "a", "history": []})
+    client.post("/ai/chat", json={"session_id": "s1", "message": "b", "history": []})
+
+    assert len(rewarmup_calls) == 1
+
+
 def test_chat_returns_friendly_reply_on_malformed_llm_json():
     """SGLang의 outlines 그래마 백엔드로 실측 확인: response_format(JSON 스키마 강제)을
     보내도 특정 프롬프트에서 조용히 무시하고 순수 텍스트를 반환하는 경우가 있었다.
