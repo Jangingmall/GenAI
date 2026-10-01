@@ -313,6 +313,9 @@ not an inclusion list; not a page-plan sequence):
 - info_table: include only creator-supplied or image-visible fields; otherwise write "확인 필요".
 - notice: use only supplied care guidance plus concise missing-information notes; never invent
   material-specific cleaning or handling instructions.
+- recommendation: only populated, product-specific staging ideas are allowed. Never recommend
+  other products, related products, or other crafts: no product catalog or verified related
+  product is provided. Omit the block when there are no distinct staging items.
 - statement: explain the supplied making/process story in clear, human language.
 - usage_scene: suggest a plausible setting or use without claiming that the image proves
   performance, safety, durability, or actual use.
@@ -871,7 +874,7 @@ Role: {role}
 {build_image_mood_prompt()}
 
 Hard constraints:
-- The result must be an empty, product-free background plate.
+- The result must be an empty, product-free background photograph.
 - Do not draw, paint, imply, or include the product or any similar main object.
 - Do not add a box, container, cabinet, vessel, craft object, duplicate subject, person,
   hand, text, logo, label, watermark, frame, or infographic.
@@ -887,15 +890,11 @@ def build_usage_context_background_prompt(
     profile: ProductProfileDto,
     locale: str = "ko-KR",
 ) -> str:
-    """Describe a product-free lifestyle plate for source-preserving compositing."""
+    """Describe a product-free lifestyle photograph for source-preserving compositing."""
     direction = _product_scene_direction(profile)
     setting = direction["setting"]
-    return f"""Generate only an empty, product-free interior background plate for an e-commerce detail page in {locale}.
-
-Usage context: empty interior background plate.
-Visual direction: e-commerce product background, modern layout, soft lighting, minimal design.
-{build_image_mood_prompt()}
-
+    return f"""Generate an empty interior background photograph for an e-commerce detail page in {locale}.
+Usage context: empty, product-free interior photograph with a completely clear tabletop.
 This is not an isolated studio, a blank monochrome background, or a showroom display. It must
 look like an unstyled photograph of a real home and must visibly show this environment:
 {setting}. Use a {direction["surface"]} surface, {direction["light"]}, one camera at tabletop height,
@@ -903,13 +902,20 @@ a normal 50mm lens, a natural three-quarter viewing angle, and no wide-angle dis
 Keep the set quiet and under-designed. Leave a wide open foreground and a completely clear,
 uncluttered lower-center surface for a subject to be composited later. For desk-like products,
 make this a wide open matte wood foreground; for other products, use the selected surface above.
+The tabletop is a bare rectangular furniture surface, with no objects on it.
+
+Visual direction: e-commerce product background, modern layout, soft lighting, minimal design.
+Use natural surface texture, restrained highlights, and a quiet neutral palette.
+The empty room and bare tabletop are the entire subject of this photograph.
 
 Hard constraints:
 - The entire tabletop and reserved foreground must be empty. Do not place any foreground object,
   decor, serving item, ornament, hand, person, or prop on it.
+- Do not add plates, dishes, bowls, cups, cutlery, or serving trays anywhere in the scene;
+  these are unrelated tableware, not context for the separately composited product.
 - Do not add text, logo, label, watermark, infographic, collage, UI, or packaging.
 - Do not invent a subject. The original product photograph will be composited after this step
-  and must not appear in this background plate.
+  and must not appear in this background photograph.
 
 Return image only.
 """
@@ -988,6 +994,8 @@ PREMIUM SHOOT BRIEF:
   believable surface contact, weight, gravity, and contact shadows.
 - Keep hero-safe copy space on one side without making the product small.
 - Props are optional: at most one distant prop with a clear use or scale relationship.
+- Do not introduce unrelated plates, dishes, bowls, cups, cutlery, or serving trays.
+  Tableware already present in the source is part of the product and must be preserved.
 
 IDENTITY LOCK — preserve the visual identity of every visible item: the same number of products,
 exact silhouettes, proportions, natural arrangement, colors, pattern, border, finish, components,

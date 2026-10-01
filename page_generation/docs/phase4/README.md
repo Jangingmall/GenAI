@@ -8,7 +8,7 @@
 
 | # | 제출 산출물 | 해당 문서 |
 | --- | --- | --- |
-| 4-1 | AI 기능 평가 보고서: 정량 평가 + 정성 평가 + 비교표 | [`submission/01`](submission/01-ai-evaluation-report.md) (2절 정량, 3절 정성, 4절 비교표), 근거는 [`evaluation/`](evaluation/) |
+| 4-1 | AI 기능 평가 보고서: 정량 평가 + 정성 평가 + 비교표 | [`submission/01`](submission/01-ai-evaluation-report.md) (2절 정량, 3절 정성, 4절 비교표), 근거는 [`evaluation/`](evaluation/), 모델 비교는 [`evaluation/model-selection-2026-09-30.md`](evaluation/model-selection-2026-09-30.md) |
 | 4-2 | AI 안전성 검증 보고서: 할루시네이션·Prompt Injection·편향 검증 | [`submission/02`](submission/02-ai-safety-report.md), 근거는 [`evaluation/ai-safety-report-2026-09-21.md`](evaluation/ai-safety-report-2026-09-21.md) |
 | 4-3 | 모델 카드 및 운영 가이드 | [`submission/03`](submission/03-model-card-and-operations.md), 배포·운영 가이드는 [`operations/`](operations/), 인프라 전달은 [`infra-handoffs/`](infra-handoffs/) |
 
@@ -38,6 +38,7 @@
 | [`evaluation/celadon-run-2026-09-23.md`](evaluation/celadon-run-2026-09-23.md) | 청자 분청 찻잔에서 생성컷 미사용과 PNG·react_document 사진 구성 불일치를 재현한 기록 | 시점 |
 | [`evaluation/cutout-ground-truth.md`](evaluation/cutout-ground-truth.md) | 누끼 ground-truth 기준 시점 기록 | 시점 |
 | [`evaluation/cutout-regression-baseline.md`](evaluation/cutout-regression-baseline.md) | 누끼 회귀 기준선 시점 기록 | 시점 |
+| [`evaluation/model-selection-2026-09-30.md`](evaluation/model-selection-2026-09-30.md) | 텍스트 7종·이미지 3종을 같은 6건으로 돌려 완주·카테고리·한국어·메모리를 비교하고 현재 구성 유지 근거를 남긴 기록 | 시점 |
 | [`evaluation/full60-runs.md`](evaluation/full60-runs.md) | 60건 전체 평가 실행 시점 기록 | 시점 |
 | [`evaluation/generated-photo-usage-2026-09-23.md`](evaluation/generated-photo-usage-2026-09-23.md) | 합죽선 매화선 두 실행에서 gallery 계획은 추가됐지만 생성컷 소비가 되지 않은 현상과 원인 기록 | 시점 |
 
@@ -50,6 +51,7 @@
 | [`operations/aws-migration-checklist.md`](operations/aws-migration-checklist.md) | AWS 이관에 필요한 준비물·차단 조건·확인 방법을 정리한 실무 체크리스트 | 상시 |
 | [`operations/eks-workload-spec.md`](operations/eks-workload-spec.md) | EKS 인프라팀 요청에 대한 AI 저장소 workload·자원·검증 상태 답변 | 상시 |
 | [`operations/local-llm.md`](operations/local-llm.md) | Mac 로컬 MLX Serve 기반 상세페이지 LLM 실행 경로와 출력 규칙 | 상시 |
+| [`operations/qa-checklist.md`](operations/qa-checklist.md) | 상세페이지 한 건마다 입력·분석·구성·사진·렌더·전달·안전성을 자동/육안으로 확인하는 QA 체크리스트 | 상시 |
 | [`operations/security-response-2026-09-30.md`](operations/security-response-2026-09-30.md) | 사이버 보안팀 보안조치요구서(SAST F-1·F-3·F-4·F-7, SCA 21건)에 대한 확인 근거·조치·재검 결과 회신 | 시점 |
 | [`operations/server-memory-estimate.md`](operations/server-memory-estimate.md) | Apple Silicon 로컬 MLX 통합 메모리 예상과 서버 메모리 문서 참조 | 상시 |
 | [`operations/sglang-serving-research.md`](operations/sglang-serving-research.md) | AWS g6e.xlarge 한 장의 L40S에서 텍스트·확산 SGLang 2프로세스를 공존시키기 위한 운영 조사 | 시점 |

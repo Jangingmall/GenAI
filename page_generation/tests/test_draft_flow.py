@@ -2,7 +2,12 @@ from io import BytesIO
 
 from PIL import Image
 
-from detail_page_ai.dto import ApprovedDraftDto, GenerationOptions, ProductProfileDto
+from detail_page_ai.dto import (
+    ApprovedDraftDto,
+    GenerationOptions,
+    ProductProfileDto,
+    UserHintsDto,
+)
 from detail_page_ai.models import ProductPhotoSet
 from detail_page_ai.pipeline import DetailPagePipeline, DraftPipelineResult
 from detail_page_ai.persistence import MemoryJobRepository
@@ -240,6 +245,42 @@ def test_backend_job_uses_same_generation_id_for_approved_callback():
     )
 
     assert final.generation_id == "42"
+
+
+def test_saved_and_approved_legacy_draft_filters_confirmed_seller_warnings():
+    executor = ControlledExecutor()
+    repository = MemoryJobRepository()
+    pipeline = DetailPagePipeline(
+        analyzer=FakeAnalyzer(), renderer=FinalRenderer(), backend=FinalBackend()
+    )
+    service = DetailPageJobService(
+        pipeline=pipeline, executor=executor, repository=repository
+    )
+    care = "천천히 펴 주세요. 물기를 닦아 주세요."
+    accepted = service.submit(
+        valid_png(), "image/png", user_hints=UserHintsDto(care_guide=care)
+    )
+    executor.run_all()
+
+    def restore_legacy_warnings(job):
+        job.draft_profile = job.draft_profile.model_copy(update={
+            "uncertain_information": ["정확한 크기 확인 필요", "천천히 펴 주세요."],
+            "safety_notes": ["물기를 닦아 주세요.", "이미지 밖 구성품 확인 필요"],
+        })
+
+    repository.update(accepted.job_id, restore_legacy_warnings)
+    draft = service.get(accepted.job_id).draft
+    saved = service.save_draft(
+        accepted.job_id, draft.draft, expected_version=draft.version
+    )
+    expected = ["정확한 크기 확인 필요", "이미지 밖 구성품 확인 필요"]
+    assert saved.product.warnings == expected
+    assert saved.source_sha256 == draft.source_sha256
+
+    # Old persisted profiles must also be filtered on approval without a save first.
+    repository.update(accepted.job_id, restore_legacy_warnings)
+    final = service.approve_draft(accepted.job_id, saved.draft)
+    assert final.fe_result.product.warnings == expected
 
 
 def test_create_idempotency_returns_same_job_and_rejects_conflict():

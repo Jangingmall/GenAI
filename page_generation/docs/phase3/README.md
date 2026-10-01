@@ -79,6 +79,7 @@
 | [`be-handoffs/be-handoff-2026-09-18b.md`](be-handoffs/be-handoff-2026-09-18b.md) | status_url 응답 스키마·콜백 경로·데드라인 스케줄러에 대한 BE 전달 회신 | 시점 |
 | [`be-handoffs/be-handoff-2026-09-21.md`](be-handoffs/be-handoff-2026-09-21.md) | BE 경유 첫 연동에서 통과한 구간과 S3 설정·오류 응답·승인 시점 관련 요청 | 시점 |
 | [`be-handoffs/be-handoff-2026-09-22.md`](be-handoffs/be-handoff-2026-09-22.md) | BE-11 승인·콜백 시점 문제와 31분 데드라인을 비교하고 선택지·결정을 요청한 문서 | 시점 |
+| [`be-handoffs/be-request-2026-10-01-all-photos.md`](be-handoffs/be-request-2026-10-01-all-photos.md) | BE #105 렌더 자동 요청·재요청이 AI 와 맞는지 재현 확인한 결과와 판매자 사진 전체(`product_images`) 전송 요청 | 시점 |
 | [`be-handoffs/be-handoff-2026-09-29.md`](be-handoffs/be-handoff-2026-09-29.md) | 승인 재요청 409·콜백 재시도 규칙·BE-11 정리와 승인 타임아웃 300초 확인을 BE 코드 대조로 전달한 문서 | 시점 |
 | [`be-handoffs/be-request-2026-09-18-e2e.md`](be-handoffs/be-request-2026-09-18-e2e.md) | 실제 BE 컨테이너 E2E에서 확인된 승인 흐름·generation ID·multipart·상태 반영 요청 | 시점 |
 | [`be-handoffs/open-decisions-2026-09-17.md`](be-handoffs/open-decisions-2026-09-17.md) | POST /ai/products 응답, 생성 이미지 전달, 내부 인증, 경로 의미·타임아웃에 대한 공동 결정 항목 | 시점 |

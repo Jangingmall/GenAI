@@ -23,7 +23,9 @@ from .react_document import (
     ReactLayoutPropsDto,
     ReactStylePropsDto,
     ReactTextNodeDto,
+    palette_swatch_color,
 )
+from .validation import sanitize_page_plan
 
 
 _DEFAULT_PHOTO_BY_BLOCK = {
@@ -653,6 +655,31 @@ def _info_table(
     )
 
 
+def _palette_items(*, block_id: str, items: list[PageBlockItemDto]) -> ReactElementNodeDto | None:
+    rows = []
+    for index, item in enumerate(items):
+        swatch = _element(
+            block_id=block_id, suffix=f"palette-{index}-swatch", tag="span",
+            props=ReactElementPropsDto(style=ReactStylePropsDto(
+                background_color=palette_swatch_color(item.value, index),
+                border_radius=20, padding=_edges(9),
+            )),
+        )
+        label = _text_element(block_id=block_id, suffix=f"palette-{index}-label",
+                              tag="strong", value=item.label, style=_body_style())
+        value = _text_element(block_id=block_id, suffix=f"palette-{index}-value",
+                              tag="span", value=item.value or item.description, style=_body_style())
+        rows.append(_element(
+            block_id=block_id, suffix=f"palette-{index}", tag="li",
+            props=ReactElementPropsDto(layout=ReactLayoutPropsDto(
+                display="flex", direction="row", gap=8, align="center",
+            )), children=[node for node in (swatch, label, value) if node is not None],
+        ))
+    if not rows:
+        return None
+    return _element(block_id=block_id, suffix="palette", tag="ul", children=rows)
+
+
 def _fallback_blocks(draft: ApprovedDraftDto) -> list[PageBlockDto]:
     return [
         PageBlockDto(
@@ -700,7 +727,11 @@ def _build_block(
     copy_group = _copy_group(block_id=block_id, block=block, title=title, body=body)
     children: list[ReactElementNodeDto | ReactTextNodeDto] = [copy_group]
 
-    if block.block_type == "info_table":
+    if block.block_type == "palette":
+        palette = _palette_items(block_id=block_id, items=block.items)
+        if palette:
+            children.append(palette)
+    elif block.block_type == "info_table":
         table = _info_table(block_id=block_id, title=title, items=block.items)
         if table:
             children.append(table)
@@ -753,7 +784,7 @@ def build_react_document_from_draft(
     the final photo set before nodes are emitted.
     """
 
-    blocks = draft.page_plan or _fallback_blocks(draft)
+    blocks = sanitize_page_plan(draft.page_plan) or _fallback_blocks(draft)
     resolved_blocks: list[PageBlockDto] = []
     block_photo_ids: list[list[str] | None] = []
     for block in blocks:

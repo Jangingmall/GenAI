@@ -351,6 +351,7 @@ class DetailPageJobService:
                 options=options or job.options,
                 additional_source_images=job.additional_source_images,
                 profile_override=merged_profile,
+                user_hints=job.user_hints,
                 generation_id=generation_id,
                 product_id=product_id or job.product_id,
                 source_asset_id=source_asset_id or job.source_asset_id,
@@ -420,6 +421,7 @@ class DetailPageJobService:
             profile=profile,
             approved_draft=draft,
             source_asset_id=snapshot.source_asset_id or snapshot.draft.source_asset_id,
+            user_hints=snapshot.user_hints,
         )
 
         def save(current: JobRecord) -> None:
