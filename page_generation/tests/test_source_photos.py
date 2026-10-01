@@ -274,7 +274,27 @@ def test_rembg_cutout_falls_back_to_cpu_when_cuda_provider_is_unavailable(
     ) in caplog.text
 
 
-def test_rembg_session_prioritizes_cuda_provider_when_available(monkeypatch):
+def test_rembg_session_stays_on_cpu_by_default_even_with_cuda(monkeypatch):
+    # Stage 2026-10-01: the L40S shared with both SGLang servers had no room
+    # for BiRefNet's activations, so cutouts run on the CPU unless enabled.
+    fake_onnxruntime = ModuleType("onnxruntime")
+    fake_onnxruntime.get_available_providers = lambda: [
+        "CPUExecutionProvider",
+        "CUDAExecutionProvider",
+    ]
+    fake_rembg = ModuleType("rembg")
+    session_calls = []
+    fake_rembg.new_session = lambda model_name, **kwargs: session_calls.append(kwargs) or "session"
+    monkeypatch.setitem(sys.modules, "onnxruntime", fake_onnxruntime)
+    monkeypatch.setitem(sys.modules, "rembg", fake_rembg)
+    monkeypatch.delenv("REMBG_USE_CUDA", raising=False)
+
+    assert source_photos._create_rembg_session("birefnet-general") == "session"
+    assert session_calls == [{"providers": ["CPUExecutionProvider"]}]
+
+
+def test_rembg_session_prioritizes_cuda_provider_when_enabled(monkeypatch):
+    monkeypatch.setenv("REMBG_USE_CUDA", "1")
     fake_onnxruntime = ModuleType("onnxruntime")
     fake_onnxruntime.get_available_providers = lambda: [
         "CPUExecutionProvider",

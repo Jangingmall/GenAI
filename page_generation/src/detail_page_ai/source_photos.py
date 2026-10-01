@@ -2,6 +2,7 @@ import hashlib
 import io
 import logging
 import math
+import os
 from collections import deque
 from dataclasses import dataclass, replace
 from threading import Lock
@@ -111,23 +112,26 @@ class RembgSegmenter(Protocol):
 
 
 def _create_rembg_session(model_name: str) -> object:
-    """Create a rembg session with CUDA first and a CPU fallback."""
+    """Create a rembg session on the CPU, or on CUDA when REMBG_USE_CUDA=1."""
     import onnxruntime
     from rembg import new_session
 
     available_providers = list(onnxruntime.get_available_providers())
-    # The GPU is shared with both SGLang servers: grow the arena only by what
-    # is requested and skip cuDNN's exhaustive search, which allocates large
-    # trial workspaces.
+    # Stage 2026-10-01: on the L40S shared with both SGLang servers, BiRefNet's
+    # 1024x1024 activations did not fit (an 822 MB arena request failed with
+    # 5.7 GiB free) while the pod used 9.3 of its 24 GiB RAM. The CPU path peaks
+    # near 13 GiB RSS and takes about a minute per cutout on 4 vCPUs.
+    use_cuda = (
+        os.environ.get("REMBG_USE_CUDA") == "1"
+        and "CUDAExecutionProvider" in available_providers
+    )
+    # On a GPU of its own: grow the arena only by what is requested and skip
+    # cuDNN's exhaustive search, which allocates large trial workspaces.
     cuda_provider = (
         "CUDAExecutionProvider",
         {"arena_extend_strategy": "kSameAsRequested", "cudnn_conv_algo_search": "HEURISTIC"},
     )
-    providers = (
-        [cuda_provider, "CPUExecutionProvider"]
-        if "CUDAExecutionProvider" in available_providers
-        else ["CPUExecutionProvider"]
-    )
+    providers = [cuda_provider, "CPUExecutionProvider"] if use_cuda else ["CPUExecutionProvider"]
     logger.info(
         "rembg ONNX Runtime providers: available=%s selected=%s",
         available_providers,
