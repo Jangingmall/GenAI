@@ -4,7 +4,7 @@ import io
 import logging
 import math
 import os
-from collections import deque
+from collections import OrderedDict, deque
 from dataclasses import dataclass, replace
 from threading import Lock
 from typing import Protocol
@@ -458,6 +458,7 @@ class RembgCutoutExtractor:
     # BiRefNet-General evaluates at 1024px and was chosen over U2Net/ISNet for
     # its finer boundary preservation on translucent petals and glossy nacre.
     model_name = "birefnet-general"
+    cached_cutouts = 8
 
     def __init__(
         self,
@@ -478,11 +479,32 @@ class RembgCutoutExtractor:
         self._session_factory = session_factory
         self._segmenter = segmenter
         self._session_lock = Lock()
+        self._cutouts: OrderedDict[str, ProductCutout] = OrderedDict()
+        self._cutouts_lock = Lock()
         self.min_foreground_ratio = min_foreground_ratio
         self.max_foreground_ratio = max_foreground_ratio
         self.visible_alpha_threshold = visible_alpha_threshold
 
     def extract(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
+        # The photo generator and the fidelity validator ask for the same
+        # source's cutout several times per render, and on Stage's CPU each
+        # BiRefNet pass takes tens of seconds. The cutout depends only on the
+        # source bytes, so reuse successful ones; failures are retried.
+        key = hashlib.sha256(source_image).hexdigest()
+        with self._cutouts_lock:
+            cached = self._cutouts.get(key)
+            if cached is not None:
+                self._cutouts.move_to_end(key)
+                return cached
+        cutout = self._extract_uncached(source_image, source_mime_type)
+        if cutout is not None:
+            with self._cutouts_lock:
+                self._cutouts[key] = cutout
+                while len(self._cutouts) > self.cached_cutouts:
+                    self._cutouts.popitem(last=False)
+        return cutout
+
+    def _extract_uncached(self, source_image: bytes, source_mime_type: str) -> ProductCutout | None:
         del source_mime_type
         try:
             source = _decode_rgb(source_image)

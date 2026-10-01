@@ -218,13 +218,16 @@ def test_rembg_cutout_uses_injected_segmenter_and_reuses_one_session():
         segmenter=segmenter,
     )
 
+    # A second, different source still reuses the one session (the same
+    # source would be served from the cutout cache without segmenting).
+    other = _png(Image.new("RGB", (80, 80), "gray"))
     first = extractor.extract(source, "image/png")
-    second = extractor.extract(source, "image/png")
+    second = extractor.extract(other, "image/png")
 
     assert first is not None
     assert second is not None
     assert created_sessions == ["birefnet-general"]
-    assert segmenter_calls == [(source, session, True), (source, session, True)]
+    assert segmenter_calls == [(source, session, True), (other, session, True)]
     assert first.bbox == (20, 15, 60, 65)
     assert first.source_sha256 == hashlib.sha256(source).hexdigest()
     source_rgb = Image.open(io.BytesIO(source)).convert("RGB")
@@ -1459,3 +1462,48 @@ def test_default_generator_and_validator_share_one_cutout_session():
     validator = source_photos.ProductFidelityValidator()
 
     assert generator.extractor is validator.extractor
+
+
+def _product_mask_png() -> bytes:
+    mask = Image.new("L", (80, 80), 0)
+    mask.paste(255, (20, 15, 60, 65))
+    return _png(mask)
+
+
+def test_rembg_cutout_reuses_the_result_for_the_same_source_bytes():
+    # Stage 2026-10-01: the generator and validator re-ran BiRefNet on the same
+    # source several times per render, each pass tens of seconds on the CPU.
+    calls = []
+
+    def segmenter(data, *, session, only_mask):
+        calls.append(hashlib.sha256(data).hexdigest())
+        return _product_mask_png()
+
+    extractor = source_photos.RembgCutoutExtractor(session=object(), segmenter=segmenter)
+    source = _source_fixture()
+    other = _png(Image.new("RGB", (80, 80), "gray"))
+
+    first = extractor.extract(source, "image/png")
+    second = extractor.extract(source, "image/png")
+    assert first is not None and second is first
+    assert len(calls) == 1
+
+    assert extractor.extract(other, "image/png") is not None
+    assert len(calls) == 2
+
+
+def test_rembg_cutout_retries_after_a_failed_extraction():
+    attempts = []
+
+    def segmenter(data, *, session, only_mask):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise RuntimeError("transient onnxruntime failure")
+        return _product_mask_png()
+
+    extractor = source_photos.RembgCutoutExtractor(session=object(), segmenter=segmenter)
+    source = _source_fixture()
+
+    assert extractor.extract(source, "image/png") is None
+    assert extractor.extract(source, "image/png") is not None
+    assert len(attempts) == 2
