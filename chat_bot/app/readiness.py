@@ -8,6 +8,7 @@ import psycopg2
 import requests
 
 from app.config import settings
+from app.pipeline import llm
 
 _CHECK_TIMEOUT_SECONDS = 2
 _LOCAL_MODEL_MARKERS = (
@@ -57,17 +58,46 @@ def _check_embedding_model() -> tuple[bool, str]:
     return True, f"local model files present: {model_path}"
 
 
-def _model_ids(payload: dict, backend: str) -> list[str]:
-    if backend == "ollama":
-        return [str(item.get("name", "")) for item in payload.get("models", [])]
+def _model_ids(payload: dict) -> list[str]:
+    """sglang·mlx-serve는 OpenAI 호환 /v1/models 형식(data[].id)을 쓴다. ollama는
+    별도로 _check_ollama_running()이 /api/ps를 직접 처리한다."""
     return [str(item.get("id", "")) for item in payload.get("data", [])]
+
+
+def _check_ollama_running(host: str) -> tuple[bool, str]:
+    """/api/tags(설치된 모델 목록)가 아니라 /api/ps(현재 메모리에 로드돼 실행 중인
+    모델 목록)를 본다 — Stage 실측(2026-10-01): 재시작 직후 /api/tags 기준으로는
+    "준비 완료"였는데 실제로는 GPU에 모델이 전혀 안 올라온 채 20분 넘게 머문 사례를
+    Grafana로 확인했다. 또한 로드된 context 길이가 실제 호출(llm.OLLAMA_NUM_CTX)과
+    다르면, 모델은 있어도 다른 설정으로 떠있는 것이라 not_ready로 본다."""
+    url = f"{host.rstrip('/')}/api/ps"
+    try:
+        response = requests.get(url, timeout=_CHECK_TIMEOUT_SECONDS)
+        response.raise_for_status()
+        running = response.json().get("models", [])
+    except Exception as exc:  # noqa: BLE001
+        return False, f"{type(exc).__name__}: {exc}"
+
+    matching = next(
+        (m for m in running if str(m.get("name", "")) == settings.LLM_MODEL), None
+    )
+    if matching is None:
+        return False, f"model {settings.LLM_MODEL!r} not currently loaded by {url}"
+
+    loaded_ctx = matching.get("context_length")
+    if loaded_ctx != llm.OLLAMA_NUM_CTX:
+        return False, (
+            f"model {settings.LLM_MODEL!r} loaded but context length "
+            f"{loaded_ctx!r} != expected {llm.OLLAMA_NUM_CTX!r}"
+        )
+    return True, f"model {settings.LLM_MODEL!r} loaded with context {loaded_ctx}"
 
 
 def _check_llm() -> tuple[bool, str]:
     backend = settings.LLM_BACKEND.strip().lower()
     if backend == "ollama":
-        url = f"{settings.OLLAMA_HOST.rstrip('/')}/api/tags"
-    elif backend == "sglang":
+        return _check_ollama_running(settings.OLLAMA_HOST)
+    if backend == "sglang":
         url = f"{settings.SGLANG_HOST.rstrip('/')}/v1/models"
     elif backend == "mlx-serve":
         url = f"{settings.MLX_SERVE_HOST.rstrip('/')}/v1/models"
@@ -77,7 +107,7 @@ def _check_llm() -> tuple[bool, str]:
     try:
         response = requests.get(url, timeout=_CHECK_TIMEOUT_SECONDS)
         response.raise_for_status()
-        model_ids = _model_ids(response.json(), backend)
+        model_ids = _model_ids(response.json())
     except Exception as exc:  # noqa: BLE001
         return False, f"{type(exc).__name__}: {exc}"
 
@@ -97,8 +127,8 @@ def check_readiness() -> dict:
         checks[name] = {"ready": ready, "detail": detail}
 
     return {
-        "status": "ready"
-        if all(item["ready"] for item in checks.values())
-        else "not_ready",
+        "status": (
+            "ready" if all(item["ready"] for item in checks.values()) else "not_ready"
+        ),
         "checks": checks,
     }

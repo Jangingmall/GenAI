@@ -24,12 +24,26 @@
 #   3. 배포 매니페스트(K8s env var: LLM_BACKEND=ollama, OLLAMA_HOST, LLM_MODEL)는
 #      이 레포 밖에 있어 인프라팀이 반영해야 한다.
 
-FROM ollama/ollama:latest
+# latest 대신 버전을 고정한다 — 버전이 바뀔 때마다 동작이 달라지는 위험(실제로
+# 기존 OOM 조사 중 Ollama 업스트림에 RAM 캐시가 메모리 집계 밖에서 커지는 이슈가
+# 보고된 걸 확인했다)을 배제하고, 언제 올릴지를 우리가 정하기 위함.
+FROM ollama/ollama:0.35.0
 
 ARG OLLAMA_MODEL=gemma4:12b
 ENV OLLAMA_MODEL=${OLLAMA_MODEL}
 ENV OLLAMA_HOST=0.0.0.0:11434
 ENV OLLAMA_KEEP_ALIVE=-1
+# 대화가 길어질수록 llama-server의 RAM 프롬프트 캐시(기본 상한 8192MiB)와 컨텍스트
+# 체크포인트(슬롯당 최대 32개, 최대 10GB)가 호스트 RAM에 계속 쌓이는 게 OOM의 실제
+# 원인으로 지목됐다(팀원 로그 기반 진단) — 둘 다 꺼서 호스트 RAM이 대화 길이에 따라
+# 계속 자라지 않게 한다. 대신 매 요청마다 프롬프트를 다시 처리해야 해 약간 느려질 수
+# 있다(Stage 배포 후 /ai/chat 응답 속도로 확인 필요 — 로컬 GPU가 없어 사전 측정 불가).
+ENV LLAMA_ARG_CACHE_RAM=0
+ENV LLAMA_ARG_CTX_CHECKPOINTS=0
+
+# entrypoint.sh가 curl로 사전 로딩 호출을 한다 — 베이스 이미지에 없을 수 있어 명시 설치.
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # 빌드 시 모델을 이미지에 굽는다(런타임에 외부 네트워크 불필요).
 # ollama serve를 백그라운드로 잠깐 띄워 pull한 뒤 종료 — 공식 이미지 문서 패턴.
@@ -38,12 +52,17 @@ RUN ollama serve & \
     ollama pull "${OLLAMA_MODEL}" && \
     pkill ollama
 
+COPY deploy/ollama/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 11434
 
-# 챗봇 API의 app/readiness.py가 이 엔드포인트로 준비 여부를 확인한다
-# (readiness.py의 _check_llm(): backend가 "ollama"면 GET /api/tags 호출,
-# 응답의 models[].name 목록에 LLM_MODEL이 있는지 확인).
+# 챗봇 API의 app/readiness.py는 이 컨테이너의 /api/ps(현재 메모리에 로드된 모델
+# 목록 + context 길이)로 준비 여부를 확인한다 — 설치 여부만 보는 /api/tags는
+# "준비 완료"인데 실제로는 모델이 전혀 안 올라온 상태(Stage 실측, 2026-10-01: 재시작
+# 20분 뒤에도 GPU 메모리 0%)를 놓친다. 이 컨테이너 자체 HEALTHCHECK도 같은 이유로
+# "설치돼 있나"(ollama list) 대신 "지금 로드돼 있나"(ollama ps)로 본다.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
-    CMD ["sh", "-c", "ollama list | grep -q \"$OLLAMA_MODEL\" || exit 1"]
+    CMD ["sh", "-c", "ollama ps | grep -q \"$OLLAMA_MODEL\" || exit 1"]
 
-ENTRYPOINT ["ollama", "serve"]
+ENTRYPOINT ["/entrypoint.sh"]
