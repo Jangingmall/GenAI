@@ -76,6 +76,12 @@ image_command+=(
     --num-gpus 1
     --dit-cpu-offload false
     --text-encoder-cpu-offload false
+    # Stage 2026-10-01: the defaults save uploads to inputs/uploads and results
+    # to outputs/ under the working directory, which is read-only in the pod
+    # (OSError: [Errno 30] Read-only file system: 'inputs'), so every edit
+    # returned 500. Empty values use a per-request temp dir in $TMPDIR (/tmp).
+    --output-path ""
+    --input-save-path ""
 )
 
 print_command() {

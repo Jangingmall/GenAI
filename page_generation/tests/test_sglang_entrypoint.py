@@ -359,3 +359,16 @@ def test_model_server_death_stops_the_api_with_term(tmp_path: Path) -> None:
     assert "SGLang text server exited; stopping container" in stderr
     assert "api-term" in events
     assert returncode != 0
+
+
+def test_image_server_keeps_uploads_and_outputs_off_the_read_only_root() -> None:
+    # Stage 2026-10-01: SGLang diffusion saved uploads to the relative
+    # "inputs/uploads" on a read-only root filesystem, so every edit was a 500.
+    result = run_entrypoint(
+        text_model="cyankiwi/Qwen3.8-27B-AWQ-INT4",
+        image_model="circulus/FLUX.2-klein-9B-bnb-4bit",
+    )
+
+    _, image_line = command_lines(result)
+    assert "--output-path ''" in image_line
+    assert "--input-save-path ''" in image_line
