@@ -7,6 +7,7 @@ dependencies = [
     "httpx>=0.28,<1",
     "onnxruntime==1.29.0",
     "pillow>=12.3,<13",
+    "prometheus-fastapi-instrumentator>=8.1,<9",
     "pydantic-settings>=2.7,<3",
     "python-multipart>=0.0.20,<1",
     "rembg==2.0.85",

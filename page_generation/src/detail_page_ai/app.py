@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
+from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.concurrency import run_in_threadpool
 
 from .ai_dto import (
@@ -50,6 +51,8 @@ app = FastAPI(
     title="Image Detail Page AI",
     version="0.1.0",
 )
+# GET /metrics in Prometheus format for the infra PodMonitor (same library as chat_bot).
+Instrumentator().instrument(app).expose(app)
 _cors_origins = [
     origin.strip()
     for origin in getattr(
