@@ -13,7 +13,7 @@
 # 챗봇 API 쪽은 코드 수정이 필요 없다(app/pipeline/llm.py의 _chat_ollama(),
 # app/readiness.py의 _check_llm()이 이미 이 백엔드를 지원).
 #
-# ⚠️ 미확인·인프라 조율 필요 (2026-09-28 기준):
+#  미확인·인프라 조율 필요 (2026-09-28 기준):
 #   1. 모델 배치 방식 — SGLang 컨테이너는 모델을 이미지에 안 굽고 S3 → PVC 마운트
 #      방식을 썼다. Ollama도 같은 방식을 쓰려면 OLLAMA_MODELS를 그 PVC 경로로
 #      맞춰야 한다(Ollama의 모델 저장 포맷은 HuggingFace 원본과 달리 자체
@@ -35,11 +35,13 @@ ENV OLLAMA_HOST=0.0.0.0:11434
 ENV OLLAMA_KEEP_ALIVE=-1
 # 대화가 길어질수록 llama-server의 RAM 프롬프트 캐시(기본 상한 8192MiB)와 컨텍스트
 # 체크포인트(슬롯당 최대 32개, 최대 10GB)가 호스트 RAM에 계속 쌓이는 게 OOM의 실제
-# 원인으로 지목됐다(팀원 로그 기반 진단) — 둘 다 꺼서 호스트 RAM이 대화 길이에 따라
-# 계속 자라지 않게 한다. 대신 매 요청마다 프롬프트를 다시 처리해야 해 약간 느려질 수
-# 있다(Stage 배포 후 /ai/chat 응답 속도로 확인 필요 — 로컬 GPU가 없어 사전 측정 불가).
-ENV LLAMA_ARG_CACHE_RAM=0
-ENV LLAMA_ARG_CTX_CHECKPOINTS=0
+# 원인으로 지목됐다(팀원 로그 기반 진단) — 둘 다 작은 상한으로 눌러서 호스트 RAM이
+# 대화 길이에 따라 무한정 자라지 않게 한다(기존 기본값 합 최대 18GB → 이제 최대
+# 약 2.7GB). 완전히 0으로 끄는 대신 작은 값을 둔 건 일부 재사용으로 속도 저하를
+# 줄이기 위함이다(Stage 배포 후 /ai/chat 응답 속도로 확인 필요 — 로컬 GPU가 없어
+# 사전 측정 불가 — 느리면 더 낮추는 걸 고려).
+ENV LLAMA_ARG_CACHE_RAM=2048
+ENV LLAMA_ARG_CTX_CHECKPOINTS=2
 
 # entrypoint.sh가 curl로 사전 로딩 호출을 한다 — 베이스 이미지에 없을 수 있어 명시 설치.
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
