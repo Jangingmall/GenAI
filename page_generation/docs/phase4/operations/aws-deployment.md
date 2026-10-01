@@ -175,7 +175,9 @@
 > | `sglang-image` | 10.20 GiB | 15.82 GiB | 기동 워밍업 생성(`warmup_mode=server`)의 활성화 메모리를 PyTorch가 계속 보유 |
 > | FastAPI (rembg) | — | 1.79 GiB + 추론 | 예산에 없었음 |
 >
-> 조치: 텍스트 서버 `--disable-prefill-cuda-graph`(−1.87 GB, 기동 −4.6분), `--image-processor-backend pil`(전처리를 CPU로), rembg CUDA 세션 `arena_extend_strategy=kSameAsRequested`·`cudnn_conv_algo_search=HEURISTIC`. 효과는 Stage 재배포 후 DCGM(`DCGM_FI_DEV_FB_FREE`)으로 확인한다. 호스트 RAM도 Pod 한도 24 GiB 중 21.6 GiB를 써서 CPU 오프로드는 쓸 수 없다.
+> 1차 조치 (GenAI `7a06247`): 텍스트 서버 `--disable-prefill-cuda-graph`, `--image-processor-backend pil`(전처리를 CPU로), 초안·렌더를 한 번에 하나씩 실행. Stage 실측: 두 서버 기동 후 여유 3.5 → **5.7 GiB**, 텍스트 서버 기동 8.0 → 7.4분(prefill 대신 decode 그래프 캡처가 245초 걸려 단축은 작다). 그래도 BiRefNet(1024×1024, fp32) 추론 중 onnxruntime이 822 MB 버퍼를 할당하지 못해 렌더가 계속 500이었다.
+>
+> 2차 조치: **누끼를 CPU에서 실행**한다 (`REMBG_USE_CUDA=1`일 때만 GPU). Pod RAM working set은 9.3 / 24 GiB라 CPU 누끼(사내 실측 최대 RSS 12.9 GiB)를 담을 수 있다. SGLang이 표시한 "in use 21.6 GiB"는 모델 파일 페이지 캐시를 포함한 값이다. 누끼 1장은 4 vCPU에서 약 50~60초로 예상한다.
 
 > [!NOTE]
 > **호스트 RAM 압박 해소**:  

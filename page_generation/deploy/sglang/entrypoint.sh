@@ -200,9 +200,22 @@ stop_servers_and_fail() {
     if (( image_pid > 0 )); then
         kill -TERM "$image_pid" 2>/dev/null || true
     fi
-    if process_is_running "$main_pid"; then
-        kill -KILL "$main_pid" 2>/dev/null || true
-    fi
+    stop_api
+}
+
+stop_api() {
+    # serve-ai runs as the container's PID 1 (exec below), and the kernel drops
+    # SIGKILL sent to PID 1 from inside the container: on Stage 2026-10-01 the
+    # text server died and the pod stayed Running/NotReady instead of
+    # restarting. uvicorn exits on TERM and force-exits on a second TERM.
+    process_is_running "$main_pid" || return 0
+    : > "$MODEL_FAILURE_MARKER"  # serve-ai then exits 1 instead of 0
+    kill -TERM "$main_pid" 2>/dev/null || true
+    for _ in $(seq 1 30); do
+        process_is_running "$main_pid" || return 0
+        sleep 1
+    done
+    kill -TERM "$main_pid" 2>/dev/null || true
 }
 
 # Keep the API as PID 1/foreground while this background supervisor waits for
@@ -246,12 +259,15 @@ watch_processes() {
     fi
 
     kill -TERM "$text_pid" "$image_pid" 2>/dev/null || true
-    if (( server_failure )) && process_is_running "$main_pid"; then
-        # A model-server failure is fatal even if uvicorn handles TERM
-        # gracefully; use KILL so the container reports a failed workload.
-        kill -KILL "$main_pid" 2>/dev/null || true
+    if (( server_failure )); then
+        stop_api
     fi
 }
+
+# /tmp is an emptyDir that survives container restarts; clear the last failure.
+MODEL_FAILURE_MARKER="${MODEL_FAILURE_MARKER:-/tmp/model-server-failed}"
+export MODEL_FAILURE_MARKER
+rm -f "$MODEL_FAILURE_MARKER"
 
 watch_processes &
 

@@ -239,3 +239,17 @@ def test_unauthenticated_requests_are_refused(monkeypatch):
     assert client.get("/internal/v1/ai/detail-page-jobs/job-1").status_code == 401
     wrong = {"X-AI-Internal-Token": "wrong"}
     assert client.get("/internal/v1/ai/detail-page-jobs/job-1", headers=wrong).status_code == 401
+
+
+def test_run_exits_non_zero_after_the_entrypoint_reports_a_model_failure(monkeypatch, tmp_path):
+    import uvicorn
+
+    marker = tmp_path / "model-server-failed"
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: None)
+    monkeypatch.setenv("MODEL_FAILURE_MARKER", str(marker))
+    app_module.run()  # no marker: normal shutdown
+
+    marker.touch()
+    with pytest.raises(SystemExit) as exit_info:
+        app_module.run()
+    assert exit_info.value.code == 1
