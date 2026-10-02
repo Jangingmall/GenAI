@@ -52,7 +52,7 @@ from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
-from app import products_service, readiness, session_store
+from app import products_service, readiness, session_store, warmup_state
 from app.pipeline import orchestrator, semantic_cache
 from app.pipeline.generate import _fetch_artisans, _fetch_prices
 from app.pipeline.llm import chat_json
@@ -103,6 +103,9 @@ def _background_rewarmup(**kwargs) -> None:
     # 보낸 뒤라도 요청 처리 전체가 비정상 종료될 수 있다(TestClient로 실측 확인).
     try:
         orchestrator.warmup(**kwargs)
+        # 기동 시 워밍업이 끝내 실패했더라도, 대화 중 재예열이 성공했다면 이제 준비된
+        # 상태다 — /ai/ready(readiness._check_warmup)가 이 값을 본다.
+        warmup_state.mark_done()
     except Exception:
         logger.exception("백그라운드 재예열 실패 — 다음 쿨다운 뒤 재시도")
 
@@ -114,11 +117,17 @@ async def lifespan(app: FastAPI):
     # (app/pipeline/orchestrator.py:warmup 참고). 예열은 최적화일 뿐이라 실패해도(Ollama·
     # DB 일시 접속 불가 등) 서버 자체는 콜드 스타트 상태로라도 떠야 한다 — 여기서 예외를
     # 그대로 던지면 FastAPI 기동 자체가 멈춘다.
-    try:
-        orchestrator.warmup()
-    except Exception:
-        logger.exception("워밍업 실패 — 콜드 스타트 상태로 서비스를 시작한다")
+    #
+    # 기동 순서 문제(Stage 실측, 2026-10-01): 같은 파드의 LLM 사이드카(Ollama)는 모델
+    # 적재에 수십~백여 초가 걸리는데 이 API는 몇 초 만에 뜬다. 예전처럼 여기서 한 번만
+    # 동기로 시도하면, Ollama가 아직 안 떠 있을 땐 연결 거부로 실패한 채 콜드 상태로
+    # 남았고, 적재 중일 땐 그 시간만큼 기동이 막혀 /ai/health까지 응답하지 못했다.
+    # 그래서 백그라운드 스레드에서 Ollama가 뜰 때까지 재시도하고(app/warmup_state.py),
+    # 완료 여부는 /ai/ready(readiness._check_warmup)가 읽어 그 전엔 not_ready로 둔다.
+    # 앱 종료 시엔 재시도 스레드도 멈춘다.
+    background_warmup = warmup_state.start_background(orchestrator.warmup)
     yield
+    background_warmup.stop()
 
 
 app = FastAPI(title="미담 AI 추천 챗봇", version="0.1.0", lifespan=lifespan)
