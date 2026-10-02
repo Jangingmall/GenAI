@@ -7,6 +7,7 @@ from pathlib import Path
 import psycopg2
 import requests
 
+from app import warmup_state
 from app.config import settings
 from app.pipeline import llm
 
@@ -116,12 +117,23 @@ def _check_llm() -> tuple[bool, str]:
     return True, f"model {settings.LLM_MODEL!r} available"
 
 
+def _check_warmup() -> tuple[bool, str]:
+    """모델이 적재돼도 앱 워밍업(BGE-M3 로딩 + 시스템 프롬프트 캐시)이 안 끝났으면 첫
+    요청이 여전히 콜드다(main.py lifespan 주석 참고). 챗봇 API가 LLM 사이드카보다
+    먼저 떠 기동 시 워밍업이 실패하던 문제(Stage 실측, 2026-10-01) 때문에 워밍업
+    완료까지 준비 조건에 넣는다."""
+    if warmup_state.is_done():
+        return True, "app warmup completed"
+    return False, "app warmup in progress (waiting for LLM sidecar)"
+
+
 def check_readiness() -> dict:
     checks = {}
     for name, checker in (
         ("database", _check_database),
         ("embedding_model", _check_embedding_model),
         ("llm", _check_llm),
+        ("warmup", _check_warmup),
     ):
         ready, detail = checker()
         checks[name] = {"ready": ready, "detail": detail}

@@ -12,6 +12,7 @@ temperature=0(그리디 디코딩) 대신 낮은 temperature + 고정 seed를 �
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 
@@ -20,6 +21,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEOUT_SECONDS = 180
 
@@ -130,7 +133,39 @@ def _chat_ollama(
         timeout=timeout,
     )
     resp.raise_for_status()
-    return resp.json()["message"]["content"]
+    data = resp.json()
+    try:
+        _log_ollama_timing(model_name, data)
+    except Exception:  # noqa: BLE001 — 진단 로그가 실제 응답을 깨뜨리면 안 된다
+        logger.debug("ollama timing 로그 실패", exc_info=True)
+    return data["message"]["content"]
+
+
+def _ms(value) -> float:
+    """Ollama가 주는 나노초 값을 밀리초로 바꾼다(없으면 0)."""
+    return (value or 0) / 1_000_000
+
+
+def _log_ollama_timing(model_name: str, data: dict) -> None:
+    """호출마다 prefill(prompt_eval)·생성(eval)·적재(load) 시간을 남긴다.
+
+    Stage(T4)에서 warm 상태인데도 한 턴이 ~32초(로컬 M4는 13~15초)라서, intent·generate
+    두 시스템 프롬프트가 한 슬롯에서 서로 캐시를 밀어내는지(mutual eviction) 확인하려는
+    진단 로그다. warm인데 매 호출 prompt_tokens가 수천이면 캐시 재사용이 안 되는 것이고,
+    load_ms가 크면 그 직전에 모델이 다시 적재된 것이다. 기본 로깅 설정에서도 보이도록
+    WARNING으로 남긴다.
+    """
+    logger.warning(
+        "ollama timing model=%s prompt_tokens=%s prompt_ms=%.0f "
+        "gen_tokens=%s gen_ms=%.0f load_ms=%.0f total_ms=%.0f",
+        model_name,
+        data.get("prompt_eval_count"),
+        _ms(data.get("prompt_eval_duration")),
+        data.get("eval_count"),
+        _ms(data.get("eval_duration")),
+        _ms(data.get("load_duration")),
+        _ms(data.get("total_duration")),
+    )
 
 
 def _chat_mlx_serve(
