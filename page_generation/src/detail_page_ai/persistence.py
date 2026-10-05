@@ -9,6 +9,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Callable, Literal, Protocol
 
+from .ai_dto import AiToBePersistRequestDto
 from .dto import (
     AiBePersistAck,
     AiBeProductPersistRequest,
@@ -817,7 +818,10 @@ def _serialize_outbox_payload(
 ) -> str:
     return json.dumps(
         {
-            "request": request.model_dump(mode="json"),
+            "request": request.model_dump(
+                mode="json",
+                by_alias=isinstance(request, AiToBePersistRequestDto),
+            ),
             "image": _serialize_generated_image(image),
         },
         ensure_ascii=False,
@@ -828,9 +832,15 @@ def _serialize_outbox_payload(
 def _deserialize_outbox_row(row: tuple) -> OutboxRecord:
     generation_id, status, attempts, last_error, updated_at, payload_json, worker_id = row
     payload = json.loads(payload_json)
+    request_payload = payload["request"]
+    request: AiBeProductPersistRequest
+    if request_payload.get("productId") or request_payload.get("product_id"):
+        request = AiToBePersistRequestDto.model_validate(request_payload)
+    else:
+        request = AiBeProductPersistRequest.model_validate(request_payload)
     return OutboxRecord(
         generation_id=generation_id,
-        request=AiBeProductPersistRequest.model_validate(payload["request"]),
+        request=request,
         image=_deserialize_generated_image(payload["image"]),
         status=status,
         attempts=int(attempts),

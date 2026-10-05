@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
+import json
+import sqlite3
 import pytest
+from pydantic import ValidationError
 
+from detail_page_ai.ai_dto import AiToBePersistRequestDto
 from detail_page_ai.dto import (
     AiBeProductPersistRequest,
     AiFeProductSummaryDto,
@@ -203,6 +207,72 @@ def test_outbox_survives_reopen_with_full_generated_image(tmp_path):
     assert restored.image.sections[0].data == b"section-bytes"
     assert restored.image.photos[0].transform.scale == 0.72
     assert restored.image.photos[0].product_generated is False
+
+
+def test_outbox_reopen_preserves_strict_be_callback_wire_aliases(tmp_path):
+    path = tmp_path / "state.sqlite3"
+    request = AiToBePersistRequestDto.model_validate(
+        _persist_request().model_dump(mode="json")
+    )
+    SQLiteDeliveryOutbox(path).enqueue(request, _generated_image(), "")
+
+    restored = SQLiteDeliveryOutbox(path).get("generation-1")
+    wire_request = restored.request.model_dump(mode="json", by_alias=True)
+
+    assert isinstance(restored.request, AiToBePersistRequestDto)
+    assert wire_request["productId"] == "product-1"
+    assert wire_request["generationId"] == "generation-1"
+    assert wire_request["detailPage"]["mimeType"] == "image/png"
+    assert "reactDocument" in wire_request["detailPage"]
+
+
+def _replace_outbox_request_payload(path, request_payload):
+    with sqlite3.connect(path) as connection:
+        (payload_json,) = connection.execute(
+            "SELECT payload_json FROM delivery_outbox WHERE generation_id = ?",
+            ("generation-1",),
+        ).fetchone()
+        payload = json.loads(payload_json)
+        payload["request"] = request_payload
+        connection.execute(
+            "UPDATE delivery_outbox SET payload_json = ? WHERE generation_id = ?",
+            (json.dumps(payload, ensure_ascii=False), "generation-1"),
+        )
+
+
+def test_outbox_reopen_restores_legacy_snake_case_be_callback(tmp_path):
+    path = tmp_path / "state.sqlite3"
+    request = AiToBePersistRequestDto.model_validate(
+        _persist_request().model_dump(mode="json")
+    )
+    SQLiteDeliveryOutbox(path).enqueue(request, _generated_image(), "")
+    legacy_wire_request = request.model_dump(mode="json")
+    assert "product_id" in legacy_wire_request
+    assert "react_document" in legacy_wire_request["detail_page"]
+    _replace_outbox_request_payload(path, legacy_wire_request)
+
+    restored = SQLiteDeliveryOutbox(path).get("generation-1")
+    retry_wire_request = restored.request.model_dump(mode="json", by_alias=True)
+
+    assert isinstance(restored.request, AiToBePersistRequestDto)
+    assert retry_wire_request["productId"] == "product-1"
+    assert retry_wire_request["generationId"] == "generation-1"
+    assert retry_wire_request["detailPage"]["mimeType"] == "image/png"
+    assert "reactDocument" in retry_wire_request["detailPage"]
+
+
+def test_outbox_reopen_does_not_downgrade_invalid_strict_be_callback(tmp_path):
+    path = tmp_path / "state.sqlite3"
+    request = AiToBePersistRequestDto.model_validate(
+        _persist_request().model_dump(mode="json")
+    )
+    SQLiteDeliveryOutbox(path).enqueue(request, _generated_image(), "")
+    invalid_wire_request = request.model_dump(mode="json")
+    invalid_wire_request["unexpected"] = "must not be silently discarded"
+    _replace_outbox_request_payload(path, invalid_wire_request)
+
+    with pytest.raises(ValidationError):
+        SQLiteDeliveryOutbox(path).get("generation-1")
 
 
 def test_outbox_state_transitions_are_idempotent(tmp_path):
